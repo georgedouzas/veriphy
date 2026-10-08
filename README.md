@@ -79,16 +79,24 @@ The agent skill works for any user, via any of three routes. All of them need
 the Setup above completed once (the skill checks and will walk you through it
 otherwise).
 
-**A. Claude Code plugin (recommended).** The repo is a Claude Code plugin;
-installing it clones the repo and registers the skill globally:
+**A. Claude Code plugin (recommended).** The repo is both a Claude Code
+plugin and its own single-plugin marketplace
+(`.claude-plugin/marketplace.json`), since plugins install from marketplaces.
+Register the repo — a local clone's path or a git URL both work — then
+install:
 
-```
-/plugin install <git-url-of-this-repo>
+```sh
+claude plugin marketplace add <path-to-local-clone-or-git-url>
+claude plugin install veriphy@veriphy
 ```
 
-Then run Setup inside the installed plugin directory (the plugin root is the
-repo). From any project: `/veriphy:prove <statement>` (plugin skills are
-namespaced by plugin name), or just ask "prove that …".
+The install copies the repo into `~/.claude/plugins/cache/`, including a
+built `.lake/` if present (~8 GB). Either run Setup inside that cached copy,
+or delete its `.lake/` and set `VERIPHY_HOME` to a clone where Setup has
+already run (e.g. in the `env` block of `~/.claude/settings.json`) — the
+skill prefers `VERIPHY_HOME` over the plugin root. From any project:
+`/veriphy:prove <statement>` (plugin skills are namespaced by plugin name),
+or just ask "prove that …".
 
 **B. Manual copy (Claude Code, no plugin).** Invoked as plain `/prove`
 (personal skills are not namespaced; prefer route A for `/veriphy:prove`).

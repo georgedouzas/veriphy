@@ -1,0 +1,13 @@
+{
+  "name": "veriphy",
+  "owner": {
+    "name": "Georgios Douzas"
+  },
+  "plugins": [
+    {
+      "name": "veriphy",
+      "source": "./",
+      "description": "Machine-verified physics/math proofs in Lean 4 with SageMath as an untrusted oracle: the /veriphy:prove skill plus five certificate tactics."
+    }
+  ]
+}
