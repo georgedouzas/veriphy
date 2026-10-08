@@ -1,6 +1,6 @@
 # Veriphy
 
-**Certified computer algebra for Lean 4, and an agent loop for clearing PhysLean's formalization backlog.**
+**Certified computer algebra for Lean 4, and an agent loop for clearing Physlib's formalization backlog.**
 
 Veriphy connects SageMath and Lean 4 using the *skeptical* architecture: Sage is an
 untrusted oracle. Every Sage result must come with a **certificate** that Lean
@@ -43,11 +43,12 @@ Veriphy/            Layer 1 — Lean library (lake package): bridge client + cer
 sage_bridge/        Layer 2 — Sage daemon: JSON-RPC over stdio, returns structured ASTs + certificates
 prompts/            Layer 3 — agent playbook (agent-agnostic markdown)
 .claude/skills/     Layer 3 — Claude Code adapter for the playbook
-bench/              Layer 3 — PhysLean stub ledger: cleared / blocked / cost per stub
+bench/              Layer 3 — Physlib stub ledger: cleared / blocked / cost per stub
 ```
 
 The dependency arrow points down only: Layer 1 is useful with no AI, Layer 2 with
-no Lean. The agent layer orchestrates both against PhysLean's `informal_lemma`
+no Lean. The agent layer orchestrates both against [Physlib](https://physlib.io)'s
+(formerly PhysLean/HepLean) `informal_lemma`
 backlog and logs every outcome — including failures, which map the mathlib gaps
 that block physics formalization.
 
@@ -86,11 +87,11 @@ without an SDP solver (2026-10): five working tactics, all emitting Sage-free
 Sage; the emitted replacements don't — verified by replay with Sage off PATH).
 Remaining catalog entries (`sage_branch`, `sage_eigen`, full SOS) are bounded,
 demand-driven additions — build them when a ledger row asks for them.
-Next: persistent daemon (currently ~2s spawn per call), PhysLean stub run.
+Next: persistent daemon (currently ~2s spawn per call), Physlib stub run.
 
 ## Relationship to LeanSage
 
 LeanSage's seven-stage MathAST pipeline is excellent plumbing; where practical,
 certificate checkers should be contributed upstream rather than duplicated here.
 Veriphy exists for what LeanSage doesn't do: no-`sorry` certification, physics
-tactics (SOS, WZ, branching rules), and the PhysLean agent loop.
+tactics (SOS, WZ, branching rules), and the Physlib agent loop.

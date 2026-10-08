@@ -1,6 +1,6 @@
 ---
 name: clear-stub
-description: Clear one PhysLean informal_lemma stub end to end — formalize the statement, validate it numerically via Sage, prove it (mathlib tactics + Veriphy sage_* certificate tactics), verify with lake build, log the outcome in bench/ledger.md, and open a PR. Use when asked to work on PhysLean stubs, the formalization backlog, or "clear a stub".
+description: Clear one Physlib informal_lemma stub end to end — formalize the statement, validate it numerically via Sage, prove it (mathlib tactics + Veriphy sage_* certificate tactics), verify with lake build, log the outcome in bench/ledger.md, and open a PR. Use when asked to work on Physlib stubs, the formalization backlog, or "clear a stub".
 ---
 
 Follow the playbook in `prompts/clear-stub.md` at the repo root, exactly as

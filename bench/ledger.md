@@ -1,6 +1,6 @@
 # Stub ledger
 
-One row per attempted PhysLean stub. This table — especially its failures — is
+One row per attempted Physlib stub. This table — especially its failures — is
 the project's primary measurement: stubs cleared per dollar, and the ranked map
 of which mathlib gaps and missing Sage tactics block physics formalization.
 

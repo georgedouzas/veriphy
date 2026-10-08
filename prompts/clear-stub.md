@@ -1,4 +1,4 @@
-# Playbook: clear one PhysLean informal stub
+# Playbook: clear one Physlib informal stub
 
 Agent-agnostic instructions (the spec-kit pattern: logic lives here; per-agent
 adapters in `.claude/skills/`, `.cursor/commands/`, etc. just point at this file).
@@ -6,12 +6,12 @@ adapters in `.claude/skills/`, `.cursor/commands/`, etc. just point at this file
 ## Preconditions
 
 - This repo builds: `lake build` succeeds.
-- PhysLean is checked out as a sibling or dependency; `lake build` green there too.
+- Physlib is checked out as a sibling or dependency; `lake build` green there too.
 - Sage daemon answers: `echo '{"id":1,"method":"ping"}' | sage -python sage_bridge/server.py`
 
 ## Loop
 
-1. **Pick.** Grep PhysLean for `informal_lemma` / `informal_definition`. Choose a
+1. **Pick.** Grep Physlib for `informal_lemma` / `informal_definition`. Choose a
    stub whose `deps` are all formalized. Prefer lemmas over definitions
    (definitions need human design review — flag them, don't invent them).
 
@@ -32,7 +32,7 @@ adapters in `.claude/skills/`, `.cursor/commands/`, etc. just point at this file
    c. decompose: isolate the computational core (polynomial identity,
       inequality, closed-form sum, branching rule) and send it to the matching
       `sage_*` certificate tactic; prove the glue yourself
-   d. recursion: if a sub-lemma is missing from mathlib/PhysLean, add it to the
+   d. recursion: if a sub-lemma is missing from mathlib/Physlib, add it to the
       queue as a new stub and prove it first (lemmas only — never definitions).
    Budget: stop after ~30 min wall clock or 3 decomposition attempts.
 
@@ -44,7 +44,7 @@ adapters in `.claude/skills/`, `.cursor/commands/`, etc. just point at this file
    (cleared / blocked-mathlib-gap / blocked-missing-tactic / statement-suspect),
    what was missing, wall-clock time, approximate cost.
 
-7. **PR.** Branch, commit, open a PR against PhysLean. The PR description states
+7. **PR.** Branch, commit, open a PR against Physlib. The PR description states
    the informal stub, the formal statement, and the round-trip/numeric evidence
    from step 2. Human review is for the *statement's faithfulness*; the kernel
    already reviewed the proof.
