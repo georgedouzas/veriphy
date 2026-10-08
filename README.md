@@ -17,13 +17,20 @@ doesn't: **certification** and the **agent loop**.
 For many problem classes, *finding* the answer is hard but *checking* it is easy.
 Sage finds; Lean checks; only the check is trusted.
 
-| Tactic (planned) | Sage finds | Lean checks via | Status |
+| Tactic | Sage finds | Lean checks via | Status |
 |---|---|---|---|
 | `sage_factor` | polynomial factorization | multiply back: `ring1` | **working** ✅ |
-| `sage_sos` | sum-of-squares decomposition | `positivity` + `ring_nf` | planned |
-| `sage_sum` | closed form (Gosper/Zeilberger) | WZ certificate: `field_simp; ring` | planned |
+| `sage_sos` | sum-of-squares decomposition | `positivity` + `ring1` | **working** ✅ |
+| `sage_lincomb` | Gröbner cofactors (local polyrith) | `linear_combination` | **working** ✅ |
+| `sage_witness` | rational roots for `∃ x, p x = 0` | `norm_num` on the witness | **working** ✅ |
+| `sage_sum` | closed form of `∑ k ∈ range n` (`#sage_sum`) | induction + `ring1`, kernel-only | **working** ✅ |
 | `sage_branch` | Lie-group branching rules | character polynomial identity | planned |
 | `sage_eigen` | eigenpairs | `Av = λv` by `norm_num` | planned |
+
+`sage_sos` currently certifies polynomials whose odd-multiplicity factors are
+constants or single-variable positive-definite quadratics (includes all
+perfect-square / even-power cases); wider SOS needs an exact SDP step — a
+known, bounded extension, not open-ended scope.
 
 Design rule: every tactic emits a `Try this:` replacement proof, so **committed
 files check with vanilla Lean + mathlib, no Sage installed**. Sage is an
@@ -73,13 +80,13 @@ with `ring`. The daemon's output is never trusted.
 
 ## Status
 
-First milestone reached (2026-10): `sage_factor` works end to end. On a goal
-`lhs = rhs` it factors `lhs` through the daemon, certifies `lhs = factored`
-in-kernel with `ring1`, hands back `factored = rhs`, and emits a
-`Try this:` replacement verified to check with Sage off the PATH. Handles
-multivariate polynomials, rational units, and compound atoms (e.g. `f a` as an
-indeterminate). Tests: `VeriphyTest.lean` (requires Sage; the emitted
-replacements don't). Next: `sage_sos`, persistent daemon, PhysLean stub run.
+Tactic catalog complete for the classical certificate classes implementable
+without an SDP solver (2026-10): five working tactics, all emitting Sage-free
+`Try this:` replacements. Tests: `VeriphyTest.lean` (running them requires
+Sage; the emitted replacements don't — verified by replay with Sage off PATH).
+Remaining catalog entries (`sage_branch`, `sage_eigen`, full SOS) are bounded,
+demand-driven additions — build them when a ledger row asks for them.
+Next: persistent daemon (currently ~2s spawn per call), PhysLean stub run.
 
 ## Relationship to LeanSage
 

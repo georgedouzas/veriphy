@@ -84,4 +84,55 @@ def factor (poly : String) (vars : List String) (cfg : Config := {}) :
     let factors ← factors.toList.mapM parseFactor
     return ({ unit, factors } : FactorCert)
 
+/-- One square `coeff * q^2` of a sum-of-squares certificate. -/
+structure Square where
+  coeff : String
+  terms : List Term
+  deriving Repr, Inhabited
+
+/-- SOS certificate for `0 ≤ poly`: `poly = Σ coeffᵢ * qᵢ²`, all `coeffᵢ ≥ 0`. -/
+def sos (poly : String) (vars : List String) (cfg : Config := {}) :
+    IO (List Square) := do
+  let params := Json.mkObj
+    [ ("poly", Json.str poly)
+    , ("vars", Json.arr (vars.toArray.map Json.str)) ]
+  let result ← request cfg "sos" params
+  IO.ofExcept do
+    let squares ← (← result.getObjVal? "squares").getArr?
+    squares.toList.mapM fun j => do
+      let coeff ← (← j.getObjVal? "coeff").getStr?
+      let terms ← (← j.getObjVal? "terms").getArr?
+      let terms ← terms.toList.mapM parseTerm
+      return ({ coeff, terms } : Square)
+
+/-- Rational roots of a univariate polynomial over ℚ (as rational strings). -/
+def roots (poly : String) (varName : String) (cfg : Config := {}) :
+    IO (List String) := do
+  let params := Json.mkObj [("poly", Json.str poly), ("var", Json.str varName)]
+  let result ← request cfg "roots" params
+  IO.ofExcept do
+    let rs ← (← result.getObjVal? "roots").getArr?
+    rs.toList.mapM (·.getStr?)
+
+/-- Ideal-membership certificate: cofactors `cᵢ` with `target = Σ cᵢ * hypᵢ`.
+Fails (daemon error) when `target` is not in the ideal of the hypotheses. -/
+def lincomb (target : String) (hyps : List String) (vars : List String)
+    (cfg : Config := {}) : IO (List (List Term)) := do
+  let params := Json.mkObj
+    [ ("target", Json.str target)
+    , ("hyps", Json.arr (hyps.toArray.map Json.str))
+    , ("vars", Json.arr (vars.toArray.map Json.str)) ]
+  let result ← request cfg "lincomb" params
+  IO.ofExcept do
+    let cs ← (← result.getObjVal? "cofactors").getArr?
+    cs.toList.mapM fun j => do (← j.getArr?).toList.mapM parseTerm
+
+/-- Closed form of `∑_{k=0}^{n-1} f(k)` as a polynomial in `n` (term list). -/
+def sumClosedForm (summand : String) (cfg : Config := {}) : IO (List Term) := do
+  let params := Json.mkObj [("summand", Json.str summand)]
+  let result ← request cfg "sum" params
+  IO.ofExcept do
+    let ts ← (← result.getObjVal? "closed_form").getArr?
+    ts.toList.mapM parseTerm
+
 end Veriphy.Bridge
