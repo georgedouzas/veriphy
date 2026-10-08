@@ -1,0 +1,10 @@
+name = "veriphy"
+defaultTargets = ["Veriphy"]
+
+[[lean_lib]]
+name = "Veriphy"
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+rev = "v4.25.0"
