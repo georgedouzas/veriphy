@@ -132,6 +132,12 @@ demand-driven additions — build them when a `blocked-missing-tactic` report
 asks for them. The pipeline has cleared a real Physlib backlog item end to end
 (`isBounded_iff_of_𝓵_zero`). Next: persistent daemon (~2s spawn per call).
 
+## Design
+
+The founding design discussion — why the skeptical architecture, the
+certificate-catalog scope boundary, the pure-tool decision — is recorded in
+[docs/DESIGN.md](docs/DESIGN.md).
+
 ## Relationship to LeanSage
 
 LeanSage's seven-stage MathAST pipeline is excellent plumbing; where practical,
