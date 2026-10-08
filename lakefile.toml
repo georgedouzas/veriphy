@@ -4,6 +4,10 @@ defaultTargets = ["Veriphy"]
 [[lean_lib]]
 name = "Veriphy"
 
+# Tactic tests exercise the live Sage daemon: `lake build VeriphyTest`
+[[lean_lib]]
+name = "VeriphyTest"
+
 [[require]]
 name = "mathlib"
 git = "https://github.com/leanprover-community/mathlib4"

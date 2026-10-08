@@ -19,7 +19,7 @@ Sage finds; Lean checks; only the check is trusted.
 
 | Tactic (planned) | Sage finds | Lean checks via | Status |
 |---|---|---|---|
-| `sage_factor` | polynomial factorization | multiply back: `ring` | daemon ✅, tactic WIP |
+| `sage_factor` | polynomial factorization | multiply back: `ring1` | **working** ✅ |
 | `sage_sos` | sum-of-squares decomposition | `positivity` + `ring_nf` | planned |
 | `sage_sum` | closed form (Gosper/Zeilberger) | WZ certificate: `field_simp; ring` | planned |
 | `sage_branch` | Lie-group branching rules | character polynomial identity | planned |
@@ -73,10 +73,13 @@ with `ring`. The daemon's output is never trusted.
 
 ## Status
 
-Early scaffold (2026-10). Working: daemon with `ping`/`factor`, protocol design,
-agent playbook. WIP: `Bridge.lean` and the first tactic need `lake build` against
-the pinned toolchain (not yet compiled — install elan first). See `bench/ledger.md`
-for the running scorecard once the loop is live.
+First milestone reached (2026-10): `sage_factor` works end to end. On a goal
+`lhs = rhs` it factors `lhs` through the daemon, certifies `lhs = factored`
+in-kernel with `ring1`, hands back `factored = rhs`, and emits a
+`Try this:` replacement verified to check with Sage off the PATH. Handles
+multivariate polynomials, rational units, and compound atoms (e.g. `f a` as an
+indeterminate). Tests: `VeriphyTest.lean` (requires Sage; the emitted
+replacements don't). Next: `sage_sos`, persistent daemon, PhysLean stub run.
 
 ## Relationship to LeanSage
 
