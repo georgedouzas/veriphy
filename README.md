@@ -1,6 +1,7 @@
 # Veriphy
 
-**Certified computer algebra for Lean 4, and an agent loop for clearing Physlib's formalization backlog.**
+**Certified computer algebra for Lean 4, with an agent skill that turns a physics
+or math statement into a machine-verified proof.**
 
 Veriphy connects SageMath and Lean 4 using the *skeptical* architecture: Sage is an
 untrusted oracle. Every Sage result must come with a **certificate** that Lean
@@ -41,16 +42,17 @@ authoring-time tool only; CI never needs it.
 ```
 Veriphy/            Layer 1 — Lean library (lake package): bridge client + certificate tactics
 sage_bridge/        Layer 2 — Sage daemon: JSON-RPC over stdio, returns structured ASTs + certificates
-prompts/            Layer 3 — agent playbook (agent-agnostic markdown)
+prompts/            Layer 3 — the `prove` playbook (agent-agnostic markdown)
 .claude/skills/     Layer 3 — Claude Code adapter for the playbook
-bench/              Layer 3 — Physlib stub ledger: cleared / blocked / cost per stub
 ```
 
 The dependency arrow points down only: Layer 1 is useful with no AI, Layer 2 with
-no Lean. The agent layer orchestrates both against [Physlib](https://physlib.io)'s
-(formerly PhysLean/HepLean) `informal_lemma`
-backlog and logs every outcome — including failures, which map the mathlib gaps
-that block physics formalization.
+no Lean. The `prove` skill orchestrates both: the **caller supplies the target**
+(a Lean statement, an informal statement, or a backlog item from a repo such as
+[Physlib](https://physlib.io)) and receives back a verified proof or a precise
+failure report (`blocked-library-gap` / `blocked-missing-tactic` /
+`statement-suspect`). What happens with the result is the caller's
+responsibility; the tool keeps no state and opens no PRs.
 
 ## Setup
 
@@ -86,12 +88,13 @@ without an SDP solver (2026-10): five working tactics, all emitting Sage-free
 `Try this:` replacements. Tests: `VeriphyTest.lean` (running them requires
 Sage; the emitted replacements don't — verified by replay with Sage off PATH).
 Remaining catalog entries (`sage_branch`, `sage_eigen`, full SOS) are bounded,
-demand-driven additions — build them when a ledger row asks for them.
-Next: persistent daemon (currently ~2s spawn per call), Physlib stub run.
+demand-driven additions — build them when a `blocked-missing-tactic` report
+asks for them. The pipeline has cleared a real Physlib backlog item end to end
+(`isBounded_iff_of_𝓵_zero`). Next: persistent daemon (~2s spawn per call).
 
 ## Relationship to LeanSage
 
 LeanSage's seven-stage MathAST pipeline is excellent plumbing; where practical,
 certificate checkers should be contributed upstream rather than duplicated here.
 Veriphy exists for what LeanSage doesn't do: no-`sorry` certification, physics
-tactics (SOS, WZ, branching rules), and the Physlib agent loop.
+tactics (SOS, WZ, branching rules), and the `prove` agent skill.
