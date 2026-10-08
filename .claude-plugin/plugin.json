@@ -1,7 +1,7 @@
 {
   "name": "veriphy",
   "description": "Machine-verified physics/math proofs in Lean 4 with SageMath as an untrusted oracle: the /prove skill plus five certificate tactics (sage_factor, sage_sos, sage_lincomb, sage_witness, sage_sum).",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": {
     "name": "Georgios Douzas"
   }
