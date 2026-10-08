@@ -129,6 +129,14 @@ A `factor` response is a certificate: `unit` and `factors` (each a term list wit
 multiplicity). The Lean tactic rebuilds the product and closes `lhs = product`
 with `ring`. The daemon's output is never trusted.
 
+Two methods are **advisory**, not certificate-producing, and say so in their
+responses (`"advisory": true`): `symbolic_check` decides identities
+symbolically (with numeric-sampling fallback and counterexamples) for the
+playbook's formalization-time lie detector, and `solve` returns symbolic
+solution sets as proof-sketch guidance — e.g. the case split behind a kernel
+computation. Advisory output is never transcribed into a proof; the agent
+re-proves in Lean whatever it uses.
+
 ## Status
 
 Tactic catalog complete for the classical certificate classes implementable

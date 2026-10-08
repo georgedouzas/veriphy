@@ -15,6 +15,12 @@ Methods:
 Term list encoding of a polynomial in QQ[vars]:
   [{"coeff": "<rational as num or num/den>", "exps": [e1, e2, ...]}, ...]
 where exps[i] is the exponent of vars[i] in that monomial.
+
+Two methods are ADVISORY, not certificate-producing: `symbolic_check` (is this
+identity symbolically true? for the formalization-time lie detector) and
+`solve` (symbolic solution sets, as proof-sketch guidance). Their results are
+marked "advisory": they must never be transcribed into a proof — the Lean side
+re-proves anything it uses from them.
 """
 
 import json
@@ -129,6 +135,97 @@ def do_sum(params):
     return {"closed_form": poly_to_terms(p), "var": "n"}
 
 
+def _symbolic_exprs(strs, names):
+    """Parse expression strings in the symbolic ring with the declared variables.
+
+    Each string is an expression, an equation (`lhs == rhs`), or a relation
+    (`x > 0`). Parsed with sage_eval, so the full Sage expression language is
+    available — acceptable for ADVISORY methods only.
+    """
+    from sage.all import sage_eval, var
+
+    if not names or not all(n.isidentifier() for n in names):
+        raise ValueError("vars must be non-empty valid identifiers")
+    scope = {n: var(n) for n in names}
+    return [sage_eval(s, locals=scope) for s in strs]
+
+
+def do_symbolic_check(params):
+    """ADVISORY: decide whether `lhs == rhs` as a symbolic identity.
+
+    Tries full symbolic simplification first; falls back to numeric sampling.
+    Returns {"equal": true|false|null, "method": ..., "advisory": true} plus a
+    counterexample when sampling refutes the identity. `null` means undecided:
+    simplification did not reach zero but no sampled point refuted it.
+    """
+    import random
+
+    from sage.all import CDF, assume, forget, var
+
+    names = params["vars"]
+    lhs, rhs = _symbolic_exprs([params["lhs"], params["rhs"]], names)
+    assumptions = _symbolic_exprs(params.get("assumptions", []), names)
+    try:
+        for a in assumptions:
+            assume(a)
+        diff = (lhs - rhs).simplify_full()
+        if diff.is_zero():
+            return {"equal": True, "method": "symbolic", "advisory": True}
+        # Numeric fallback on the UNsimplified difference, at random real points.
+        samples = int(params.get("samples", 20))
+        tol = 1e-8
+        tried = 0
+        for _ in range(10 * samples):
+            if tried >= samples:
+                break
+            point = {var(v): random.uniform(-10, 10) for v in names}
+            try:
+                val = CDF((lhs - rhs).subs(point))
+            except (ValueError, TypeError, ZeroDivisionError, ArithmeticError):
+                continue  # outside the domain; resample
+            tried += 1
+            if abs(val) > tol:
+                return {
+                    "equal": False,
+                    "method": "numeric",
+                    "advisory": True,
+                    "counterexample": {str(v): float(x) for v, x in point.items()},
+                    "difference": str(val),
+                }
+        if tried == 0:
+            raise ValueError("no sample point evaluated successfully")
+        return {
+            "equal": None,
+            "method": "numeric",
+            "advisory": True,
+            "note": f"undecided symbolically; {tried} random samples found no counterexample",
+        }
+    finally:
+        forget()
+
+
+def do_solve(params):
+    """ADVISORY: symbolic solution set of an equation system, as proof guidance.
+
+    Equations are strings (`lhs == rhs`, or an expression meaning `expr == 0`).
+    Solutions come back as {var: expression-string} dicts; free parameters keep
+    Sage's names (r1, z1, ...). Guidance only — re-prove everything in Lean.
+    """
+    from sage.all import SR, solve, var
+
+    names = params["vars"]
+    eqs = [
+        e if e.is_relational() else (e == 0)
+        for e in _symbolic_exprs(params["equations"], names)
+    ]
+    unknowns = [var(v) for v in params.get("solve_for", names)]
+    sols = solve(eqs, unknowns, solution_dict=True)
+    return {
+        "solutions": [{str(v): str(e) for v, e in s.items()} for s in sols],
+        "advisory": True,
+    }
+
+
 METHODS = {
     "ping": lambda params: {"ok": True, "sage": version()},
     "factor": do_factor,
@@ -136,6 +233,8 @@ METHODS = {
     "roots": do_roots,
     "lincomb": do_lincomb,
     "sum": do_sum,
+    "symbolic_check": do_symbolic_check,
+    "solve": do_solve,
 }
 
 
