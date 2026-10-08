@@ -14,28 +14,28 @@ and reports the certified factorization shape. TODO (first real milestone):
   2. close the equality goal via `Mathlib.Tactic.Ring`
   3. `Try this:` suggestion via `Lean.Meta.Tactic.TryThis`
 -/
+import Lean
 import Veriphy.Bridge
 
 namespace Veriphy
 
-open Lean Elab Command Bridge
+open Lean Elab Command
 
-private def termToString (vars : List String) (t : Term) : String :=
+private def termToString (vars : List String) (t : Bridge.Term) : String :=
   let monos := (vars.zip t.exps).filterMap fun (v, e) =>
     if e = 0 then none else if e = 1 then some v else some s!"{v}^{e}"
   String.intercalate "*" (t.coeff :: monos)
 
-private def factorToString (vars : List String) (f : Factor) : String :=
+private def factorToString (vars : List String) (f : Bridge.Factor) : String :=
   let body := String.intercalate " + " (f.terms.map (termToString vars))
   if f.mult = 1 then s!"({body})" else s!"({body})^{f.mult}"
 
-/-- `#sage_factor "x^4 - 1" ["x"]` — ask the daemon for a factorization
-certificate and display it. Diagnostic command; the goal-closing tactic
-version is the project's first milestone. -/
-elab "#sage_factor " poly:str vars:term : command => do
-  let varsList ← liftTermElabM do
-    let e ← Term.elabTerm vars (some (.app (.const ``List []) (.const ``String [])))
-    unsafe Meta.evalExpr (List String) (.app (.const ``List []) (.const ``String [])) e
+/-- `#sage_factor "x^4 - 1" "x"` — ask the daemon for a factorization
+certificate over `ℚ[vars]` and display it (variables as trailing string
+literals). Diagnostic command; the goal-closing tactic version is the
+project's first milestone. -/
+elab "#sage_factor " poly:str vars:str+ : command => do
+  let varsList := vars.toList.map (·.getString)
   let cert ← Bridge.factor poly.getString varsList
   let pretty := String.intercalate " * " (cert.factors.map (factorToString varsList))
   logInfo s!"certificate: {cert.unit} * {pretty}\n(check obligation: {poly.getString} = the above, by ring)"
