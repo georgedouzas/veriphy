@@ -87,10 +87,12 @@ installing it clones the repo and registers the skill globally:
 ```
 
 Then run Setup inside the installed plugin directory (the plugin root is the
-repo). From any project: `/prove <statement>`, or just ask "prove that …".
+repo). From any project: `/veriphy:prove <statement>` (plugin skills are
+namespaced by plugin name), or just ask "prove that …".
 
-**B. Manual copy (Claude Code, no plugin).** Clone the repo anywhere, run
-Setup, then:
+**B. Manual copy (Claude Code, no plugin).** Invoked as plain `/prove`
+(personal skills are not namespaced; prefer route A for `/veriphy:prove`).
+Clone the repo anywhere, run Setup, then:
 
 ```sh
 git clone <git-url-of-this-repo> ~/veriphy && cd ~/veriphy  # + Setup above
