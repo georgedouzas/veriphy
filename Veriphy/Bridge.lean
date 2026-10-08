@@ -19,6 +19,14 @@ structure Config where
   serverPath : String := "sage_bridge/server.py"
   deriving Repr
 
+/-- Resolve the daemon script: `$VERIPHY_SAGE_SERVER` if set, else the
+configured path (relative paths resolve against Lean's working directory, so
+set the env var when proving outside the Veriphy repo). -/
+def Config.resolveServerPath (cfg : Config) : IO String := do
+  match ← IO.getEnv "VERIPHY_SAGE_SERVER" with
+  | some p => return p
+  | none => return cfg.serverPath
+
 /-- A polynomial as a certificate-friendly term list: each term is a rational
 coefficient (as a string, e.g. `"-3/2"`) and one exponent per variable. -/
 structure Term where
@@ -43,9 +51,13 @@ A persistent daemon (kept warm across tactic calls) should replace this once
 the tactics stabilize; the protocol is already line-oriented to allow it. -/
 def request (cfg : Config := {}) (method : String) (params : Json := Json.null) :
     IO Json := do
+  let serverPath ← cfg.resolveServerPath
+  unless ← System.FilePath.pathExists serverPath do
+    throw <| IO.userError s!"veriphy: sage daemon script not found at \
+      '{serverPath}' — set VERIPHY_SAGE_SERVER to its absolute path"
   let child ← IO.Process.spawn {
     cmd := cfg.sageCmd
-    args := #["-python", cfg.serverPath]
+    args := #["-python", serverPath]
     stdin := .piped, stdout := .piped, stderr := .piped
   }
   let req := Json.mkObj
