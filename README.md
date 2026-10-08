@@ -56,6 +56,10 @@ responsibility; the tool keeps no state and opens no PRs.
 
 ## Setup
 
+Prerequisites: [SageMath](https://doc.sagemath.org/html/en/installation/)
+(tested with 10.9; `sage` must be on `PATH`) and the Lean toolchain manager
+[elan](https://leanprover-community.github.io/get_started.html).
+
 ```sh
 # 1. Lean toolchain (pinned in lean-toolchain)
 curl https://elan.lean-lang.org/elan-init.sh -sSf | sh
@@ -68,6 +72,40 @@ echo '{"id":1,"method":"ping"}' | sage -python sage_bridge/server.py
 echo '{"id":2,"method":"factor","params":{"poly":"x^4 - 1","vars":["x"]}}' \
   | sage -python sage_bridge/server.py
 ```
+
+## Installing the `prove` skill
+
+The agent skill works for any user, via any of three routes. All of them need
+the Setup above completed once (the skill checks and will walk you through it
+otherwise).
+
+**A. Claude Code plugin (recommended).** The repo is a Claude Code plugin;
+installing it clones the repo and registers the skill globally:
+
+```
+/plugin install <git-url-of-this-repo>
+```
+
+Then run Setup inside the installed plugin directory (the plugin root is the
+repo). From any project: `/prove <statement>`, or just ask "prove that …".
+
+**B. Manual copy (Claude Code, no plugin).** Clone the repo anywhere, run
+Setup, then:
+
+```sh
+git clone <git-url-of-this-repo> ~/veriphy && cd ~/veriphy  # + Setup above
+mkdir -p ~/.claude/skills && cp -r skills/prove ~/.claude/skills/
+export VERIPHY_HOME=~/veriphy   # put it in your shell profile
+```
+
+**C. Any other agent** (Cursor, Copilot, a plain LLM loop). The skill files
+are thin adapters; the actual logic is plain markdown at `prompts/prove.md`.
+Point your agent at that file, tell it where the repo is, and set
+`VERIPHY_SAGE_SERVER=<repo>/sage_bridge/server.py` for builds outside the
+repo. Nothing in the playbook is Claude-specific.
+
+Working *inside* this repo needs no installation: the project-scoped copy in
+`.claude/skills/` loads automatically.
 
 ## Protocol
 
