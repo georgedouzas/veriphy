@@ -28,13 +28,14 @@ score, or committing to the target repo beyond what the caller asked for.
    - *Round-trip*: informalize your formal statement back to English; compare
      with the original. Any semantic drift → redo.
    - *Identity test*: when the claim is (or reduces to) an identity, try the
-     bridge's `symbolic_check` first — symbolic equality under the stated
-     assumptions is strictly stronger than sampling and catches branch-cut and
-     measure-zero traps. If it returns `equal: null` (undecided) or the claim
-     doesn't fit, fall back to rendering the statement in Sage and evaluating
-     at ≥10 random parameter values satisfying the hypotheses. A
-     counterexample means your formalization (or the original claim) is
-     wrong — stop and report which.
+     bridge's `symbolic_check` first (`matrix_check` when matrices are
+     involved — representation identities, Clifford relations, determinant
+     formulas) — symbolic equality under the stated assumptions is strictly
+     stronger than sampling and catches branch-cut and measure-zero traps. If
+     it returns `equal: null` (undecided) or the claim doesn't fit, fall back
+     to rendering the statement in Sage and evaluating at ≥10 random parameter
+     values satisfying the hypotheses. A counterexample means your
+     formalization (or the original claim) is wrong — stop and report which.
 
 2. **Compile-fix.** Iterate on compiler errors until the statement type-checks
    with `sorry` as the proof. Use LSP/REPL/`lake build` feedback, never guess
@@ -49,9 +50,13 @@ score, or committing to the target repo beyond what the caller asked for.
    d. oracle: when stuck on *what the proof even is* — solving an equation
       system (a kernel computation, an equilibrium, a change of variables),
       finding the case split, locating the closed form — ask the bridge's
-      advisory methods (`solve`, `symbolic_check`). Their output is UNTRUSTED
-      guidance: never transcribe it into the proof; re-prove in Lean whatever
-      you take from it.
+      advisory methods (`solve`, `symbolic_check`, `matrix_check`). When the
+      exploration is session-shaped rather than query-shaped — deriving
+      representation matrices, testing a decomposition scheme on random
+      samples, generating Lean-ready tables — send a whole derivation script
+      through `run_script` and read back its structured `results`. All of it
+      is UNTRUSTED guidance: never transcribe it into the proof; re-prove in
+      Lean whatever you take from it.
    e. recursion: if a sub-lemma is missing, prove it first (lemmas only —
       never invent definitions; flag those to the caller).
    Budget: stop after ~30 min wall clock or 3 decomposition attempts.

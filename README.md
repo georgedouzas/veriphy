@@ -129,12 +129,19 @@ A `factor` response is a certificate: `unit` and `factors` (each a term list wit
 multiplicity). The Lean tactic rebuilds the product and closes `lhs = product`
 with `ring`. The daemon's output is never trusted.
 
-Two methods are **advisory**, not certificate-producing, and say so in their
+Four methods are **advisory**, not certificate-producing, and say so in their
 responses (`"advisory": true`): `symbolic_check` decides identities
 symbolically (with numeric-sampling fallback and counterexamples) for the
-playbook's formalization-time lie detector, and `solve` returns symbolic
-solution sets as proof-sketch guidance — e.g. the case split behind a kernel
-computation. Advisory output is never transcribed into a proof; the agent
+playbook's formalization-time lie detector; `matrix_check` makes the same
+decision for matrix-valued identities — Clifford relations, representation
+identities, determinant formulas — given named symbolic matrices; `solve`
+returns symbolic solution sets as proof-sketch guidance — e.g. the case split
+behind a kernel computation; and `run_script` runs a whole derivation session
+(loops, random trials, Lean-syntax generation) and returns its structured
+`results` dict plus captured stdout, under a timeout. `run_script` executes
+arbitrary Sage code with the daemon's own privileges — deliberately so: the
+daemon is an untrusted, user-launched oracle, and the trust boundary is the
+Lean kernel. Advisory output is never transcribed into a proof; the agent
 re-proves in Lean whatever it uses.
 
 ## Status
