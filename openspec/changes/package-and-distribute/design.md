@@ -42,6 +42,8 @@ Then use `git checkout -p`/`git restore` to keep Veriphy's own versions of `READ
 
 Because the template comes from the remote repository, `.copier-answers.yml` records `_src_path: gh:georgedouzas/copier-modern-python`, so `copier update` pulls new template tags from GitHub and never depends on a local checkout. It does a three-way merge from the recorded answers and template version, so local edits made after this commit survive later updates as ordinary diffs.
 
+Applying it surfaced a template bug: the generated `docs/generate_api.py` called `Path.relative_to` with several parts, which Python 3.14 rejects. It was fixed upstream and released as template 2.0.2, and the repo was moved to 2.0.2 with `copier update`, which merged cleanly.
+
 *Alternative:* generate into a temp directory and copy over selected files. Rejected: there would be no `.copier-answers.yml` baseline that matches the repo, so every later `copier update` would re-propose the skipped files as conflicts.
 
 ### D2. Package layout and Sage isolation (constitution-shaped)
