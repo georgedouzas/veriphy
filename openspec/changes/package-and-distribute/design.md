@@ -1,0 +1,147 @@
+# Design
+
+## Context
+
+The motivation is in proposal.md (Why). The current state below shapes the approach.
+
+- **Repo root holds the Lean project.** `lakefile.toml`, `lean-toolchain`, `Veriphy/` and `VeriphyTest/` are at the root, and the Lake `require` mechanism needs them there. Python lives in a loose `sage_bridge/` with no packaging.
+- **The bridge spawns one process per request.** `Veriphy/Bridge.lean` spawns `cfg.sageCmd -python <serverPath>` for every request, with `sageCmd := "sage"` and the server path from `VERIPHY_SAGE_SERVER` or a relative default. If the child dies, `getLine` returns `""` and the user sees a JSON parse error.
+- **Sage on this machine.** It is 10.9 on Python 3.14.3. `sage -pip` works, and its scripts directory (`/var/tmp/sage-10.9-current/local/bin`) is **not** on `PATH`, so a console script installed into Sage cannot be the default command. `python -m` under `sage -python` always works.
+- **The template.** `copier-modern-python` 2.0.1 (`_subdirectory: project`) generates:
+  - `pyproject.toml` (hatchling + hatch-vcs with uv; dynamic version), `src/<pkg>/{__init__.py,py.typed}`, `tests/`;
+  - `noxfile.py` with sessions `checks` (ruff, mypy, bandit, interrogate, pydoclint, pip-audit, deptry), `tests` (pytest + coverage), `docs`, `formatting`, `changelog` and `release`;
+  - `.github/workflows/{ci,doc,release}.yml`, properdocs docs, `renovate.json`, pre-commit, LICENSE, and an `openspec/` scaffold.
+
+  Its default Python range is `>=3.11, <3.14`, which excludes Sage's 3.14.
+- **External state.** PyPI `veriphy` is unclaimed. The GitHub remote is `georgedouzas/veriphy`, there are no tags, and `plugin.json` says 0.3.0.
+
+## Goals / Non-Goals
+
+**Goals:**
+- A user installs with `sage -pip install veriphy`, a Lake `require … @ "vX.Y.Z"`, and optionally the plugin, without cloning or setting environment variables.
+- The repo is generated from and kept in sync with the author's template.
+- Every release is CI-proven, including the full tactic suite against the built wheel, and carries one version everywhere.
+
+**Non-Goals:**
+- Making the daemon installable without Sage (passagemath). The author chose "inside existing Sage". The package is structured so a later change can add that (D2).
+- A persistent daemon. Still DESIGN.md §8 future work.
+- conda-forge or Docker images of Veriphy.
+- Changing tactics, the protocol (beyond additive version fields) or the trust model.
+
+## Decisions
+
+### D1. Apply the template in place, then restore Veriphy's files
+
+Run `copier copy --vcs-ref 2.0.1 gh:georgedouzas/copier-modern-python .` on a branch, with these answers:
+- `project_layout=library`, `package_manager=uv`, `publish_pypi=true`, `git_provider=GitHub`;
+- `repository_namespace=georgedouzas`, `repository_name=veriphy`, `python_package_distribution_name=veriphy`, `python_package_import_name=veriphy`;
+- `python_versions=">=3.11, <3.15"`, `spec_tool=openspec`, `include_dockerfile=false`;
+- the license and holder as the author chooses.
+
+Then use `git checkout -p`/`git restore` to keep Veriphy's own versions of `README.md`, `openspec/config.yaml` and `.gitignore`, merged by hand (the Lean `/.lake/` entry plus the template's Python entries). The template's `openspec/constitution.md` is kept if it adds value.
+
+Because the template comes from the remote repository, `.copier-answers.yml` records `_src_path: gh:georgedouzas/copier-modern-python`, so `copier update` pulls new template tags from GitHub and never depends on a local checkout. It does a three-way merge from the recorded answers and template version, so local edits made after this commit survive later updates as ordinary diffs.
+
+*Alternative:* generate into a temp directory and copy over selected files. Rejected: there would be no `.copier-answers.yml` baseline that matches the repo, so every later `copier update` would re-propose the skipped files as conflicts.
+
+### D2. Package layout and Sage isolation
+
+```
+src/veriphy/__init__.py      __version__ via importlib.metadata; imports nothing from Sage
+src/veriphy/py.typed
+src/veriphy/sage_server.py   the daemon (moved verbatim, plus D4's version fields)
+tests/test_sage_server.py    the unittest suite converted to pytest
+```
+
+- In `sage_server.py`, the Sage imports sit in one guarded block. If `import sage.all` fails, `main()` prints "veriphy's daemon must run under SageMath: `sage -python -m veriphy.sage_server`" and exits with status 2.
+- `[project.scripts] veriphy-sage-server = "veriphy.sage_server:main"`.
+- Sage is not a dependency. deptry is configured to ignore the `sage` import (DEP001), and mypy gets `ignore_missing_imports` for `sage.*`.
+
+Keeping Sage out of `import veriphy` lets build, lint and metadata tools run in a plain Python. A later passagemath extra would only add an optional dependency.
+
+### D3. Development and test environments against Sage's interpreter
+
+The `tests` nox session runs on Sage's Python:
+- `python=SAGE_PYTHON`, resolved once with `sage -python -c "import sys; print(sys.executable)"`;
+- `venv_params=["--system-site-packages"]`, so the venv sees Sage's site-packages.
+
+The template's other sessions (`checks` quality/security/docs, `formatting`, `docs`) keep the plain venv, because they never import Sage. Types run in the plain venv with the mypy override.
+
+For local development: `sage -pip install -e .`. That makes `sage -python -m veriphy.sage_server` resolve to the working tree, so `lake build VeriphyTest` exercises current code without `VERIPHY_SAGE_SERVER`.
+
+*Alternative:* run all tooling with `sage -pip`. Rejected because it pollutes Sage's environment with dev tools and diverges from the template's uv flow.
+
+### D4. Bridge resolution, start-up diagnostics and version check (`Veriphy/Bridge.lean`)
+
+`Config.resolve : IO (String × Array String)` picks the command:
+1. `exe := $VERIPHY_SAGE_CMD` or `"sage"`.
+2. If `$VERIPHY_SAGE_SERVER` is set, check that the path exists (otherwise an error naming the variable and the path) and run `exe -python <path>`.
+3. Otherwise run `exe -python -m veriphy.sage_server`.
+
+`request` handles failures:
+- A spawn failure becomes "could not start Sage (`<exe>`); install SageMath or set VERIPHY_SAGE_CMD".
+- An empty first stdout line means the daemon died. `request` reads stderr, truncated to 2 KB. If stderr contains `No module named 'veriphy'`, the error says to `sage -pip install veriphy==<Veriphy.version>`; otherwise it reports the stderr.
+
+For the version check:
+- Every daemon response envelope carries `"veriphy": "<version>"` (additive), and `ping`'s result also does. That way the check costs no extra request.
+- `request` records the version in an `IO.Ref` declared with `initialize`.
+- `Kit.run` compares it with `Veriphy.version` (a new `Veriphy/Version.lean` constant) and logs one warning per process, using a second `IO.Ref` flag.
+
+`initialize` refs are safe here: Veriphy is a compiled Lake library imported by the frontend, which runs module initializers. This is the same mechanism mathlib uses.
+
+### D5. Versioning
+
+- The tag `vX.Y.Z` is the source of truth. The Python version comes from hatch-vcs.
+- `Veriphy/Version.lean` and `.claude-plugin/plugin.json` are bumped in the release commit.
+- `scripts/check_versions.py` compares both with the tag, or in non-release CI with each other, and fails naming the file that disagrees.
+- The first release is `v0.4.0`. It continues from the plugin's 0.3.0, and this change is user-visible.
+
+### D6. CI layout (`.github/workflows/ci.yml`, adapted from the template)
+
+- **lean:** `ubuntu-latest`, no Sage. Runs `leanprover/lean-action` with `lake exe cache get`, then `lake build` and `lake build VeriphyTest.Kit`, plus `scripts/check_versions.py`.
+- **checks:** the template's quality/types/dependencies/security/docs matrix, unchanged apart from config (D2).
+- **integration:** a container `sagemath/sagemath:<10.x tag>`. The exact tag is pinned while applying, to the newest 10.x image available. Steps:
+  1. `uv build`, then `sage -pip install dist/*.whl`;
+  2. `sage -python -m pytest tests`;
+  3. install elan, `lake exe cache get`, `lake build VeriphyTest` (replay is on in the file).
+
+  `.lake` and `~/.elan` are cached with `actions/cache` keyed on `lake-manifest.json`.
+
+**PyPI comes last and uses the template's own support.** Answering `publish_pypi=true` already gives `release.yml` (uv build → GitHub release → `pypa/gh-action-pypi-publish` with trusted publishing). Veriphy adds exactly two things to it:
+- a `needs:` on the CI jobs;
+- a `check_versions.py --tag "$GITHUB_REF_NAME"` step before the build.
+
+Nothing else about publishing is custom. It is the final implementation step, after packaging, the bridge, CI and docs are proven locally and on Actions. The one-time trusted-publisher registration on pypi.org and the first tag are the author's follow-up.
+
+### D7. Docs and plugin
+
+- README Setup becomes three steps: SageMath, `sage -pip install veriphy`, and a Lake `require`. A "Developing Veriphy" section covers `sage -pip install -e .`, nox and `copier update`.
+- The `prove` skill's installation check becomes `echo '{"id":1,"method":"ping"}' | sage -python -m veriphy.sage_server`. Its `VERIPHY_SAGE_SERVER` instruction is dropped.
+- The plugin description is corrected (seven tactics plus `sage_certify`). The README recommends installing the plugin from the git URL, not a local clone, which avoids copying `.lake/`.
+- The template's properdocs site includes `docs/DESIGN.md` in its nav.
+
+## Risks / Trade-offs
+
+- **[Risk]** The in-place `copier copy` overwrites Veriphy files. → Do it on a branch, review `git diff` file by file, and use `git restore` for README, OpenSpec config and Lean files. A task lists exactly which files to keep.
+- **[Risk]** The SageMath Docker image tags or size (several GB) make the integration job slow or flaky. → Cache, run integration only on `main`, PRs and tags (not every branch push), and pin the image tag.
+- **[Risk]** Template tooling (pip-audit, deptry, interrogate) objects to the Sage-only module (missing docstrings, an undeclared `sage` import). → Configure exclusions in `pyproject.toml` rather than weaken the template. Docstring coverage is met by adding docstrings where they are missing.
+- **[Risk]** Users with an older Sage (Python < 3.11) cannot install. → This is documented. `requires-python >=3.11` matches the template minimum, and Sage 10.x ships Python 3.11 or newer.
+- **[Trade-off]** "Inside existing Sage" keeps users installing SageMath themselves, a multi-GB step. This was accepted for certainty. D2 leaves room for a passagemath route later.
+- **[Risk]** A Lean/daemon version skew between a Lake rev and a pip install. → The D4 warning, plus install docs that pin `veriphy==X.Y.Z` to the Lake rev.
+
+## Migration Plan
+
+1. Branch, run copier, restore Veriphy files, and commit the template baseline.
+2. Move the daemon and tests into `src/`/`tests/`, then `sage -pip install -e .`.
+3. Change the bridge (D4). `lake build VeriphyTest` must pass with no environment variables set.
+4. Versions, CI and docs.
+5. Last: wire PyPI publishing (the template's `release.yml` plus the two additions). Then the author merges, registers the trusted publisher and tags `v0.4.0`.
+
+Rollback before tagging is a branch revert. After tagging, a broken release is yanked on PyPI and fixed with `v0.4.1`. Lake users simply pin the previous rev.
+
+Developers' existing `VERIPHY_SAGE_SERVER=…/sage_bridge/server.py` stops working, and the error says so (spec: stale development path).
+
+## Open Questions
+
+- The license and copyright holder (answered by the author during the copier run). Every task works with any choice.
+- The exact `sagemath/sagemath` image tag, pinned while applying to the newest 10.x tag published.
