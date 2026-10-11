@@ -27,6 +27,7 @@ Sage finds; Lean checks; only the check is trusted.
 | `sage_sum` | closed form of `∑ k ∈ range n` (`#sage_sum`) | induction + `ring1`, kernel-only | **working** ✅ |
 | `sage_farkas` | Farkas multipliers (exact rational LP) for linear `=`/`≤`/`<` systems | `linear_combination` + `norm_num` | **working** ✅ |
 | `sage_exists` | rational witness for `∃ x₁ … xₙ, P` (equations, linear inequalities, `≠`) | `norm_num` on the witness | **working** ✅ |
+| `sage_certify` | a one-off certificate: an agent-written Sage script against the normalized goal | its checker family: `linear_combination` (± `sq_nonneg`, `norm_num`) or `norm_num` on a witness | **working** ✅ |
 | `sage_branch` | Lie-group branching rules | character polynomial identity | planned |
 
 `sage_sos [q₁, …, qₖ]` takes candidate squares: Sage finds exact rationals
@@ -52,9 +53,29 @@ constants or single-variable positive-definite quadratics (includes all
 perfect-square / even-power cases); wider SOS needs an exact SDP step — a
 known, bounded extension, not open-ended scope.
 
+`sage_certify identity|inequality|witness "<script>"` is for certificates no
+dedicated tactic finds. The script sees the goal and hypotheses already
+normalized (`R`, `x0, x1, …`, `hyps`, `goal`, `binders`) and assigns
+`certificate`, for example `{'squares': [(1/2, x0 - x1)]}` for `a * b ≤ (a^2 + b^2)/2`.
+The family's checker then verifies it. The emitted proof is the plain checker
+proof; the script never reaches committed files.
+
 Design rule: every tactic emits a `Try this:` replacement proof, so **committed
 files check with vanilla Lean + mathlib, no Sage installed**. Sage is an
 authoring-time tool only; CI never needs it.
+
+All tactics are built from one kit (`Veriphy/Kit/`): problem extraction,
+proof reconstruction, checker families, and the replay check. To add one, see
+[docs/DESIGN.md, "Adding a certificate"](docs/DESIGN.md#adding-a-certificate).
+Contributors run the tests with replay on (`set_option veriphy.checkReplay true`,
+already set in `VeriphyTest.lean`). Each emitted replacement is then
+re-parsed from its printed text and re-run with Sage disabled:
+
+```sh
+lake build VeriphyTest                               # tactics, live Sage, replay on
+lake build VeriphyTest.Kit                           # kit only, no Sage needed
+sage -python -m unittest sage_bridge/test_server.py  # daemon methods
+```
 
 ## Layers
 

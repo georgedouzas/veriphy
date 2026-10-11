@@ -5,8 +5,9 @@ The daemon is an UNTRUSTED oracle. This module only transports data; soundness
 lives entirely in the certificate checkers (`Veriphy/Tactic/*`), which must close
 every goal through the kernel (`ring`, `positivity`, `norm_num`, ...).
 
-STATUS: written against Lean v4.25.0 but not yet compiled (`lake build` pending
-toolchain install). Expect minor API fixes on first build.
+Every method is one `call`: a JSON request plus a decoder for its result. Tactics
+reach the daemon through `Veriphy.Kit.call` (which refuses during replay), not
+through this module directly.
 -/
 import Lean.Data.Json
 
@@ -71,30 +72,37 @@ def request (cfg : Config := {}) (method : String) (params : Json := Json.null) 
   | .ok (Json.str e) => throw <| IO.userError s!"sage daemon error: {e}"
   | _ => IO.ofExcept (json.getObjVal? "result")
 
-private def parseTerm (j : Json) : Except String Term := do
-  let coeff ← (← j.getObjVal? "coeff").getStr?
-  let exps ← (← j.getObjVal? "exps").getArr?
-  let exps ← exps.toList.mapM fun e => e.getNat?
-  return { coeff, exps }
+/-- One request, decoded: the shared path of every daemon method. -/
+def call {α : Type} (method : String) (params : Json) (decode : Json → Except String α)
+    (cfg : Config := {}) : IO α := do
+  let result ← request cfg method params
+  match decode result with
+  | .ok a => pure a
+  | .error e => throw <| IO.userError s!"veriphy: malformed '{method}' response from the daemon: {e}"
 
-private def parseFactor (j : Json) : Except String Factor := do
-  let terms ← (← j.getObjVal? "terms").getArr?
-  let terms ← terms.toList.mapM parseTerm
-  let mult ← (← j.getObjVal? "mult").getNat?
-  return { terms, mult }
+/-! ## Decoders -/
+
+def strs (l : List String) : Json := Json.arr (l.toArray.map Json.str)
+
+def field {α : Type} (j : Json) (k : String) (f : Json → Except String α) : Except String α := do
+  f (← j.getObjVal? k)
+
+def listOf {α : Type} (f : Json → Except String α) (j : Json) : Except String (List α) := do
+  (← j.getArr?).toList.mapM f
+
+def parseTerm (j : Json) : Except String Term := do
+  return { coeff := ← field j "coeff" (·.getStr?), exps := ← field j "exps" (listOf (·.getNat?)) }
+
+def parsePoly : Json → Except String (List Term) := listOf parseTerm
+
+/-! ## Certificate methods -/
 
 /-- Ask the daemon to factor `poly` (Sage/Python syntax) over `ℚ[vars]`. -/
-def factor (poly : String) (vars : List String) (cfg : Config := {}) :
-    IO FactorCert := do
-  let params := Json.mkObj
-    [ ("poly", Json.str poly)
-    , ("vars", Json.arr (vars.toArray.map Json.str)) ]
-  let result ← request cfg "factor" params
-  IO.ofExcept do
-    let unit ← (← result.getObjVal? "unit").getStr?
-    let factors ← (← result.getObjVal? "factors").getArr?
-    let factors ← factors.toList.mapM parseFactor
-    return ({ unit, factors } : FactorCert)
+def factor (poly : String) (vars : List String) (cfg : Config := {}) : IO FactorCert :=
+  call "factor" (Json.mkObj [("poly", Json.str poly), ("vars", strs vars)]) (cfg := cfg) fun r => do
+    let factors ← field r "factors" <| listOf fun j => do
+      return ({ terms := ← field j "terms" parsePoly, mult := ← field j "mult" (·.getNat?) } : Factor)
+    return { unit := ← field r "unit" (·.getStr?), factors }
 
 /-- One square `coeff * q^2` of a sum-of-squares certificate. -/
 structure Square where
@@ -102,51 +110,30 @@ structure Square where
   terms : List Term
   deriving Repr, Inhabited
 
+def parseSquare (j : Json) : Except String Square := do
+  return { coeff := ← field j "coeff" (·.getStr?), terms := ← field j "terms" parsePoly }
+
 /-- SOS certificate for `0 ≤ poly`: `poly = Σ coeffᵢ * qᵢ²`, all `coeffᵢ ≥ 0`. -/
 def sos (poly : String) (vars : List String) (cfg : Config := {}) (hints : List String := []) :
-    IO (List Square) := do
-  let params := Json.mkObj
-    [ ("poly", Json.str poly)
-    , ("vars", Json.arr (vars.toArray.map Json.str))
-    , ("hints", Json.arr (hints.toArray.map Json.str)) ]
-  let result ← request cfg "sos" params
-  IO.ofExcept do
-    let squares ← (← result.getObjVal? "squares").getArr?
-    squares.toList.mapM fun j => do
-      let coeff ← (← j.getObjVal? "coeff").getStr?
-      let terms ← (← j.getObjVal? "terms").getArr?
-      let terms ← terms.toList.mapM parseTerm
-      return ({ coeff, terms } : Square)
+    IO (List Square) :=
+  call "sos" (Json.mkObj [("poly", Json.str poly), ("vars", strs vars), ("hints", strs hints)])
+    (cfg := cfg) (field · "squares" (listOf parseSquare))
 
 /-- Rational roots of a univariate polynomial over ℚ (as rational strings). -/
-def roots (poly : String) (varName : String) (cfg : Config := {}) :
-    IO (List String) := do
-  let params := Json.mkObj [("poly", Json.str poly), ("var", Json.str varName)]
-  let result ← request cfg "roots" params
-  IO.ofExcept do
-    let rs ← (← result.getObjVal? "roots").getArr?
-    rs.toList.mapM (·.getStr?)
+def roots (poly : String) (varName : String) (cfg : Config := {}) : IO (List String) :=
+  call "roots" (Json.mkObj [("poly", Json.str poly), ("var", Json.str varName)]) (cfg := cfg)
+    (field · "roots" (listOf (·.getStr?)))
 
 /-- Ideal-membership certificate: cofactors `cᵢ` with `target = Σ cᵢ * hypᵢ`.
 Fails (daemon error) when `target` is not in the ideal of the hypotheses. -/
 def lincomb (target : String) (hyps : List String) (vars : List String)
-    (cfg : Config := {}) : IO (List (List Term)) := do
-  let params := Json.mkObj
-    [ ("target", Json.str target)
-    , ("hyps", Json.arr (hyps.toArray.map Json.str))
-    , ("vars", Json.arr (vars.toArray.map Json.str)) ]
-  let result ← request cfg "lincomb" params
-  IO.ofExcept do
-    let cs ← (← result.getObjVal? "cofactors").getArr?
-    cs.toList.mapM fun j => do (← j.getArr?).toList.mapM parseTerm
+    (cfg : Config := {}) : IO (List (List Term)) :=
+  call "lincomb" (Json.mkObj [("target", Json.str target), ("hyps", strs hyps), ("vars", strs vars)])
+    (cfg := cfg) (field · "cofactors" (listOf parsePoly))
 
 /-- Closed form of `∑_{k=0}^{n-1} f(k)` as a polynomial in `n` (term list). -/
-def sumClosedForm (summand : String) (cfg : Config := {}) : IO (List Term) := do
-  let params := Json.mkObj [("summand", Json.str summand)]
-  let result ← request cfg "sum" params
-  IO.ofExcept do
-    let ts ← (← result.getObjVal? "closed_form").getArr?
-    ts.toList.mapM parseTerm
+def sumClosedForm (summand : String) (cfg : Config := {}) : IO (List Term) :=
+  call "sum" (Json.mkObj [("summand", Json.str summand)]) (cfg := cfg) (field · "closed_form" parsePoly)
 
 /-- Linear Farkas certificate: multipliers `mᵢ` (rational strings), the constant `κ = Σ mᵢ pᵢ`, and
 whether a strict hypothesis carries positive weight. -/
@@ -156,27 +143,56 @@ structure FarkasCert where
   strict : Bool
   deriving Repr, Inhabited
 
-def farkas (polys rels vars : List String) (cfg : Config := {}) : IO FarkasCert := do
-  let params := Json.mkObj
-    [ ("polys", Json.arr (polys.toArray.map Json.str))
-    , ("rels", Json.arr (rels.toArray.map Json.str))
-    , ("vars", Json.arr (vars.toArray.map Json.str)) ]
-  let result ← request cfg "farkas" params
-  IO.ofExcept do
-    let ms ← (← result.getObjVal? "multipliers").getArr?
-    let multipliers ← ms.toList.mapM (·.getStr?)
-    let kappa ← (← result.getObjVal? "kappa").getStr?
-    let strict ← (← result.getObjVal? "strict").getBool?
-    return { multipliers, kappa, strict }
+def farkas (polys rels vars : List String) (cfg : Config := {}) : IO FarkasCert :=
+  call "farkas" (Json.mkObj [("polys", strs polys), ("rels", strs rels), ("vars", strs vars)])
+    (cfg := cfg) fun r => do
+      return { multipliers := ← field r "multipliers" (listOf (·.getStr?)),
+               kappa := ← field r "kappa" (·.getStr?), strict := ← field r "strict" (·.getBool?) }
 
 /-- Rational witness for a system of equations, linear inequalities and disequalities. -/
-def exists_ (vars eqs les lts nes : List String) (cfg : Config := {}) : IO (List String) := do
-  let arr (l : List String) := Json.arr (l.toArray.map Json.str)
-  let params := Json.mkObj
-    [ ("vars", arr vars), ("eqs", arr eqs), ("les", arr les), ("lts", arr lts), ("nes", arr nes) ]
-  let result ← request cfg "exists" params
-  IO.ofExcept do
-    let pt ← (← result.getObjVal? "point").getArr?
-    pt.toList.mapM (·.getStr?)
+def exists_ (vars eqs les lts nes : List String) (cfg : Config := {}) : IO (List String) :=
+  call "exists" (Json.mkObj
+      [("vars", strs vars), ("eqs", strs eqs), ("les", strs les), ("lts", strs lts), ("nes", strs nes)])
+    (cfg := cfg) (field · "point" (listOf (·.getStr?)))
+
+/-! ## Agent certificates -/
+
+/-- One named weight or cofactor (a polynomial) on a hypothesis. -/
+structure Weighted where
+  name : String
+  poly : List Term
+  deriving Repr, Inhabited
+
+/-- A validated `certify` result; which fields are set depends on the family. -/
+structure AgentCert where
+  /-- identity: cofactors; inequality: hypothesis weights. -/
+  weights : List Weighted := []
+  /-- inequality: `coeff * q²` terms. -/
+  squares : List Square := []
+  /-- inequality refuting `False`: the constant `κ` and whether a strict hypothesis is used. -/
+  kappa : Option String := none
+  strict : Bool := false
+  /-- witness: one rational per binder. -/
+  point : List String := []
+  deriving Repr, Inhabited
+
+/-- Run an agent-written Sage `script` against a serialized problem and return its certificate,
+validated against `family`'s schema (`identity`, `inequality`, `witness`). -/
+def certify (problem : Json) (family script : String) (cfg : Config := {}) : IO AgentCert :=
+  call "certify" (Json.mkObj
+      [("problem", problem), ("family", Json.str family), ("script", Json.str script)]) (cfg := cfg)
+    fun r => do
+      let weighted (k : String) : Except String (List Weighted) :=
+        match r.getObjVal? k with
+        | .ok j => listOf (fun j => do
+            return { name := ← field j "name" (·.getStr?), poly := ← field j "poly" parsePoly }) j
+        | .error _ => pure []
+      let opt {α} (k : String) (f : Json → Except String α) : Except String (Option α) :=
+        match r.getObjVal? k with | .ok j => some <$> f j | .error _ => pure none
+      return { weights := (← weighted "cofactors") ++ (← weighted "weights"),
+               squares := (← opt "squares" (listOf parseSquare)).getD [],
+               kappa := ← opt "kappa" (·.getStr?),
+               strict := (← opt "strict" (·.getBool?)).getD false,
+               point := (← opt "point" (listOf (·.getStr?))).getD [] }
 
 end Veriphy.Bridge

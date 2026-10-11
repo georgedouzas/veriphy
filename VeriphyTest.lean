@@ -7,6 +7,9 @@ design rule for committed proofs.
 import Mathlib.Data.Real.Basic
 import Veriphy
 
+-- every emitted replacement is re-parsed and re-run with Sage disabled
+set_option veriphy.checkReplay true
+
 -- Classic: the tactic rewrites the goal to its certified factored form.
 example (x : ℚ) : x ^ 4 - 1 = (x - 1) * (x + 1) * (x ^ 2 + 1) := by
   sage_factor
@@ -124,3 +127,63 @@ example (v₁ v₂ v₃ : ℚ) (h1 : v₁ + v₂ = 0) (h2 : v₂ + v₃ = 0) : v
 -- the emitted replacement must re-parse: a goal that needs the negation step
 example (u v : ℚ) (h1 : 0 ≤ u) (h2 : u + v = 0) (h3 : 0 ≤ v) : u ≤ 0 := by
   sage_farkas
+
+/-! ## Regressions (replay on) -/
+
+-- an inaccessible hypothesis is never collected (it could not be printed)
+example (x y : ℚ) (h : x = y) : x = y → x + 1 = y + 1 := by
+  intro
+  sage_lincomb
+
+-- only equality hypotheses: the LP has no inequality rows (empty-LP guard)
+example (x : ℚ) (h1 : x = 1) (h2 : x = 2) : False := by
+  sage_farkas
+
+-- a `≥` goal is negated too
+example (a b : ℚ) (h1 : a - b = 2) : a ≥ b := by
+  sage_farkas
+
+-- no inequalities: no LP is built
+example : ∃ x y : ℚ, x = y := by
+  sage_exists
+
+/-! ## sage_certify (agent-written certificates; the emitted proof is the plain checker proof) -/
+
+-- identity: the script computes the ideal-membership cofactors itself
+example (a b : ℝ) (h : a + b = 3) (h' : a * b = 2) : a ^ 2 + b ^ 2 = 5 := by
+  sage_certify identity "
+cs = goal.poly.lift(R.ideal([h.poly for h in hyps]))
+certificate = {'cofactors': {h.name: c for h, c in zip(hyps, cs)}}"
+
+-- inequality: a weighted square, with a constant slack absorbed by the checker
+example (a b : ℚ) : a * b ≤ (a ^ 2 + b ^ 2) / 2 := by
+  sage_certify inequality "certificate = {'squares': [(1/2, x0 - x1)]}"
+
+-- inequality refuting `False`: Farkas weights; the daemon reports κ = 2
+example (x y : ℚ) (h1 : x + y ≤ 1) (h2 : x - y = 3) (h3 : 0 ≤ y) : False := by
+  sage_certify inequality "certificate = {'h1': 1, 'h2': -1, 'h3': 2}"
+
+-- witness: an eigenvector from Sage's kernel computation
+example : ∃ v₁ v₂ : ℚ, 2 * v₁ + v₂ = 3 * v₁ ∧ v₁ + 2 * v₂ = 3 * v₂ ∧ v₁ ≠ 0 := by
+  sage_certify witness "
+M = matrix(QQ, [[-1, 1], [1, -1]])
+certificate = list(M.right_kernel().basis()[0])"
+
+-- family/goal mismatch: rejected by extraction, before Sage is contacted
+/--
+error: sage_certify witness: goal must be `∃ …`, got
+  x ≤ y
+-/
+#guard_msgs in
+example (x y : ℚ) (h : x ≤ y) : x ≤ y := by
+  sage_certify witness "certificate = []"
+
+-- weights that do not imply the goal: the checker rejects them
+example (a b : ℚ) : a * b ≤ (a ^ 2 + b ^ 2) / 2 := by
+  fail_if_success sage_certify inequality "certificate = {'squares': [(1/4, x0 - x1)]}"
+  linear_combination (1 / 2) * sq_nonneg (a - b)
+
+-- a witness of the wrong arity: rejected with the family named
+example : ∃ x y : ℚ, x + y = 1 := by
+  fail_if_success sage_certify witness "certificate = [1]"
+  exact ⟨1, 0, by norm_num⟩

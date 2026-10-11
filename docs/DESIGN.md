@@ -72,6 +72,50 @@ Remaining entries (`sage_branch` for Lie branching rules, full SOS) are built
 If this repo is still growing tactics without such demand, something went
 wrong.
 
+Since 2026-10 the catalog grows by **checker families**, not bespoke tactics.
+Every tactic was the same six stages, and only the Sage solve step (plus the
+choice of checker) differed. The shared stages now live in a kit (`Veriphy/Kit/`),
+and a fixed set of families covers the checkers: `identity` (`ring1`,
+`linear_combination`), `inequality` (`linear_combination` with `sq_nonneg`
+terms, or a `norm_num` refutation), `witness` (`norm_num`), `sum` (induction)
+and `cases` (`decide`). The agent can also write a one-off certificate itself:
+`sage_certify <family> "<sage script>"` runs a script against the normalized
+problem and checks its `certificate` with the family's checker, so a
+certificate that fits a family needs no new tactic. `blocked-missing-tactic`
+now means *no family can check it*. A new family is the unit of growth.
+
+### Adding a certificate
+
+| stage | what | where |
+|---|---|---|
+| 1. parse | goal + context → `Problem` (shared atom table, `=`/`≤`/`<`/`≠`, `∃` binders, conjuncts; inaccessible hypotheses skipped) | `withProblem` (`Kit/Problem.lean`) |
+| 2. request | typed daemon call, refused during replay | `Kit.run (Bridge.…)` / `Bridge.call` (`Kit/Replay.lean`, `Bridge.lean`) |
+| 3. solve | the certificate search, the only new code | `@method("name", vars=Vars, poly=Poly, …)` in `sage_bridge/server.py`, plus `exact_lp` |
+| 4. rebuild | rationals, polynomials, weighted hypothesis sums, witnesses, step blocks, all unhygienic | `Kit/Build.lean` |
+| 5. check | pick a family | `Checker.*` (`Kit/Family.lean`) |
+| 6. emit | run exactly what is printed, replay it if `veriphy.checkReplay`, emit one `Try this:` | `closeAndEmit` |
+
+A complete tactic (`∃ x, p x = 0` by a rational root):
+
+```lean
+elab ref:"my_root" : tactic => do
+  -- stages 1–4: extract, call Sage, rebuild — inside the problem's context
+  let root ← withProblem { tac := "my_root", allowExists := true } fun p => do
+    let .exists_ _ #[c] := p.goal | throwError "my_root: expected `∃ x, p x = q x`"
+    let some r := (← Kit.run "roots" (Bridge.roots c.poly "x0")).head?
+      | throwError "my_root: no rational root"
+    return r
+  -- stages 5–6: the witness family builds the proof; closeAndEmit runs it, replays it, emits it
+  closeAndEmit ref (← Checker.witness [root] 1)
+```
+
+Tests run with `set_option veriphy.checkReplay true`: every emitted replacement is
+pretty-printed, re-parsed and re-run on the original goal with the bridge
+disabled. That catches hygienic names (`h✝`), printer round-trip failures and
+hidden Sage calls. Daemon methods are tested with `sage -python -m unittest
+sage_bridge/test_server.py`, and the kit itself (Sage-free) with
+`lake build VeriphyTest.Kit`.
+
 ## 5. Product decision: a pure tool
 
 Veriphy is a tool, not a campaign:

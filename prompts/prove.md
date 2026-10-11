@@ -54,7 +54,26 @@ score, or committing to the target repo beyond what the caller asked for.
       `linarith` times out → `sage_farkas`; `∃` with a rational witness
       (eigenvector, feasible point, counterexample) → `sage_exists`;
       closed-form sum → `#sage_sum` then `sage_sum n`
-   d. oracle: when stuck on *what the proof even is* — solving an equation
+   d. one-off certificate: when no `sage_*` tactic fits but the proof has a
+      checkable shape, write the certificate yourself in Sage with
+      `sage_certify <family> "<script>"`. The script sees the goal and
+      context already normalized — `R`, generators `x0, x1, …` (one per atom;
+      `atoms` maps each to its Lean text), `hyps` as `Hyp(name, poly, rel)`
+      meaning `poly rel 0` with `rel ∈ eq/le/lt/ne`, `goal` (same shape),
+      `binders`/`body` for `∃` — and must assign `certificate`:
+      - `identity` (goal `a = b`): `{'cofactors': {hyp_name: poly}}`, checked
+        by `linear_combination`;
+      - `inequality` (goal `a ≤ b`, `a < b` or `False`):
+        `{'weights': {hyp_name: w}, 'squares': [(c, q), …]}` — `w ≥ 0`
+        rationals on `≤`/`<` hypotheses (polynomials allowed on `=`), `c ≥ 0`
+        — checked by `linear_combination` with `sq_nonneg q` terms (for
+        `False`, through the constant the combination reduces to);
+      - `witness` (goal `∃ x₁ … xₙ, …`): `[v₁, …, vₙ]` rationals, checked by
+        `norm_num`.
+      A wrong certificate just fails; the script's printed output comes back
+      in the error, so iterate. Commit the emitted `Try this:` (plain
+      `linear_combination` / `exact ⟨…⟩`), never the `sage_certify` call.
+   e. oracle: when stuck on *what the proof even is* — solving an equation
       system (a kernel computation, an equilibrium, a change of variables),
       finding the case split, locating the closed form — ask the bridge's
       advisory methods (`solve`, `symbolic_check`, `matrix_check`). When the
@@ -64,7 +83,7 @@ score, or committing to the target repo beyond what the caller asked for.
       through `run_script` and read back its structured `results`. All of it
       is UNTRUSTED guidance: never transcribe it into the proof; re-prove in
       Lean whatever you take from it.
-   e. recursion: if a sub-lemma is missing, prove it first (lemmas only —
+   f. recursion: if a sub-lemma is missing, prove it first (lemmas only —
       never invent definitions; flag those to the caller).
    Budget: stop after ~30 min wall clock or 3 decomposition attempts.
 
@@ -77,7 +96,9 @@ score, or committing to the target repo beyond what the caller asked for.
    - `blocked-library-gap`: the statement needs theory that doesn't exist yet
      (name precisely what);
    - `blocked-missing-tactic`: a Sage capability with a checkable certificate
-     would have closed it (describe the certificate);
+     would have closed it, and no checker family can verify that certificate
+     (so `sage_certify` could not express it either — describe the
+     certificate and the checker it would need);
    - `statement-suspect`: the numeric test contradicted the claim (give the
      counterexample).
 

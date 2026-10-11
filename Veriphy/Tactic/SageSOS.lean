@@ -14,12 +14,11 @@ with the daemon's explanation — that failure is ledger data, not a bug.
 `positivity` + `ring1` check closes the goal. Useful when the squares are known
 from structure (e.g. field strengths) but `p` does not factor.
 -/
-import Mathlib.Tactic.Positivity
-import Veriphy.Translate
+import Veriphy.Kit
 
 namespace Veriphy
 
-open Lean Elab Tactic Meta Bridge
+open Lean Elab Tactic Meta
 
 private def squareStx (atoms : Array (TSyntax `term)) (s : Bridge.Square) :
     TermElabM (TSyntax `term) := do
@@ -31,48 +30,30 @@ private def squareStx (atoms : Array (TSyntax `term)) (s : Bridge.Square) :
   else `($(← ratStx n d) * $sq)
 
 /-- Core of `sage_sos`, with optional hinted squares. -/
-def sageSOSCore (ref : Syntax) (hintStx : Array (TSyntax `term)) : TacticM Unit := withMainContext do
-  let goal ← getMainGoal
-  let tgt ← instantiateMVars (← goal.getType)
-  let p ← do
-    match tgt.getAppFnArgs with
-    | (``LE.le, #[_, _, z, p]) =>
-      unless natLit? z == some 0 do
-        throwError "sage_sos: goal must be `0 ≤ p` or `p ≥ 0`, got{indentExpr tgt}"
-      pure p
-    | (``GE.ge, #[_, _, p, z]) =>
-      unless natLit? z == some 0 do
-        throwError "sage_sos: goal must be `0 ≤ p` or `p ≥ 0`, got{indentExpr tgt}"
-      pure p
-    | _ => throwError "sage_sos: goal must be `0 ≤ p` or `p ≥ 0`, got{indentExpr tgt}"
+def sageSOSCore (hintStx : Array (TSyntax `term)) : TacticM Unit := withMainContext do
+  -- `0 ≤ p` and `p ≥ 0` both normalize to `0 - p ≤ 0`; the hints share the goal's atom table
+  let tgt ← instantiateMVars (← getMainTarget)
+  let some (_, z, p, .le) := relOf? tgt
+    | throwError "sage_sos: goal must be `0 ≤ p` or `p ≥ 0`, got{indentExpr tgt}"
+  unless natLit? z == some 0 do
+    throwError "sage_sos: goal must be `0 ≤ p` or `p ≥ 0`, got{indentExpr tgt}"
   let pTy ← inferType p
-  let hintExprs ← hintStx.toList.mapM fun h => Term.elabTermEnsuringType h pTy
-  let ((polyStr, hintStrs), atoms) ← (do
-      let ps ← exprToSage p
-      let hs ← hintExprs.mapM exprToSage
-      pure (ps, hs)).run #[]
-  if atoms.isEmpty then
-    throwError "sage_sos: no variables found in{indentExpr p}"
-  let squares ← Bridge.sos polyStr (sageVarNames atoms) {} hintStrs
-  let atomStx ← atoms.mapM fun a => PrettyPrinter.delab a
-  let sumStx : TSyntax `term ← liftM (m := TermElabM) do
-    let sqStx ← squares.toArray.mapM (squareStx atomStx)
-    if sqStx.isEmpty then `((0 : _)) else
-      sqStx[1:].foldlM (fun acc s => `($acc + $s)) sqStx[0]!
-  let pStx ← PrettyPrinter.delab p
-  -- the whole proof is the (Sage-free) replacement; running it IS the check
-  let leOf := mkIdent ``le_of_le_of_eq
-  let proof ← `(tactic|
-    exact $leOf (by positivity) (show $sumStx = $pStx by ring1))
-  evalTactic proof
-  Lean.Meta.Tactic.TryThis.addSuggestion ref proof
-    (header := "Sage-free replacement: ")
+  let hints ← hintStx.mapM fun h => Term.elabTermEnsuringType h pTy
+  let (sumStx, pStx) ← withProblem { tac := "sage_sos", goalRels := #[.le], extras := #[p] ++ hints }
+    fun prob => do
+      let squares ← Kit.run "sos" (Bridge.sos prob.extras[0]! prob.vars {} prob.extras[1:].toList)
+      let atoms ← prob.atomStx
+      let sqStx ← squares.toArray.mapM (squareStx atoms)
+      let sumStx ← if sqStx.isEmpty then `((0 : _)) else sqStx[1:].foldlM (fun acc s => `($acc + $s)) sqStx[0]!
+      return (sumStx, ← PrettyPrinter.delab p)
+  -- inequality family, squares form: `positivity` on the sum, `ring1` on the identity
+  closeAndEmit (← Checker.squares sumStx pStx)
 
 /-- `sage_sos` — close a goal `0 ≤ p` or `p ≥ 0` via a Sage sum-of-squares certificate (see the module doc). -/
 syntax (name := sageSOS) "sage_sos" (" [" term,* "]")? : tactic
 
 elab_rules : tactic
-  | `(tactic| sage_sos%$tk) => sageSOSCore tk #[]
-  | `(tactic| sage_sos%$tk [$hs,*]) => sageSOSCore tk hs.getElems
+  | `(tactic| sage_sos) => sageSOSCore #[]
+  | `(tactic| sage_sos [$hs,*]) => sageSOSCore hs.getElems
 
 end Veriphy

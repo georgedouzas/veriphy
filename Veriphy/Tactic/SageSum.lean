@@ -10,24 +10,17 @@ talks to the daemon, and committed proofs are Sage-free by construction.
 Works over fields (the closed forms have rational coefficients); for `ℕ`-valued
 sums state the theorem over `ℚ` with casts.
 -/
-import Mathlib.Algebra.BigOperators.Group.Finset.Basic
-import Mathlib.Tactic.Ring
-import Veriphy.Translate
+import Veriphy.Kit
 
 namespace Veriphy
 
-open Lean Bridge
+open Lean Elab Tactic Bridge
 
 /-- `sage_sum n` — prove `∑ k ∈ Finset.range n, f k = F n` (with `F` the
 correct closed form, e.g. found by `#sage_sum`) by induction on `n`:
-both the base case and `F (n+1) - F n = f n` close by `ring1`. -/
-macro "sage_sum " x:ident : tactic =>
-  `(tactic|
-    (induction $x:ident with
-      | zero => rw [Finset.sum_range_zero]; try push_cast
-                ring1
-      | succ n ih => rw [Finset.sum_range_succ, ih]; try push_cast
-                     ring1))
+both the base case and `F (n+1) - F n = f n` close by `ring1` (sum family). -/
+elab (name := sageSum) "sage_sum " x:ident : tactic => do
+  closeAndEmit (← Checker.sumInduction x)
 
 private def termToString (t : Bridge.Term) : String :=
   match t.exps with

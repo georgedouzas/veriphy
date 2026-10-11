@@ -1,10 +1,10 @@
 /-
 `sage_factor`: on a goal `lhs = rhs`, factor `lhs` through the Sage daemon,
-certify `lhs = factored` in-kernel with `ring1` (Sage untrusted), and leave the
-goal `factored = rhs`. Emits a `Try this:` replacement that checks without
+certify `lhs = factored` in-kernel with `ring1` (Sage untrusted, identity
+family), and leave the goal `factored = rhs`. Emits a `Try this:` replacement that checks without
 Sage. Also provides the `#sage_factor` diagnostic command.
 -/
-import Veriphy.Translate
+import Veriphy.Kit
 
 namespace Veriphy
 
@@ -34,33 +34,12 @@ private def certStx (atoms : Array (TSyntax `term)) (cert : FactorCert) :
 /-- `sage_factor` — on a goal `lhs = rhs`, replace it with `factored = rhs`
 where `factored` is Sage's factorization of `lhs`, certified in-kernel by
 `ring1`. Emits a `Try this:` replacement that checks without Sage. -/
-elab (name := sageFactor) ref:"sage_factor" : tactic => withMainContext do
-  let goal ← getMainGoal
-  let tgt ← instantiateMVars (← goal.getType)
-  let some (α, lhs, rhs) := tgt.eq?
-    | throwError "sage_factor: goal must be an equality, got{indentExpr tgt}"
-  let (polyStr, atoms) ← (exprToSage lhs).run #[]
-  if atoms.isEmpty then
-    throwError "sage_factor: no variables found in{indentExpr lhs}"
-  let cert ← Bridge.factor polyStr (sageVarNames atoms)
-  let atomStx ← atoms.mapM fun a => PrettyPrinter.delab a
-  let fstx ← certStx atomStx cert
-  let f ← Term.elabTermEnsuringType fstx (some α)
-  Term.synthesizeSyntheticMVarsNoPostponing
-  -- certify: lhs = factored, by ring1 (the only trusted step)
-  let hGoal ← mkFreshExprMVar (← mkEq lhs f)
-  let remaining ← Tactic.run hGoal.mvarId! (evalTactic (← `(tactic| ring1)))
-  unless remaining.isEmpty do
-    throwError "sage_factor: certificate check failed — `ring1` could not \
-      verify{indentExpr (← mkEq lhs f)}"
-  let newGoal ← mkFreshExprMVar (← mkEq f rhs)
-  goal.assign (← mkAppM ``Eq.trans #[hGoal, newGoal])
-  replaceMainGoal [newGoal.mvarId!]
-  let lhsStx ← PrettyPrinter.delab lhs
-  let trans := mkIdent ``Eq.trans
-  Lean.Meta.Tactic.TryThis.addSuggestion ref
-    (← `(tactic| refine $trans (show $lhsStx = $fstx by ring1) ?_))
-    (header := "Sage-free replacement: ")
+elab (name := sageFactor) "sage_factor" : tactic => do
+  let (lhs, factored) ← withProblem { tac := "sage_factor", goalRels := #[.eq], lhsOnly := true } fun p => do
+    let .rel g := p.goal | unreachable!
+    let cert ← Kit.run "factor" (Bridge.factor g.poly p.vars)
+    return (← PrettyPrinter.delab g.lhs, ← certStx (← p.atomStx) cert)
+  closeAndEmit (← Checker.rewriteBy lhs factored)
 
 /-! ## Diagnostic command -/
 

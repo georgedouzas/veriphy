@@ -5,8 +5,10 @@ defaultTargets = ["Veriphy"]
 name = "Veriphy"
 
 # Tactic tests exercise the live Sage daemon: `lake build VeriphyTest`
+# (`VeriphyTest.Kit` is Sage-free: `lake build VeriphyTest.Kit`)
 [[lean_lib]]
 name = "VeriphyTest"
+globs = ["VeriphyTest", "VeriphyTest.+"]
 
 [[require]]
 name = "mathlib"
