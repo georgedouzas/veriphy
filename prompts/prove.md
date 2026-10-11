@@ -17,9 +17,8 @@ score, or committing to the target repo beyond what the caller asked for.
   whose lakefile requires both it and Veriphy. Create one if needed; it is
   disposable.
 - Sage daemon answers:
-  `echo '{"id":1,"method":"ping"}' | sage -python sage_bridge/server.py`
-  (set `VERIPHY_SAGE_SERVER` to the script's absolute path when building
-  outside this repo).
+  `echo '{"id":1,"method":"ping"}' | sage -python -m veriphy.sage_server`
+  (if it is missing: `sage -pip install veriphy`).
 
 ## Loop
 

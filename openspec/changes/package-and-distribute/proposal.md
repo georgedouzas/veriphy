@@ -41,6 +41,6 @@ Packaging the daemon as a normal Python distribution and versioning all three pa
 - **New files:** `pyproject.toml`, `noxfile.py`, `.copier-answers.yml`, `LICENSE`, `.github/workflows/{ci,doc,release}.yml` (adapted), `renovate.json`, `properdocs.yml`, `.pre-commit-config.yaml`, `.editorconfig`, `CHANGELOG.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`.
 - **Moved:** `sage_bridge/server.py` → `src/veriphy/sage_server.py`; `sage_bridge/test_server.py` → `tests/test_sage_server.py`.
 - **Lean:** `Veriphy/Bridge.lean` (`Config`, process start, error on a failed start). No tactic changes.
-- **Docs:** `README.md`, `skills/prove/SKILL.md`, `prompts/prove.md` (the setup check), `docs/DESIGN.md` (§8 and a new distribution section), `.claude-plugin/*.json`.
+- **Docs:** `README.md`, `skills/prove/SKILL.md`, `prompts/prove.md` (the setup check), `docs/DESIGN.md`, moved into `docs/overview/user_guide.md` and `docs/development/index.md`, `.claude-plugin/*.json`.
 - **External:** a PyPI project `veriphy` (the name is currently free), trusted publishing configured on the GitHub repo `georgedouzas/veriphy`, and the first tag.
 - **Needs a decision from the author while applying:** the license. The template asks for it and nothing can be published without it.

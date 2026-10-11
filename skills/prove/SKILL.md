@@ -10,12 +10,11 @@ First resolve the **Veriphy repo root**, in this order:
    (the plugin root *is* a clone of the Veriphy repo);
 3. otherwise ask the user where they cloned Veriphy.
 
-Verify the installation once per session: `lake build` succeeds in the repo
-root, and the Sage daemon answers
-`echo '{"id":1,"method":"ping"}' | sage -python <root>/sage_bridge/server.py`.
-If either fails, walk the user through the Setup section of the repo's
-README.md instead of proceeding. When building Lean code outside the repo, set
-`VERIPHY_SAGE_SERVER=<root>/sage_bridge/server.py`.
+Verify the installation once per session: the Sage daemon answers
+`echo '{"id":1,"method":"ping"}' | sage -python -m veriphy.sage_server`, and
+the Lean workspace you prove in requires Veriphy and builds. If either fails,
+walk the user through the Setup section of the repo's README.md instead of
+proceeding.
 
 Then follow the playbook at `<root>/prompts/prove.md` exactly as written:
 formalize (with round-trip and numeric lie detection) → compile-fix → prove →

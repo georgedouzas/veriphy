@@ -27,9 +27,9 @@
 
 ## 5. Documentation and plugin
 
-- [ ] 5.1 Rewrite the README Setup as three install steps (SageMath, `sage -pip install veriphy`, a Lake `require … rev = "vX.Y.Z"`), plus a "Developing Veriphy" section (`sage -pip install -e .`, nox sessions, `copier update`, `VERIPHY_SAGE_SERVER` for daemon work). Verify that each command in the section runs as written in a fresh shell.
-- [ ] 5.2 Update `skills/prove/SKILL.md` and `prompts/prove.md` setup checks to `sage -python -m veriphy.sage_server`, and drop the `VERIPHY_SAGE_SERVER` instruction. Correct the `plugin.json` and `marketplace.json` descriptions (seven tactics plus `sage_certify`), and recommend installing the plugin from the git URL. Verify by running the skill's documented ping command.
-- [ ] 5.3 Update `docs/DESIGN.md`: §8 (packaging done; passagemath recorded as a future option) and a short "Distribution" section (three channels, one tag). Add `DESIGN.md` to the properdocs nav. Verify that `nox -s docs -- build` succeeds.
+- [x] 5.1 Rewrite the README Setup as three install steps (SageMath, `sage -pip install veriphy`, a Lake `require … rev = "vX.Y.Z"`), plus a "Developing Veriphy" section (`sage -pip install -e .`, nox sessions, `copier update`, `VERIPHY_SAGE_SERVER` for daemon work). Verify that each command in the section runs as written in a fresh shell.
+- [x] 5.2 Update `skills/prove/SKILL.md` and `prompts/prove.md` setup checks to `sage -python -m veriphy.sage_server`, and drop the `VERIPHY_SAGE_SERVER` instruction. Correct the `plugin.json` and `marketplace.json` descriptions (seven tactics plus `sage_certify`), and recommend installing the plugin from the git URL. Verify by running the skill's documented ping command.
+- [x] 5.3 Document distribution (three channels, one tag) and record passagemath as future work. Move `docs/DESIGN.md` into the template's docs locations (`docs/overview/user_guide.md` for the design rationale, `docs/development/index.md` for setup, adding a certificate and future work) and delete it. Verify that `nox -s docs -- build` succeeds.
 
 ## 6. Integration check
 

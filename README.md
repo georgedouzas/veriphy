@@ -66,22 +66,18 @@ authoring-time tool only; CI never needs it.
 
 All tactics are built from one kit (`Veriphy/Kit/`): problem extraction,
 proof reconstruction, checker families, and the replay check. To add one, see
-[docs/DESIGN.md, "Adding a certificate"](docs/DESIGN.md#adding-a-certificate).
+["Adding a certificate"](https://github.com/georgedouzas/veriphy/blob/main/docs/development/index.md#adding-a-certificate).
 Contributors run the tests with replay on (`set_option veriphy.checkReplay true`,
 already set in `VeriphyTest.lean`). Each emitted replacement is then
 re-parsed from its printed text and re-run with Sage disabled:
 
-```sh
-lake build VeriphyTest                               # tactics, live Sage, replay on
-lake build VeriphyTest.Kit                           # kit only, no Sage needed
-sage -python -m unittest sage_bridge/test_server.py  # daemon methods
-```
+See [Developing Veriphy](#developing-veriphy) for the commands.
 
 ## Layers
 
 ```
 Veriphy/            Layer 1 — Lean library (lake package): bridge client + certificate tactics
-sage_bridge/        Layer 2 — Sage daemon: JSON-RPC over stdio, returns structured ASTs + certificates
+src/veriphy/        Layer 2 — Sage daemon (the `veriphy` Python package): JSON-RPC over stdio, returns certificates
 prompts/            Layer 3 — the `prove` playbook (agent-agnostic markdown)
 .claude/skills/     Layer 3 — Claude Code adapter for the playbook
 ```
@@ -97,21 +93,54 @@ responsibility; the tool keeps no state and opens no PRs.
 ## Setup
 
 Prerequisites: [SageMath](https://doc.sagemath.org/html/en/installation/)
-(tested with 10.9; `sage` must be on `PATH`) and the Lean toolchain manager
+(10.x, with `sage` on `PATH`) and the Lean toolchain manager
 [elan](https://leanprover-community.github.io/get_started.html).
 
+1. Install the Sage daemon into SageMath:
+
+   ```sh
+   sage -pip install veriphy
+   echo '{"id":1,"method":"ping"}' | sage -python -m veriphy.sage_server
+   ```
+
+2. Require Veriphy from your Lake project (`lakefile.toml`), pinned to a release tag:
+
+   ```toml
+   [[require]]
+   name = "veriphy"
+   git = "https://github.com/georgedouzas/veriphy"
+   rev = "v0.4.0"
+   ```
+
+   then `lake update && lake exe cache get && lake build`, and `import Veriphy`.
+
+3. Optionally, install the `prove` skill (below).
+
+The tactics start the daemon as `sage -python -m veriphy.sage_server`. Set
+`VERIPHY_SAGE_CMD` to the `sage` executable if it is not on `PATH`. Committed
+proofs use only the emitted `Try this:` replacements, so building them needs
+neither Sage nor the `veriphy` package.
+
+## Developing Veriphy
+
+The repository is generated from
+[copier-modern-python](https://github.com/georgedouzas/copier-modern-python);
+`copier update` pulls template changes. The Python code follows
+`openspec/constitution.md`.
+
 ```sh
-# 1. Lean toolchain (pinned in lean-toolchain)
-curl https://elan.lean-lang.org/elan-init.sh -sSf | sh
-cd veriphy && lake exe cache get && lake build
-
-# 2. Sage daemon (requires a local SageMath; tested with 10.9)
-echo '{"id":1,"method":"ping"}' | sage -python sage_bridge/server.py
-
-# 3. Smoke test the bridge end to end
-echo '{"id":2,"method":"factor","params":{"poly":"x^4 - 1","vars":["x"]}}' \
-  | sage -python sage_bridge/server.py
+git clone https://github.com/georgedouzas/veriphy && cd veriphy
+lake exe cache get && lake build
+sage -pip install -e .   # the tactics now use this checkout's daemon
+uv sync                  # development tools
+uv run nox -s checks     # ruff, mypy, bandit, docstrings, dependency audit
+uv run nox -s tests      # pytest and doctests on SageMath's interpreter
+lake build VeriphyTest   # the tactic suite, live Sage, replay on
+lake build VeriphyTest.Kit  # the kit alone, no Sage needed
 ```
+
+To try daemon changes without reinstalling, point `VERIPHY_SAGE_SERVER` at a
+script that runs it, such as `src/veriphy/sage_server/__main__.py`.
 
 ## Installing the `prove` skill
 
@@ -122,19 +151,16 @@ otherwise).
 **A. Claude Code plugin (recommended).** The repo is both a Claude Code
 plugin and its own single-plugin marketplace
 (`.claude-plugin/marketplace.json`), since plugins install from marketplaces.
-Register the repo — a local clone's path or a git URL both work — then
-install:
+Register it by its git URL, then install:
 
 ```sh
-claude plugin marketplace add <path-to-local-clone-or-git-url>
+claude plugin marketplace add https://github.com/georgedouzas/veriphy
 claude plugin install veriphy@veriphy
 ```
 
-The install copies the repo into `~/.claude/plugins/cache/`, including a
-built `.lake/` if present (~8 GB). Either run Setup inside that cached copy,
-or delete its `.lake/` and set `VERIPHY_HOME` to a clone where Setup has
-already run (e.g. in the `env` block of `~/.claude/settings.json`) — the
-skill prefers `VERIPHY_HOME` over the plugin root. From any project:
+Use the git URL rather than a local clone: a clone's path also copies its
+built `.lake/` (about 8 GB) into the plugin cache. The skill needs only the
+Setup above (the daemon in Sage), not a built copy of this repository. From any project:
 `/veriphy:prove <statement>` (plugin skills are namespaced by plugin name),
 or just ask "prove that …".
 
@@ -150,9 +176,8 @@ export VERIPHY_HOME=~/veriphy   # put it in your shell profile
 
 **C. Any other agent** (Cursor, Copilot, a plain LLM loop). The skill files
 are thin adapters; the actual logic is plain markdown at `prompts/prove.md`.
-Point your agent at that file, tell it where the repo is, and set
-`VERIPHY_SAGE_SERVER=<repo>/sage_bridge/server.py` for builds outside the
-repo. Nothing in the playbook is Claude-specific.
+Point your agent at that file, with the Setup above done. Nothing in the
+playbook is Claude-specific.
 
 Working *inside* this repo needs no installation: the project-scoped copy in
 `.claude/skills/` loads automatically.
@@ -199,7 +224,7 @@ asks for them. The pipeline has cleared a real Physlib backlog item end to end
 
 The founding design discussion — why the skeptical architecture, the
 certificate-catalog scope boundary, the pure-tool decision — is recorded in
-[docs/DESIGN.md](docs/DESIGN.md).
+[the user guide](https://github.com/georgedouzas/veriphy/blob/main/docs/overview/user_guide.md).
 
 ## Relationship to LeanSage
 

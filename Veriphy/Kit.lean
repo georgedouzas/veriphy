@@ -7,7 +7,7 @@ The certificate kit: what a `sage_*` tactic is built from.
   Kit.Replay   `veriphy.checkReplay` and the guarded daemon entry point `Kit.run`/`Kit.call`
 
 A new certificate tactic is: `withProblem` → `Kit.run (Bridge.…)` → builders → a family's
-`Checker.*` → `closeAndEmit`. See docs/DESIGN.md, "Adding a certificate".
+`Checker.*` → `closeAndEmit`. See docs/development/index.md, "Adding a certificate".
 -/
 import Veriphy.Kit.Problem
 import Veriphy.Kit.Build
