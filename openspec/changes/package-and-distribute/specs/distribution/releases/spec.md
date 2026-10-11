@@ -6,19 +6,12 @@ Keeps Veriphy's three deliverables (the Lean library, the `veriphy` Python packa
 
 ## ADDED Requirements
 
-### Requirement: Single version from one tag
-A release SHALL be a git tag `vX.Y.Z` on `main`. From that tag:
-- the Python distribution version SHALL be `X.Y.Z`, derived from the tag rather than written in a file;
-- the Lean library's version constant SHALL be `X.Y.Z`;
-- `.claude-plugin/plugin.json` SHALL carry `X.Y.Z`.
+### Requirement: Versions come from the release tag
+A release SHALL be a git tag `vX.Y.Z` on `main`. The Python distribution's version SHALL be derived from that tag by hatch-vcs, never written in a file. The Lean library SHALL carry no version constant of its own: Lake consumers pin the tag as the dependency revision.
 
-#### Scenario: Consistent release
-- **WHEN** tag `v0.4.0` is pushed
-- **THEN** the built wheel is `veriphy-0.4.0`, `Veriphy.version` is `"0.4.0"`, and `plugin.json` says `"0.4.0"`
-
-#### Scenario: Forgotten plugin bump
-- **WHEN** tag `v0.4.0` is pushed while `plugin.json` still says `0.3.0`
-- **THEN** the release workflow fails before publishing anything, naming the mismatched file
+#### Scenario: Wheel version from the tag
+- **WHEN** tag `v0.4.0` is pushed and the release workflow builds the package
+- **THEN** the built wheel is `veriphy-0.4.0`, and no file in the repository was edited to set that version
 
 ### Requirement: Lake consumption by tag
 Each release tag SHALL be usable as a Lake dependency revision, through `[[require]] name = "veriphy"`, `git = "https://github.com/georgedouzas/veriphy"` and `rev = "vX.Y.Z"`. The Lean package SHALL stay at the repository root and SHALL declare its mathlib revision so dependents resolve a compatible mathlib.

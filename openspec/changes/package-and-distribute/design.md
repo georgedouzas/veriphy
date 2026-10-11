@@ -97,25 +97,16 @@ For local development: `sage -pip install -e .`. That makes `sage -python -m ver
 
 `request` handles failures:
 - A spawn failure becomes "could not start Sage (`<exe>`); install SageMath or set VERIPHY_SAGE_CMD".
-- An empty first stdout line means the daemon died. `request` reads stderr, truncated to 2 KB. If stderr contains `No module named 'veriphy'`, the error says to `sage -pip install veriphy==<Veriphy.version>`; otherwise it reports the stderr.
+- An empty first stdout line means the daemon died. `request` reads stderr, truncated to 2 KB. If stderr contains `No module named 'veriphy'`, the error says to `sage -pip install veriphy`; otherwise it reports the stderr. A non-JSON first line is treated the same way, and the executable is checked to exist (a path, or a name on `PATH`) before spawning.
 
-For the version check:
-- Every daemon response envelope carries `"veriphy": "<version>"` (additive), and `ping`'s result also does. That way the check costs no extra request.
-- `request` records the version in an `IO.Ref` declared with `initialize`.
-- `Kit.run` compares it with `Veriphy.version` (a new `Veriphy/Version.lean` constant) and logs one warning per process, using a second `IO.Ref` flag.
-
-`initialize` refs are safe here: Veriphy is a compiled Lake library imported by the frontend, which runs module initializers. This is the same mechanism mathlib uses.
 
 ### D5. Versioning
 
-- The tag `vX.Y.Z` is the source of truth. The Python version comes from hatch-vcs.
-- `Veriphy/Version.lean` and `.claude-plugin/plugin.json` are bumped in the release commit.
-- `scripts/check_versions.py` compares both with the tag, or in non-release CI with each other, and fails naming the file that disagrees.
-- The first release is `v0.4.0`. It continues from the plugin's 0.3.0, and this change is user-visible.
+Versioning is left to hatch-vcs: the tag `vX.Y.Z` is the only place a version is written, and the Python version is derived from it. The Lean library carries no version constant, since Lake consumers pin the same tag as `rev`, and nothing compares Lean and daemon versions at run time. The daemon still reports hatch's version in `ping` and each envelope, purely as information. The first release is `v0.4.0`.
 
 ### D6. CI layout (`.github/workflows/ci.yml`, adapted from the template)
 
-- **lean:** `ubuntu-latest`, no Sage. Runs `leanprover/lean-action` with `lake exe cache get`, then `lake build` and `lake build VeriphyTest.Kit`, plus `scripts/check_versions.py`.
+- **lean:** `ubuntu-latest`, no Sage. Runs `leanprover/lean-action` with `lake exe cache get`, then `lake build` and `lake build VeriphyTest.Kit`.
 - **checks:** the template's quality/types/dependencies/security/docs matrix, unchanged apart from config (D2).
 - **integration:** a container `sagemath/sagemath:<10.x tag>`. The exact tag is pinned while applying, to the newest 10.x image available. Steps:
   1. `uv build`, then `sage -pip install dist/*.whl`;
@@ -124,9 +115,7 @@ For the version check:
 
   `.lake` and `~/.elan` are cached with `actions/cache` keyed on `lake-manifest.json`.
 
-**PyPI comes last and uses the template's own support.** Answering `publish_pypi=true` already gives `release.yml` (uv build → GitHub release → `pypa/gh-action-pypi-publish` with trusted publishing). Veriphy adds exactly two things to it:
-- a `needs:` on the CI jobs;
-- a `check_versions.py --tag "$GITHUB_REF_NAME"` step before the build.
+**PyPI comes last and uses the template's own support.** Answering `publish_pypi=true` already gives `release.yml` (uv build → GitHub release → `pypa/gh-action-pypi-publish` with trusted publishing). Veriphy adds exactly one thing to it: a `needs:` on the CI jobs.
 
 Nothing else about publishing is custom. It is the final implementation step, after packaging, the bridge, CI and docs are proven locally and on Actions. The one-time trusted-publisher registration on pypi.org and the first tag are the author's follow-up.
 
@@ -157,7 +146,6 @@ Nothing else about publishing is custom. It is the final implementation step, af
 - **[Risk]** Users with an older Sage (Python < 3.11) cannot install. → This is documented. `requires-python >=3.11` matches the template minimum, and Sage 10.x ships Python 3.11 or newer.
 - **[Risk]** The compliance refactor of a ~700-line daemon could change behavior. → Port the existing tests first (names and structure per the constitution) and keep them green after every step. The Lean suite (`lake build VeriphyTest`) is the end-to-end check.
 - **[Trade-off]** "Inside existing Sage" keeps users installing SageMath themselves, a multi-GB step. This was accepted for certainty. D2 leaves room for a passagemath route later.
-- **[Risk]** A Lean/daemon version skew between a Lake rev and a pip install. → The D4 warning, plus install docs that pin `veriphy==X.Y.Z` to the Lake rev.
 
 ## Migration Plan
 
@@ -165,7 +153,7 @@ Nothing else about publishing is custom. It is the final implementation step, af
 2. Move the daemon and tests into `src/`/`tests/`, then `sage -pip install -e .`.
 3. Change the bridge (D4). `lake build VeriphyTest` must pass with no environment variables set.
 4. Versions, CI and docs.
-5. Last: wire PyPI publishing (the template's `release.yml` plus the two additions). Then the author merges, registers the trusted publisher and tags `v0.4.0`.
+5. Last: wire PyPI publishing (the template's `release.yml` plus the CI gate). Then the author merges, registers the trusted publisher and tags `v0.4.0`.
 
 Rollback before tagging is a branch revert. After tagging, a broken release is yanked on PyPI and fixed with `v0.4.1`. Lake users simply pin the previous rev.
 

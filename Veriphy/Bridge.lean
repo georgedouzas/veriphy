@@ -1,5 +1,6 @@
 /-
-Veriphy bridge client: talks JSON-RPC to the Sage daemon (`sage_bridge/server.py`).
+Veriphy bridge client: talks JSON-RPC to the Sage daemon (the `veriphy` Python package,
+started as `sage -python -m veriphy.sage_server`).
 
 The daemon is an UNTRUSTED oracle. This module only transports data; soundness
 lives entirely in the certificate checkers (`Veriphy/Tactic/*`), which must close
@@ -16,17 +17,25 @@ namespace Veriphy.Bridge
 open Lean (Json)
 
 structure Config where
+  /-- The Sage executable; `$VERIPHY_SAGE_CMD` overrides it. -/
   sageCmd : String := "sage"
-  serverPath : String := "sage_bridge/server.py"
+  /-- The daemon module, installed into Sage with `sage -pip install veriphy`. -/
+  module : String := "veriphy.sage_server"
   deriving Repr
 
-/-- Resolve the daemon script: `$VERIPHY_SAGE_SERVER` if set, else the
-configured path (relative paths resolve against Lean's working directory, so
-set the env var when proving outside the Veriphy repo). -/
-def Config.resolveServerPath (cfg : Config) : IO String := do
+/-- The command line that starts the daemon: `<sage> -python -m veriphy.sage_server`, with
+`$VERIPHY_SAGE_CMD` replacing `<sage>`, or `<sage> -python <script>` when `$VERIPHY_SAGE_SERVER`
+names a development copy of the daemon. -/
+def Config.resolve (cfg : Config) : IO (String × Array String) := do
+  let exe := (← IO.getEnv "VERIPHY_SAGE_CMD").getD cfg.sageCmd
   match ← IO.getEnv "VERIPHY_SAGE_SERVER" with
-  | some p => return p
-  | none => return cfg.serverPath
+  | some path =>
+    unless ← System.FilePath.pathExists path do
+      throw <| IO.userError s!"veriphy: VERIPHY_SAGE_SERVER points at '{path}', which does not \
+        exist — fix the path, or unset VERIPHY_SAGE_SERVER to use the installed daemon \
+        (`sage -pip install veriphy`)"
+    return (exe, #["-python", path])
+  | none => return (exe, #["-python", "-m", cfg.module])
 
 /-- A polynomial as a certificate-friendly term list: each term is a rational
 coefficient (as a string, e.g. `"-3/2"`) and one exponent per variable. -/
@@ -47,27 +56,39 @@ structure FactorCert where
   factors : List Factor
   deriving Repr, Inhabited
 
+/-- Why the daemon gave no answer, from its stderr: a missing package names the install command. -/
+private def startupFailure (exe : String) (stderr : String) : IO.Error :=
+  let err := (stderr.take 2000).trim
+  if (stderr.splitOn "No module named 'veriphy'").length > 1 then
+    IO.userError s!"veriphy: the daemon module is not installed in Sage ('{exe}'); run \
+      `sage -pip install veriphy`"
+  else
+    IO.userError s!"veriphy: the Sage daemon exited before answering ('{exe}'):\n{err}"
+
+/-- Is `exe` runnable: an existing path, or a name found on `$PATH`? -/
+private def executableExists (exe : String) : IO Bool := do
+  if exe.contains '/' then return ← System.FilePath.pathExists exe
+  let dirs := ((← IO.getEnv "PATH").getD "").splitOn ":"
+  dirs.anyM fun dir => System.FilePath.pathExists (System.FilePath.mk dir / exe)
+
 /-- Send one request to a freshly spawned daemon and read one response line.
 A persistent daemon (kept warm across tactic calls) should replace this once
 the tactics stabilize; the protocol is already line-oriented to allow it. -/
 def request (cfg : Config := {}) (method : String) (params : Json := Json.null) :
     IO Json := do
-  let serverPath ← cfg.resolveServerPath
-  unless ← System.FilePath.pathExists serverPath do
-    throw <| IO.userError s!"veriphy: sage daemon script not found at \
-      '{serverPath}' — set VERIPHY_SAGE_SERVER to its absolute path"
-  let child ← IO.Process.spawn {
-    cmd := cfg.sageCmd
-    args := #["-python", serverPath]
-    stdin := .piped, stdout := .piped, stderr := .piped
-  }
+  let (exe, args) ← cfg.resolve
+  unless ← executableExists exe do
+    throw <| IO.userError s!"veriphy: could not start Sage: '{exe}' is not an executable on PATH — \
+      install SageMath, or set VERIPHY_SAGE_CMD to the sage executable"
+  let child ← IO.Process.spawn { cmd := exe, args, stdin := .piped, stdout := .piped, stderr := .piped }
   let req := Json.mkObj
     [("id", Json.num 1), ("method", Json.str method), ("params", params)]
   let (stdin, child) ← child.takeStdin
   stdin.putStr (req.compress ++ "\n")
   stdin.flush
   let line ← child.stdout.getLine
-  let json ← IO.ofExcept (Json.parse line)
+  let .ok json := Json.parse line
+    | throw (startupFailure exe (line ++ (← child.stderr.readToEnd)))
   match json.getObjVal? "error" with
   | .ok (Json.str e) => throw <| IO.userError s!"sage daemon error: {e}"
   | _ => IO.ofExcept (json.getObjVal? "result")

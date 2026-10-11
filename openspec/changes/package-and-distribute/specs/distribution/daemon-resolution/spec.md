@@ -36,18 +36,11 @@ If the daemon process cannot be started, or exits before answering, the tactic S
 
 #### Scenario: Package not installed in Sage
 - **WHEN** Sage is on `PATH` but `veriphy` is not installed in it
-- **THEN** the error says the daemon module is missing and to run `sage -pip install veriphy` (matching the Lean library's version)
+- **THEN** the error says the daemon module is missing and to run `sage -pip install veriphy`
 
 #### Scenario: Sage missing
 - **WHEN** neither `sage` on `PATH` nor `VERIPHY_SAGE_CMD` resolves to an executable
 - **THEN** the error says Sage could not be started, and names `VERIPHY_SAGE_CMD`
-
-### Requirement: Version agreement warning
-When the daemon's reported `veriphy` version differs from the Lean library's version, the bridge SHALL still proceed and SHALL log a warning that names both versions, at most once per Lean process.
-
-#### Scenario: Mismatched install
-- **WHEN** Lean Veriphy `0.4.0` talks to a daemon reporting `0.3.9`
-- **THEN** the tactic runs normally and a warning names both versions
 
 ### Requirement: Committed proofs stay Sage-free
 Resolution changes SHALL NOT affect proofs that use only emitted replacements. They SHALL elaborate with no Sage and no `veriphy` Python package present.
