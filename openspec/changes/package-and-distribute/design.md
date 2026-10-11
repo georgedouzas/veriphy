@@ -44,20 +44,35 @@ Because the template comes from the remote repository, `.copier-answers.yml` rec
 
 *Alternative:* generate into a temp directory and copy over selected files. Rejected: there would be no `.copier-answers.yml` baseline that matches the repo, so every later `copier update` would re-propose the skipped files as conflicts.
 
-### D2. Package layout and Sage isolation
+### D2. Package layout and Sage isolation (constitution-shaped)
+
+The author adopted the template's `openspec/constitution.md` as binding and asked for compliance in this change (D8). It fixes the package shape: subpackages only at the top level, shared leaves in `core`, private implementation modules, `__all__` surfaces, and imports that run downward.
 
 ```
-src/veriphy/__init__.py      __version__ via importlib.metadata; imports nothing from Sage
-src/veriphy/py.typed
-src/veriphy/sage_server.py   the daemon (moved verbatim, plus D4's version fields)
-tests/test_sage_server.py    the unittest suite converted to pytest
+src/veriphy/__init__.py                 docstring + __all__: __version__, the errors (Sage-free)
+src/veriphy/core/__init__.py            re-exports __version__ and the named exceptions
+src/veriphy/core/_errors.py             VeriphyError, ParamError, MethodError, ScriptError, CertificateError,
+                                        SageUnavailableError
+src/veriphy/core/_version.py            __version__ via importlib.metadata
+src/veriphy/oracle/__init__.py          the Sage-backed surface: METHODS, method, coercers, encode, exact_lp, handle
+src/veriphy/oracle/_registry.py         @method, the coercers, METHODS
+src/veriphy/oracle/_encoding.py         encode, poly_to_terms
+src/veriphy/oracle/_lp.py               exact_lp
+src/veriphy/oracle/_certificates.py     factor, sos, roots, lincomb, sum, farkas, exists
+src/veriphy/oracle/_scripts.py          run_script, certify (and the shared script runner)
+src/veriphy/oracle/_symbolic.py         symbolic_check, solve, matrix_check
+src/veriphy/oracle/_protocol.py         handle (one request line to one response)
+src/veriphy/sage_server/__init__.py     surface package: re-exports main alone
+src/veriphy/sage_server/__main__.py     `python -m veriphy.sage_server`
+src/veriphy/sage_server/_main.py        main: the lazy import of `veriphy.oracle` (Sage), the stdio loop
+tests/…                                 mirrors src/ (core/, oracle/, sage_server/), pytest, test_<function>_<behavior>
 ```
 
-- In `sage_server.py`, the Sage imports sit in one guarded block. If `import sage.all` fails, `main()` prints "veriphy's daemon must run under SageMath: `sage -python -m veriphy.sage_server`" and exits with status 2.
+- `veriphy` and `veriphy.core` never import Sage. `veriphy.oracle` does, at module top.
+- `sage_server._main.main` imports `veriphy.oracle` lazily. This is the constitution's one allowed lazy import, deferring an optional dependency, and it carries a suppression with that reason. If the import fails, `main` raises nothing: it prints the "must run under SageMath" message and exits with status 2.
 - `[project.scripts] veriphy-sage-server = "veriphy.sage_server:main"`.
-- Sage is not a dependency. deptry is configured to ignore the `sage` import (DEP001), and mypy gets `ignore_missing_imports` for `sage.*`.
-
-Keeping Sage out of `import veriphy` lets build, lint and metadata tools run in a plain Python. A later passagemath extra would only add an optional dependency.
+- Sage is not a dependency. deptry ignores the `sage` import (DEP001), and mypy gets `ignore_missing_imports` for `sage.*`.
+- The protocol, method names, parameters and result shapes are unchanged (daemon-package spec). Only the code's organization, typing, docstrings and exception types change.
 
 ### D3. Development and test environments against Sage's interpreter
 
@@ -120,12 +135,25 @@ Nothing else about publishing is custom. It is the final implementation step, af
 - The plugin description is corrected (seven tactics plus `sage_certify`). The README recommends installing the plugin from the git URL, not a local clone, which avoids copying `.lake/`.
 - The template's properdocs site includes `docs/DESIGN.md` in its nav.
 
+### D8. Constitution adoption
+
+- Keep the template's `openspec/constitution.md` and its `config.yaml` `context:` line, which makes it binding.
+- Fill in the Project Profile for Veriphy:
+  - the ecosystem contract is the daemon's JSON-lines protocol and the `certificates/*` and `distribution/*` specs;
+  - surface packages: `veriphy.sage_server` (a runner) and `veriphy.oracle` (an importer);
+  - Sage is an optional, undeclared runtime that is always lazily imported;
+  - the Lean code follows mathlib conventions and is gated by `lake build`/`VeriphyTest`, not by the Python gate.
+- The Python rules apply to `src/` and `tests/`.
+- The daemon is refactored to comply as part of this change: the layout (D2), named exceptions from `core`, complete type annotations under mypy, docstrings with Args/Returns/Raises, doctests on the public API (run under Sage), no explanatory comments, and the test tree mirroring the source tree.
+- Behavior is pinned by the existing 38 tests, ported first and kept green through the refactor.
+
 ## Risks / Trade-offs
 
 - **[Risk]** The in-place `copier copy` overwrites Veriphy files. → Do it on a branch, review `git diff` file by file, and use `git restore` for README, OpenSpec config and Lean files. A task lists exactly which files to keep.
 - **[Risk]** The SageMath Docker image tags or size (several GB) make the integration job slow or flaky. → Cache, run integration only on `main`, PRs and tags (not every branch push), and pin the image tag.
 - **[Risk]** Template tooling (pip-audit, deptry, interrogate) objects to the Sage-only module (missing docstrings, an undeclared `sage` import). → Configure exclusions in `pyproject.toml` rather than weaken the template. Docstring coverage is met by adding docstrings where they are missing.
 - **[Risk]** Users with an older Sage (Python < 3.11) cannot install. → This is documented. `requires-python >=3.11` matches the template minimum, and Sage 10.x ships Python 3.11 or newer.
+- **[Risk]** The compliance refactor of a ~700-line daemon could change behavior. → Port the existing tests first (names and structure per the constitution) and keep them green after every step. The Lean suite (`lake build VeriphyTest`) is the end-to-end check.
 - **[Trade-off]** "Inside existing Sage" keeps users installing SageMath themselves, a multi-GB step. This was accepted for certainty. D2 leaves room for a passagemath route later.
 - **[Risk]** A Lean/daemon version skew between a Lake rev and a pip install. → The D4 warning, plus install docs that pin `veriphy==X.Y.Z` to the Lake rev.
 
