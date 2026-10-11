@@ -13,6 +13,7 @@ nox.options.error_on_external_run = True
 nox.options.reuse_existing_virtualenvs = True
 
 PYTHON_VERSIONS: list[str] = ['3.11', '3.12', '3.13', '3.14']
+
 FILES: list[str] = ['src', 'tests', 'docs', 'noxfile.py']
 CHANGELOG_ARGS: dict[str, Any] = {
     'repository': '.',
@@ -147,23 +148,25 @@ def checks(session: nox.Session, file: str) -> None:
         session.run('deptry', 'src', 'tests')
 
 
-@nox.session(python=PYTHON_VERSIONS)
+@nox.session(python=False)
 def tests(session: nox.Session) -> None:
-    """Run tests and coverage.
+    """Run tests, doctests and coverage in a venv over SageMath's interpreter.
 
     Arguments:
         session: The nox session.
     """
-    session.run('uv', 'sync', '--active', external=True)
-    env = {'COVERAGE_FILE': f'.coverage.{session.python}'}
-    if session.posargs:
-        session.run('pytest', '-n', 'auto', '-k', *session.posargs, 'tests', env=env)
-    else:
-        session.run('pytest', '-n', 'auto', 'tests', env=env)
-    session.run('coverage', 'combine')
-    session.run('coverage', 'report')
-    session.run('coverage', 'html')
-    session.run('coverage', 'xml')
+    sage = shutil.which('sage')
+    if sage is None:
+        session.skip('the tests need SageMath on PATH (`sage`)')
+    venv = Path(session.create_tmp()) / 'sage-venv'
+    if not (venv / 'bin' / 'python').exists():
+        session.run(sage, '-python', '-m', 'venv', '--system-site-packages', str(venv), external=True)
+    env = {'VIRTUAL_ENV': str(venv)}
+    session.run('uv', 'sync', '--active', env=env, external=True)
+    selection = ['-k', *session.posargs] if session.posargs else []
+    session.run(str(venv / 'bin' / 'pytest'), '-n', 'auto', *selection, 'tests', 'src', env=env, external=True)
+    for step in (['report'], ['html'], ['xml']):
+        session.run(str(venv / 'bin' / 'coverage'), *step, env=env, external=True)
 
 
 @nox.session

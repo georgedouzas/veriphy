@@ -28,6 +28,9 @@ classifiers = [
 ]
 dependencies = []
 
+[project.scripts]
+veriphy-sage-server = "veriphy.sage_server:main"
+
 [project.urls]
 Homepage = "https://georgedouzas.github.io/veriphy"
 Documentation = "https://georgedouzas.github.io/veriphy"
@@ -104,7 +107,7 @@ select = ["C", "E", "F", "W", "B", "I", "D", "N", "UP", "YTT", "ANN", "S",
 [tool.ruff.lint.per-file-ignores]
 "docs/examples/*" = ["ANN", "D", "B018"]
 "docs/generated/*" = ["ANN", "D"]
-"test_*" = ["ANN"]
+"test_*" = ["ANN", "PLR2004"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -122,6 +125,12 @@ style = "google"
 arg-type-hints-in-docstring = false
 check-return-types = false
 check-yield-types = false
+# The constitution documents constructor parameters and dataclass fields under `Args`, not `Attributes`.
+check-class-attributes = false
+
+[tool.deptry.per_rule_ignores]
+# SageMath is the runtime the package is installed into (`sage -pip install veriphy`), never a declared dependency.
+DEP001 = ["sage"]
 
 [tool.bandit]
 # Read by the checks nox session, which passes `-c pyproject.toml`. B101 is the
@@ -135,8 +144,8 @@ ignore-vulns = ["PYSEC-2022-42969"]
 
 [tool.pytest.ini_options]
 python_files = ["test_*.py"]
-addopts = "--cov"
-testpaths = ["tests"]
+addopts = "--cov --doctest-modules"
+testpaths = ["tests", "src"]
 
 [tool.coverage.run]
 branch = true
