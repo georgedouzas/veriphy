@@ -27,7 +27,7 @@
 
 ## 5. Documentation and plugin
 
-- [x] 5.1 Rewrite the README Setup as three install steps (SageMath, `sage -pip install veriphy`, a Lake `require … rev = "vX.Y.Z"`), plus a "Developing Veriphy" section (`sage -pip install -e .`, nox sessions, `copier update`, `VERIPHY_SAGE_SERVER` for daemon work). Verify that each command in the section runs as written in a fresh shell.
+- [x] 5.1 Rewrite the README Setup as three install steps (SageMath, `sage -pip install veriphy`, a Lake `require … rev = "X.Y.Z"`), plus a "Developing Veriphy" section (`sage -pip install -e .`, nox sessions, `copier update`, `VERIPHY_SAGE_SERVER` for daemon work). Verify that each command in the section runs as written in a fresh shell.
 - [x] 5.2 Update `skills/prove/SKILL.md` and `prompts/prove.md` setup checks to `sage -python -m veriphy.sage_server`, and drop the `VERIPHY_SAGE_SERVER` instruction. Correct the `plugin.json` and `marketplace.json` descriptions (seven tactics plus `sage_certify`), and recommend installing the plugin from the git URL. Verify by running the skill's documented ping command.
 - [x] 5.3 Document distribution (three channels, one tag) and record passagemath as future work. Move `docs/DESIGN.md` into the template's docs locations (`docs/overview/user_guide.md` for the design rationale, `docs/development/index.md` for setup, adding a certificate and future work) and delete it. Verify that `nox -s docs -- build` succeeds.
 
@@ -37,12 +37,12 @@
 
 ## 7. PyPI publishing (last)
 
-- [ ] 7.1 Keep the template-generated `.github/workflows/release.yml` (uv build → GitHub release → trusted publishing through `pypa/gh-action-pypi-publish`, no token). Add only a `needs:` on the CI jobs. Verify with `actionlint`, and with `git diff` against the template's generated version showing only that addition.
-- [ ] 7.2 Dry-run the release build: in a throwaway clone tagged `v0.4.0`, `uv build` produces `veriphy-0.4.0*.whl`. Verify that `sage -pip install` of that wheel answers `ping` with `"veriphy": "0.4.0"`.
+- [x] 7.1 Keep the template-generated `.github/workflows/release.yml` unchanged: it already runs the reusable CI (including the `lean` and `integration` jobs) before `build`, then the GitHub release and trusted publishing through `pypa/gh-action-pypi-publish`, with no token. Release tags follow the template's `X.Y.Z` pattern (no `v`). Verified: `actionlint` passes, and `git diff` against the template baseline is empty.
+- [ ] 7.2 Dry-run the release build: in a throwaway clone tagged `0.4.0`, `uv build` produces `veriphy-0.4.0*.whl`. Verify that `sage -pip install` of that wheel answers `ping` with `"veriphy": "0.4.0"`.
 - [ ] 7.3 Run `openspec validate package-and-distribute --strict` and verify that it passes.
 
 ## Workflow follow-up
 
 - The author registers the PyPI trusted publisher (project `veriphy`, repository `georgedouzas/veriphy`, workflow `release.yml`, environment as in the template) on pypi.org.
-- Merge the branch to `main`, then tag and push `v0.4.0`. The release workflow publishes to PyPI and creates the GitHub release. Confirm `sage -pip install veriphy==0.4.0` and a downstream Lake `require` at `v0.4.0` work.
+- Merge the branch to `main`, then tag and push `0.4.0`. The release workflow publishes to PyPI and creates the GitHub release. Confirm `sage -pip install veriphy==0.4.0` and a downstream Lake `require` at `0.4.0` work.
 - Archive the change with `/opsx:archive`.

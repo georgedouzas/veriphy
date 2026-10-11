@@ -7,17 +7,17 @@ Keeps Veriphy's three deliverables (the Lean library, the `veriphy` Python packa
 ## ADDED Requirements
 
 ### Requirement: Versions come from the release tag
-A release SHALL be a git tag `vX.Y.Z` on `main`. The Python distribution's version SHALL be derived from that tag by hatch-vcs, never written in a file. The Lean library SHALL carry no version constant of its own: Lake consumers pin the tag as the dependency revision.
+A release SHALL be a git tag `X.Y.Z` on `main`. The Python distribution's version SHALL be derived from that tag by hatch-vcs, never written in a file. The Lean library SHALL carry no version constant of its own: Lake consumers pin the tag as the dependency revision.
 
 #### Scenario: Wheel version from the tag
-- **WHEN** tag `v0.4.0` is pushed and the release workflow builds the package
+- **WHEN** tag `0.4.0` is pushed and the release workflow builds the package
 - **THEN** the built wheel is `veriphy-0.4.0`, and no file in the repository was edited to set that version
 
 ### Requirement: Lake consumption by tag
-Each release tag SHALL be usable as a Lake dependency revision, through `[[require]] name = "veriphy"`, `git = "https://github.com/georgedouzas/veriphy"` and `rev = "vX.Y.Z"`. The Lean package SHALL stay at the repository root and SHALL declare its mathlib revision so dependents resolve a compatible mathlib.
+Each release tag SHALL be usable as a Lake dependency revision, through `[[require]] name = "veriphy"`, `git = "https://github.com/georgedouzas/veriphy"` and `rev = "X.Y.Z"`. The Lean package SHALL stay at the repository root and SHALL declare its mathlib revision so dependents resolve a compatible mathlib.
 
 #### Scenario: Downstream require
-- **WHEN** a fresh Lake project requires Veriphy at `v0.4.0` and runs `lake update && lake build`
+- **WHEN** a fresh Lake project requires Veriphy at `0.4.0` and runs `lake update && lake build`
 - **THEN** the build succeeds and `import Veriphy` makes the `sage_*` tactics available
 
 ### Requirement: Release gated by CI

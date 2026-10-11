@@ -109,7 +109,7 @@ Prerequisites: [SageMath](https://doc.sagemath.org/html/en/installation/)
    [[require]]
    name = "veriphy"
    git = "https://github.com/georgedouzas/veriphy"
-   rev = "v0.4.0"
+   rev = "0.4.0"
    ```
 
    then `lake update && lake exe cache get && lake build`, and `import Veriphy`.

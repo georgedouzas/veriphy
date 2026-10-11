@@ -35,7 +35,7 @@ The packaged daemon SHALL expose exactly the methods, parameters and result shap
 The installed package SHALL report its version, derived from the release tag, through `veriphy.__version__`. `ping` SHALL include it alongside the Sage version.
 
 #### Scenario: Ping reports both versions
-- **WHEN** a client sends `ping` to a daemon installed from the `v0.4.0` release
+- **WHEN** a client sends `ping` to a daemon installed from the `0.4.0` release
 - **THEN** the result contains `"sage": "<sage version>"` and `"veriphy": "0.4.0"`
 
 ### Requirement: Sage-only code stays importable for tooling

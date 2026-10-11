@@ -18,7 +18,7 @@ The motivation is in proposal.md (Why). The current state below shapes the appro
 ## Goals / Non-Goals
 
 **Goals:**
-- A user installs with `sage -pip install veriphy`, a Lake `require … @ "vX.Y.Z"`, and optionally the plugin, without cloning or setting environment variables.
+- A user installs with `sage -pip install veriphy`, a Lake `require … @ "X.Y.Z"`, and optionally the plugin, without cloning or setting environment variables.
 - The repo is generated from and kept in sync with the author's template.
 - Every release is CI-proven, including the full tactic suite against the built wheel, and carries one version everywhere.
 
@@ -102,7 +102,7 @@ For local development: `sage -pip install -e .`. That makes `sage -python -m ver
 
 ### D5. Versioning
 
-Versioning is left to hatch-vcs: the tag `vX.Y.Z` is the only place a version is written, and the Python version is derived from it. The Lean library carries no version constant, since Lake consumers pin the same tag as `rev`, and nothing compares Lean and daemon versions at run time. The daemon still reports hatch's version in `ping` and each envelope, purely as information. The first release is `v0.4.0`.
+Versioning is left to hatch-vcs: the tag `X.Y.Z` is the only place a version is written, and the Python version is derived from it. The Lean library carries no version constant, since Lake consumers pin the same tag as `rev`, and nothing compares Lean and daemon versions at run time. The daemon still reports hatch's version in `ping` and each envelope, purely as information. The first release is `0.4.0`.
 
 ### D6. CI layout (`.github/workflows/ci.yml`, adapted from the template)
 
@@ -115,7 +115,7 @@ Versioning is left to hatch-vcs: the tag `vX.Y.Z` is the only place a version is
 
   `.lake` and `~/.elan` are cached with `actions/cache` keyed on `lake-manifest.json`.
 
-**PyPI comes last and uses the template's own support.** Answering `publish_pypi=true` already gives `release.yml` (uv build → GitHub release → `pypa/gh-action-pypi-publish` with trusted publishing). Veriphy adds exactly one thing to it: a `needs:` on the CI jobs.
+**PyPI comes last and uses the template's own support.** Answering `publish_pypi=true` already gives `release.yml` (uv build → GitHub release → `pypa/gh-action-pypi-publish` with trusted publishing). Veriphy adds nothing to it: its `build` job already `needs` the reusable `ci.yml`, which now includes the `lean` and `integration` jobs. Release tags follow the template's pattern, `X.Y.Z` without a `v`.
 
 Nothing else about publishing is custom. It is the final implementation step, after packaging, the bridge, CI and docs are proven locally and on Actions. The one-time trusted-publisher registration on pypi.org and the first tag are the author's follow-up.
 
@@ -153,9 +153,9 @@ Nothing else about publishing is custom. It is the final implementation step, af
 2. Move the daemon and tests into `src/`/`tests/`, then `sage -pip install -e .`.
 3. Change the bridge (D4). `lake build VeriphyTest` must pass with no environment variables set.
 4. Versions, CI and docs.
-5. Last: wire PyPI publishing (the template's `release.yml` plus the CI gate). Then the author merges, registers the trusted publisher and tags `v0.4.0`.
+5. Last: wire PyPI publishing (the template's `release.yml` plus the CI gate). Then the author merges, registers the trusted publisher and tags `0.4.0`.
 
-Rollback before tagging is a branch revert. After tagging, a broken release is yanked on PyPI and fixed with `v0.4.1`. Lake users simply pin the previous rev.
+Rollback before tagging is a branch revert. After tagging, a broken release is yanked on PyPI and fixed with `0.4.1`. Lake users simply pin the previous rev.
 
 Developers' existing `VERIPHY_SAGE_SERVER=…/sage_bridge/server.py` stops working, and the error says so (spec: stale development path).
 

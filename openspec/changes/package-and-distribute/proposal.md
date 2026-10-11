@@ -6,7 +6,7 @@ Using Veriphy today means cloning the repo. The Lean side finds the daemon by a 
 
 Packaging the daemon as a normal Python distribution and versioning all three parts together turns installation into three standard steps:
 - `sage -pip install veriphy`;
-- a Lake `require … @ "vX.Y.Z"`;
+- a Lake `require … @ "X.Y.Z"`;
 - `claude plugin install`.
 
 ## What Changes
@@ -22,7 +22,7 @@ Packaging the daemon as a normal Python distribution and versioning all three pa
   - A Sage-free Lean job: `lake build` and `lake build VeriphyTest.Kit`.
   - A Python checks job, which needs no Sage.
   - An integration job in a SageMath container: Python tests, `sage -pip install .`, `lake build VeriphyTest` with replay on.
-- **One version, three channels.** A single `vX.Y.Z` git tag versions everything. The Python version comes from VCS. The tag is the Lake `rev`. PyPI publishing is the last step and reuses the template's release workflow (trusted publishing), adding only the version check and the CI gate.
+- **One version, three channels.** A single `X.Y.Z` git tag versions everything. The Python version comes from VCS. The tag is the Lake `rev`. PyPI publishing is the last step and reuses the template's release workflow (trusted publishing), adding only the version check and the CI gate.
 - **Install docs.** README Setup becomes the three-step install. The `prove` skill checks the daemon with `sage -python -m veriphy.sage_server` instead of a repo path, and no longer needs a clone for proving outside the repo. The plugin description is corrected.
 - **BREAKING (dev only):** `sage_bridge/server.py` moves. Anyone pointing `VERIPHY_SAGE_SERVER` at the old path must update it, or simply `sage -pip install -e .`.
 

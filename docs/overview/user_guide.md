@@ -125,11 +125,11 @@ residue.
 
 ## Distribution
 
-Veriphy ships through three channels, all cut from one git tag `vX.Y.Z`:
+Veriphy ships through three channels, all cut from one git tag `X.Y.Z`:
 
 | Channel | Artifact | How a user gets it |
 |---|---|---|
-| Lake | the Lean library at the repository root | `[[require]] … rev = "vX.Y.Z"` |
+| Lake | the Lean library at the repository root | `[[require]] … rev = "X.Y.Z"` |
 | PyPI | the `veriphy` package, the Sage daemon | `sage -pip install veriphy` |
 | Claude plugin | the `prove` skill and playbook | `claude plugin install veriphy@veriphy` |
 
