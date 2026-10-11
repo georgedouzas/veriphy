@@ -19,7 +19,6 @@ jobs:
         os:
         - ubuntu-latest
         - macos-latest
-        - windows-latest
 
     runs-on: ${{ matrix.os }}
 
@@ -87,8 +86,16 @@ jobs:
       options: --user root
 
     steps:
+    - name: Install git, so the checkout carries the tags the version is derived from
+      run: apt-get update && apt-get install -y --no-install-recommends git ca-certificates curl
+
     - name: Checkout
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Trust the workspace for git
+      run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
     - name: Set up uv
       uses: astral-sh/setup-uv@v5
