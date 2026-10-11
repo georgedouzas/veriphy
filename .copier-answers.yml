@@ -1,0 +1,23 @@
+_commit: 2.0.1
+_src_path: gh:georgedouzas/copier-modern-python
+author_email: georgios.douzas@gmail.com
+author_fullname: Georgios Douzas
+author_username: georgedouzas
+copyright_date: '2026'
+copyright_holder: Georgios Douzas
+copyright_holder_email: georgios.douzas@gmail.com
+copyright_license: Apache License 2.0
+git_provider: GitHub
+include_dockerfile: false
+package_manager: uv
+project_description: Machine-verified physics and math proofs in Lean 4 with SageMath
+    as an untrusted oracle
+project_layout: library
+publish_pypi: true
+python_package_distribution_name: veriphy
+python_package_import_name: veriphy
+python_versions: '>=3.11, <3.15'
+repository_name: veriphy
+repository_namespace: georgedouzas
+spec_tool: openspec
+
