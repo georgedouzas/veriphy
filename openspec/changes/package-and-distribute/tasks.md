@@ -19,7 +19,7 @@
 
 - [x] 3.1 In `Bridge.lean`, add `Config.resolve` (D4 order: `VERIPHY_SAGE_CMD`, then `VERIPHY_SAGE_SERVER` with an existence check, then `-m veriphy.sage_server`). Verify that `lake build VeriphyTest` passes with neither variable set after `sage -pip install -e .`.
 - [x] 3.2 Make start-up failures actionable: a spawn failure names `VERIPHY_SAGE_CMD`; an empty first line reads stderr (truncated) and maps a missing module to `sage -pip install veriphy`; a stale `VERIPHY_SAGE_SERVER` names the variable and the path. Verify with three scratch-file checks: `sage -pip uninstall veriphy`, `VERIPHY_SAGE_CMD=/nonexistent`, and `VERIPHY_SAGE_SERVER=sage_bridge/server.py`, each producing the specified message. Reinstall afterwards.
-- [ ] 3.4 Verify the downstream path. Create a scratch Lake project (in the scratchpad) that requires Veriphy from this checkout, and run one `sage_lincomb` example with no Veriphy environment variables, which must close the goal. Then build its emitted replacement with Sage off `PATH`, which must succeed.
+- [x] 3.4 Verify the downstream path. Create a scratch Lake project (in the scratchpad) that requires Veriphy from this checkout, and run one `sage_lincomb` example with no Veriphy environment variables, which must close the goal. Then build its emitted replacement with Sage off `PATH`, which must succeed.
 
 ## 4. Versioning and CI (releases)
 

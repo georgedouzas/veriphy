@@ -141,7 +141,7 @@ Nothing else about publishing is custom. It is the final implementation step, af
 ## Risks / Trade-offs
 
 - **[Risk]** The in-place `copier copy` overwrites Veriphy files. → Do it on a branch, review `git diff` file by file, and use `git restore` for README, OpenSpec config and Lean files. A task lists exactly which files to keep.
-- **[Risk]** The SageMath Docker image tags or size (several GB) make the integration job slow or flaky. → Cache, run integration only on `main`, PRs and tags (not every branch push), and pin the image tag.
+- **[Risk]** The SageMath Docker image (several GB) makes the integration job slow. → Pin the image tag (`10.10`) and cache `~/.elan` and `.lake`. It runs on every push, so branch pushes are verified before merge.
 - **[Risk]** Template tooling (pip-audit, deptry, interrogate) objects to the Sage-only module (missing docstrings, an undeclared `sage` import). → Configure exclusions in `pyproject.toml` rather than weaken the template. Docstring coverage is met by adding docstrings where they are missing.
 - **[Risk]** Users with an older Sage (Python < 3.11) cannot install. → This is documented. `requires-python >=3.11` matches the template minimum, and Sage 10.x ships Python 3.11 or newer.
 - **[Risk]** The compliance refactor of a ~700-line daemon could change behavior. → Port the existing tests first (names and structure per the constitution) and keep them green after every step. The Lean suite (`lake build VeriphyTest`) is the end-to-end check.

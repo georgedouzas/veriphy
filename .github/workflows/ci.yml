@@ -60,41 +60,71 @@ jobs:
     - name: Check docstring coverage
       run: uv run nox -s checks -- docs
 
-  tests:
+  lean:
 
-    strategy:
-      matrix:
-        os:
-        - ubuntu-latest
-        - macos-latest
-        - windows-latest
-
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Install Python versions
-      uses: actions/setup-python@v5
+    - name: Build the Lean library without Sage
+      uses: leanprover/lean-action@v1
       with:
-        python-version: |
-            3.11
-            3.12
-            3.13
-            3.14
+        use-mathlib-cache: true
+        test: false
+        lint: false
+
+    - name: Build the Sage-free kit tests
+      run: lake build VeriphyTest.Kit
+
+  integration:
+
+    runs-on: ubuntu-latest
+
+    container:
+      image: sagemath/sagemath:10.10
+      options: --user root
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
 
     - name: Set up uv
       uses: astral-sh/setup-uv@v5
       with:
         enable-cache: true
         cache-dependency-glob: pyproject.toml
+        python-version: '3.13'
 
     - name: Install dependencies
-      run: uv sync
+      run: uv sync --only-dev
 
-    - name: Run the test suite
+    - name: Run the test suite on SageMath
       run: uv run nox -s tests
+
+    - name: Install the built wheel into SageMath
+      run: |
+        uv build
+        sage -pip install dist/*.whl
+
+    - name: Cache Lean toolchain and packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.elan
+          .lake
+        key: lean-${{ hashFiles('lean-toolchain', 'lake-manifest.json') }}
+
+    - name: Install elan
+      run: |
+        curl -sSf https://elan.lean-lang.org/elan-init.sh | sh -s -- -y --default-toolchain none
+        echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+    - name: Run the tactic suite against the installed daemon
+      run: |
+        lake exe cache get
+        lake build VeriphyTest
 
   doc:
 
