@@ -75,3 +75,21 @@ example (n : ℕ) :
     ∑ k ∈ Finset.range n, ((k : ℚ) ^ 3 + 1)
       = ((n : ℚ) ^ 2 * ((n : ℚ) - 1) ^ 2) / 4 + n := by
   sage_sum n
+
+/-! ## Rational coefficients (division by numerals is read as a coefficient) -/
+
+example (x y : ℚ) : 0 ≤ 35 / 2 * (x * y - 1) ^ 2 + 0 * x := by
+  sage_sos
+
+example (x y : ℚ) : 0 ≤ (35 / 2 : ℚ) * x ^ 2 * y ^ 2 - 35 * x * y + 35 / 2 := by
+  sage_sos
+
+example (x : ℚ) : x ^ 2 / 4 - 1 = (x / 2 - 1) * (x / 2 + 1) := by
+  sage_factor
+  ring
+
+/-! ## sage_sos with hinted squares -/
+
+-- Irreducible quartic; the squares are supplied, Sage finds the nonnegative weights.
+example (a b : ℚ) : 0 ≤ a ^ 4 + 2 * a ^ 2 * b ^ 2 + b ^ 4 - 2 * a ^ 2 - 2 * b ^ 2 + 1 + (a - b) ^ 2 := by
+  sage_sos [a ^ 2 + b ^ 2 - 1, a - b]

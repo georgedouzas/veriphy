@@ -103,11 +103,12 @@ structure Square where
   deriving Repr, Inhabited
 
 /-- SOS certificate for `0 ≤ poly`: `poly = Σ coeffᵢ * qᵢ²`, all `coeffᵢ ≥ 0`. -/
-def sos (poly : String) (vars : List String) (cfg : Config := {}) :
+def sos (poly : String) (vars : List String) (cfg : Config := {}) (hints : List String := []) :
     IO (List Square) := do
   let params := Json.mkObj
     [ ("poly", Json.str poly)
-    , ("vars", Json.arr (vars.toArray.map Json.str)) ]
+    , ("vars", Json.arr (vars.toArray.map Json.str))
+    , ("hints", Json.arr (hints.toArray.map Json.str)) ]
   let result ← request cfg "sos" params
   IO.ofExcept do
     let squares ← (← result.getObjVal? "squares").getArr?

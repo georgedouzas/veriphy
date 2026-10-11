@@ -8,6 +8,11 @@ Current daemon coverage: polynomials whose odd-multiplicity irreducible
 factors are constants or single-variable positive-definite quadratics (this
 includes all even-power cases like perfect squares). Unsupported shapes fail
 with the daemon's explanation — that failure is ledger data, not a bug.
+
+`sage_sos [q₁, …, qₖ]` supplies candidate squares: Sage finds exact rationals
+`c₀, cᵢ ≥ 0` with `p = c₀ + Σ cᵢ qᵢ²` (an exact rational LP), and the same
+`positivity` + `ring1` check closes the goal. Useful when the squares are known
+from structure (e.g. field strengths) but `p` does not factor.
 -/
 import Mathlib.Tactic.Positivity
 import Veriphy.Translate
@@ -25,10 +30,8 @@ private def squareStx (atoms : Array (TSyntax `term)) (s : Bridge.Square) :
   if n == 1 && d == 1 then pure sq
   else `($(← ratStx n d) * $sq)
 
-/-- `sage_sos` — close a goal `0 ≤ p` or `p ≥ 0` (`p` a polynomial over a
-linear ordered field) via a Sage sum-of-squares certificate, verified
-in-kernel by `ring1` + `positivity`. Emits a Sage-free `Try this:`. -/
-elab (name := sageSOS) ref:"sage_sos" : tactic => withMainContext do
+/-- Core of `sage_sos`, with optional hinted squares. -/
+def sageSOSCore (ref : Syntax) (hintStx : Array (TSyntax `term)) : TacticM Unit := withMainContext do
   let goal ← getMainGoal
   let tgt ← instantiateMVars (← goal.getType)
   let p ← do
@@ -42,10 +45,15 @@ elab (name := sageSOS) ref:"sage_sos" : tactic => withMainContext do
         throwError "sage_sos: goal must be `0 ≤ p` or `p ≥ 0`, got{indentExpr tgt}"
       pure p
     | _ => throwError "sage_sos: goal must be `0 ≤ p` or `p ≥ 0`, got{indentExpr tgt}"
-  let (polyStr, atoms) ← (exprToSage p).run #[]
+  let pTy ← inferType p
+  let hintExprs ← hintStx.toList.mapM fun h => Term.elabTermEnsuringType h pTy
+  let ((polyStr, hintStrs), atoms) ← (do
+      let ps ← exprToSage p
+      let hs ← hintExprs.mapM exprToSage
+      pure (ps, hs)).run #[]
   if atoms.isEmpty then
     throwError "sage_sos: no variables found in{indentExpr p}"
-  let squares ← Bridge.sos polyStr (sageVarNames atoms)
+  let squares ← Bridge.sos polyStr (sageVarNames atoms) {} hintStrs
   let atomStx ← atoms.mapM fun a => PrettyPrinter.delab a
   let sumStx : TSyntax `term ← liftM (m := TermElabM) do
     let sqStx ← squares.toArray.mapM (squareStx atomStx)
@@ -59,5 +67,12 @@ elab (name := sageSOS) ref:"sage_sos" : tactic => withMainContext do
   evalTactic proof
   Lean.Meta.Tactic.TryThis.addSuggestion ref proof
     (header := "Sage-free replacement: ")
+
+/-- `sage_sos` — close a goal `0 ≤ p` or `p ≥ 0` via a Sage sum-of-squares certificate (see the module doc). -/
+syntax (name := sageSOS) "sage_sos" (" [" term,* "]")? : tactic
+
+elab_rules : tactic
+  | `(tactic| sage_sos%$tk) => sageSOSCore tk #[]
+  | `(tactic| sage_sos%$tk [$hs,*]) => sageSOSCore tk hs.getElems
 
 end Veriphy

@@ -2,7 +2,8 @@
 Shared translation machinery for Veriphy certificate tactics.
 
 Lean → Sage: `exprToSage` walks a ring expression; anything that is not
-`+ - * ^ -ₙ` or a numeral becomes an atom `x0, x1, ...` (collected in state).
+`+ - * ^ -ₙ`, a numeral, or a division by a numeral (a rational coefficient)
+becomes an atom `x0, x1, ...` (collected in state).
 
 Sage → Lean: certificates arrive as structured term lists (`Bridge.Term`:
 rational coefficient + exponent vector), reconstructed as term syntax over the
@@ -43,7 +44,20 @@ partial def exprToSage (e : Expr) : StateRefT (Array Expr) MetaM String := do
     return s!"({← exprToSage a})^{k}"
   | (``Neg.neg, #[_, _, a]) =>
     return s!"(-{← exprToSage a})"
-  | _ =>
+  | (``HDiv.hDiv, #[_, _, _, _, a, b]) =>
+    -- division by a nonzero numeral is a rational coefficient; any other division is an atom
+    match natLit? b with
+    | some d =>
+      if d == 0 then atom e else return s!"({← exprToSage a} / {d})"
+    | none => atom e
+  | (``Inv.inv, #[_, _, b]) =>
+    match natLit? b with
+    | some d => if d == 0 then atom e else return s!"(1 / {d})"
+    | none => atom e
+  | _ => atom e
+where
+  /-- Register `e` as an indeterminate (reusing a definitionally equal atom). -/
+  atom (e : Expr) : StateRefT (Array Expr) MetaM String := do
     let atoms ← get
     for h : i in [0:atoms.size] do
       if ← withReducible (isDefEq atoms[i] e) then

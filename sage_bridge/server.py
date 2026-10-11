@@ -76,8 +76,8 @@ def _sos_of_irreducible(f, R):
         if c < 0:
             raise ValueError(f"negative constant factor {c}")
         return [(c, R.one())]
-    fu = f if R.ngens() == 1 else f.univariate_polynomial()
     if len(f.variables()) == 1 and f.degree() == 2:
+        fu = f if R.ngens() == 1 else f.univariate_polynomial()
         # a*x^2 + b*x + c = a(x + b/2a)^2 + (c - b^2/4a), both coeffs > 0
         a, b, c = QQ(fu[2]), QQ(fu[1]), QQ(fu[0])
         if a > 0 and b**2 - 4 * a * c < 0:
@@ -89,12 +89,36 @@ def _sos_of_irreducible(f, R):
     )
 
 
+def _sos_from_hints(p, hints, R):
+    """Find exact rationals c_0, c_i >= 0 with p = c_0 + sum c_i h_i^2 (hints h_i supplied by the caller).
+    Solved exactly: a linear system over the monomials, with an exact rational LP (PPL) if underdetermined."""
+    from sage.all import MixedIntegerLinearProgram
+    sq = [R.one()] + [h ** 2 for h in hints]
+    mons = sorted(set().union(*[set(q.monomials()) for q in sq]) | set(p.monomials()))
+    lp = MixedIntegerLinearProgram(solver="PPL", maximization=False)
+    c = lp.new_variable(nonnegative=True)
+    for m in mons:
+        lp.add_constraint(sum(QQ(q.monomial_coefficient(m)) * c[i] for i, q in enumerate(sq)) == QQ(p.monomial_coefficient(m)))
+    lp.set_objective(sum(c[i] for i in range(len(sq))))
+    try:
+        lp.solve()
+    except Exception:
+        raise ValueError("no nonnegative combination of the hinted squares equals the polynomial")
+    vals = [QQ(lp.get_values(c[i])) for i in range(len(sq))]
+    if sum(v * q for v, q in zip(vals, sq)) != p:
+        raise ValueError("hinted SOS fit is not exact")
+    return [(v, (R.one() if i == 0 else hints[i - 1])) for i, v in enumerate(vals) if v != 0]
+
+
 def do_sos(params):
     """Certify 0 <= poly by an exact decomposition poly = sum c_i * q_i^2."""
     R = _ring(params["vars"])
     p = R(params["poly"])
     if p == 0:
         return {"squares": []}
+    if params.get("hints"):
+        sos = _sos_from_hints(p, [R(h) for h in params["hints"]], R)
+        return {"squares": [{"coeff": str(c), "terms": poly_to_terms(q)} for c, q in sos]}
     fac = p.factor()
     unit = QQ(fac.unit())
     if unit < 0:
