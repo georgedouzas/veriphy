@@ -93,3 +93,34 @@ example (x : ℚ) : x ^ 2 / 4 - 1 = (x / 2 - 1) * (x / 2 + 1) := by
 -- Irreducible quartic; the squares are supplied, Sage finds the nonnegative weights.
 example (a b : ℚ) : 0 ≤ a ^ 4 + 2 * a ^ 2 * b ^ 2 + b ^ 4 - 2 * a ^ 2 - 2 * b ^ 2 + 1 + (a - b) ^ 2 := by
   sage_sos [a ^ 2 + b ^ 2 - 1, a - b]
+
+/-! ## sage_farkas (linear arithmetic by an exact Farkas certificate) -/
+
+example (x y : ℚ) (h1 : x + y ≤ 1) (h2 : x - y = 3) (h3 : 0 ≤ y) : False := by
+  sage_farkas
+
+-- an anomaly-style system: nonnegative multiplicities and linear cancellation conditions
+example (a b c : ℚ) (ha : 0 ≤ a) (hb : 0 ≤ b) (hc : 0 ≤ c)
+    (e1 : 2 * a + b - c = 0) (e2 : a + 3 * c = 0) : a + b + c ≤ 0 := by
+  sage_farkas
+
+example (p q : ℚ) (h1 : p < q) (h2 : q ≤ p) : False := by
+  sage_farkas
+
+/-! ## sage_exists (rational witnesses) -/
+
+-- generalized eigenvector: V v = λ K v with V = [[2,1],[1,2]], K = I, λ = 3, v ≠ 0
+example : ∃ v₁ v₂ : ℚ, 2 * v₁ + v₂ = 3 * v₁ ∧ v₁ + 2 * v₂ = 3 * v₂ ∧ v₁ ≠ 0 := by
+  sage_exists
+
+example : ∃ x y : ℚ, x + y = 1 ∧ 0 < x ∧ x < y := by
+  sage_exists
+
+/-! ## kernel spans via sage_lincomb: the kernel of [[1,1,0],[0,1,1]] is spanned by (1,-1,1) -/
+
+example (v₁ v₂ v₃ : ℚ) (h1 : v₁ + v₂ = 0) (h2 : v₂ + v₃ = 0) : v₁ = v₃ := by
+  sage_lincomb
+
+-- the emitted replacement must re-parse: a goal that needs the negation step
+example (u v : ℚ) (h1 : 0 ≤ u) (h2 : u + v = 0) (h3 : 0 ≤ v) : u ≤ 0 := by
+  sage_farkas

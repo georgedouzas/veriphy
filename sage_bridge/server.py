@@ -383,12 +383,125 @@ def do_run_script(params):
     }
 
 
+def do_farkas(params):
+    """Linear Farkas certificate.  Input: linear polynomials p_i with relations rel_i in {"eq", "le", "lt"}
+    meaning p_i = 0, p_i <= 0, p_i < 0.  Output: rationals m_i (m_i >= 0 unless eq) with sum m_i p_i
+    identically equal to a constant kappa, where kappa > 0, or kappa = 0 with m_i > 0 on some strict
+    relation.  Either way sum m_i p_i <= 0 (resp. < 0) is contradictory.  Solved by exact rational LPs."""
+    from sage.all import MixedIntegerLinearProgram
+    R = _ring(params["vars"])
+    ps = [R(q) for q in params["polys"]]
+    rels = params["rels"]
+    nonlin = {i for i, q in enumerate(ps) if q.degree() > 1}   # unusable here: forced to multiplier 0
+    gens = R.gens()
+    def solve(strict_mode):
+        lp = MixedIntegerLinearProgram(solver="PPL", maximization=False)
+        m = lp.new_variable()
+        for i, r in enumerate(rels):
+            if i in nonlin:
+                lp.add_constraint(m[i] == 0)
+            elif r != "eq":
+                lp.add_constraint(m[i] >= 0)
+        for x in gens:
+            lp.add_constraint(sum(QQ(q.monomial_coefficient(x)) * m[i] for i, q in enumerate(ps) if i not in nonlin) == 0)
+        kappa = sum(QQ(q.constant_coefficient()) * m[i] for i, q in enumerate(ps) if i not in nonlin)
+        if strict_mode:
+            if not any(r == "lt" for r in rels):
+                return None
+            lp.add_constraint(kappa == 0)
+            lp.add_constraint(sum(m[i] for i, r in enumerate(rels) if r == "lt") >= 1)
+        else:
+            lp.add_constraint(kappa >= 1)
+        lp.set_objective(sum(m[i] for i, r in enumerate(rels) if r != "eq"))
+        try:
+            lp.solve()
+        except Exception:
+            return None
+        return [QQ(lp.get_values(m[i])) for i in range(len(ps))]
+    for strict_mode in (False, True):
+        sol = solve(strict_mode)
+        if sol is not None:
+            kappa = sum(c * q.constant_coefficient() for c, q in zip(sol, ps))
+            strict = any(c != 0 and r == "lt" for c, r in zip(sol, rels))
+            return {"multipliers": [str(c) for c in sol], "kappa": str(QQ(kappa)), "strict": bool(strict)}
+    raise ValueError("sage_farkas: the linear hypotheses are consistent (no Farkas certificate)")
+
+
+def do_exists(params):
+    """Rational witness for a system: polynomial equations p = 0, linear inequalities p <= 0 / p < 0,
+    and disequalities p != 0.  Strategy: solve the equations (linear systems exactly; otherwise Sage's
+    solver for rational points), then an exact LP for the linear inequalities, then perturb inside the
+    solution set to avoid disequalities.  Returns one rational value per variable."""
+    from sage.all import MixedIntegerLinearProgram, matrix, vector
+    names = params["vars"]; R = _ring(names); gens = R.gens(); n = len(gens)
+    eqs = [R(q) for q in params.get("eqs", [])]
+    les = [R(q) for q in params.get("les", [])]
+    lts = [R(q) for q in params.get("lts", [])]
+    nes = [R(q) for q in params.get("nes", [])]
+    lin = all(q.degree() <= 1 for q in eqs + les + lts)
+    def ok(pt):
+        sub = dict(zip(gens, pt))
+        return (all(q.subs(sub) == 0 for q in eqs) and all(q.subs(sub) <= 0 for q in les)
+                and all(q.subs(sub) < 0 for q in lts) and all(q.subs(sub) != 0 for q in nes))
+    if lin:
+        # parametrize the affine solution space of the equations
+        A = matrix(QQ, [[QQ(q.monomial_coefficient(x)) for x in gens] for q in eqs]) if eqs else matrix(QQ, 0, n)
+        b = vector(QQ, [-QQ(q.constant_coefficient()) for q in eqs]) if eqs else vector(QQ, [])
+        x0 = A.solve_right(b) if eqs else vector(QQ, [0] * n)
+        K = A.right_kernel().basis_matrix() if eqs else matrix.identity(QQ, n)
+        k = K.nrows()
+        import itertools
+        expr_coeffs = lambda q: (QQ(q.constant_coefficient()) + sum(QQ(q.monomial_coefficient(x)) * x0[j] for j, x in enumerate(gens)),
+                                 [sum(QQ(q.monomial_coefficient(x)) * K[r, j] for j, x in enumerate(gens)) for r in range(k)])
+        base = [QQ(0)] * k
+        if (les or lts) and k > 0:
+            lp = MixedIntegerLinearProgram(solver="PPL", maximization=True)
+            t = lp.new_variable(); eps = lp.new_variable(nonnegative=True)
+            for q in les:
+                c0, cs = expr_coeffs(q)
+                lp.add_constraint(c0 + sum(cs[r] * t[r] for r in range(k)) <= 0)
+            for q in lts:
+                c0, cs = expr_coeffs(q)
+                lp.add_constraint(c0 + sum(cs[r] * t[r] for r in range(k)) + eps[0] <= 0)
+            lp.add_constraint(eps[0] <= 1)
+            lp.set_objective(eps[0] if lts else 0)
+            try:
+                lp.solve()
+                base = [QQ(lp.get_values(t[r])) for r in range(k)]
+            except Exception:
+                raise ValueError("sage_exists: the linear inequalities are infeasible")
+        cands = [base]
+        for scale in (1, 2, 3, 5, 7, 11):
+            for d in itertools.product(range(-1, 2), repeat=min(k, 6)):
+                v = list(d) + [0] * (k - min(k, 6))
+                cands.append([base[r] + QQ(v[r]) / scale for r in range(k)])
+        for c in cands:
+            pt = [x0[j] + sum(K[r, j] * c[r] for r in range(k)) for j in range(n)]
+            if ok(pt):
+                return {"point": [str(QQ(v)) for v in pt]}
+        raise ValueError("sage_exists: no rational witness found")
+    # nonlinear: rational points of the equations by Sage's solver, filtered by the side conditions
+    import sage.all as S
+    sv = [S.SR.var(nm) for nm in names]
+    res = S.solve([S.SR(str(q)) == 0 for q in eqs], sv, solution_dict=True)
+    for sol in res:
+        try:
+            pt = [QQ(sol[v]) for v in sv]
+        except Exception:
+            continue
+        if ok(pt):
+            return {"point": [str(v) for v in pt]}
+    raise ValueError("sage_exists: no rational witness found")
+
+
 METHODS = {
     "ping": lambda params: {"ok": True, "sage": version()},
     "factor": do_factor,
     "sos": do_sos,
     "roots": do_roots,
     "lincomb": do_lincomb,
+    "farkas": do_farkas,
+    "exists": do_exists,
     "sum": do_sum,
     "symbolic_check": do_symbolic_check,
     "matrix_check": do_matrix_check,

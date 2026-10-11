@@ -25,8 +25,27 @@ Sage finds; Lean checks; only the check is trusted.
 | `sage_lincomb` | Gröbner cofactors (local polyrith) | `linear_combination` | **working** ✅ |
 | `sage_witness` | rational roots for `∃ x, p x = 0` | `norm_num` on the witness | **working** ✅ |
 | `sage_sum` | closed form of `∑ k ∈ range n` (`#sage_sum`) | induction + `ring1`, kernel-only | **working** ✅ |
+| `sage_farkas` | Farkas multipliers (exact rational LP) for linear `=`/`≤`/`<` systems | `linear_combination` + `norm_num` | **working** ✅ |
+| `sage_exists` | rational witness for `∃ x₁ … xₙ, P` (equations, linear inequalities, `≠`) | `norm_num` on the witness | **working** ✅ |
 | `sage_branch` | Lie-group branching rules | character polynomial identity | planned |
-| `sage_eigen` | eigenpairs | `Av = λv` by `norm_num` | planned |
+
+`sage_sos [q₁, …, qₖ]` takes candidate squares: Sage finds exact rationals
+`c₀, cᵢ ≥ 0` with `p = c₀ + Σ cᵢ qᵢ²` (exact rational LP) — the certificate
+format and the check are the same as plain `sage_sos`. Use it when the squares
+are known from structure (e.g. field-strength components of a potential) but
+the polynomial does not factor.
+
+`sage_farkas` closes `False`, `a ≤ b` or `a < b` from the linear hypotheses in
+context (a goal is negated first). It is `linarith` with the certificate
+search done by an exact LP in Sage, so it scales to large systems (e.g. gauge
+anomaly-cancellation conditions over many representations) where `linarith`
+times out; the emitted proof is a single `linear_combination`.
+
+`sage_exists` covers eigen/null-vector witnesses (`A v = λ B v ∧ v ≠ 0`),
+feasible points of linear systems, and explicit counterexamples. Kernel-span
+certificates ("every solution of these linear equations is a combination of
+these vectors") need no new tactic: they are ideal membership of linear forms,
+closed by `sage_lincomb`.
 
 `sage_sos` currently certifies polynomials whose odd-multiplicity factors are
 constants or single-variable positive-definite quadratics (includes all

@@ -45,8 +45,15 @@ score, or committing to the target repo beyond what the caller asked for.
    a. `simp` / `norm_num` / `positivity` / `nlinarith` / `fun_prop` / `gcongr`
    b. premise search (loogle, LeanSearch, `exact?`) for the missing lemma
    c. decompose: isolate the computational core (polynomial identity,
-      inequality, closed-form sum, rational root) and send it to the matching
-      `sage_*` certificate tactic; prove the glue yourself
+      inequality, closed-form sum, rational root, linear system, witness) and
+      send it to the matching `sage_*` certificate tactic; prove the glue
+      yourself. Matching: identity from hypotheses → `sage_lincomb` (also
+      kernel spans); factorization → `sage_factor`; `0 ≤ p` → `sage_sos`
+      (pass candidate squares `sage_sos [q₁, …]` when `p` is a known sum of
+      squares that does not factor); large linear (in)feasibility, where
+      `linarith` times out → `sage_farkas`; `∃` with a rational witness
+      (eigenvector, feasible point, counterexample) → `sage_exists`;
+      closed-form sum → `#sage_sum` then `sage_sum n`
    d. oracle: when stuck on *what the proof even is* — solving an equation
       system (a kernel computation, an equilibrium, a change of variables),
       finding the case split, locating the closed form — ask the bridge's

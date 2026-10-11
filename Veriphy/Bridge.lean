@@ -148,4 +148,35 @@ def sumClosedForm (summand : String) (cfg : Config := {}) : IO (List Term) := do
     let ts ← (← result.getObjVal? "closed_form").getArr?
     ts.toList.mapM parseTerm
 
+/-- Linear Farkas certificate: multipliers `mᵢ` (rational strings), the constant `κ = Σ mᵢ pᵢ`, and
+whether a strict hypothesis carries positive weight. -/
+structure FarkasCert where
+  multipliers : List String
+  kappa : String
+  strict : Bool
+  deriving Repr, Inhabited
+
+def farkas (polys rels vars : List String) (cfg : Config := {}) : IO FarkasCert := do
+  let params := Json.mkObj
+    [ ("polys", Json.arr (polys.toArray.map Json.str))
+    , ("rels", Json.arr (rels.toArray.map Json.str))
+    , ("vars", Json.arr (vars.toArray.map Json.str)) ]
+  let result ← request cfg "farkas" params
+  IO.ofExcept do
+    let ms ← (← result.getObjVal? "multipliers").getArr?
+    let multipliers ← ms.toList.mapM (·.getStr?)
+    let kappa ← (← result.getObjVal? "kappa").getStr?
+    let strict ← (← result.getObjVal? "strict").getBool?
+    return { multipliers, kappa, strict }
+
+/-- Rational witness for a system of equations, linear inequalities and disequalities. -/
+def exists_ (vars eqs les lts nes : List String) (cfg : Config := {}) : IO (List String) := do
+  let arr (l : List String) := Json.arr (l.toArray.map Json.str)
+  let params := Json.mkObj
+    [ ("vars", arr vars), ("eqs", arr eqs), ("les", arr les), ("lts", arr lts), ("nes", arr nes) ]
+  let result ← request cfg "exists" params
+  IO.ofExcept do
+    let pt ← (← result.getObjVal? "point").getArr?
+    pt.toList.mapM (·.getStr?)
+
 end Veriphy.Bridge

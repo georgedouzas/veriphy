@@ -5,3 +5,5 @@ import Veriphy.Tactic.SageSOS
 import Veriphy.Tactic.SageLincomb
 import Veriphy.Tactic.SageSum
 import Veriphy.Tactic.SageWitness
+import Veriphy.Tactic.SageFarkas
+import Veriphy.Tactic.SageExists

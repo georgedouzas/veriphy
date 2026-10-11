@@ -54,12 +54,21 @@ triple intersection is the classical, essentially closed catalog
 certificates, eigen witnesses, LP duality) — eight to ten entries, ever.
 
 Implemented (2026-10): `sage_factor`, `sage_sos` (factorization + completed
-squares; full SOS needs an exact SDP step), `sage_lincomb` (local polyrith via
-`ideal.lift`), `sage_witness`, `sage_sum` (Sage discovers the closed form;
-the proof is kernel-only induction — Sage-free by construction).
+squares, plus caller-supplied candidate squares `sage_sos [q₁, …]`; full SOS
+needs an exact SDP step), `sage_lincomb` (local polyrith via `ideal.lift`;
+also kernel-span certificates), `sage_witness`, `sage_sum` (Sage discovers the
+closed form; the proof is kernel-only induction — Sage-free by construction),
+`sage_farkas` (LP duality: exact rational Farkas multipliers checked by
+`linear_combination`), `sage_exists` (rational witnesses checked by
+`norm_num`; this subsumes the planned `sage_eigen`).
 
-Remaining entries (`sage_branch` for Lie branching rules, `sage_eigen`, full
-SOS) are built **only when a `blocked-missing-tactic` report demands them**.
+The last three were added on demand from a physics formalization (Forgács–Manton
+reduction over super coset spaces): the gauge-anomaly no-go systems exceeded
+`linarith`, the potentials were sums of squares of field strengths that do not
+factor, and mass spectra need eigenvector witnesses.
+
+Remaining entries (`sage_branch` for Lie branching rules, full SOS) are built
+**only when a `blocked-missing-tactic` report demands them**.
 If this repo is still growing tactics without such demand, something went
 wrong.
 
@@ -102,5 +111,5 @@ residue.
 ## 8. Known future work
 
 - Persistent daemon (each tactic call currently pays ~2 s of Sage startup).
-- `sage_sos` beyond completed squares (exact rational SDP).
+- `sage_sos` beyond completed squares and hinted squares (exact rational SDP).
 - Candidate upstreaming of checkers to LeanSage.
