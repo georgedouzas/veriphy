@@ -68,7 +68,7 @@ elab (name := sageCertify) "sage_certify " fam:certifyFamily script:str : tactic
       items := items.push (Bridge.Term.const s.coeff, ← `($(mkIdent ``sq_nonneg) ($(← polyStx atoms s.terms))))
     let combo ← weightedSum atoms items
     match p.goal, cert.kappa with
-    | .falsum, some κ => return .refute (← PrettyPrinter.delab p.carrier) κ cert.strict combo
+    | .falsum, some κ => return .refute (← PrettyPrinter.delab (p.carrier.getD (mkConst ``Rat))) κ cert.strict combo
     | .falsum, none => throwError "sage_certify: the daemon returned no κ for a `False` goal"
     | _, _ => return .direct combo
   closeAndEmit <| ← match built with

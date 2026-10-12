@@ -23,7 +23,7 @@ elab (name := sageFarkas) "sage_farkas" : tactic => do
       (Bridge.farkas (p.hyps.toList.map (·.poly)) (p.hyps.toList.map (·.rel.tag)) p.vars)
     let weights := cert.multipliers.toArray.map Bridge.Term.const
     let combo ← weightedSum #[] (weights.zip (← p.hyps.mapM (·.ref)))
-    return (← PrettyPrinter.delab p.carrier, combo, cert)
+    return (← PrettyPrinter.delab (p.carrier.getD (mkConst ``Rat)), combo, cert)
   let pre ← if negating then Checker.negateGoal h else pure #[]
   closeAndEmit (← Checker.refute pre α cert.kappa cert.strict combo)
 

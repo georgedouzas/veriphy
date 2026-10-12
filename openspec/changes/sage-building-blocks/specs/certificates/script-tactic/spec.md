@@ -24,8 +24,12 @@ The script SHALL see, pre-bound:
 Hypotheses that do not translate to polynomials SHALL still appear, with their Lean text.
 
 #### Scenario: Non-polynomial hypothesis is visible
+- **WHEN** the context contains `hn : x ^ n ≤ 2` with a variable exponent `n`
+- **THEN** the script sees a hypothesis named `hn` with its Lean text and no polynomial form
+
+#### Scenario: Function applications are atoms
 - **WHEN** the context contains `hs : Real.sin x ≤ 1`
-- **THEN** the script sees a hypothesis named `hs` with its Lean text and no polynomial form
+- **THEN** the script sees `hs` as the polynomial `x_i - 1` over an atom whose text is `Real.sin x`
 
 ### Requirement: Only standard axioms
 After the block runs, the proof term SHALL be rejected if it depends on `sorryAx` or on any axiom outside `propext`, `Classical.choice` and `Quot.sound`. In that case the tactic fails, the goal is unchanged and nothing is emitted.

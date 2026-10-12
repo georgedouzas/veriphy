@@ -4,6 +4,7 @@ replay, fed literal certificates. `lake build VeriphyTest.Kit` needs no Sage.
 -/
 import Mathlib.Algebra.Order.Ring.Rat
 import Mathlib.Tactic.Linarith
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
 import Veriphy.Kit
 
 open Lean Elab Tactic Meta Veriphy
@@ -83,29 +84,59 @@ elab "kit_extract " preset:str : tactic => do
   logInfo m!"{j.compress}"
   (← getMainGoal).admit (synthetic := true)
 
+/-- Test tactic: lenient extraction, printing the serialized problem, then admit the goal. -/
+elab "kit_lenient" : tactic => do
+  let j ← withLenientProblem fun p => p.toJson
+  logInfo m!"{j.compress}"
+  (← getMainGoal).admit (synthetic := true)
+
+-- lenient: function applications are atoms; a hypothesis with no polynomial form (`x ^ n`) is kept as text
+/--
+info: {"atoms":["Real.cos x","x","Real.sin x"],"carrier":"ℝ","goal":{"kind":"rel","poly":"(x0) - (1)","rel":"le","text":"Real.cos x ≤ 1"},"hyps":[{"name":"h","poly":"(x1) - (1)","rel":"le","text":"x ≤ 1"},{"name":"hs","poly":"(x2) - (1)","rel":"le","text":"Real.sin x ≤ 1"},{"name":"hn","text":"x ^ n ≤ 2"}],"vars":["x0","x1","x2"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (x : ℝ) (h : x ≤ 1) (hs : Real.sin x ≤ 1) (n : ℕ) (hn : x ^ n ≤ 2) : Real.cos x ≤ 1 := by
+  kit_lenient
+
+-- lenient: an existential whose body translates keeps its binders
+/--
+info: {"atoms":["x","y"],"carrier":"ℚ","goal":{"binders":2,"body":[{"poly":"((x0 + x1)) - (1)","rel":"eq","text":"x + y = 1"},{"poly":"(x0) - (x1)","rel":"lt","text":"x < y"}],"kind":"exists"},"hyps":[],"vars":["x0","x1"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example : ∃ x y : ℚ, x + y = 1 ∧ x < y := by
+  kit_lenient
+
+-- lenient: a goal with no polynomial form is kept as text, with the hypotheses still collected
+/--
+info: {"atoms":["x"],"carrier":"ℤ","goal":{"kind":"other","text":"x ∣ 6"},"hyps":[{"name":"h","poly":"(x0) - (2)","rel":"eq","text":"x = 2"}],"vars":["x0"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (x : ℤ) (h : x = 2) : x ∣ 6 := by
+  kit_lenient
+
 -- `≥` flips; the atom shared by goal and hypothesis appears once
 /--
-info: {"atoms":["x"],"goal":{"kind":"rel","poly":"((x0)^2) - (4)","rel":"eq"},"hyps":[{"name":"h","poly":"(x0) - (2)","rel":"le"},{"name":"h'","poly":"(2) - (x0)","rel":"le"}],"vars":["x0"]}
+info: {"atoms":["x"],"carrier":"ℚ","goal":{"kind":"rel","poly":"((x0)^2) - (4)","rel":"eq"},"hyps":[{"name":"h","poly":"(x0) - (2)","rel":"le"},{"name":"h'","poly":"(2) - (x0)","rel":"le"}],"vars":["x0"]}
 -/
 #guard_msgs (info, error, drop warning) in
 example (x : ℚ) (h : x ≤ 2) (h' : x ≥ 2) : x ^ 2 = 4 := by kit_extract "all"
 
 /--
-info: {"atoms":["f a"],"goal":{"kind":"rel","poly":"((x0)^2) - (1)","rel":"eq"},"hyps":[{"name":"h","poly":"(x0) - (1)","rel":"eq"}],"vars":["x0"]}
+info: {"atoms":["f a"],"carrier":"ℚ","goal":{"kind":"rel","poly":"((x0)^2) - (1)","rel":"eq"},"hyps":[{"name":"h","poly":"(x0) - (1)","rel":"eq"}],"vars":["x0"]}
 -/
 #guard_msgs (info, error, drop warning) in
 example (f : ℚ → ℚ) (a : ℚ) (h : f a = 1) : f a ^ 2 = 1 := by kit_extract "lincomb"
 
 -- `¬ (v = 0)` is `≠`
 /--
-info: {"atoms":["v"],"goal":{"kind":"false"},"hyps":[{"name":"hv","poly":"(x0) - (0)","rel":"ne"}],"vars":["x0"]}
+info: {"atoms":["v"],"carrier":"ℚ","goal":{"kind":"false"},"hyps":[{"name":"hv","poly":"(x0) - (0)","rel":"ne"}],"vars":["x0"]}
 -/
 #guard_msgs (info, error, drop warning) in
 example (v : ℚ) (hv : ¬ (v = 0)) : False := by kit_extract "all"
 
 -- untranslatable hypothesis skipped cleanly (no atom from it); other carriers ignored; inaccessible names excluded
 /--
-info: {"atoms":["x","y"],"goal":{"kind":"rel","poly":"(x0) - (x1)","rel":"eq"},"hyps":[{"name":"h1","poly":"((x0 + x1)) - (1)","rel":"eq"}],"vars":["x0","x1"]}
+info: {"atoms":["x","y"],"carrier":"ℚ","goal":{"kind":"rel","poly":"(x0) - (x1)","rel":"eq"},"hyps":[{"name":"h1","poly":"((x0 + x1)) - (1)","rel":"eq"}],"vars":["x0","x1"]}
 -/
 #guard_msgs (info, error, drop warning) in
 example (x y : ℚ) (n : ℕ) (hn : n = 3) (h1 : x + y = 1) (h2 : x ^ n = 0) : y = x → x = y := by
@@ -114,14 +145,14 @@ example (x y : ℚ) (n : ℕ) (hn : n = 3) (h1 : x + y = 1) (h2 : x ^ n = 0) : y
 
 -- refutation preset: the negated goal becomes the last hypothesis, the goal `False`
 /--
-info: {"atoms":["u","v"],"goal":{"kind":"false"},"hyps":[{"name":"h1","poly":"(0) - (x0)","rel":"le"},{"name":"h2","poly":"((x0 + x1)) - (0)","rel":"eq"},{"name":"hfarkas","poly":"(0) - (x0)","rel":"lt"}],"vars":["x0","x1"]}
+info: {"atoms":["u","v"],"carrier":"ℚ","goal":{"kind":"false"},"hyps":[{"name":"h1","poly":"(0) - (x0)","rel":"le"},{"name":"h2","poly":"((x0 + x1)) - (0)","rel":"eq"},{"name":"hfarkas","poly":"(0) - (x0)","rel":"lt"}],"vars":["x0","x1"]}
 -/
 #guard_msgs (info, error, drop warning) in
 example (u v : ℚ) (h1 : 0 ≤ u) (h2 : u + v = 0) : u ≤ 0 := by kit_extract "farkas"
 
 -- existential: binders are atoms 0, 1; conjuncts split
 /--
-info: {"atoms":["x","y"],"goal":{"binders":2,"body":[{"poly":"((x0 + x1)) - (1)","rel":"eq"},{"poly":"(0) - (x0)","rel":"lt"},{"poly":"(x0) - (x1)","rel":"lt"}],"kind":"exists"},"hyps":[],"vars":["x0","x1"]}
+info: {"atoms":["x","y"],"carrier":"ℚ","goal":{"binders":2,"body":[{"poly":"((x0 + x1)) - (1)","rel":"eq"},{"poly":"(0) - (x0)","rel":"lt"},{"poly":"(x0) - (x1)","rel":"lt"}],"kind":"exists"},"hyps":[],"vars":["x0","x1"]}
 -/
 #guard_msgs (info, error, drop warning) in
 example : ∃ x y : ℚ, x + y = 1 ∧ 0 < x ∧ x < y := by kit_extract "exists"

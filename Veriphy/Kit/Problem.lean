@@ -46,6 +46,8 @@ structure Constraint where
   poly : String
   /-- The source hypothesis (always a nameable user name), if any. -/
   src : Option Name := none
+  /-- The proposition the constraint came from, for its Lean text. -/
+  prop : Option Expr := none
   deriving Inhabited
 
 /-- The printable reference to a constraint's source hypothesis (as a proof term). -/
@@ -59,14 +61,19 @@ inductive Goal
   | falsum
   /-- `∃ binders, ⋀ body`; the binders are atoms `0 … n-1`. -/
   | exists_ (binders : Array Expr) (body : Array Constraint)
+  /-- Any other proposition, with no polynomial form (lenient extraction only). -/
+  | other (prop : Expr)
   deriving Inhabited
 
 /-- A normalized problem. Atom `i` is the Sage variable `x{i}`. -/
 structure Problem where
-  carrier : Expr
+  /-- The type the polynomials live in, when the goal or a hypothesis fixes one. -/
+  carrier : Option Expr
   atoms : Array Expr
   hyps : Array Constraint
   goal : Goal
+  /-- Nameable hypotheses with no polynomial form, kept as text (lenient extraction only). -/
+  facts : Array (Name × Expr) := #[]
   /-- Extra terms the tactic asked to translate over the same atom table (e.g. `sage_sos` hints). -/
   extras : Array String := #[]
 
@@ -161,6 +168,7 @@ def withProblem {α : Type} (o : ExtractOpts) (k : Problem → TermElabM α) : T
         pure (goal, extraHyps, carrier, hyps, extras)).run seed
     let some carrier := carrier
       | throwError "{o.tac}: no usable hypotheses in context"
+    let carrier := some carrier
     if o.needHyps && hyps.isEmpty then
       throwError "{o.tac}: no usable hypotheses in context"
     if atoms.isEmpty then
@@ -198,6 +206,68 @@ def withProblem {α : Type} (o : ExtractOpts) (k : Problem → TermElabM α) : T
         return (.rel (← Constraint.mk' a b r), #[])
       finish (some α) goal #[]
 
+/-- Translate a hypothesis to a constraint when it is a relation over the carrier (or fixes a missing one),
+returning the carrier it used. -/
+private def translateHyp (carrier : Option Expr) (decl : LocalDecl) (ty : Expr) :
+    ProblemM (Option (Expr × Constraint)) := do
+  let some (α, a, b, r) := relOf? ty | return none
+  if let some β := carrier then
+    unless ← withReducible (isDefEq α β) do return none
+  let some c ← tryTranslate (Constraint.mk' a b r decl.userName) | return none
+  return some (α, { c with prop := ty })
+
+/-- Collect every nameable hypothesis that is a proposition: as a constraint when it is a relation over the
+carrier that translates, otherwise as a text-only fact. -/
+private def collectAll (carrier : Option Expr) :
+    ProblemM (Option Expr × Array Constraint × Array (Name × Expr)) := do
+  let mut carrier := carrier
+  let mut hyps := #[]
+  let mut facts := #[]
+  for decl in ← getLCtx do
+    unless nameable decl do continue
+    let ty ← instantiateMVars decl.type
+    unless ← isProp ty do continue
+    match ← translateHyp carrier decl ty with
+    | some (α, c) =>
+      carrier := carrier <|> some α
+      hyps := hyps.push c
+    | none => facts := facts.push (decl.userName, ty)
+  return (carrier, hyps, facts)
+
+/-- Extract the main goal and every nameable hypothesis, never rejecting a goal: anything without a
+polynomial form is kept with its text. Runs `k` in the goal's context (extended with the binders of an
+`∃` goal whose body translates). -/
+def withLenientProblem {α : Type} (k : Problem → TermElabM α) : TacticM α := withMainContext do
+  let tgt ← instantiateMVars (← (← getMainGoal).getType)
+  let finish (carrier : Option Expr) (goal : ProblemM Goal) (seed : Array Expr) : TermElabM α := do
+    let ((goal, (carrier, hyps, facts)), atoms) ← (do
+        let goal ← goal
+        pure (goal, ← collectAll carrier)).run seed
+    k { carrier, atoms, hyps, goal, facts }
+  let other : ProblemM Goal := pure (.other tgt)
+  if tgt.isConstOf ``False then
+    finish none (pure .falsum) #[]
+  else if tgt.isAppOf ``Exists then
+    peelExists tgt #[] fun vars body => do
+      let goal : ProblemM Goal := do
+        let mut cs := #[]
+        for c in conjuncts body do
+          let some (_, a, b, r) := relOf? c | return .other tgt
+          let some con ← tryTranslate (Constraint.mk' a b r) | return .other tgt
+          cs := cs.push { con with prop := c }
+        unless (← get).size == vars.size do return .other tgt
+        pure (.exists_ vars cs)
+      if vars.isEmpty then finish none other #[] else finish (← inferType vars[0]!) goal vars
+  else
+    match relOf? tgt with
+    | some (α, a, b, r) =>
+      let goal : ProblemM Goal := do
+        match ← tryTranslate (Constraint.mk' a b r) with
+        | some c => pure (.rel { c with prop := tgt })
+        | none => pure (.other tgt)
+      finish (some α) goal #[]
+    | none => finish none other #[]
+
 /-- Delaborated atoms, for reconstruction (call inside `withProblem`'s continuation). -/
 def Problem.atomStx (p : Problem) : TermElabM (Array (TSyntax `term)) :=
   p.atoms.mapM fun a => PrettyPrinter.delab a
@@ -205,23 +275,39 @@ def Problem.atomStx (p : Problem) : TermElabM (Array (TSyntax `term)) :=
 /-- The Sage variable names, `x0 … x{n-1}`. -/
 def Problem.vars (p : Problem) : List String := sageVarNames p.atoms
 
-private def Constraint.toJson (c : Constraint) : Json :=
-  Json.mkObj <| [("poly", Json.str c.poly), ("rel", Json.str c.rel.tag)] ++
-    (match c.src with | some n => [("name", Json.str n.toString)] | none => [])
+private def text (e : Expr) : MetaM Json := return Json.str (toString (← ppExpr e))
 
-/-- Serialization for the daemon (`certify`): variables, a Lean rendering of each atom, the
-hypotheses with names and relation tags, and the goal. -/
+private def Constraint.toJson (c : Constraint) : MetaM Json := do
+  let base := [("poly", Json.str c.poly), ("rel", Json.str c.rel.tag)] ++
+    (match c.src with | some n => [("name", Json.str n.toString)] | none => [])
+  match c.prop with
+  | some e => return Json.mkObj (base ++ [("text", ← text e)])
+  | none => return Json.mkObj base
+
+/-- Serialization for the daemon: variables, a Lean rendering of each atom, the carrier type, the
+hypotheses (with names, relation tags and text; text only for facts), and the goal. -/
 def Problem.toJson (p : Problem) : MetaM Json := do
-  let atoms ← p.atoms.mapM fun a => return Json.str (toString (← ppExpr a))
-  let goal := match p.goal with
-    | .rel c => Json.mkObj [("kind", "rel"), ("poly", Json.str c.poly), ("rel", Json.str c.rel.tag)]
-    | .falsum => Json.mkObj [("kind", "false")]
-    | .exists_ bs body => Json.mkObj
-        [("kind", "exists"), ("binders", Json.num bs.size), ("body", Json.arr (body.map (·.toJson)))]
+  let atoms ← p.atoms.mapM text
+  let goal ← match p.goal with
+    | .rel c => do
+      let textField ← match c.prop with
+        | some e => pure [("text", ← text e)]
+        | none => pure []
+      let base : List (String × Json) := [("kind", "rel"), ("poly", Json.str c.poly), ("rel", Json.str c.rel.tag)]
+      pure <| Json.mkObj (base ++ textField)
+    | .falsum => pure <| Json.mkObj [("kind", "false")]
+    | .exists_ bs body => do
+      pure <| Json.mkObj [("kind", "exists"), ("binders", Json.num bs.size),
+        ("body", Json.arr (← body.mapM (·.toJson)))]
+    | .other e => do pure <| Json.mkObj [("kind", "other"), ("text", ← text e)]
+  let facts ← p.facts.mapM fun (n, e) => do
+    return Json.mkObj [("name", Json.str n.toString), ("text", ← text e)]
+  let carrier ← match p.carrier with | some c => text c | none => pure (Json.str "")
   return Json.mkObj
     [ ("vars", Json.arr (p.vars.toArray.map Json.str))
     , ("atoms", Json.arr atoms)
-    , ("hyps", Json.arr (p.hyps.map (·.toJson)))
+    , ("carrier", carrier)
+    , ("hyps", Json.arr ((← p.hyps.mapM (·.toJson)) ++ facts))
     , ("goal", goal) ]
 
 end Veriphy
