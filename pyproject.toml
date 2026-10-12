@@ -109,6 +109,8 @@ select = ["C", "E", "F", "W", "B", "I", "D", "N", "UP", "YTT", "ANN", "S",
 "docs/examples/*" = ["ANN", "D", "B018"]
 "docs/generated/*" = ["ANN", "D"]
 "test_*" = ["ANN", "PLR2004"]
+# Runs Lean on emitted text: the one place the tests start a process.
+"tests/toolkit/conftest.py" = ["S603", "S404"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -134,6 +136,8 @@ check-class-attributes = false
 DEP001 = ["sage"]
 
 [tool.bandit]
+# Runs Lean on emitted text: the one place the tests start a process.
+exclude_dirs = ["tests/toolkit/conftest.py"]
 # Read by the checks nox session, which passes `-c pyproject.toml`. B101 is the
 # bandit counterpart of the ruff S101 ignore above: asserts are how tests assert.
 skips = ["B101"]
