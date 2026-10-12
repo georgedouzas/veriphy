@@ -33,14 +33,10 @@ def guardBridge (what : String) : CoreM Unit := do
     throwError "veriphy: the Sage bridge is disabled during replay, but the replacement called \
       Sage ({what}); a committed proof must not need Sage"
 
-/-- Run a daemon request (any `Bridge.*` method) from a tactic. Tactics reach Sage only through here. -/
+/-- Run a daemon request (a `Bridge` call) from a tactic. Tactics reach Sage only through here. -/
 def run {α : Type} (what : String) (x : IO α) : CoreM α := do
   guardBridge what
   x
-
-/-- `Bridge.call` from a tactic, guarded. -/
-def call {α : Type} (method : String) (params : Json) (decode : Json → Except String α) : CoreM α :=
-  run method (Bridge.call method params decode)
 
 end Kit
 

@@ -3,8 +3,7 @@ Veriphy bridge client: talks JSON-RPC to the Sage daemon (the `veriphy` Python p
 started as `sage -python -m veriphy.sage_server`).
 
 The daemon is an UNTRUSTED oracle. This module only transports data; soundness
-lives entirely in the certificate checkers (`Veriphy/Tactic/*`), which must close
-every goal through the kernel (`ring`, `positivity`, `norm_num`, ...).
+lives entirely in Lean, which checks every proof a script emits.
 
 Every method is one `call`: a JSON request plus a decoder for its result. Tactics
 reach the daemon through `Veriphy.Kit.call` (which refuses during replay), not
@@ -37,25 +36,6 @@ def Config.resolve (cfg : Config) : IO (String × Array String) := do
         (`sage -pip install veriphy`)"
     return (exe, #["-python", path])
   | none => return (exe, #["-python", "-m", cfg.module])
-
-/-- A polynomial as a certificate-friendly term list: each term is a rational
-coefficient (as a string, e.g. `"-3/2"`) and one exponent per variable. -/
-structure Term where
-  coeff : String
-  exps : List Nat
-  deriving Repr, Inhabited
-
-/-- One irreducible factor with multiplicity. -/
-structure Factor where
-  terms : List Term
-  mult : Nat
-  deriving Repr, Inhabited
-
-/-- A factorization certificate: `unit * ∏ factorᵢ ^ multᵢ`. -/
-structure FactorCert where
-  unit : String
-  factors : List Factor
-  deriving Repr, Inhabited
 
 /-- Why the daemon gave no answer, from its stderr: a missing package names the install command. -/
 private def startupFailure (exe : String) (stderr : String) : IO.Error :=
@@ -172,118 +152,8 @@ def call {α : Type} (method : String) (params : Json) (decode : Json → Except
 
 /-! ## Decoders -/
 
-def strs (l : List String) : Json := Json.arr (l.toArray.map Json.str)
-
 def field {α : Type} (j : Json) (k : String) (f : Json → Except String α) : Except String α := do
   f (← j.getObjVal? k)
-
-def listOf {α : Type} (f : Json → Except String α) (j : Json) : Except String (List α) := do
-  (← j.getArr?).toList.mapM f
-
-def parseTerm (j : Json) : Except String Term := do
-  return { coeff := ← field j "coeff" (·.getStr?), exps := ← field j "exps" (listOf (·.getNat?)) }
-
-def parsePoly : Json → Except String (List Term) := listOf parseTerm
-
-/-! ## Certificate methods -/
-
-/-- Ask the daemon to factor `poly` (Sage/Python syntax) over `ℚ[vars]`. -/
-def factor (poly : String) (vars : List String) (cfg : Config := {}) : IO FactorCert :=
-  call "factor" (Json.mkObj [("poly", Json.str poly), ("vars", strs vars)]) (cfg := cfg) fun r => do
-    let factors ← field r "factors" <| listOf fun j => do
-      return ({ terms := ← field j "terms" parsePoly, mult := ← field j "mult" (·.getNat?) } : Factor)
-    return { unit := ← field r "unit" (·.getStr?), factors }
-
-/-- One square `coeff * q^2` of a sum-of-squares certificate. -/
-structure Square where
-  coeff : String
-  terms : List Term
-  deriving Repr, Inhabited
-
-def parseSquare (j : Json) : Except String Square := do
-  return { coeff := ← field j "coeff" (·.getStr?), terms := ← field j "terms" parsePoly }
-
-/-- SOS certificate for `0 ≤ poly`: `poly = Σ coeffᵢ * qᵢ²`, all `coeffᵢ ≥ 0`. -/
-def sos (poly : String) (vars : List String) (cfg : Config := {}) (hints : List String := []) :
-    IO (List Square) :=
-  call "sos" (Json.mkObj [("poly", Json.str poly), ("vars", strs vars), ("hints", strs hints)])
-    (cfg := cfg) (field · "squares" (listOf parseSquare))
-
-/-- Rational roots of a univariate polynomial over ℚ (as rational strings). -/
-def roots (poly : String) (varName : String) (cfg : Config := {}) : IO (List String) :=
-  call "roots" (Json.mkObj [("poly", Json.str poly), ("var", Json.str varName)]) (cfg := cfg)
-    (field · "roots" (listOf (·.getStr?)))
-
-/-- Ideal-membership certificate: cofactors `cᵢ` with `target = Σ cᵢ * hypᵢ`.
-Fails (daemon error) when `target` is not in the ideal of the hypotheses. -/
-def lincomb (target : String) (hyps : List String) (vars : List String)
-    (cfg : Config := {}) : IO (List (List Term)) :=
-  call "lincomb" (Json.mkObj [("target", Json.str target), ("hyps", strs hyps), ("vars", strs vars)])
-    (cfg := cfg) (field · "cofactors" (listOf parsePoly))
-
-/-- Closed form of `∑_{k=0}^{n-1} f(k)` as a polynomial in `n` (term list). -/
-def sumClosedForm (summand : String) (cfg : Config := {}) : IO (List Term) :=
-  call "sum" (Json.mkObj [("summand", Json.str summand)]) (cfg := cfg) (field · "closed_form" parsePoly)
-
-/-- Linear Farkas certificate: multipliers `mᵢ` (rational strings), the constant `κ = Σ mᵢ pᵢ`, and
-whether a strict hypothesis carries positive weight. -/
-structure FarkasCert where
-  multipliers : List String
-  kappa : String
-  strict : Bool
-  deriving Repr, Inhabited
-
-def farkas (polys rels vars : List String) (cfg : Config := {}) : IO FarkasCert :=
-  call "farkas" (Json.mkObj [("polys", strs polys), ("rels", strs rels), ("vars", strs vars)])
-    (cfg := cfg) fun r => do
-      return { multipliers := ← field r "multipliers" (listOf (·.getStr?)),
-               kappa := ← field r "kappa" (·.getStr?), strict := ← field r "strict" (·.getBool?) }
-
-/-- Rational witness for a system of equations, linear inequalities and disequalities. -/
-def exists_ (vars eqs les lts nes : List String) (cfg : Config := {}) : IO (List String) :=
-  call "exists" (Json.mkObj
-      [("vars", strs vars), ("eqs", strs eqs), ("les", strs les), ("lts", strs lts), ("nes", strs nes)])
-    (cfg := cfg) (field · "point" (listOf (·.getStr?)))
-
-/-! ## Agent certificates -/
-
-/-- One named weight or cofactor (a polynomial) on a hypothesis. -/
-structure Weighted where
-  name : String
-  poly : List Term
-  deriving Repr, Inhabited
-
-/-- A validated `certify` result; which fields are set depends on the family. -/
-structure AgentCert where
-  /-- identity: cofactors; inequality: hypothesis weights. -/
-  weights : List Weighted := []
-  /-- inequality: `coeff * q²` terms. -/
-  squares : List Square := []
-  /-- inequality refuting `False`: the constant `κ` and whether a strict hypothesis is used. -/
-  kappa : Option String := none
-  strict : Bool := false
-  /-- witness: one rational per binder. -/
-  point : List String := []
-  deriving Repr, Inhabited
-
-/-- Run an agent-written Sage `script` against a serialized problem and return its certificate,
-validated against `family`'s schema (`identity`, `inequality`, `witness`). -/
-def certify (problem : Json) (family script : String) (cfg : Config := {}) : IO AgentCert :=
-  call "certify" (Json.mkObj
-      [("problem", problem), ("family", Json.str family), ("script", Json.str script)]) (cfg := cfg)
-    fun r => do
-      let weighted (k : String) : Except String (List Weighted) :=
-        match r.getObjVal? k with
-        | .ok j => listOf (fun j => do
-            return { name := ← field j "name" (·.getStr?), poly := ← field j "poly" parsePoly }) j
-        | .error _ => pure []
-      let opt {α} (k : String) (f : Json → Except String α) : Except String (Option α) :=
-        match r.getObjVal? k with | .ok j => some <$> f j | .error _ => pure none
-      return { weights := (← weighted "cofactors") ++ (← weighted "weights"),
-               squares := (← opt "squares" (listOf parseSquare)).getD [],
-               kappa := ← opt "kappa" (·.getStr?),
-               strict := (← opt "strict" (·.getBool?)).getD false,
-               point := (← opt "point" (listOf (·.getStr?))).getD [] }
 
 /-! ## Proof scripts -/
 

@@ -54,7 +54,7 @@
 
 ## 6. Remove ready-made certificates (checker-families, agent-certify, proof-reconstruction, oracle-methods)
 
-- [ ] 6.1 Delete `sage_factor`, `sage_sos`, `sage_lincomb`, `sage_witness`, `sage_sum`, `sage_farkas`, `sage_exists`, `sage_certify` and `#sage_factor`/`#sage_sum`. Delete the daemon methods `factor`, `sos`, `roots`, `lincomb`, `farkas`, `exists`, `sum` and `certify`, the Lean reconstruction and the checkers only they used, and their tests (now covered by the benchmark). Verify that `lake build`, `lake build VeriphyTest`, `lake build VeriphyTest.Benchmark` and `nox -s tests` are green, that an unknown-method test exists for `farkas`, and that a grep finds no remaining references.
+- [x] 6.1 Delete `sage_factor`, `sage_sos`, `sage_lincomb`, `sage_witness`, `sage_sum`, `sage_farkas`, `sage_exists`, `sage_certify` and `#sage_factor`/`#sage_sum`. Delete the daemon methods `factor`, `sos`, `roots`, `lincomb`, `farkas`, `exists`, `sum` and `certify`, the Lean reconstruction and the checkers only they used, and their tests (now covered by the benchmark). Verify that `lake build`, `lake build VeriphyTest`, `lake build VeriphyTest.Benchmark` and `nox -s tests` are green, that an unknown-method test exists for `farkas`, and that a grep finds no remaining references.
 - [ ] 6.2 Document migration: a table in `docs/development/index.md` mapping each removed tactic to its recipe, a "Building proofs with sage_run" section in `docs/overview/user_guide.md`, README updates, and future work (a shared certificate repository). Verify that `nox -s docs -- build` succeeds without warnings.
 
 ## 7. Effectiveness gate and integration

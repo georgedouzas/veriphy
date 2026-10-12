@@ -2,14 +2,8 @@
 
 from collections.abc import Callable
 
-from sage.all import QQ, PolynomialRing
-from sage.rings.polynomial.multi_polynomial import MPolynomial
-from sage.rings.polynomial.polynomial_element import Polynomial
-from sage.structure.parent import Parent
-
-from veriphy.core import RELATIONS, Coercer, JsonObject, JsonValue, Method, MethodError, ParamError, VeriphyError
+from veriphy.core import Coercer, JsonObject, JsonValue, Method, MethodError, ParamError, VeriphyError
 from veriphy.oracle._encoding import encode
-from veriphy.toolkit import create_ring, parse_polynomial
 
 MISSING = object()
 
@@ -21,63 +15,6 @@ def _get_param(pname: str, req: JsonObject, default: object = MISSING) -> object
     if default is not MISSING:
         return default
     raise ParamError(param=pname, reason='missing')
-
-
-def _coerce_ring(pname: str, req: JsonObject, ctx: dict[str, object]) -> tuple[str, object]:
-    """Return the multivariate ring QQ[vars] for a non-empty list of identifiers, passed as `R`."""
-    names = _get_param(pname, req)
-    if not isinstance(names, list) or not names:
-        raise ParamError(param=pname, reason='must be a non-empty list of identifiers')
-    bad = [n for n in names if not isinstance(n, str) or not n.isidentifier()]
-    if bad:
-        raise ParamError(param=pname, reason=f'not valid identifiers: {bad}')
-    ring = create_ring(names)
-    ctx['R'] = ring
-    return 'R', ring
-
-
-def _coerce_univariate_ring(pname: str, req: JsonObject, ctx: dict[str, object]) -> tuple[str, object]:
-    """Return the univariate ring QQ[var] for one identifier, passed as `R`."""
-    name = _get_param(pname, req)
-    if not isinstance(name, str) or not name.isidentifier():
-        raise ParamError(param=pname, reason='must be an identifier')
-    ctx['R'] = PolynomialRing(QQ, name)
-    return 'R', ctx['R']
-
-
-def _parse_poly(pname: str, s: object, ctx: dict[str, object]) -> MPolynomial | Polynomial:
-    """Return a polynomial string parsed in the ring a previous coercer built."""
-    ring = ctx.get('R')
-    if not isinstance(ring, Parent):
-        raise ParamError(param=pname, reason='declared before the variables')
-    return parse_polynomial(ring, s, param=pname)
-
-
-def _coerce_poly(pname: str, req: JsonObject, ctx: dict[str, object]) -> tuple[str, object]:
-    """Return one polynomial parameter parsed in the current ring."""
-    return pname, _parse_poly(pname, _get_param(pname, req), ctx)
-
-
-def _coerce_poly_list(pname: str, req: JsonObject, ctx: dict[str, object]) -> tuple[str, object]:
-    """Return a list of polynomial parameters parsed in the current ring, empty when absent."""
-    items = _get_param(pname, req, [])
-    if not isinstance(items, list):
-        raise ParamError(param=pname, reason='must be a list of polynomial strings')
-    return pname, [_parse_poly(pname, s, ctx) for s in items]
-
-
-def _coerce_relations(*allowed: str) -> Coercer:
-    """Return a coercer for a list of relation tags drawn from `allowed` (all relations when empty)."""
-    tags = allowed or RELATIONS
-
-    def coerce(pname: str, req: JsonObject, _ctx: dict[str, object]) -> tuple[str, object]:
-        """Return the relation tags, rejecting any outside the allowed set."""
-        items = _get_param(pname, req)
-        if not isinstance(items, list) or any(r not in tags for r in items):
-            raise ParamError(param=pname, reason=f'must be a list of relations in {list(tags)}')
-        return pname, items
-
-    return coerce
 
 
 def _coerce_str(pname: str, req: JsonObject, _ctx: dict[str, object]) -> tuple[str, object]:

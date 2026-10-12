@@ -5,13 +5,9 @@ Lean → Sage: `exprToSage` walks a ring expression; anything that is not
 `+ - * ^ -ₙ`, a numeral, or a division by a numeral (a rational coefficient)
 becomes an atom `x0, x1, ...` (collected in state).
 
-Sage → Lean: certificates arrive as structured term lists (`Bridge.Term`:
-rational coefficient + exponent vector); the builders that turn them into
-syntax live in `Veriphy.Kit.Build` (imported here, so `ratStx`/`polyStx` stay
-reachable through this module).
 -/
 import Mathlib.Tactic.Ring
-import Veriphy.Kit.Build
+import Lean
 
 namespace Veriphy
 

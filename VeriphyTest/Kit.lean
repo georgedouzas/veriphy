@@ -1,6 +1,6 @@
 /-
-Sage-free tests of the certificate kit: builders, problem extraction, families and
-replay, fed literal certificates. `lake build VeriphyTest.Kit` needs no Sage.
+Sage-free tests of the kit: lenient problem extraction, closeAndEmit's checks, replay
+and the axiom guard. `lake build VeriphyTest.Kit` needs no Sage.
 -/
 import Mathlib.Algebra.Order.Ring.Rat
 import Mathlib.Tactic.Linarith
@@ -12,77 +12,7 @@ open Lean Elab Tactic Meta Veriphy
 set_option linter.unusedVariables false
 set_option linter.unusedTactic false
 
-/-! ## Builders -/
-
-/-- info: -(3 / 2) -/
-#guard_msgs in
-run_elab do logInfo m!"{← ratStx' "-3/2"}"
-
-/-- error: veriphy: bad rational in certificate: 1.5 -/
-#guard_msgs in
-run_elab do discard <| ratStx' "1.5"
-
-/-- info: x ^ 2 * z -/
-#guard_msgs in
-run_elab do
-  let atoms ← #[`x, `y, `z].mapM fun n => `($(mkIdent n))
-  logInfo m!"{← polyStx atoms [{ coeff := "1", exps := [2, 0, 1] }]}"
-
-/-- info: 0 -/
-#guard_msgs in
-run_elab do logInfo m!"{← polyStx #[] []}"
-
--- zero weights dropped, unit weights omitted, no hygiene markers
-/-- info: h2 + (1 / 3) * h3 + (-2) * h4 -/
-#guard_msgs in
-run_elab do
-  let hs := #[`h1, `h2, `h3, `h4].map fun n => (⟨(mkIdent n).raw⟩ : TSyntax `term)
-  let ws := #["0", "1", "1/3", "-2"].map Bridge.Term.const
-  logInfo m!"{← weightedSum #[] (ws.zip hs)}"
-
-/-- error: veriphy: empty certificate (every weight is zero) -/
-#guard_msgs in
-run_elab do
-  discard <| weightedSum #[] #[(Bridge.Term.const "0", ⟨(mkIdent `h).raw⟩)]
-
-/-- error: veriphy: witness has 3 values for 2 binders -/
-#guard_msgs in
-run_elab do discard <| witnessStx ["1", "2", "3"] 2 (← `(trivial))
-
-/-- info: ⟨1, -(1 / 2), by norm_num⟩ -/
-#guard_msgs in
-run_elab do logInfo m!"{← witnessStx ["1", "-1/2"] 2 (← `(by norm_num))}"
-
--- fresh names avoid the context and carry no macro scopes
-/-- info: hfarkas_1 -/
-#guard_msgs in
-example (hfarkas : True) : True := by
-  run_tac do withMainContext do logInfo m!"{← freshIdent `hfarkas}"
-  trivial
-
-/-- info: ( by_contra hfarkas
-  simp only [not_le] at hfarkas) -/
-#guard_msgs in
-run_elab do
-  let hn := mkIdent `hfarkas
-  let s1 ← `(tactic| by_contra $hn:ident)
-  let s2 ← `(tactic| simp only [$(mkIdent ``not_le):ident] at $hn:ident)
-  logInfo m!"{← stepsStx #[s1, s2]}"
-
-/-! ## Problem extraction -/
-
-/-- Test tactic: extract with a preset and print the serialized problem, then admit the goal. -/
-elab "kit_extract " preset:str : tactic => do
-  let o : ExtractOpts := match preset.getString with
-    | "lincomb" => { tac := "kit", goalRels := #[.eq], hypRels := #[.eq] }
-    | "farkas" => { tac := "kit", allowFalse := true, hypRels := #[.eq, .le, .lt],
-                    negateGoalAs := some `hfarkas }
-    | "exists" => { tac := "kit", allowExists := true }
-    | _ => { tac := "kit", goalRels := #[.eq, .le, .lt, .ne], allowFalse := true,
-             hypRels := #[.eq, .le, .lt, .ne] }
-  let j ← withProblem o fun p => p.toJson
-  logInfo m!"{j.compress}"
-  (← getMainGoal).admit (synthetic := true)
+/-! ## Problem extraction (lenient) -/
 
 /-- Test tactic: lenient extraction, printing the serialized problem, then admit the goal. -/
 elab "kit_lenient" : tactic => do
@@ -114,175 +44,19 @@ info: {"atoms":["x"],"carrier":"ℤ","goal":{"kind":"other","text":"x ∣ 6"},"h
 example (x : ℤ) (h : x = 2) : x ∣ 6 := by
   kit_lenient
 
--- `≥` flips; the atom shared by goal and hypothesis appears once
+-- `≥` flips, `¬ (v = 0)` is `≠`, an inaccessible hypothesis is never offered, a hypothesis over
+-- another carrier is kept as text
 /--
-info: {"atoms":["x"],"carrier":"ℚ","goal":{"kind":"rel","lhs":"x ^ 2","lhs_poly":"(x0)^2","poly":"((x0)^2) - (4)","rel":"eq","rhs":"4","rhs_poly":"4"},"hyps":[{"name":"h","poly":"(x0) - (2)","rel":"le"},{"name":"h'","poly":"(2) - (x0)","rel":"le"}],"vars":["x0"]}
+info: {"atoms":["x","y"],"carrier":"ℚ","goal":{"kind":"rel","lhs":"x","lhs_poly":"x0","poly":"(x0) - ((x1 + x0))","rel":"le","rhs":"y + x","rhs_poly":"(x1 + x0)","text":"x ≤ y + x"},"hyps":[{"name":"h1","poly":"(x1) - (x0)","rel":"le","text":"x ≥ y"},{"name":"h2","poly":"(x0) - (0)","rel":"ne","text":"¬x = 0"},{"name":"hn","text":"n = 3"}],"vars":["x0","x1"]}
 -/
 #guard_msgs (info, error, drop warning) in
-example (x : ℚ) (h : x ≤ 2) (h' : x ≥ 2) : x ^ 2 = 4 := by kit_extract "all"
-
-/--
-info: {"atoms":["f a"],"carrier":"ℚ","goal":{"kind":"rel","lhs":"f a ^ 2","lhs_poly":"(x0)^2","poly":"((x0)^2) - (1)","rel":"eq","rhs":"1","rhs_poly":"1"},"hyps":[{"name":"h","poly":"(x0) - (1)","rel":"eq"}],"vars":["x0"]}
--/
-#guard_msgs (info, error, drop warning) in
-example (f : ℚ → ℚ) (a : ℚ) (h : f a = 1) : f a ^ 2 = 1 := by kit_extract "lincomb"
-
--- `¬ (v = 0)` is `≠`
-/--
-info: {"atoms":["v"],"carrier":"ℚ","goal":{"kind":"false"},"hyps":[{"name":"hv","poly":"(x0) - (0)","rel":"ne"}],"vars":["x0"]}
--/
-#guard_msgs (info, error, drop warning) in
-example (v : ℚ) (hv : ¬ (v = 0)) : False := by kit_extract "all"
-
--- untranslatable hypothesis skipped cleanly (no atom from it); other carriers ignored; inaccessible names excluded
-/--
-info: {"atoms":["x","y"],"carrier":"ℚ","goal":{"kind":"rel","lhs":"x","lhs_poly":"x0","poly":"(x0) - (x1)","rel":"eq","rhs":"y","rhs_poly":"x1"},"hyps":[{"name":"h1","poly":"((x0 + x1)) - (1)","rel":"eq"}],"vars":["x0","x1"]}
--/
-#guard_msgs (info, error, drop warning) in
-example (x y : ℚ) (n : ℕ) (hn : n = 3) (h1 : x + y = 1) (h2 : x ^ n = 0) : y = x → x = y := by
+example (x y : ℚ) (n : ℕ) (hn : n = 3) (h1 : x ≥ y) (h2 : ¬ (x = 0)) : y = x → x ≤ y + x := by
   intro
-  kit_extract "lincomb"
-
--- refutation preset: the negated goal becomes the last hypothesis, the goal `False`
-/--
-info: {"atoms":["u","v"],"carrier":"ℚ","goal":{"kind":"false"},"hyps":[{"name":"h1","poly":"(0) - (x0)","rel":"le"},{"name":"h2","poly":"((x0 + x1)) - (0)","rel":"eq"},{"name":"hfarkas","poly":"(0) - (x0)","rel":"lt"}],"vars":["x0","x1"]}
--/
-#guard_msgs (info, error, drop warning) in
-example (u v : ℚ) (h1 : 0 ≤ u) (h2 : u + v = 0) : u ≤ 0 := by kit_extract "farkas"
-
--- existential: binders are atoms 0, 1; conjuncts split
-/--
-info: {"atoms":["x","y"],"carrier":"ℚ","goal":{"binders":2,"body":[{"poly":"((x0 + x1)) - (1)","rel":"eq"},{"poly":"(0) - (x0)","rel":"lt"},{"poly":"(x0) - (x1)","rel":"lt"}],"kind":"exists"},"hyps":[],"vars":["x0","x1"]}
--/
-#guard_msgs (info, error, drop warning) in
-example : ∃ x y : ℚ, x + y = 1 ∧ 0 < x ∧ x < y := by kit_extract "exists"
-
-/-- error: kit: the body has free subterms other than the bound variables -/
-#guard_msgs (info, error, drop warning) in
-example (a : ℚ) : ∃ x : ℚ, x = a := by kit_extract "exists"
-
-/-- error: kit: goal must be `a = b`, got
-  x ∣ y -/
-#guard_msgs (info, error, drop warning) in
-example (x y : ℤ) : x ∣ y := by kit_extract "lincomb"
-
-/-! ## Checker families, fed literal certificates -/
-
-/-- Test tactics: close the goal through a family with a literal certificate. -/
-elab "kit_lincomb " combo:term : tactic => do
-  closeAndEmit (← Checker.linearCombination combo)
-
-elab "kit_refute " combo:term " kappa " k:str strict:(" strict")? : tactic => do
-  let h ← withMainContext (freshIdent `hfarkas)
-  let pre ← if (← whnfR (← getMainTarget)).isConstOf ``False then pure #[] else Checker.negateGoal h
-  let combo ← combo.raw.replaceM fun s => pure <|
-    if s.isIdent && s.getId == `NEG then some (mkIdent h.getId).raw else none
-  closeAndEmit (← Checker.refute pre (← `(ℚ)) k.getString strict.isSome ⟨combo⟩)
-
-/-- Number of leading `∃` binders. -/
-partial def existsBinders (e : Expr) : Nat :=
-  match e.getAppFnArgs with
-  | (``Exists, #[_, .lam _ _ b _]) => 1 + existsBinders b
-  | _ => 0
-
-elab "kit_witness " vs:str* : tactic => do
-  closeAndEmit (← Checker.witness (vs.toList.map (·.getString)) (existsBinders (← getMainTarget)))
-
-elab "kit_sum " n:ident : tactic => do closeAndEmit (← Checker.sumInduction n)
-
-elab "kit_decide" : tactic => do closeAndEmit (← Checker.cases)
-
-set_option veriphy.checkReplay true
-
--- identity: ideal-membership certificate checked by linear_combination
-/--
-info: Sage-free replacement: 
-  [apply] linear_combination (a + b + 3) * h - 2 * h'
--/
-#guard_msgs in
-example (a b : ℚ) (h : a + b = 3) (h' : a * b = 2) : a ^ 2 + b ^ 2 = 5 := by
-  kit_lincomb (a + b + 3) * h - 2 * h'
-
--- wrong cofactors: the checker rejects, nothing is emitted, the goal is unchanged
-/--
-info: Sage-free replacement: 
-  [apply] linear_combination (a + b + 3) * h - 2 * h'
--/
-#guard_msgs in
-example (a b : ℚ) (h : a + b = 3) (h' : a * b = 2) : a ^ 2 + b ^ 2 = 5 := by
-  fail_if_success kit_lincomb (a + b) * h
-  kit_lincomb (a + b + 3) * h - 2 * h'
-
--- inequality: a weighted square
-/--
-info: Sage-free replacement: 
-  [apply] linear_combination sq_nonneg (x - y)
--/
-#guard_msgs in
-example (x y : ℚ) : 2 * x * y ≤ x ^ 2 + y ^ 2 := by kit_lincomb sq_nonneg (x - y)
-
--- a negative weight on an inequality: positivity cannot certify it
-example (x : ℚ) (h1 : 0 ≤ x) : 0 ≤ x := by
-  fail_if_success kit_lincomb (-1) * h1
-  exact h1
-
--- inequality, refutation form from `False`
-/--
-info: Sage-free replacement: 
-  [apply] (
-    have hfk : (2 : ℚ) ≤ 0 := by linear_combination h1 - h2 + 2 * h3
-    norm_num at hfk)
--/
-#guard_msgs in
-example (x y : ℚ) (h1 : x + y ≤ 1) (h2 : x - y = 3) (h3 : 0 ≤ y) : False := by
-  kit_refute h1 - h2 + 2 * h3 kappa "2"
-
--- a wrong refutation certificate fails inside the nested `have … := by`: the tactic must fail
-example (x y : ℚ) (h1 : x + y ≤ 1) (h2 : x - y = 3) (h3 : 0 ≤ y) : False := by
-  fail_if_success kit_refute h1 + h3 + 1 / 2 * h2 kappa "1"
-  linarith
-
--- refutation of a `≤` goal: negation step with a fresh, printable name
-/--
-info: Sage-free replacement: 
-  [apply] (
-    by_contra hfarkas
-    simp only [not_le, not_lt, ge_iff_le, gt_iff_lt] at hfarkas
-    have hfk : (0 : ℚ) < 0 := by linear_combination h2 + h3 + hfarkas
-    norm_num at hfk)
--/
-#guard_msgs in
-example (u v : ℚ) (h1 : 0 ≤ u) (h2 : u + v = 0) (h3 : 0 ≤ v) : u ≤ 0 := by
-  kit_refute h2 + h3 + NEG kappa "0" strict
-
--- witness
-/--
-info: Sage-free replacement: 
-  [apply] exact ⟨1, 1, by norm_num⟩
--/
-#guard_msgs in
-example : ∃ v₁ v₂ : ℚ, 2 * v₁ + v₂ = 3 * v₁ ∧ v₁ + 2 * v₂ = 3 * v₂ ∧ v₁ ≠ 0 := by
-  kit_witness "1" "1"
-
-/-- error: veriphy: witness has 1 values for 2 binders -/
-#guard_msgs in
-example : ∃ x y : ℚ, x = y := by kit_witness "1"
-
--- sum: no oracle data at all
-#guard_msgs (drop info) in
-example (n : ℕ) :
-    ∑ k ∈ Finset.range n, (k : ℚ) ^ 2 = (n : ℚ) ^ 3 / 3 - (n : ℚ) ^ 2 / 2 + (n : ℚ) / 6 := by
-  kit_sum n
-
--- cases
-/--
-info: Sage-free replacement: 
-  [apply] decide
--/
-#guard_msgs in
-example : ∀ x : Fin 4, x * x ≠ 2 := by kit_decide
+  kit_lenient
 
 /-! ## Replay -/
+
+set_option veriphy.checkReplay true
 
 /-- A deliberately hygienic proof: runs fine, but prints `hk✝`. -/
 elab "kit_hygienic" : tactic => do
@@ -339,3 +113,12 @@ example : (2 : ℕ) + 2 = 4 := by kit_emit decide
 -- classical reasoning stays allowed
 #guard_msgs (drop info) in
 example (p : Prop) : p ∨ ¬p := by kit_emit exact Classical.em p
+
+
+/-! ## closeAndEmit -/
+
+-- a failure inside a nested `by` fails the tactic (it is not just logged), and nothing is emitted
+example : (1 : ℚ) ≤ 2 := by
+  fail_if_success kit_emit (have h : (2 : ℚ) ≤ 1 := by norm_num
+                            exact absurd h (by norm_num))
+  norm_num
