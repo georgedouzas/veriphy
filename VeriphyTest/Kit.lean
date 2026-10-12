@@ -5,6 +5,11 @@ and the axiom guard. `lake build VeriphyTest.Kit` needs no Sage.
 import Mathlib.Algebra.Order.Ring.Rat
 import Mathlib.Tactic.Linarith
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
+import Mathlib.Analysis.SpecialFunctions.Pow.Real
+import Mathlib.Analysis.SpecialFunctions.Log.Basic
+import Mathlib.LinearAlgebra.Matrix.Notation
+import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
+import Mathlib.Algebra.Polynomial.Eval.Defs
 import Veriphy.Kit
 
 open Lean Elab Tactic Meta Veriphy
@@ -22,7 +27,7 @@ elab "kit_lenient" : tactic => do
 
 -- lenient: function applications are atoms; a hypothesis with no polynomial form (`x ^ n`) is kept as text
 /--
-info: {"atoms":["Real.cos x","x","Real.sin x"],"carrier":"ℝ","goal":{"kind":"rel","lhs":"Real.cos x","lhs_poly":"x0","poly":"(x0) - (1)","rel":"le","rhs":"1","rhs_poly":"1","text":"Real.cos x ≤ 1"},"hyps":[{"name":"h","poly":"(x1) - (1)","rel":"le","text":"x ≤ 1"},{"name":"hs","poly":"(x2) - (1)","rel":"le","text":"Real.sin x ≤ 1"},{"name":"hn","text":"x ^ n ≤ 2"}],"vars":["x0","x1","x2"]}
+info: {"atom_types":["ℝ","ℝ","ℝ","ℕ"],"atoms":["Real.cos x","x","Real.sin x","n"],"carrier":"ℝ","domain":[],"goal":{"expr":"(cos(x1)) - (1)","kind":"rel","lhs":"Real.cos x","lhs_poly":"x0","poly":"(x0) - (1)","rel":"le","rhs":"1","rhs_poly":"1","text":"Real.cos x ≤ 1"},"hyps":[{"expr":"(x1) - (1)","name":"h","poly":"(x1) - (1)","rel":"le","text":"x ≤ 1"},{"expr":"(sin(x1)) - (1)","name":"hs","poly":"(x2) - (1)","rel":"le","text":"Real.sin x ≤ 1"},{"expr":"((x1)^(x3)) - (2)","name":"hn","text":"x ^ n ≤ 2"}],"vars":["x0","x1","x2","x3"]}
 -/
 #guard_msgs (info, error, drop warning) in
 example (x : ℝ) (h : x ≤ 1) (hs : Real.sin x ≤ 1) (n : ℕ) (hn : x ^ n ≤ 2) : Real.cos x ≤ 1 := by
@@ -30,7 +35,7 @@ example (x : ℝ) (h : x ≤ 1) (hs : Real.sin x ≤ 1) (n : ℕ) (hn : x ^ n �
 
 -- lenient: an existential whose body translates keeps its binders
 /--
-info: {"atoms":["x","y"],"carrier":"ℚ","goal":{"binders":2,"body":[{"poly":"((x0 + x1)) - (1)","rel":"eq","text":"x + y = 1"},{"poly":"(x0) - (x1)","rel":"lt","text":"x < y"}],"kind":"exists"},"hyps":[],"vars":["x0","x1"]}
+info: {"atom_types":["ℚ","ℚ"],"atoms":["x","y"],"carrier":"ℚ","domain":[],"goal":{"binders":2,"body":[{"expr":"((x0 + x1)) - (1)","poly":"((x0 + x1)) - (1)","rel":"eq","text":"x + y = 1"},{"expr":"(x0) - (x1)","poly":"(x0) - (x1)","rel":"lt","text":"x < y"}],"kind":"exists"},"hyps":[],"vars":["x0","x1"]}
 -/
 #guard_msgs (info, error, drop warning) in
 example : ∃ x y : ℚ, x + y = 1 ∧ x < y := by
@@ -38,7 +43,7 @@ example : ∃ x y : ℚ, x + y = 1 ∧ x < y := by
 
 -- lenient: a goal with no polynomial form is kept as text, with the hypotheses still collected
 /--
-info: {"atoms":["x"],"carrier":"ℤ","goal":{"kind":"other","text":"x ∣ 6"},"hyps":[{"name":"h","poly":"(x0) - (2)","rel":"eq","text":"x = 2"}],"vars":["x0"]}
+info: {"atom_types":["ℤ"],"atoms":["x"],"carrier":"ℤ","domain":[],"goal":{"kind":"other","text":"x ∣ 6"},"hyps":[{"expr":"(x0) - (2)","name":"h","poly":"(x0) - (2)","rel":"eq","text":"x = 2"}],"vars":["x0"]}
 -/
 #guard_msgs (info, error, drop warning) in
 example (x : ℤ) (h : x = 2) : x ∣ 6 := by
@@ -47,7 +52,7 @@ example (x : ℤ) (h : x = 2) : x ∣ 6 := by
 -- `≥` flips, `¬ (v = 0)` is `≠`, an inaccessible hypothesis is never offered, a hypothesis over
 -- another carrier is kept as text
 /--
-info: {"atoms":["x","y"],"carrier":"ℚ","goal":{"kind":"rel","lhs":"x","lhs_poly":"x0","poly":"(x0) - ((x1 + x0))","rel":"le","rhs":"y + x","rhs_poly":"(x1 + x0)","text":"x ≤ y + x"},"hyps":[{"name":"h1","poly":"(x1) - (x0)","rel":"le","text":"x ≥ y"},{"name":"h2","poly":"(x0) - (0)","rel":"ne","text":"¬x = 0"},{"name":"hn","text":"n = 3"}],"vars":["x0","x1"]}
+info: {"atom_types":["ℚ","ℚ","ℕ"],"atoms":["x","y","n"],"carrier":"ℚ","domain":[],"goal":{"expr":"(x0) - ((x1 + x0))","kind":"rel","lhs":"x","lhs_poly":"x0","poly":"(x0) - ((x1 + x0))","rel":"le","rhs":"y + x","rhs_poly":"(x1 + x0)","text":"x ≤ y + x"},"hyps":[{"expr":"(x1) - (x0)","name":"h1","poly":"(x1) - (x0)","rel":"le","text":"x ≥ y"},{"expr":"(x0) - (0)","name":"h2","poly":"(x0) - (0)","rel":"ne","text":"¬x = 0"},{"expr":"(x2) - (3)","name":"hn","text":"n = 3"}],"vars":["x0","x1","x2"]}
 -/
 #guard_msgs (info, error, drop warning) in
 example (x y : ℚ) (n : ℕ) (hn : n = 3) (h1 : x ≥ y) (h2 : ¬ (x = 0)) : y = x → x ≤ y + x := by
@@ -122,3 +127,88 @@ example : (1 : ℚ) ≤ 2 := by
   fail_if_success kit_emit (have h : (2 : ℚ) ≤ 1 := by norm_num
                             exact absurd h (by norm_num))
   norm_num
+
+/-! ## Symbolic translation -/
+
+-- one rendering per constructor
+/--
+info: (-3/2)
+x1
+(x0 + 1)
+(x0 - x1)
+(x0 * x1)
+(1 / x0)
+(-x0)
+(x0)^(x1)
+mod(x0, 3)
+sqrt(x0)
+pi
+sum((k_)^(2), k_, 0, x0 - 1)
+product(k_, k_, 0, x0 - 1)
+matrix(SR, [[1, x0], [0, 1]])
+(matrix(SR, [[x0]])).det()
+-/
+#guard_msgs in
+run_elab do
+  let k := SymExpr.bvar "k_"
+  let terms : List SymExpr := [.num (-3) 2, .atom 1, .add (.atom 0) (.num 1 1), .sub (.atom 0) (.atom 1),
+    .mul (.atom 0) (.atom 1), .div (.num 1 1) (.atom 0), .neg (.atom 0), .pow (.atom 0) (.atom 1),
+    .mod (.atom 0) (.num 3 1), .fn "sqrt" (.atom 0), .const "pi", .rangeOp true "k_" (.atom 0) (.pow k (.num 2 1)),
+    .rangeOp false "k_" (.atom 0) k, .matrix [[.num 1 1, .atom 0], [.num 0 1, .num 1 1]],
+    .method "det" (.matrix [[.atom 0]]) []]
+  logInfo m!"{"\n".intercalate (terms.map (·.toSage))}"
+
+-- rational function; the denominator condition is discharged by `hy`
+/--
+info: {"atom_types":["ℝ","ℝ","ℝ","ℝ"],"atoms":["x / y","1 / (x ^ 2 + 1)","y","x"],"carrier":"ℝ","domain":[{"discharged_by":"hy","expr":"x2","kind":"ne","text":"y ≠ 0"},{"expr":"((x3)^(2) + 1)","kind":"ne","text":"x ^ 2 + 1 ≠ 0"}],"goal":{"expr":"(((x3 / x2) + (1 / ((x3)^(2) + 1)))) - (2)","kind":"rel","lhs":"x / y + 1 / (x ^ 2 + 1)","lhs_poly":"(x0 + x1)","poly":"((x0 + x1)) - (2)","rel":"le","rhs":"2","rhs_poly":"2","text":"x / y + 1 / (x ^ 2 + 1) ≤ 2"},"hyps":[{"expr":"(x2) - (0)","name":"hy","poly":"(x2) - (0)","rel":"ne","text":"y ≠ 0"}],"vars":["x0","x1","x2","x3"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (x y : ℝ) (hy : y ≠ 0) : x / y + 1 / (x ^ 2 + 1) ≤ 2 := by kit_lenient
+
+-- sqrt discharged by a nonnegativity hypothesis; log undischarged
+/--
+info: {"atom_types":["ℝ","ℝ","ℝ","ℝ"],"atoms":["√u","Real.log v","u","v"],"carrier":"ℝ","domain":[{"discharged_by":"hu","expr":"x2","kind":"nonneg","text":"0 ≤ u"},{"expr":"x3","kind":"pos","text":"0 < v"}],"goal":{"expr":"(0) - ((sqrt(x2) + log(x3)))","kind":"rel","lhs":"0","lhs_poly":"0","poly":"(0) - ((x0 + x1))","rel":"le","rhs":"√u + Real.log v","rhs_poly":"(x0 + x1)","text":"√u + Real.log v ≥ 0"},"hyps":[{"expr":"(0) - (x2)","name":"hu","poly":"(0) - (x2)","rel":"le","text":"0 ≤ u"}],"vars":["x0","x1","x2","x3"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (u v : ℝ) (hu : 0 ≤ u) : Real.sqrt u + Real.log v ≥ 0 := by kit_lenient
+
+-- transcendental identity: the atoms are a and b, not exp a
+/--
+info: {"atom_types":["ℝ","ℝ","ℝ","ℝ","ℝ"],"atoms":["Real.exp a","Real.exp b","Real.exp (a + b)","a","b"],"carrier":"ℝ","domain":[],"goal":{"expr":"((exp(x3) * exp(x4))) - (exp((x3 + x4)))","kind":"rel","lhs":"Real.exp a * Real.exp b","lhs_poly":"(x0 * x1)","poly":"((x0 * x1)) - (x2)","rel":"eq","rhs":"Real.exp (a + b)","rhs_poly":"x2","text":"Real.exp a * Real.exp b = Real.exp (a + b)"},"hyps":[],"vars":["x0","x1","x2","x3","x4"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (a b : ℝ) : Real.exp a * Real.exp b = Real.exp (a + b) := by kit_lenient
+
+-- abs over ℝ, ℂ and ℤ; casts from ℕ; pi and I
+/--
+info: {"atom_types":["ℝ","ℝ","ℝ","ℝ","ℝ","ℤ","ℕ"],"atoms":["|x - 1|","|↑k|","↑n","Real.pi","x","k","n"],"carrier":"ℝ","domain":[],"goal":{"expr":"((abs((x4 - 1)) + abs(x5))) - ((x6 * pi))","kind":"rel","lhs":"|x - 1| + |↑k|","lhs_poly":"(x0 + x1)","poly":"((x0 + x1)) - ((x2 * x3))","rel":"le","rhs":"↑n * Real.pi","rhs_poly":"(x2 * x3)","text":"|x - 1| + |↑k| ≤ ↑n * Real.pi"},"hyps":[],"vars":["x0","x1","x2","x3","x4","x5","x6"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (x : ℝ) (k : ℤ) (n : ℕ) : |x - 1| + |(k : ℝ)| ≤ (n : ℝ) * Real.pi := by kit_lenient
+/--
+info: {"atom_types":["ℤ","ℤ"],"atoms":["|k|","k"],"carrier":"ℤ","domain":[],"goal":{"expr":"(abs(x1)) - ((x1)^(2))","kind":"rel","lhs":"|k|","lhs_poly":"x0","poly":"(x0) - ((x1)^2)","rel":"le","rhs":"k ^ 2","rhs_poly":"(x1)^2","text":"|k| ≤ k ^ 2"},"hyps":[],"vars":["x0","x1"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (k : ℤ) : |k| ≤ k ^ 2 := by kit_lenient
+/--
+info: {"atom_types":["ℂ","ℂ"],"atoms":["z","Complex.I"],"carrier":"ℂ","domain":[],"goal":{"expr":"((x0 * I)) - ((I * x0))","kind":"rel","lhs":"z * Complex.I","lhs_poly":"(x0 * x1)","poly":"((x0 * x1)) - ((x1 * x0))","rel":"eq","rhs":"Complex.I * z","rhs_poly":"(x1 * x0)","text":"z * Complex.I = Complex.I * z"},"hyps":[],"vars":["x0","x1"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (z : ℂ) : z * Complex.I = Complex.I * z := by kit_lenient
+
+-- range sum, mod, matrix literal and determinant, polynomial evaluation
+/--
+info: {"atom_types":["ℚ","ℚ","ℕ"],"atoms":["∑ i ∈ Finset.range n, ↑i ^ 2","↑(n % 7)","n"],"carrier":"ℚ","domain":[],"goal":{"expr":"(sum((i_)^(2), i_, 0, x2 - 1)) - (mod(x2, 7))","kind":"rel","lhs":"∑ i ∈ Finset.range n, ↑i ^ 2","lhs_poly":"x0","poly":"(x0) - (x1)","rel":"eq","rhs":"↑(n % 7)","rhs_poly":"x1","text":"∑ i ∈ Finset.range n, ↑i ^ 2 = ↑(n % 7)"},"hyps":[],"vars":["x0","x1","x2"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (n : ℕ) : ∑ i ∈ Finset.range n, (i : ℚ) ^ 2 = (n % 7 : ℕ) := by kit_lenient
+/--
+info: {"atom_types":["ℚ","ℚ"],"atoms":["!![1, c; 0, 1].det","c"],"carrier":"ℚ","domain":[],"goal":{"expr":"((matrix(SR, [[1, x1], [0, 1]])).det()) - (1)","kind":"rel","lhs":"!![1, c; 0, 1].det","lhs_poly":"x0","poly":"(x0) - (1)","rel":"eq","rhs":"1","rhs_poly":"1","text":"!![1, c; 0, 1].det = 1"},"hyps":[],"vars":["x0","x1"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (c : ℚ) : Matrix.det !![(1 : ℚ), c; 0, 1] = 1 := by kit_lenient
+/--
+info: {"atom_types":["ℚ","ℚ"],"atoms":["Polynomial.eval x (Polynomial.X ^ 2 + Polynomial.C 1)","x"],"carrier":"ℚ","domain":[],"goal":{"expr":"((((X)^(2) + 1)).subs(X=x1)) - (((x1)^(2) + 1))","kind":"rel","lhs":"Polynomial.eval x (Polynomial.X ^ 2 + Polynomial.C 1)","lhs_poly":"x0","poly":"(x0) - (((x1)^2 + 1))","rel":"eq","rhs":"x ^ 2 + 1","rhs_poly":"((x1)^2 + 1)","text":"Polynomial.eval x (Polynomial.X ^ 2 + Polynomial.C 1) = x ^ 2 + 1"},"hyps":[],"vars":["x0","x1"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (x : ℚ) : (Polynomial.X ^ 2 + Polynomial.C 1 : Polynomial ℚ).eval x = x ^ 2 + 1 := by kit_lenient

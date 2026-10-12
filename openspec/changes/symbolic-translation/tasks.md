@@ -6,10 +6,10 @@
 
 ## 1. Lean translation (symbolic-translation)
 
-- [ ] 1.1 Add `SymExpr` and its rendering to Sage syntax (D1). Verify with `#guard_msgs` tests rendering one term per constructor.
-- [ ] 1.2 Port the coverage tables from LeanSage (D2), with attribution, and implement `exprToSym` for the coverage list, with typed atoms. Verify with Sage-free tests, one per covered construct, including `abs` over ℝ, ℂ and ℤ.
-- [ ] 1.3 Collect domain conditions and match them to hypotheses (D3). Verify with tests for a discharged denominator, an undischarged `log` argument, and a `sqrt` argument discharged by `0 ≤ u`.
-- [ ] 1.4 Serialize `expr`, atom types and domain conditions in `Problem.toJson`. Verify by updating the kit's lenient-extraction expectations.
+- [x] 1.1 Add `SymExpr` and its rendering to Sage syntax (D1). Verify with `#guard_msgs` tests rendering one term per constructor.
+- [x] 1.2 Port the coverage tables from LeanSage (D2), with attribution, and implement `exprToSym` for the coverage list, with typed atoms. Verify with Sage-free tests, one per covered construct, including `abs` over ℝ, ℂ and ℤ.
+- [x] 1.3 Collect domain conditions and match them to hypotheses (D3). Verify with tests for a discharged denominator, an undischarged `log` argument, and a `sqrt` argument discharged by `0 ≤ u`.
+- [x] 1.4 Serialize `expr`, atom types and domain conditions in `Problem.toJson`. Verify by updating the kit's lenient-extraction expectations.
 
 ## 2. Python binding and emitters (symbolic-emitters)
 
