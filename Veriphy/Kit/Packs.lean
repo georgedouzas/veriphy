@@ -5,13 +5,14 @@ The library packs Veriphy ships, and the tables in force for the current environ
 and any problem found while resolving them (missing constants, conflicts).
 -/
 import Veriphy.Kit.Table
+import Veriphy.Packs.Physlib
 
 namespace Veriphy
 
 open Lean Elab Command
 
 /-- The library packs shipped with Veriphy (data only; none of their libraries is imported). -/
-def shippedPacks : List Pack := []
+def shippedPacks : List Pack := [Packs.physlib]
 
 /-- The tables in force in the current environment, with the problems found resolving them. -/
 def activeTables (project : List Table := []) : CoreM (Tables × Array String) :=

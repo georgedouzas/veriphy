@@ -1,0 +1,103 @@
+{
+  "coercions": [
+    "Time.val"
+  ],
+  "constants": [],
+  "conventions": [
+    {
+      "key": "metric_signature",
+      "value": "+---"
+    },
+    {
+      "key": "metric",
+      "value": "minkowskiMatrix = indefiniteDiagonal (Fin 1) (Fin d) ℝ"
+    },
+    {
+      "key": "angular_momentum",
+      "value": "⁅𝐋₃ 0, 𝐋₃ 1⁆ = (I * ℏ) • 𝐋₃ 2"
+    },
+    {
+      "key": "time_derivative",
+      "value": "∂ₜ f t = fderiv ℝ f t 1"
+    }
+  ],
+  "functions": [
+    {
+      "arity": 2,
+      "conditions": [],
+      "example": "Time.deriv (fun t => t.val ^ 2) t",
+      "lean": "Time.deriv",
+      "result": "",
+      "role": "derivative",
+      "sage": "diff",
+      "types": []
+    },
+    {
+      "arity": 3,
+      "conditions": [],
+      "example": "Space.deriv 0 (fun x => x 0 * x 1) x",
+      "lean": "Space.deriv",
+      "result": "",
+      "role": "partial",
+      "sage": "diff",
+      "types": []
+    }
+  ],
+  "namespace": "physlib",
+  "rewrites": [
+    {
+      "example": "!![0, 1, 0, 0; 1, 0, 0, 0; 0, 0, 0, 0; 0, 0, 0, 0] ∈ lorentzAlgebra",
+      "functions": [
+        "lorentzAlgebra"
+      ],
+      "lemma": "lorentzAlgebra.mem_iff",
+      "reverse": false,
+      "side": []
+    },
+    {
+      "example": "",
+      "functions": [
+        "loweringCLM"
+      ],
+      "lemma": "QuantumMechanics.HarmonicOscillator.loweringCLM_eq",
+      "reverse": false,
+      "side": []
+    },
+    {
+      "example": "",
+      "functions": [
+        "raisingCLM"
+      ],
+      "lemma": "QuantumMechanics.HarmonicOscillator.raisingCLM_eq",
+      "reverse": false,
+      "side": []
+    },
+    {
+      "example": "",
+      "functions": [
+        "angularMomentumDimThreeCLM"
+      ],
+      "lemma": "QuantumMechanics.angularMomentumDimThreeCLM_zero_eq",
+      "reverse": false,
+      "side": []
+    },
+    {
+      "example": "",
+      "functions": [
+        "angularMomentumDimThreeCLM"
+      ],
+      "lemma": "QuantumMechanics.angularMomentumDimThreeCLM_one_eq",
+      "reverse": false,
+      "side": []
+    },
+    {
+      "example": "",
+      "functions": [
+        "angularMomentumDimThreeCLM"
+      ],
+      "lemma": "QuantumMechanics.angularMomentumDimThreeCLM_two_eq",
+      "reverse": false,
+      "side": []
+    }
+  ]
+}

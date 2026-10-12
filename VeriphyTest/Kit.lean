@@ -297,6 +297,14 @@ info: [7, 6, 1, 3, 5, 0] Real.Gamma
   let t ← IO.ofExcept (Lean.fromJson? (α := Veriphy.Table) j)
   return t == Veriphy.coreTable
 
+-- and so is its copy of each shipped pack
+/-- info: true -/
+#guard_msgs in
+#eval show IO Bool from do
+  let j ← IO.ofExcept (Lean.Json.parse (← IO.FS.readFile "src/veriphy/toolkit/packs/physlib.json"))
+  let t ← IO.ofExcept (Lean.fromJson? (α := Veriphy.Table) j)
+  return t == Veriphy.Packs.physlib.table
+
 /-! ## Two-term domain conditions -/
 
 /-- Test tactic: the condition `a ≤ b`, and the hypothesis that discharges it. -/

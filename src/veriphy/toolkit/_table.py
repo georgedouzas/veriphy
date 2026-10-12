@@ -12,6 +12,8 @@ from importlib.resources import files
 from veriphy.core import TableError
 
 CORE_TABLE_FILE = 'core_table.json'
+PACKS_DIR = 'packs'
+ROLES = ('derivative', 'partial')
 CONDITION_KINDS = ('ne', 'nonneg', 'pos', 'le')
 
 
@@ -44,6 +46,7 @@ class FunctionEntry:
         result: The result type.
         conditions: The domain conditions on its arguments.
         example: A Lean term over variables, for the round-trip check.
+        role: `None` for a function, `derivative` for `(f, point)`, `partial` for `(coordinate, f, point)`.
     """
 
     lean: str
@@ -53,6 +56,7 @@ class FunctionEntry:
     result: str = ''
     conditions: tuple[CondSpec, ...] = ()
     example: str = ''
+    role: str | None = None
 
 
 @dataclass(frozen=True)
@@ -99,6 +103,7 @@ class Table:
         constants: The constant entries.
         coercions: The coercions translated as their argument.
         rewrites: The rewrite entries.
+        conventions: The conventions the namespace fixes, as `(key, value)` pairs.
     """
 
     namespace: str
@@ -106,6 +111,7 @@ class Table:
     constants: tuple[ConstantEntry, ...] = ()
     coercions: tuple[str, ...] = ()
     rewrites: tuple[RewriteEntry, ...] = ()
+    conventions: tuple[tuple[str, str], ...] = ()
 
 
 def _missing(obj: dict[str, object], key: str, source: str) -> None:
@@ -201,7 +207,21 @@ def _function(obj: dict[str, object], source: str) -> FunctionEntry:
         result=_text(obj, 'result', source, ''),
         conditions=tuple(_condition(c, source) for c in _objects(obj, 'conditions', source)),
         example=_text(obj, 'example', source, ''),
+        role=_role(obj, source),
     )
+
+
+def _role(obj: dict[str, object], source: str) -> str | None:
+    """Return a function entry's role, `None` for an ordinary function."""
+    role = _maybe_text(obj, 'role', source)
+    if role is not None and role not in ROLES:
+        raise TableError(source, 'role', f'must be one of {list(ROLES)}, got {role!r}')
+    return role
+
+
+def _convention(obj: dict[str, object], source: str) -> tuple[str, str]:
+    """Parse one convention."""
+    return _text(obj, 'key', source), _text(obj, 'value', source)
 
 
 def _constant(obj: dict[str, object], source: str) -> ConstantEntry:
@@ -252,6 +272,7 @@ def parse_table(data: object, source: str) -> Table:
         constants=tuple(_constant(c, source) for c in _objects(data, 'constants', source)),
         coercions=_strings(data, 'coercions', source),
         rewrites=tuple(_rewrite(r, source) for r in _objects(data, 'rewrites', source)),
+        conventions=tuple(_convention(c, source) for c in _objects(data, 'conventions', source)),
     )
 
 
@@ -269,3 +290,27 @@ def load_core_table() -> Table:
     """
     text = files('veriphy.toolkit').joinpath(CORE_TABLE_FILE).read_text(encoding='utf-8')
     return parse_table(json.loads(text), CORE_TABLE_FILE)
+
+
+@cache
+def load_pack(name: str) -> Table:
+    """Return a library pack shipped with the toolkit, by its namespace.
+
+    Args:
+        name: The pack's namespace, such as `physlib`.
+
+    Returns:
+        The pack's table.
+
+    Raises:
+        TableError: If no pack has that name.
+
+    Examples:
+        >>> physlib = load_pack('physlib')
+        >>> [f.lean for f in physlib.functions], dict(physlib.conventions)['metric_signature']
+        (['Time.deriv', 'Space.deriv'], '+---')
+    """
+    resource = files('veriphy.toolkit').joinpath(PACKS_DIR, f'{name}.json')
+    if not resource.is_file():
+        raise TableError(f'{PACKS_DIR}/{name}.json', 'namespace', 'no such pack')
+    return parse_table(json.loads(resource.read_text(encoding='utf-8')), f'{PACKS_DIR}/{name}.json')
