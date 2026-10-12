@@ -216,4 +216,11 @@ def certify (problem : Json) (family script : String) (cfg : Config := {}) : IO 
                strict := (← opt "strict" (·.getBool?)).getD false,
                point := (← opt "point" (listOf (·.getStr?))).getD [] }
 
+/-! ## Proof scripts -/
+
+/-- Run a proof script against a serialized problem; returns the Lean tactic block it built and its output. -/
+def run (problem : Json) (script : String) (cfg : Config := {}) : IO (String × String) :=
+  call "run" (Json.mkObj [("problem", problem), ("script", Json.str script)]) (cfg := cfg) fun r => do
+    return (← field r "lean" (·.getStr?), ← field r "stdout" (·.getStr?))
+
 end Veriphy.Bridge

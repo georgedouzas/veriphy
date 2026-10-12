@@ -52,14 +52,17 @@ tactic's arguments). On failure the state is restored and nothing is emitted. -/
 def closeAndEmit (proof : TSyntax `tactic) : TacticM Unit := do
   let s₀ ← saveState
   let goal ← getMainGoal
-  let errors := fun (log : MessageLog) => log.reportedPlusUnreported.foldl
-    (fun n m => if m.severity == .error then n + 1 else n) 0
-  let before := errors (← Core.getMessageLog)
+  let errors := fun (log : MessageLog) =>
+    log.reportedPlusUnreported.toList.filter (·.severity == .error)
+  let before := (errors (← Core.getMessageLog)).length
   try
     -- no error recovery: a checker failing inside a nested `by` must fail the tactic, not be logged
     Term.withoutErrToSorry <| withoutRecover <| evalTactic proof
-    if errors (← Core.getMessageLog) > before then
-      throwError "veriphy: the certificate check failed (see the errors above)"
+    let logged := (errors (← Core.getMessageLog)).drop before
+    unless logged.isEmpty do
+      -- the restore below drops these from the log, so they travel in this error instead
+      let texts ← logged.mapM fun m => m.data.toString
+      throwError "veriphy: the certificate check failed:\n{"\n".intercalate texts}"
     checkAxioms goal
   catch ex =>
     s₀.restore
