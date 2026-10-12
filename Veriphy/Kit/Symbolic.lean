@@ -43,6 +43,8 @@ inductive SymExpr
   /-- A method applied to its first argument in Sage (`det`, `trace`, `transpose`, `inverse`, polynomial
   `coefficient`, `degree`, evaluation). -/
   | method (name : String) (self : SymExpr) (args : List SymExpr)
+  /-- `deriv (fun k => body) point`: Sage's derivative of `body` in `k`, evaluated at `point`. -/
+  | deriv (k : String) (body point : SymExpr)
   /-- A sub-expression computed at another Lean type (`ℕ`, `ℤ`) than its context, such as the `n % 7` inside
   `((n % 7 : ℕ) : ℝ)`; the rendering restores the cast. -/
   | typed (ty : String) (e : SymExpr)
@@ -74,6 +76,7 @@ partial def SymExpr.toSage : SymExpr → String
   | .method m self args =>
     s!"({self.toSage}).{m}(" ++ ", ".intercalate (args.map (·.toSage)) ++ ")"
   | .typed ty e => s!"typed({e.toSage}, '{ty}')"
+  | .deriv k body point => s!"diff({body.toSage}, {k}).subs(\{{k}: {point.toSage}})"
 
 /-- The kind of domain condition an expression needs. -/
 inductive DomainKind | ne | nonneg | pos | le
@@ -95,6 +98,8 @@ structure SymState where
   conditions : Array Condition := #[]
   /-- The translation tables in force, core first. -/
   tables : Tables := [coreTable]
+  /-- Inside the body of a `deriv`: conditions are those for differentiability. -/
+  inDeriv : Bool := false
 
 abbrev SymM := StateRefT SymState MetaM
 
@@ -111,7 +116,8 @@ private def operand? (spec : String) (operands : Array Expr) : MetaM (Option Exp
 
 /-- Record the single-argument conditions an entry imposes on its operands. -/
 private def noteConditions (entry : FunctionEntry) (operands : Array Expr) : SymM Unit := do
-  for c in entry.conditions do
+  let specs := if (← get).inDeriv then entry.derivConditions.getD entry.conditions else entry.conditions
+  for c in specs do
     if c.kind == "le" then
       let (some l, some r) := (c.lhs, c.rhs) | continue
       let (some a, some b) := (← operand? l operands, ← operand? r operands) | continue
@@ -223,7 +229,12 @@ partial def exprToSym (e : Expr) : SymM SymExpr := do
   if let some n := natLit? e then return .num n 1
   if e.isFVar then
     if let some (_, k) := (← get).bound.find? (·.1 == e) then return .bvar k
+  if e.getAppFn.isLambda then return ← exprToSym e.headBeta
   let (f, args) := e.getAppFnArgs
+  -- `Function.update x i v j` at numeral coordinates: `v` when `i = j`, `x j` otherwise
+  if f == ``Function.update && args.size == 7 then
+    if let (some i, some j) := (natLit? args[4]!, natLit? args[6]!) then
+      return ← exprToSym (if i == j then args[5]! else mkApp args[3]! args[6]!)
   let tables := (← get).tables
   if let some entry := tables.function? f then
     if entry.arity ≥ 1 && args.size ≥ entry.arity then
@@ -318,6 +329,27 @@ partial def exprToSym (e : Expr) : SymM SymExpr := do
   | `Polynomial.coeff, #[_, _, p, n] => return .method "coefficient" (← exprToSym p) [.bvar "X", ← exprToSym n]
   | `Polynomial.natDegree, #[_, _, p] | `Polynomial.degree, #[_, _, p] =>
     return .method "degree" (← exprToSym p) [.bvar "X"]
+  | `deriv, #[_, _, _, _, _, _, fn, point] =>
+    -- the body must translate without an opaque atom that depends on the variable, or Sage cannot differentiate it
+    let saved ← get
+    let ty ← inferType point
+    let kName := s!"d{saved.bound.size}_"
+    let result? ← withLocalDeclD `t ty fun x => do
+      let body := (mkApp fn x).headBeta
+      let before ← get
+      modify fun st => { st with bound := st.bound.push (x, kName), inDeriv := true }
+      let body' ← exprToSym body
+      let st ← get
+      set { st with bound := st.bound.pop, inDeriv := before.inDeriv }
+      if (st.atoms.extract before.atoms.size st.atoms.size).any (·.containsFVar x.fvarId!) then return none
+      -- the conditions met in the body hold at the point
+      let new := (st.conditions.extract before.conditions.size st.conditions.size).map fun c =>
+        { c with term := c.term.replaceFVar x point, bound := c.bound.map (·.replaceFVar x point) }
+      modify fun st' => { st' with conditions := before.conditions ++ new }
+      return some body'
+    match result? with
+    | none => set saved; symAtom e
+    | some body' => return .deriv kName body' (← exprToSym point)
   | _, _ => symAtom e
 
 end Veriphy
