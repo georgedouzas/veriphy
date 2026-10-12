@@ -83,7 +83,7 @@ structure Problem where
   atomTypes : Array String := #[]
   /-- Domain conditions: the Sage term, the kind (`ne`, `nonneg`, `pos`), its Lean text, and the hypothesis
   that discharges it. -/
-  conditions : Array (String × String × Expr × Option Name) := #[]
+  conditions : Array (String × String × Option String × Expr × Option Name) := #[]
 
 /-- The atom-table monad: translation state shared across one tactic invocation. -/
 abbrev ProblemM := StateRefT (Array Expr) MetaM
@@ -151,7 +151,7 @@ private def relSym (prop : Expr) : SymM (Option (String × String)) := do
   return some (r.tag, s!"({(← exprToSym a).toSage}) - ({(← exprToSym b).toSage})")
 
 private def kindTag : DomainKind → String
-  | .ne => "ne" | .nonneg => "nonneg" | .pos => "pos"
+  | .ne => "ne" | .nonneg => "nonneg" | .pos => "pos" | .le => "le"
 
 /-- Add symbolic forms, atom types and domain conditions to an extracted problem. Atoms the symbolic
 pass meets (such as `x` inside `Real.sin x`) are appended to the shared table. -/
@@ -173,10 +173,11 @@ def Problem.enrich (p : Problem) : MetaM Problem := do
   let mut conditions := #[]
   let mut seen : Array Condition := #[]
   for c in st.conditions do
-    if ← seen.anyM fun (d : Condition) => return d.kind == c.kind && (← withReducible (isDefEq d.term c.term)) then continue
+    if ← seen.anyM (·.same c) then continue
     seen := seen.push c
     let (sage, _) ← (exprToSym c.term).run { atoms := st.atoms }
-    conditions := conditions.push (sage.toSage, kindTag c.kind, ← c.prop, ← c.dischargedBy nameable)
+    let bound ← c.bound.mapM fun b => return (← (exprToSym b).run' { atoms := st.atoms }).toSage
+    conditions := conditions.push (sage.toSage, kindTag c.kind, bound, ← c.prop, ← c.dischargedBy nameable)
   let atomTypes ← st.atoms.mapM atomType
   return { p with atoms := st.atoms, hyps, goal, factExprs, goalExpr, atomTypes, conditions }
 
@@ -255,9 +256,10 @@ def Problem.toJson (p : Problem) : MetaM Json := do
     let exprField : List (String × Json) := match x with
       | some (r, x) => [("expr", Json.str x), ("rel", Json.str r)] | none => []
     return Json.mkObj ([("name", Json.str n.toString), ("text", ← text e)] ++ exprField)
-  let conditions ← p.conditions.mapM fun (sage, kind, prop, discharge) => do
+  let conditions ← p.conditions.mapM fun (sage, kind, bound, prop, discharge) => do
     let byField : List (String × Json) := match discharge with | some n => [("discharged_by", Json.str n.toString)] | none => []
-    return Json.mkObj ([("expr", Json.str sage), ("kind", Json.str kind), ("text", ← text prop)] ++ byField)
+    let boundField : List (String × Json) := match bound with | some b => [("bound", Json.str b)] | none => []
+    return Json.mkObj ([("expr", Json.str sage), ("kind", Json.str kind), ("text", ← text prop)] ++ boundField ++ byField)
   let carrier ← match p.carrier with | some c => text c | none => pure (Json.str "")
   return Json.mkObj
     [ ("vars", Json.arr (p.vars.toArray.map Json.str))

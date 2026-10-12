@@ -199,7 +199,7 @@ example (z : ℂ) : z * Complex.I = Complex.I * z := by kit_lenient
 
 -- range sum, mod, matrix literal and determinant, polynomial evaluation
 /--
-info: {"atom_types":["ℚ","ℚ","ℕ"],"atoms":["∑ i ∈ Finset.range n, ↑i ^ 2","↑(n % 7)","n"],"carrier":"ℚ","domain":[],"goal":{"expr":"(sum((i_)^(2), i_, 0, x2 - 1)) - (mod(x2, 7))","kind":"rel","lhs":"∑ i ∈ Finset.range n, ↑i ^ 2","lhs_poly":"x0","poly":"(x0) - (x1)","rel":"eq","rhs":"↑(n % 7)","rhs_poly":"x1","text":"∑ i ∈ Finset.range n, ↑i ^ 2 = ↑(n % 7)"},"hyps":[],"vars":["x0","x1","x2"]}
+info: {"atom_types":["ℚ","ℚ","ℕ"],"atoms":["∑ i ∈ Finset.range n, ↑i ^ 2","↑(n % 7)","n"],"carrier":"ℚ","domain":[],"goal":{"expr":"(sum((i_)^(2), i_, 0, x2 - 1)) - (typed(mod(x2, 7), 'ℕ'))","kind":"rel","lhs":"∑ i ∈ Finset.range n, ↑i ^ 2","lhs_poly":"x0","poly":"(x0) - (x1)","rel":"eq","rhs":"↑(n % 7)","rhs_poly":"x1","text":"∑ i ∈ Finset.range n, ↑i ^ 2 = ↑(n % 7)"},"hyps":[],"vars":["x0","x1","x2"]}
 -/
 #guard_msgs (info, error, drop warning) in
 example (n : ℕ) : ∑ i ∈ Finset.range n, (i : ℚ) ^ 2 = (n % 7 : ℕ) := by kit_lenient
@@ -248,14 +248,17 @@ theorem full (x : ℝ) (hx : 0 < x) : Real.log (x ^ 2) = 2 * Real.log x := by
 theorem gamma (x : ℝ) (hx : 0 < x) : 0 < Real.Gamma x := Real.Gamma_pos_of_pos hx
 theorem uninterpreted (f : ℝ → ℝ) (x : ℝ) : f x ≤ f x + 1 := by linarith
 theorem noRelation (f : ℝ → ℝ) (h : Continuous f) : Continuous f := h
+theorem projected (p : ℝ × ℝ) (x : {r : ℝ // 0 < r}) : p.1 * x.val ≤ p.1 * x.val := le_rfl
+theorem bundled (f : ℝ →+ ℝ) (x : ℝ) : f (2 * x) = 2 * f x := by
+  rw [show (2 : ℝ) * x = x + x by ring, map_add]; ring
 theorem nested (a : ℝ) : (∃ b : ℝ, b ^ 2 = a) → 0 ≤ a := by
   rintro ⟨b, rfl⟩; positivity
 end CoverageFixture
 
 /--
-info: theorems: 5, with a relation: 4, failed: 0
-fully covered: 2 (50.0%)
-covered up to uninterpreted functions: 3 (75.0%)
+info: theorems: 7, with a relation: 6, failed: 0
+fully covered: 3 (50.0%)
+covered up to uninterpreted functions: 5 (83.3%)
 opaque heads:
   1  Real.Gamma  (e.g. CoverageFixture.gamma)
 -/
@@ -267,7 +270,14 @@ set_option veriphy.coverage.write false in
 #guard_msgs (drop info) in
 #veriphy_coverage [CoverageFixture] ".lake/veriphy-coverage-test.json"
 
-/-- info: [5, 4, 1, 2, 3, 0] Real.Gamma -/
+-- generated lemmas are not statements of the corpus
+/-- info: [true, true, true, false, false] -/
+#guard_msgs in
+#eval [`foo.congr_simp, `foo.eq_def, `foo.eq_12, `foo.eq_add, `foo.injective].map Veriphy.Coverage.isGenerated
+
+/--
+info: [7, 6, 1, 3, 5, 0] Real.Gamma
+-/
 #guard_msgs in
 #eval show IO Unit from do
   let j ← IO.ofExcept (Lean.Json.parse (← IO.FS.readFile ".lake/veriphy-coverage-test.json"))
@@ -286,3 +296,42 @@ set_option veriphy.coverage.write false in
   let j ← IO.ofExcept (Lean.Json.parse (← IO.FS.readFile "src/veriphy/toolkit/core_table.json"))
   let t ← IO.ofExcept (Lean.fromJson? (α := Veriphy.Table) j)
   return t == Veriphy.coreTable
+
+/-! ## Two-term domain conditions -/
+
+/-- Test tactic: the condition `a ≤ b`, and the hypothesis that discharges it. -/
+elab "kit_le " a:term:max b:term:max : tactic => Lean.Elab.Tactic.withMainContext do
+  let a ← Lean.Elab.Term.elabTerm a none
+  let b ← Lean.Elab.Term.elabTerm b none
+  let c : Veriphy.Condition := { term := a, kind := .le, bound := some b }
+  let by_ ← c.dischargedBy fun d => !d.isImplementationDetail
+  Lean.logInfo m!"{← c.prop} by {by_}"
+  Lean.Elab.admitGoal (← Lean.Elab.Tactic.getMainGoal)
+
+/-- info: k ≤ n by some (hk) -/
+#guard_msgs (info, drop warning) in
+example (k n : ℕ) (hk : k ≤ n) : True := by kit_le k n
+
+/-- info: k ≤ n by some (hk) -/
+#guard_msgs (info, drop warning) in
+example (k n : ℕ) (hk : k < n) : True := by kit_le k n
+
+/-- info: k ≤ n by none -/
+#guard_msgs (info, drop warning) in
+example (k n : ℕ) (hk : n ≤ k) : True := by kit_le k n
+
+/-! ## Typed sub-expressions -/
+
+-- a natural-number remainder inside a real goal keeps its type
+/--
+info: {"atom_types":["ℝ","ℝ","ℕ"],"atoms":["x","↑(n % 7)","n"],"carrier":"ℝ","domain":[],"goal":{"expr":"(x0) - ((typed(mod(x2, 7), 'ℕ') + x0))","kind":"rel","lhs":"x","lhs_poly":"x0","poly":"(x0) - ((x1 + x0))","rel":"le","rhs":"↑(n % 7) + x","rhs_poly":"(x1 + x0)","text":"↑(n % 7) + x ≥ x"},"hyps":[],"vars":["x0","x1","x2"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (n : ℕ) (x : ℝ) : ((n % 7 : ℕ) : ℝ) + x ≥ x := by kit_lenient
+
+-- no marker when the goal itself is over ℕ
+/--
+info: {"atom_types":["ℕ","ℕ"],"atoms":["n % 7","n"],"carrier":"ℕ","domain":[],"goal":{"expr":"(mod(x1, 7)) - (7)","kind":"rel","lhs":"n % 7","lhs_poly":"x0","poly":"(x0) - (7)","rel":"lt","rhs":"7","rhs_poly":"7","text":"n % 7 < 7"},"hyps":[],"vars":["x0","x1"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (n : ℕ) : n % 7 < 7 := by kit_lenient
