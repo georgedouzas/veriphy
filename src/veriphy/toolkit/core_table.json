@@ -3,7 +3,8 @@
     "Nat.cast",
     "Int.cast",
     "Rat.cast",
-    "Complex.ofReal"
+    "Complex.ofReal",
+    "Fin.val"
   ],
   "constants": [
     {
@@ -90,6 +91,119 @@
       "lean": "Real.tan",
       "result": "ℝ",
       "sage": "tan",
+      "types": [
+        "ℝ"
+      ]
+    },
+    {
+      "arity": 1,
+      "conditions": [],
+      "example": "Real.cosh x",
+      "lean": "Real.cosh",
+      "result": "ℝ",
+      "sage": "cosh",
+      "types": [
+        "ℝ"
+      ]
+    },
+    {
+      "arity": 1,
+      "conditions": [],
+      "example": "Real.sinh x",
+      "lean": "Real.sinh",
+      "result": "ℝ",
+      "sage": "sinh",
+      "types": [
+        "ℝ"
+      ]
+    },
+    {
+      "arity": 1,
+      "conditions": [],
+      "example": "Real.tanh x",
+      "lean": "Real.tanh",
+      "result": "ℝ",
+      "sage": "tanh",
+      "types": [
+        "ℝ"
+      ]
+    },
+    {
+      "arity": 1,
+      "conditions": [],
+      "example": "Real.arctan x",
+      "lean": "Real.arctan",
+      "result": "ℝ",
+      "sage": "arctan",
+      "types": [
+        "ℝ"
+      ]
+    },
+    {
+      "arity": 1,
+      "conditions": [
+        {
+          "kind": "le",
+          "lhs": "-1",
+          "rhs": "#0"
+        },
+        {
+          "kind": "le",
+          "lhs": "#0",
+          "rhs": "1"
+        }
+      ],
+      "example": "Real.arcsin x",
+      "lean": "Real.arcsin",
+      "result": "ℝ",
+      "sage": "arcsin",
+      "types": [
+        "ℝ"
+      ]
+    },
+    {
+      "arity": 1,
+      "conditions": [
+        {
+          "kind": "le",
+          "lhs": "-1",
+          "rhs": "#0"
+        },
+        {
+          "kind": "le",
+          "lhs": "#0",
+          "rhs": "1"
+        }
+      ],
+      "example": "Real.arccos x",
+      "lean": "Real.arccos",
+      "result": "ℝ",
+      "sage": "arccos",
+      "types": [
+        "ℝ"
+      ]
+    },
+    {
+      "arity": 2,
+      "conditions": [
+        {
+          "arg": 0,
+          "kind": "pos"
+        },
+        {
+          "arg": 0,
+          "kind": "ne",
+          "rhs": "1"
+        },
+        {
+          "arg": 1,
+          "kind": "pos"
+        }
+      ],
+      "example": "Real.logb b x",
+      "lean": "Real.logb",
+      "result": "ℝ",
+      "sage": "logb",
       "types": [
         "ℝ"
       ]

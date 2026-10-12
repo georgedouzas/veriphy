@@ -11,6 +11,9 @@ import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
 import Mathlib.Algebra.Polynomial.Eval.Defs
 import Mathlib.Analysis.SpecialFunctions.Gamma.Basic
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Inverse
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Arctan
+import Mathlib.Analysis.SpecialFunctions.Log.Base
 import Veriphy.Kit
 
 open Lean Elab Tactic Meta Veriphy
@@ -352,7 +355,7 @@ def fixturePack : Veriphy.Pack where
   library := "Fixture"
   sentinel := "Nat.succ"
   table := { «namespace» := "fixture", functions := [
-    { lean := "Real.cosh", sage := "cosh", arity := 1, types := ["ℝ"] },
+    { lean := "Real.Gamma", sage := "gamma", arity := 1, types := ["ℝ"] },
     { lean := "Fixture.missing", sage := "missing", arity := 1 },
     { lean := "Real.exp", sage := "myexp", arity := 1 }] }
 
@@ -363,7 +366,7 @@ def absentPack : Veriphy.Pack where
   table := { «namespace» := "absent", functions := [{ lean := "Real.sinh", sage := "sinh", arity := 1 }] }
 
 /--
-info: mathlib: 11 functions, 2 constants, 4 coercions, 0 rewrites
+info: mathlib: 18 functions, 2 constants, 5 coercions, 0 rewrites
 fixture: 2 functions, 0 constants, 0 coercions, 0 rewrites
 problem: fixture: constants not found (library version mismatch?): Fixture.missing
 problem: fixture: entry for Real.exp conflicts with the mathlib entry for Real.exp; the mathlib entry stays
@@ -381,11 +384,60 @@ elab "kit_sym_fixture" : tactic => Lean.Elab.Tactic.withMainContext do
   Lean.logInfo s.toSage
   Lean.Elab.admitGoal (← Lean.Elab.Tactic.getMainGoal)
 
-/-- info: (cosh(x0) + exp(x0)) -/
+/-- info: (gamma(x0) + exp(x0)) -/
 #guard_msgs (info, drop warning) in
-example (x : ℝ) : Real.cosh x + Real.exp x = 0 := by kit_sym_fixture
+example (x : ℝ) : Real.Gamma x + Real.exp x = 0 := by kit_sym_fixture
 
 -- the core alone has no shipped packs active here
-/-- info: mathlib: 11 functions, 2 constants, 4 coercions, 0 rewrites -/
+/--
+info: mathlib: 18 functions, 2 constants, 5 coercions, 0 rewrites
+-/
 #guard_msgs in
 #veriphy_tables
+
+/-! ## Core coverage: functions -/
+
+/--
+info: {"atom_types":["ℝ","ℝ"],"atoms":["x","y"],"carrier":"ℝ","domain":[{"expr":"x0","kind":"pos","text":"0 < x"},{"expr":"x0","kind":"nonneg","text":"0 ≤ x"}],"goal":{"expr":"(0) - (((x0)^(x1) + (x0)^(2)))","kind":"other","rel":"le","text":"x ^ y + x ^ 2 ≥ 0"},"hyps":[],"namespaces":["mathlib"],"table_problems":[],"vars":["x0","x1"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (x y : ℝ) : x ^ y + x ^ (2 : ℝ) ≥ 0 := by kit_lenient
+
+/--
+info: {"atom_types":["ℝ","ℝ","ℝ","ℝ"],"atoms":["Real.cosh x","Real.sinh x","Real.tanh x","x"],"carrier":"ℝ","domain":[],"goal":{"expr":"(((cosh(x3))^(2) - (sinh(x3))^(2))) - ((1 + (tanh(x3) * 0)))","kind":"rel","lhs":"Real.cosh x ^ 2 - Real.sinh x ^ 2","lhs_poly":"((x0)^2 - (x1)^2)","poly":"(((x0)^2 - (x1)^2)) - ((1 + (x2 * 0)))","rel":"eq","rhs":"1 + Real.tanh x * 0","rhs_poly":"(1 + (x2 * 0))","text":"Real.cosh x ^ 2 - Real.sinh x ^ 2 = 1 + Real.tanh x * 0"},"hyps":[],"namespaces":["mathlib"],"table_problems":[],"vars":["x0","x1","x2","x3"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (x : ℝ) : Real.cosh x ^ 2 - Real.sinh x ^ 2 = 1 + Real.tanh x * 0 := by kit_lenient
+
+/--
+info: {"atom_types":["ℝ","ℝ","ℝ","ℝ"],"atoms":["Real.arcsin x","Real.arccos x","Real.arctan x","x"],"carrier":"ℝ","domain":[{"bound":"x3","discharged_by":"hx","expr":"(-1)","kind":"le","text":"-1 ≤ x"},{"bound":"1","expr":"x3","kind":"le","text":"x ≤ 1"}],"goal":{"expr":"((arcsin(x3) + arccos(x3))) - ((arctan(x3) + 2))","kind":"rel","lhs":"Real.arcsin x + Real.arccos x","lhs_poly":"(x0 + x1)","poly":"((x0 + x1)) - ((x2 + 2))","rel":"le","rhs":"Real.arctan x + 2","rhs_poly":"(x2 + 2)","text":"Real.arcsin x + Real.arccos x ≤ Real.arctan x + 2"},"hyps":[{"expr":"((-1)) - (x3)","name":"hx","poly":"((-1)) - (x3)","rel":"le","text":"-1 ≤ x"}],"namespaces":["mathlib"],"table_problems":[],"vars":["x0","x1","x2","x3"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (x : ℝ) (hx : -1 ≤ x) : Real.arcsin x + Real.arccos x ≤ Real.arctan x + 2 := by kit_lenient
+
+/--
+info: {"atom_types":["ℝ","ℝ","ℝ"],"atoms":["Real.logb b x","x","b"],"carrier":"ℝ","domain":[{"expr":"x2","kind":"pos","text":"0 < b"},{"bound":"1","discharged_by":"hb","expr":"x2","kind":"ne","text":"b ≠ 1"},{"discharged_by":"hx","expr":"x1","kind":"pos","text":"0 < x"}],"goal":{"expr":"(logb(x2, x1)) - (x1)","kind":"rel","lhs":"Real.logb b x","lhs_poly":"x0","poly":"(x0) - (x1)","rel":"le","rhs":"x","rhs_poly":"x1","text":"Real.logb b x ≤ x"},"hyps":[{"expr":"(1) - (x2)","name":"hb","poly":"(1) - (x2)","rel":"lt","text":"1 < b"},{"expr":"(0) - (x1)","name":"hx","poly":"(0) - (x1)","rel":"lt","text":"0 < x"}],"namespaces":["mathlib"],"table_problems":[],"vars":["x0","x1","x2"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (b x : ℝ) (hb : 1 < b) (hx : 0 < x) : Real.logb b x ≤ x := by kit_lenient
+
+/-! ## Core coverage: sums and products -/
+
+/--
+info: {"atom_types":["ℚ","ℚ","ℕ"],"atoms":["∑ k ∈ Finset.Icc 1 n, ↑k","↑n","n"],"carrier":"ℚ","domain":[],"goal":{"expr":"(sum(k_, k_, 1, x2)) - (((x2 * (x2 + 1)) / 2))","kind":"rel","lhs":"∑ k ∈ Finset.Icc 1 n, ↑k","lhs_poly":"x0","poly":"(x0) - (((x1 * (x1 + 1)) / 2))","rel":"eq","rhs":"↑n * (↑n + 1) / 2","rhs_poly":"((x1 * (x1 + 1)) / 2)","text":"∑ k ∈ Finset.Icc 1 n, ↑k = ↑n * (↑n + 1) / 2"},"hyps":[],"namespaces":["mathlib"],"table_problems":[],"vars":["x0","x1","x2"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (n : ℕ) : ∑ k ∈ Finset.Icc 1 n, (k : ℚ) = n * (n + 1) / 2 := by kit_lenient
+
+/--
+info: {"atom_types":["ℚ","ℚ","ℕ"],"atoms":["∏ k ∈ Finset.Ico 1 n, ↑k","∑ i ∈ Finset.range n, ∑ j ∈ Finset.range i, ↑j","n"],"carrier":"ℚ","domain":[],"goal":{"expr":"(product(k_, k_, 1, (x2 - 1))) - (sum(sum(j_, j_, 0, i_ - 1), i_, 0, x2 - 1))","kind":"rel","lhs":"∏ k ∈ Finset.Ico 1 n, ↑k","lhs_poly":"x0","poly":"(x0) - (x1)","rel":"le","rhs":"∑ i ∈ Finset.range n, ∑ j ∈ Finset.range i, ↑j","rhs_poly":"x1","text":"∏ k ∈ Finset.Ico 1 n, ↑k ≤ ∑ i ∈ Finset.range n, ∑ j ∈ Finset.range i, ↑j"},"hyps":[],"namespaces":["mathlib"],"table_problems":[],"vars":["x0","x1","x2"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (n : ℕ) : ∏ k ∈ Finset.Ico 1 n, (k : ℚ) ≤ ∑ i ∈ Finset.range n, ∑ j ∈ Finset.range i, (j : ℚ) := by
+  kit_lenient
+
+/--
+info: {"atom_types":["ℝ","ℝ"],"atoms":["∑ i, ↑↑i ^ 2","∑ i, ∑ i, ↑↑i"],"carrier":"ℝ","domain":[],"goal":{"expr":"(sum((i_)^(2), i_, 0, 3 - 1)) - (sum(sum(i_1_, i_1_, 0, 2 - 1), i_, 0, 3 - 1))","kind":"rel","lhs":"∑ i, ↑↑i ^ 2","lhs_poly":"x0","poly":"(x0) - (x1)","rel":"eq","rhs":"∑ i, ∑ i, ↑↑i","rhs_poly":"x1","text":"∑ i, ↑↑i ^ 2 = ∑ i, ∑ i, ↑↑i"},"hyps":[],"namespaces":["mathlib"],"table_problems":[],"vars":["x0","x1"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (x : Fin 3 → ℝ) : ∑ i : Fin 3, (i : ℝ) ^ 2 = ∑ i : Fin 3, ∑ i : Fin 2, (i : ℝ) := by kit_lenient

@@ -12,8 +12,9 @@ namespace Veriphy
 
 open Lean
 
-/-- A domain condition an entry imposes. `ne`, `nonneg` and `pos` constrain one argument (`arg`); `le` says
-`lhs ≤ rhs`, each side an argument (`#i`) or a numeral. -/
+/-- A domain condition an entry imposes. `ne`, `nonneg` and `pos` constrain one argument (`arg`), `ne` against
+`rhs` when given (`b ≠ 1`) and against zero otherwise; `le` says `lhs ≤ rhs`. Sides are arguments (`#i`) or
+integer numerals. -/
 structure CondSpec where
   kind : String
   arg : Option Nat := none
@@ -81,12 +82,22 @@ def coreTable : Table where
     unary "Real.exp" "exp" "ℝ",
     unary "Real.log" "log" "ℝ" [{ kind := "pos", arg := some 0 }],
     unary "Real.sin" "sin" "ℝ", unary "Real.cos" "cos" "ℝ", unary "Real.tan" "tan" "ℝ",
+    unary "Real.cosh" "cosh" "ℝ", unary "Real.sinh" "sinh" "ℝ", unary "Real.tanh" "tanh" "ℝ",
+    unary "Real.arctan" "arctan" "ℝ",
+    unary "Real.arcsin" "arcsin" "ℝ" [{ kind := "le", lhs := some "-1", rhs := some "#0" },
+      { kind := "le", lhs := some "#0", rhs := some "1" }],
+    unary "Real.arccos" "arccos" "ℝ" [{ kind := "le", lhs := some "-1", rhs := some "#0" },
+      { kind := "le", lhs := some "#0", rhs := some "1" }],
+    { lean := "Real.logb", sage := "logb", arity := 2, types := ["ℝ"], result := "ℝ",
+      conditions := [{ kind := "pos", arg := some 0 }, { kind := "ne", arg := some 0, rhs := some "1" },
+        { kind := "pos", arg := some 1 }],
+      «example» := "Real.logb b x" },
     unary "Complex.exp" "exp" "ℂ", unary "Complex.log" "log" "ℂ",
     unary "Complex.sin" "sin" "ℂ", unary "Complex.cos" "cos" "ℂ", unary "Complex.tan" "tan" "ℂ"]
   constants := [
     { lean := "Real.pi", sage := "pi", type := "ℝ" },
     { lean := "Complex.I", sage := "I", type := "ℂ" }]
-  coercions := ["Nat.cast", "Int.cast", "Rat.cast", "Complex.ofReal"]
+  coercions := ["Nat.cast", "Int.cast", "Rat.cast", "Complex.ofReal", "Fin.val"]
 
 /-- The tables in force, in resolution order (core first). -/
 abbrev Tables := List Table
