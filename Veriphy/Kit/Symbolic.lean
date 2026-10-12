@@ -157,93 +157,6 @@ def atomType (a : Expr) : MetaM String := do
   | some `Complex => return "ℂ"
   | _ => return "other"
 
-/-- Translate a Lean term to a symbolic expression; anything outside the coverage list becomes an atom. -/
-partial def exprToSym (e : Expr) : SymM SymExpr := do
-  if let some n := natLit? e then return .num n 1
-  if e.isFVar then
-    if let some (_, k) := (← get).bound.find? (·.1 == e) then return .bvar k
-  let (f, args) := e.getAppFnArgs
-  let tables := (← get).tables
-  if let some entry := tables.function? f then
-    if entry.arity ≥ 1 && args.size ≥ entry.arity then
-      let operands := args.extract (args.size - entry.arity) args.size
-      noteConditions entry operands
-      if entry.arity == 1 then return .fn entry.sage (← exprToSym operands[0]!)
-      return .call entry.sage (← operands.toList.mapM exprToSym)
-  if let some c := tables.constant? f then
-    if args.isEmpty then return .const c.sage
-  if tables.isCoercion f && args.size ≥ 1 then
-    let x := lastArg e
-    let inner ← exprToSym x
-    -- a compound ℕ or ℤ computation cast into a field keeps its type, so the rendering can restore the cast
-    let compound := !(inner matches .atom _ | .bvar _ | .num _ _)
-    let srcTy ← atomType x
-    if compound && (srcTy == "ℕ" || srcTy == "ℤ") then return .typed srcTy inner
-    return inner
-  match f, args with
-  | ``HAdd.hAdd, #[_, _, _, _, a, b] => return .add (← exprToSym a) (← exprToSym b)
-  | ``HSub.hSub, #[_, _, _, _, a, b] => return .sub (← exprToSym a) (← exprToSym b)
-  | ``HMul.hMul, #[ty, _, _, _, a, b] =>
-    if ty.isAppOf `Matrix then return .method "__mul__" (← exprToSym a) [← exprToSym b]
-    return .mul (← exprToSym a) (← exprToSym b)
-  | ``HDiv.hDiv, #[_, _, _, _, a, b] =>
-    if natLit? b |>.isNone then note b .ne
-    return .div (← exprToSym a) (← exprToSym b)
-  | ``Inv.inv, #[ty, _, a] =>
-    if ty.isAppOf `Matrix then return .method "inverse" (← exprToSym a) []
-    if natLit? a |>.isNone then note a .ne
-    return .div (.num 1 1) (← exprToSym a)
-  | ``Neg.neg, #[_, _, a] => return .neg (← exprToSym a)
-  | ``HPow.hPow, #[α, β, _, _, a, b] =>
-    -- a real exponent is `Real.rpow`: Lean's value for a negative base differs from Sage's
-    if (← whnfR β).isConstOf `Real && (← whnfR α).isConstOf `Real then
-      let positiveNumeral := match natLit? b with | some n => decide (n > 0) | none => false
-      note a (if positiveNumeral then .nonneg else .pos)
-    return .pow (← exprToSym a) (← exprToSym b)
-  | ``HMod.hMod, #[_, _, _, _, a, b] => return .mod (← exprToSym a) (← exprToSym b)
-  | `abs, #[_, _, _, a] => return .fn "abs" (← exprToSym a)
-  | `Finset.sum, #[_, _, _, s, body] | `Finset.prod, #[_, _, _, s, body] =>
-    let isSum := f == `Finset.sum
-    let .lam k ty b bi := body | return ← symAtom e
-    -- the inclusive bounds of the index set, or `none` for a set outside the coverage list
-    let bounds? : Option (Expr × Option Expr × Bool) := match s.getAppFnArgs with
-      | (`Finset.range, #[n]) => some (n, none, true)
-      | (`Finset.Icc, #[_, _, _, lo, hi]) => some (lo, some hi, false)
-      | (`Finset.Ico, #[_, _, _, lo, hi]) => some (lo, some hi, true)
-      | (`Finset.univ, #[α, _]) => match α.getAppFnArgs with
-        | (`Fin, #[n]) => some (n, none, true)
-        | _ => none
-      | _ => none
-    let some (a, b?, exclusive) := bounds? | return ← symAtom e
-    let taken := (← get).bound.map (·.2)
-    let base := s!"{k.eraseMacroScopes}_"
-    let kName := if taken.contains base then s!"{base}{taken.size}_" else base
-    let a' ← exprToSym a
-    let b'? ← b?.mapM exprToSym
-    withLocalDecl k bi ty fun x => do
-      modify fun st => { st with bound := st.bound.push (x, kName) }
-      let body' ← exprToSym (b.instantiate1 x)
-      modify fun st => { st with bound := st.bound.pop }
-      match b'? with
-      | none => return .rangeOp isSum kName a' body'
-      | some hi => return .interval isSum kName a' (if exclusive then .sub hi (.num 1 1) else hi) body'
-  | ``DFunLike.coe, #[_, _, _, _, F, arg] =>
-    if F.isAppOf `Matrix.of then
-      let some rows := vecList arg | return ← symAtom e
-      let some rows := rows.mapM vecList | return ← symAtom e
-      return .matrix (← rows.mapM (·.mapM exprToSym))
-    if F.isAppOf `Polynomial.C then return ← exprToSym arg
-    symAtom e
-  | `Matrix.det, _ => return .method "det" (← exprToSym (lastArg e)) []
-  | `Matrix.trace, _ => return .method "trace" (← exprToSym (lastArg e)) []
-  | `Matrix.transpose, _ => return .method "transpose" (← exprToSym (lastArg e)) []
-  | `Polynomial.X, _ => return .bvar "X"
-  | `Polynomial.eval, #[_, _, x, p] => return .method "subs" (← exprToSym p) [.bvar s!"X={(← exprToSym x).toSage}"]
-  | `Polynomial.coeff, #[_, _, p, n] => return .method "coefficient" (← exprToSym p) [.bvar "X", ← exprToSym n]
-  | `Polynomial.natDegree, #[_, _, p] | `Polynomial.degree, #[_, _, p] =>
-    return .method "degree" (← exprToSym p) [.bvar "X"]
-  | _, _ => symAtom e
-
 /-- The zero of a term's type. -/
 private def zeroOf (e : Expr) : MetaM Expr := do
   mkAppOptM ``OfNat.ofNat #[← inferType e, mkRawNatLit 0, none]
@@ -289,5 +202,122 @@ def Condition.dischargedBy (c : Condition) (nameable : LocalDecl → Bool) : Met
     for target in wanted :: stronger do
       if ← withReducible (isDefEq ty target) then return some decl.userName
   return none
+
+/-- Is the type ℕ or ℤ, where `/`, `%` and (on ℕ) `-` differ from field arithmetic? -/
+private def isIntegerType (ty : Expr) : MetaM Bool := do
+  let ty ← whnfR ty
+  return ty.isConstOf ``Nat || ty.isConstOf ``Int
+
+/-- Is `b` a positive divisor: a positive numeral, or positive by a hypothesis? Notes the condition when it
+comes from a hypothesis. -/
+private def positiveDivisor (b : Expr) : SymM Bool := do
+  if let some n := natLit? b then return decide (n > 0)
+  let c : Condition := { term := b, kind := .pos }
+  if (← c.dischargedBy fun d => !d.isImplementationDetail).isSome then
+    note b .pos
+    return true
+  return false
+
+/-- Translate a Lean term to a symbolic expression; anything outside the coverage list becomes an atom. -/
+partial def exprToSym (e : Expr) : SymM SymExpr := do
+  if let some n := natLit? e then return .num n 1
+  if e.isFVar then
+    if let some (_, k) := (← get).bound.find? (·.1 == e) then return .bvar k
+  let (f, args) := e.getAppFnArgs
+  let tables := (← get).tables
+  if let some entry := tables.function? f then
+    if entry.arity ≥ 1 && args.size ≥ entry.arity then
+      let operands := args.extract (args.size - entry.arity) args.size
+      noteConditions entry operands
+      if entry.arity == 1 then return .fn entry.sage (← exprToSym operands[0]!)
+      return .call entry.sage (← operands.toList.mapM exprToSym)
+  if let some c := tables.constant? f then
+    if args.isEmpty then return .const c.sage
+  if tables.isCoercion f && args.size ≥ 1 then
+    let x := lastArg e
+    let inner ← exprToSym x
+    -- a compound ℕ or ℤ computation cast into a field keeps its type, so the rendering can restore the cast
+    let compound := !(inner matches .atom _ | .bvar _ | .num _ _)
+    let srcTy ← atomType x
+    if compound && (srcTy == "ℕ" || srcTy == "ℤ") then return .typed srcTy inner
+    return inner
+  match f, args with
+  | ``HAdd.hAdd, #[_, _, _, _, a, b] => return .add (← exprToSym a) (← exprToSym b)
+  | ``HSub.hSub, #[α, _, _, _, a, b] =>
+    -- ℕ subtraction truncates at zero: it means `a - b` only when `b ≤ a`
+    if (← whnfR α).isConstOf ``Nat then
+      let numerals := match natLit? a, natLit? b with | some m, some n => decide (n ≤ m) | _, _ => false
+      unless numerals do
+        let c : Condition := { term := b, kind := .le, bound := some a }
+        if (← c.dischargedBy fun d => !d.isImplementationDetail).isNone then return ← symAtom e
+        note b .le a
+    return .sub (← exprToSym a) (← exprToSym b)
+  | ``HMul.hMul, #[ty, _, _, _, a, b] =>
+    if ty.isAppOf `Matrix then return .method "__mul__" (← exprToSym a) [← exprToSym b]
+    return .mul (← exprToSym a) (← exprToSym b)
+  | ``HDiv.hDiv, #[α, _, _, _, a, b] =>
+    -- integer division rounds; it is `floor(a/b)` for a positive divisor and differs otherwise
+    if ← isIntegerType α then
+      unless ← positiveDivisor b do return ← symAtom e
+      return .fn "floor" (.div (← exprToSym a) (← exprToSym b))
+    if natLit? b |>.isNone then note b .ne
+    return .div (← exprToSym a) (← exprToSym b)
+  | ``Inv.inv, #[ty, _, a] =>
+    if ty.isAppOf `Matrix then return .method "inverse" (← exprToSym a) []
+    if natLit? a |>.isNone then note a .ne
+    return .div (.num 1 1) (← exprToSym a)
+  | ``Neg.neg, #[_, _, a] => return .neg (← exprToSym a)
+  | ``HPow.hPow, #[α, β, _, _, a, b] =>
+    -- a real exponent is `Real.rpow`: Lean's value for a negative base differs from Sage's
+    if (← whnfR β).isConstOf `Real && (← whnfR α).isConstOf `Real then
+      let positiveNumeral := match natLit? b with | some n => decide (n > 0) | none => false
+      note a (if positiveNumeral then .nonneg else .pos)
+    return .pow (← exprToSym a) (← exprToSym b)
+  | ``HMod.hMod, #[α, _, _, _, a, b] =>
+    if ← isIntegerType α then
+      unless ← positiveDivisor b do return ← symAtom e
+    return .mod (← exprToSym a) (← exprToSym b)
+  | `abs, #[_, _, _, a] => return .fn "abs" (← exprToSym a)
+  | `Finset.sum, #[_, _, _, s, body] | `Finset.prod, #[_, _, _, s, body] =>
+    let isSum := f == `Finset.sum
+    let .lam k ty b bi := body | return ← symAtom e
+    -- the inclusive bounds of the index set, or `none` for a set outside the coverage list
+    let bounds? : Option (Expr × Option Expr × Bool) := match s.getAppFnArgs with
+      | (`Finset.range, #[n]) => some (n, none, true)
+      | (`Finset.Icc, #[_, _, _, lo, hi]) => some (lo, some hi, false)
+      | (`Finset.Ico, #[_, _, _, lo, hi]) => some (lo, some hi, true)
+      | (`Finset.univ, #[α, _]) => match α.getAppFnArgs with
+        | (`Fin, #[n]) => some (n, none, true)
+        | _ => none
+      | _ => none
+    let some (a, b?, exclusive) := bounds? | return ← symAtom e
+    let taken := (← get).bound.map (·.2)
+    let base := s!"{k.eraseMacroScopes}_"
+    let kName := if taken.contains base then s!"{base}{taken.size}_" else base
+    let a' ← exprToSym a
+    let b'? ← b?.mapM exprToSym
+    withLocalDecl k bi ty fun x => do
+      modify fun st => { st with bound := st.bound.push (x, kName) }
+      let body' ← exprToSym (b.instantiate1 x)
+      modify fun st => { st with bound := st.bound.pop }
+      match b'? with
+      | none => return .rangeOp isSum kName a' body'
+      | some hi => return .interval isSum kName a' (if exclusive then .sub hi (.num 1 1) else hi) body'
+  | ``DFunLike.coe, #[_, _, _, _, F, arg] =>
+    if F.isAppOf `Matrix.of then
+      let some rows := vecList arg | return ← symAtom e
+      let some rows := rows.mapM vecList | return ← symAtom e
+      return .matrix (← rows.mapM (·.mapM exprToSym))
+    if F.isAppOf `Polynomial.C then return ← exprToSym arg
+    symAtom e
+  | `Matrix.det, _ => return .method "det" (← exprToSym (lastArg e)) []
+  | `Matrix.trace, _ => return .method "trace" (← exprToSym (lastArg e)) []
+  | `Matrix.transpose, _ => return .method "transpose" (← exprToSym (lastArg e)) []
+  | `Polynomial.X, _ => return .bvar "X"
+  | `Polynomial.eval, #[_, _, x, p] => return .method "subs" (← exprToSym p) [.bvar s!"X={(← exprToSym x).toSage}"]
+  | `Polynomial.coeff, #[_, _, p, n] => return .method "coefficient" (← exprToSym p) [.bvar "X", ← exprToSym n]
+  | `Polynomial.natDegree, #[_, _, p] | `Polynomial.degree, #[_, _, p] =>
+    return .method "degree" (← exprToSym p) [.bvar "X"]
+  | _, _ => symAtom e
 
 end Veriphy

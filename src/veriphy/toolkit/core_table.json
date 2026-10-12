@@ -211,6 +211,74 @@
     {
       "arity": 1,
       "conditions": [],
+      "example": "Nat.factorial n",
+      "lean": "Nat.factorial",
+      "result": "ℕ",
+      "sage": "factorial",
+      "types": [
+        "ℕ"
+      ]
+    },
+    {
+      "arity": 2,
+      "conditions": [],
+      "example": "Nat.choose n k",
+      "lean": "Nat.choose",
+      "result": "ℕ",
+      "sage": "binomial",
+      "types": [
+        "ℕ"
+      ]
+    },
+    {
+      "arity": 2,
+      "conditions": [],
+      "example": "Nat.gcd m n",
+      "lean": "Nat.gcd",
+      "result": "ℕ",
+      "sage": "gcd",
+      "types": [
+        "ℕ"
+      ]
+    },
+    {
+      "arity": 2,
+      "conditions": [],
+      "example": "Int.gcd a b",
+      "lean": "Int.gcd",
+      "result": "ℕ",
+      "sage": "gcd",
+      "types": [
+        "ℤ"
+      ]
+    },
+    {
+      "arity": 1,
+      "conditions": [],
+      "example": "⌊x⌋",
+      "lean": "Int.floor",
+      "result": "ℤ",
+      "sage": "floor",
+      "types": [
+        "ℝ",
+        "ℚ"
+      ]
+    },
+    {
+      "arity": 1,
+      "conditions": [],
+      "example": "⌈x⌉",
+      "lean": "Int.ceil",
+      "result": "ℤ",
+      "sage": "ceil",
+      "types": [
+        "ℝ",
+        "ℚ"
+      ]
+    },
+    {
+      "arity": 1,
+      "conditions": [],
       "example": "Complex.exp x",
       "lean": "Complex.exp",
       "result": "ℂ",
