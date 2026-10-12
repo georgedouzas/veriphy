@@ -10,6 +10,7 @@ printed proof.
 -/
 import Veriphy.Translate
 import Veriphy.Kit.Symbolic
+import Veriphy.Kit.Packs
 
 namespace Veriphy
 
@@ -84,6 +85,10 @@ structure Problem where
   /-- Domain conditions: the Sage term, the kind (`ne`, `nonneg`, `pos`), its Lean text, and the hypothesis
   that discharges it. -/
   conditions : Array (String × String × Option String × Expr × Option Name) := #[]
+  /-- The translation namespaces in force, core first. -/
+  namespaces : List String := []
+  /-- Problems found resolving the translation tables (missing constants, conflicts). -/
+  tableProblems : Array String := #[]
 
 /-- The atom-table monad: translation state shared across one tactic invocation. -/
 abbrev ProblemM := StateRefT (Array Expr) MetaM
@@ -169,7 +174,8 @@ def Problem.enrich (p : Problem) : MetaM Problem := do
         | .other e => pure (Goal.other e, ← relSym e)
         | .falsum => pure (Goal.falsum, none)
       pure (hyps, factExprs, goal, goalExpr)
-  let ((hyps, factExprs, goal, goalExpr), st) ← symPass.run { atoms := p.atoms }
+  let (tables, tableProblems) ← activeTables
+  let ((hyps, factExprs, goal, goalExpr), st) ← symPass.run { atoms := p.atoms, tables }
   let mut conditions := #[]
   let mut seen : Array Condition := #[]
   for c in st.conditions do
@@ -179,7 +185,8 @@ def Problem.enrich (p : Problem) : MetaM Problem := do
     let bound ← c.bound.mapM fun b => return (← (exprToSym b).run' { atoms := st.atoms }).toSage
     conditions := conditions.push (sage.toSage, kindTag c.kind, bound, ← c.prop, ← c.dischargedBy nameable)
   let atomTypes ← st.atoms.mapM atomType
-  return { p with atoms := st.atoms, hyps, goal, factExprs, goalExpr, atomTypes, conditions }
+  let p := { p with atoms := st.atoms, hyps, goal, factExprs, goalExpr, atomTypes, conditions }
+  return { p with namespaces := tables.map (·.«namespace»), tableProblems := tableProblems }
 
 /-- Extract the main goal and every nameable hypothesis, never rejecting a goal: anything without a
 polynomial form is kept with its text. Runs `k` in the goal's context (extended with the binders of an
@@ -268,6 +275,8 @@ def Problem.toJson (p : Problem) : MetaM Json := do
     , ("hyps", Json.arr ((← p.hyps.mapM (·.toJson)) ++ facts))
     , ("goal", goal)
     , ("atom_types", Json.arr (p.atomTypes.map Json.str))
-    , ("domain", Json.arr conditions) ]
+    , ("domain", Json.arr conditions)
+    , ("namespaces", Json.arr (p.namespaces.toArray.map Json.str))
+    , ("table_problems", Json.arr (p.tableProblems.map Json.str)) ]
 
 end Veriphy

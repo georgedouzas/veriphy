@@ -1,0 +1,17 @@
+# Coverage runner: measures how much of real corpora Veriphy's symbolic translation covers.
+# Not part of Veriphy's build or CI; see docs/development/coverage.md.
+name = "veriphy-coverage"
+defaultTargets = ["Coverage"]
+
+[[require]]
+name = "veriphy"
+path = ".."
+
+# Physlib master at a commit whose lake-manifest pins the same mathlib (v4.34.1) and dependencies as Veriphy.
+[[require]]
+name = "Physlib"
+git = "https://github.com/leanprover-community/physlib.git"
+rev = "0b252e14"
+
+[[lean_lib]]
+name = "Coverage"

@@ -94,3 +94,60 @@ def Tables.isCoercion (ts : Tables) (c : Name) : Bool :=
   ts.any fun t => t.coercions.contains c.toString
 
 end Veriphy
+
+namespace Veriphy
+
+open Lean
+
+/-- A library pack: a table for one library, shipped with Veriphy as data and active only when the library is in
+the environment (its sentinel constant exists). Veriphy never imports the library itself. -/
+structure Pack where
+  /-- The library, such as `Physlib`. -/
+  library : String
+  /-- A constant whose presence means the library is imported. -/
+  sentinel : String
+  table : Table
+  deriving Inhabited
+
+/-- Every Lean constant an entry refers to. -/
+def Table.referencedConstants (t : Table) : List String :=
+  t.functions.map (·.lean) ++ t.constants.map (·.lean) ++ t.coercions ++ t.rewrites.map (·.«lemma»)
+
+/-- The Lean constants a table defines translations for (functions, constants, coercions). -/
+def Table.definedConstants (t : Table) : List String :=
+  t.functions.map (·.lean) ++ t.constants.map (·.lean) ++ t.coercions
+
+/-- Drop the entries of `t` that redefine a constant an earlier table defines, reporting each conflict. -/
+def Table.withoutConflicts (t : Table) (earlier : Tables) : Table × Array String := Id.run do
+  let owner? (c : String) : Option String := (earlier.find? (·.definedConstants.contains c)).map (·.«namespace»)
+  let conflict (c ns : String) : String :=
+    s!"{t.«namespace»}: entry for {c} conflicts with the {ns} entry for {c}; the {ns} entry stays"
+  let mut problems := #[]
+  let mut functions := []
+  for f in t.functions do
+    if let some ns := owner? f.lean then problems := problems.push (conflict f.lean ns)
+    else functions := functions ++ [f]
+  let mut constants := []
+  for c in t.constants do
+    if let some ns := owner? c.lean then problems := problems.push (conflict c.lean ns)
+    else constants := constants ++ [c]
+  return ({ t with functions, constants }, problems)
+
+/-- Resolve the tables in force: the core, then each pack whose library is present (in name order), then the
+project's tables. Returns the tables and the problems found (missing constants, conflicts). -/
+def resolveTables (env : Environment) (packs : List Pack) (project : List Table := []) : Tables × Array String :=
+  Id.run do
+  let mut tables : Tables := [coreTable]
+  let mut problems := #[]
+  let active := packs.filter (env.contains ·.sentinel.toName) |>.mergeSort (·.library ≤ ·.library)
+  for t in active.map (·.table) ++ project do
+    let missing := t.referencedConstants.filter (!env.contains ·.toName)
+    unless missing.isEmpty do
+      problems := problems.push
+        s!"{t.«namespace»}: constants not found (library version mismatch?): {", ".intercalate missing}"
+    let (t, conflicts) := t.withoutConflicts tables
+    problems := problems ++ conflicts
+    tables := tables ++ [t]
+  return (tables, problems)
+
+end Veriphy
