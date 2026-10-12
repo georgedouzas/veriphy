@@ -11,6 +11,7 @@ reach the daemon through `Veriphy.Kit.call` (which refuses during replay), not
 through this module directly.
 -/
 import Lean.Data.Json
+import Std.Sync.Mutex
 
 namespace Veriphy.Bridge
 
@@ -71,24 +72,92 @@ private def executableExists (exe : String) : IO Bool := do
   let dirs := ((← IO.getEnv "PATH").getD "").splitOn ":"
   dirs.anyM fun dir => System.FilePath.pathExists (System.FilePath.mk dir / exe)
 
-/-- Send one request to a freshly spawned daemon and read one response line.
-A persistent daemon (kept warm across tactic calls) should replace this once
-the tactics stabilize; the protocol is already line-oriented to allow it. -/
-def request (cfg : Config := {}) (method : String) (params : Json := Json.null) :
-    IO Json := do
+/-- The daemon process, with its stdin taken for writing. -/
+abbrev DaemonChild := IO.Process.Child { stdin := .null, stdout := .piped, stderr := .piped }
+
+/-- A running daemon serving every request of this Lean process. -/
+structure Session where
+  exe : String
+  stdin : IO.FS.Handle
+  child : DaemonChild
+  /-- The last few kilobytes the daemon wrote to stderr (drained in the background, so it never blocks). -/
+  stderrTail : IO.Ref String
+  nextId : Nat := 1
+
+/-- The session, guarded by a mutex: Lean elaborates declarations in parallel, the daemon answers one at a time. -/
+initialize session : Std.Mutex (Option Session) ← Std.Mutex.new none
+
+/-- The per-request time limit in seconds: `$VERIPHY_SAGE_TIMEOUT`, else 150 (above the scripts' own 120). -/
+def requestTimeout : IO Nat := do
+  return ((← IO.getEnv "VERIPHY_SAGE_TIMEOUT").bind String.toNat?).getD 150
+
+/-- Start the daemon and drain its stderr in the background. -/
+private def start (cfg : Config) : IO Session := do
   let (exe, args) ← cfg.resolve
   unless ← executableExists exe do
     throw <| IO.userError s!"veriphy: could not start Sage: '{exe}' is not an executable on PATH — \
       install SageMath, or set VERIPHY_SAGE_CMD to the sage executable"
   let child ← IO.Process.spawn { cmd := exe, args, stdin := .piped, stdout := .piped, stderr := .piped }
-  let req := Json.mkObj
-    [("id", Json.num 1), ("method", Json.str method), ("params", params)]
   let (stdin, child) ← child.takeStdin
-  stdin.putStr (req.compress ++ "\n")
-  stdin.flush
-  let line ← child.stdout.getLine
-  let .ok json := Json.parse line
-    | throw (startupFailure exe (line ++ (← child.stderr.readToEnd)))
+  let tail ← IO.mkRef ""
+  let _ ← IO.asTask (prio := .dedicated) do
+    repeat
+      let line ← child.stderr.getLine
+      if line.isEmpty then break
+      tail.modify fun t => let all := t ++ line; (all.drop (all.length - 4000)).toString
+  return { exe, stdin, child, stderrTail := tail }
+
+/-- How an exchange with the daemon ended. -/
+inductive Reply | line (text : String) | eof | timeout
+
+/-- Send one request line and wait for one response line, up to `seconds`. -/
+private def exchange (s : Session) (req : Json) (seconds : Nat) : IO Reply := do
+  try
+    s.stdin.putStr (req.compress ++ "\n")
+    s.stdin.flush
+  catch _ => return .eof
+  let reader ← IO.asTask (prio := .dedicated) do
+    let line ← s.child.stdout.getLine
+    return if line.isEmpty then Reply.eof else Reply.line line
+  let timer ← IO.asTask (prio := .dedicated) do
+    IO.sleep (seconds * 1000).toUInt32
+    return Reply.timeout
+  match ← IO.waitAny [reader, timer] with
+  | .ok reply => return reply
+  | .error _ => return .eof
+
+/-- Send one request to the daemon session and return its result. The session starts on first use, is
+restarted once if it died, and is killed when a request exceeds the time limit. -/
+def request (cfg : Config := {}) (method : String) (params : Json := Json.null) : IO Json := do
+  let seconds ← requestTimeout
+  -- one attempt: `none` means an already-running daemon had died, so the caller retries once on a fresh one
+  let attempt (retry : Bool) : Std.AtomicT (Option Session) IO (Option String) := do
+    let (s, fresh) ← match ← get with
+      | some s => pure (s, false)
+      | none => pure (← start cfg, true)
+    let req := Json.mkObj [("id", Json.num s.nextId), ("method", Json.str method), ("params", params)]
+    match ← exchange s req seconds with
+    | .line text =>
+      set (some { s with nextId := s.nextId + 1 })
+      return some text
+    | .timeout =>
+      s.child.kill
+      set (none : Option Session)
+      throw <| IO.userError s!"veriphy: the Sage request '{method}' exceeded {seconds}s; the daemon \
+        was restarted (raise the limit with VERIPHY_SAGE_TIMEOUT)"
+    | .eof =>
+      set (none : Option Session)
+      if retry && !fresh then return none
+      IO.sleep 200
+      throw (startupFailure s.exe (← s.stderrTail.get))
+  let answer ← session.atomically (m := IO) do
+    match ← attempt true with
+    | some text => pure text
+    | none => match ← attempt false with
+      | some text => pure text
+      | none => throw <| IO.userError "veriphy: the Sage daemon died twice in a row"
+  let .ok json := Json.parse answer
+    | throw <| IO.userError s!"veriphy: the Sage daemon answered with something other than JSON:\n{answer}"
   match json.getObjVal? "error" with
   | .ok (Json.str e) => throw <| IO.userError s!"sage daemon error: {e}"
   | _ => IO.ofExcept (json.getObjVal? "result")

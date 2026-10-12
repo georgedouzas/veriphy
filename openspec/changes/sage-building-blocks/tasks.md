@@ -40,8 +40,8 @@
 
 ## 4. Persistent session (daemon-session)
 
-- [ ] 4.1 Replace spawn-per-request in `Veriphy/Bridge.lean` with a session: one process per Lean process, a mutex, matched request ids, a timeout that kills the process, and a single retry on EOF (D9). Verify with a file running ten `sage_run` calls whose timing shows one start-up, and with `lake build VeriphyTest` green.
-- [ ] 4.2 Verify recovery and limits with scratch files:
+- [x] 4.1 Replace spawn-per-request in `Veriphy/Bridge.lean` with a session: one process per Lean process, a mutex, matched request ids, a timeout that kills the process, and a single retry on EOF (D9). Verify with a file running ten `sage_run` calls whose timing shows one start-up, and with `lake build VeriphyTest` green.
+- [x] 4.2 Verify recovery and limits with scratch files:
   - killing the daemon between two calls (the second call succeeds);
   - a looping script (it fails after the limit, and the next call succeeds);
   - replay with a warm session (refused with the replay error).
