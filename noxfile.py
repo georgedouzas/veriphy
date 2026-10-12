@@ -160,7 +160,7 @@ def tests(session: nox.Session) -> None:
         session.skip('the tests need SageMath on PATH (`sage`)')
     venv = Path(session.create_tmp()) / 'sage-venv'
     if not (venv / 'bin' / 'python').exists():
-        session.run(sage, '-python', '-m', 'venv', '--system-site-packages', str(venv), external=True)
+        session.run(sage, '-python', '-m', 'venv', '--system-site-packages', '--without-pip', str(venv), external=True)
     env = {'VIRTUAL_ENV': str(venv)}
     session.run('uv', 'sync', '--active', env=env, external=True)
     selection = ['-k', *session.posargs] if session.posargs else []
