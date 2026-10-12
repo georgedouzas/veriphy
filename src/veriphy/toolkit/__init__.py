@@ -30,6 +30,7 @@ from veriphy.toolkit._emit import (
 from veriphy.toolkit._lean import Lean, parenthesize, polynomial, rational, tactic, term
 from veriphy.toolkit._lp import solve_exact_lp
 from veriphy.toolkit._problem import Hyp, Problem, create_ring, parse_polynomial, read_problem
+from veriphy.toolkit._sos import sos_decomposition
 
 __all__ = [
     'Hyp',
@@ -59,6 +60,7 @@ __all__ = [
     'refute',
     'rewrite_by',
     'solve_exact_lp',
+    'sos_decomposition',
     'sq_nonneg',
     'steps',
     'sum_by_induction',

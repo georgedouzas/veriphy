@@ -134,8 +134,9 @@ check-yield-types = false
 check-class-attributes = false
 
 [tool.deptry.per_rule_ignores]
-# SageMath is the runtime the package is installed into (`sage -pip install veriphy`), never a declared dependency.
-DEP001 = ["sage"]
+# SageMath (with its bundled cvxopt) is the runtime the package is installed into (`sage -pip install veriphy`),
+# never a declared dependency.
+DEP001 = ["sage", "cvxopt"]
 
 [tool.bandit]
 # Runs Lean on emitted text: the one place the tests start a process.

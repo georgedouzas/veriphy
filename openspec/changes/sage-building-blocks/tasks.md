@@ -26,7 +26,7 @@
 
 ## 2. Exact SOS solver (search-primitives)
 
-- [ ] 2.1 Implement `toolkit/_sos.py`: SOS from a numeric SDP (cvxopt), rounding, exact projection and an LDLᵀ check (D7). Verify on an irreducible quartic that is a sum of squares, on the old `sage_sos` inputs, and with a test showing that a problem whose rounding cannot be made exact reports failure instead of an inexact result.
+- [x] 2.1 Implement `toolkit/_sos.py`: SOS from a numeric SDP (cvxopt), rounding, exact projection and an LDLᵀ check (D7). Verify on an irreducible quartic that is a sum of squares, on the old `sage_sos` inputs, and with a test showing that a problem whose rounding cannot be made exact reports failure instead of an inexact result.
 
 ## 3. Script tactic (script-tactic, project-scripts)
 
