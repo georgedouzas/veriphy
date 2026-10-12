@@ -310,7 +310,8 @@ def load_pack(name: str) -> Table:
         >>> [f.lean for f in physlib.functions], dict(physlib.conventions)['metric_signature']
         (['Time.deriv', 'Space.deriv'], '+---')
     """
+    source = f'{PACKS_DIR}/{name}.json'
     resource = files('veriphy.toolkit').joinpath(PACKS_DIR, f'{name}.json')
     if not resource.is_file():
-        raise TableError(f'{PACKS_DIR}/{name}.json', 'namespace', 'no such pack')
-    return parse_table(json.loads(resource.read_text(encoding='utf-8')), f'{PACKS_DIR}/{name}.json')
+        raise TableError(source, 'namespace', 'no such pack')
+    return parse_table(json.loads(resource.read_text(encoding='utf-8')), source)
