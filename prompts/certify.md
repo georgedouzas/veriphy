@@ -51,12 +51,24 @@ with, not an implication. An implication arrives as `goal_kind == 'other'`.
 
 - **Problem:** `problem`, `R`, `x0, x1, …`, `hyps`, `goal`, `goal_kind`,
   `binders`, `body`, `atoms`, `lhs`, `rhs`, `Hyp`.
+- **Symbolic forms:** every hypothesis and the goal carry `.expr`, the Sage
+  symbolic form of `lhs - rhs` (with `sqrt`, `exp`, `log`, `sin`, `cos`, `tan`,
+  `abs`, `pi`, `I`, range sums, `!![…]` matrices, `det`, polynomial `eval`),
+  over `symbols` (the same names as `x0, x1, …`, in Sage's symbolic ring).
+  `problem.atom_types` gives each atom's Lean type, and `domain` lists the
+  conditions the expressions need (`y ≠ 0` for a denominator, `0 ≤ u` for a
+  `sqrt`, `0 < v` for a `log`), with the hypothesis that discharges each one.
 - **Emitters** (all return Lean text that re-parses):
   - `polynomial`, `rational`, `term`, `tactic`, `hyp`, `fresh_name`;
   - `combination`, `linear_combination`, `sq_nonneg`, `mul_nonneg`, `mul_pos`;
   - `nlinarith`, `positivity`, `field_simp`, `norm_num`, `decide`;
   - `rewrite_by`, `calc_chain`, `by_cases`, `rcases`, `witness`;
-  - `negate_goal`, `refute`, `sum_by_induction`, `steps`.
+  - `negate_goal`, `refute`, `sum_by_induction`, `steps`;
+  - symbolic: `symbolic` (a Sage expression as a Lean term, functions
+    dispatched on the atoms' types), `matrix_term` (`!![…]`),
+    `field_simp_clearing` (passes every denominator fact),
+    `lemma_rewrite` (a named lemma with its side conditions), and
+    `require_domain` (discharge domain conditions, or fail naming them).
 - **Solvers:** `solve_exact_lp` (exact rational LP) and `sos_decomposition`
   (exact SOS from a numeric SDP).
 - **Sage itself:** everything in `sage.all` (`factor`, `lift`, `solve`,

@@ -66,6 +66,9 @@ score, or committing to the target repo beyond what the caller asked for.
       | long manipulation through intermediate forms | `calc_derivation` |
       | easy on each side of a condition | `case_split` |
       | identity between explicit matrices | `matrix_identity` |
+      | `lhs ≤ rhs` with divisions (rational functions) | `rational_inequality` |
+      | identity of `exp`, `log`, `sqrt`, `sin`, `cos` by named lemmas | `transcendental_rewrite` |
+      | `!![…]` identity, `det` or `trace` written in the goal | `matrix_from_goal` |
 
       Recipes are in `prompts/recipes/<name>.md`. Read only the one you use.
       Save a script that closed its goal into the project's `certificates/`,

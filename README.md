@@ -187,8 +187,11 @@ eigenvector witnesses. The pipeline has cleared a real Physlib backlog item end 
 translation pipeline (MathAST), but its flagship `by sage` mode closes goals with `sorry` (a trusted oracle). Veriphy
 does what LeanSage does not: kernel-checked certification and the agent loop.
 
-Veriphy's own translation is narrower. Scripts see polynomial arithmetic over atoms. Any other subterm (`Real.sin x`,
-`x / y`) is an opaque atom, and hypotheses with no polynomial form arrive as text. Extending it to rational functions
-and symbolic expressions, possibly by reusing LeanSage's translator, is future work.
+Veriphy's symbolic translation follows LeanSage's coverage tables (MIT License, credited in
+`Veriphy/Kit/Symbolic.lean`). Scripts see each hypothesis and the goal both as polynomials over atoms and as Sage
+symbolic expressions: rational functions, `sqrt`/`exp`/`log`/trigonometric functions, `abs`, `pi`, `I`, range sums,
+matrix literals, determinants and polynomial evaluation. The domain conditions those expressions need come with the
+hypotheses that discharge them. One deliberate difference is that `abs` is the absolute value of its own type
+(LeanSage maps it to `Int.natAbs`).
 
 The design rationale is in [the user guide](https://github.com/georgedouzas/veriphy/blob/main/docs/overview/user_guide.md).

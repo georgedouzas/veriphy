@@ -46,6 +46,15 @@ unusable for mathlib/Physlib contributions. Veriphy deliberately occupies the
 complement: certification and the agent skill. Where practical, certificate
 checkers should be contributed upstream rather than duplicated.
 
+Veriphy's symbolic translation (`Veriphy/Kit/Symbolic.lean`) ports LeanSage's
+coverage tables, with credit (MIT License): rational functions, `sqrt`, `exp`,
+`log`, trigonometric functions, `abs`, `pi`, `I`, range sums, matrix literals,
+`det`, `trace` and polynomial evaluation reach scripts as Sage symbolic
+expressions, together with the domain conditions they need (nonzero
+denominators, nonnegative `sqrt` arguments, positive `log` arguments). The
+toolkit renders Sage results back to Lean through an explicit function table,
+and anything outside it is rejected with an error naming it.
+
 ## Scope boundary: building blocks, not certificates
 
 A certificate is worth computing in Sage where three things coincide: (1) finding is much harder than checking,
