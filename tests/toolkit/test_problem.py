@@ -1,9 +1,9 @@
 """Test binding a serialized Lean problem."""
 
 import pytest
-from sage.all import SR, exp, sqrt
+from sage.all import SR, exp, function, sqrt
 
-from veriphy.core import CertificateError, ParamError
+from veriphy.core import CertificateError, ParamError, TableError
 from veriphy.toolkit import Hyp, parse_symbolic, read_problem
 
 PROBLEM = {
@@ -118,3 +118,32 @@ def test_parse_symbolic_handles_sums_mod_and_matrices() -> None:
     assert parse_symbolic('((X)^(2)).subs(X=x0)', {'x0': x0}) == x0**2
     assert parse_symbolic('x0 +', {'x0': x0}) is None
     assert parse_symbolic(None, {}) is None
+
+
+def test_read_problem_binds_namespaces_and_extensions() -> None:
+    """Load the core, the packs the problem names and the project entries it carries, in that order."""
+    extension = {'namespace': 'project', 'functions': [{'lean': 'Real.arcosh', 'sage': 'arccosh', 'arity': 1}]}
+    bound = read_problem({**SYMBOLIC, 'namespaces': ['mathlib', 'physlib', 'project'], 'extensions': [extension]})
+    assert [t.namespace for t in bound.tables] == ['mathlib', 'physlib', 'project']
+    assert bound.tables[2].functions[0].sage == 'arccosh'
+
+
+def test_read_problem_defaults_to_the_core_table() -> None:
+    """Bind only the core table when the problem names no namespaces."""
+    assert [t.namespace for t in read_problem(SYMBOLIC).tables] == ['mathlib']
+
+
+def test_read_problem_rejects_an_unknown_pack() -> None:
+    """Name the missing pack instead of rendering with the wrong table."""
+    with pytest.raises(TableError, match=r'packs/nosuchlib\.json'):
+        read_problem({**SYMBOLIC, 'namespaces': ['mathlib', 'nosuchlib']})
+
+
+def test_read_problem_records_typed_sub_expressions() -> None:
+    """Parse `typed` markers as their sub-expression, and record it with its Lean type."""
+    goal = {'expr': "(typed(mod(x2, 7), 'ℕ') + x0) - (x0)", 'kind': 'other', 'rel': 'le', 'text': '↑(n % 7) + x ≤ x'}
+    bound = read_problem({**SYMBOLIC, 'goal': goal})
+    x2 = bound.symbols['x2']
+    mod = function('mod', nargs=2)
+    assert bound.typed == [(mod(x2, 7), 'ℕ')]
+    assert bound.goal.expr == mod(x2, 7)
