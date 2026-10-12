@@ -7,10 +7,19 @@ from sage.all import (
     QQ,
     SR,
     I,
+    Integer,
     PolynomialRing,
     abs_symbolic,
+    arccos,
+    arcsin,
+    arctan,
+    binomial,
+    ceil,
     cos,
+    cosh,
     exp,
+    factorial,
+    floor,
     function,
     log,
     matrix,
@@ -18,8 +27,10 @@ from sage.all import (
     product,
     sage_eval,
     sin,
+    sinh,
     sqrt,
     tan,
+    tanh,
 )
 from sage.all import sum as symbolic_sum
 from sage.matrix.matrix0 import Matrix
@@ -28,12 +39,24 @@ from sage.rings.polynomial.multi_polynomial_ring_base import MPolynomialRing_bas
 from sage.symbolic.expression import Expression
 
 from veriphy.core import RELATIONS, CertificateError, ParamError
-from veriphy.toolkit._table import Table, load_core_table
+from veriphy.toolkit._table import Table, load_core_table, load_pack, parse_table
 
 GOAL_KINDS = ('rel', 'false', 'exists', 'other')
 DOMAIN_KINDS = ('ne', 'nonneg', 'pos', 'le')
 BOUND = re.compile(r'\b[^\W\d]\w*_\b')
 mod = function('mod', nargs=2)
+CORE_NAMESPACE = 'mathlib'
+PROJECT_NAMESPACE = 'project'
+
+
+def _integer_gcd(_self: object, a: Expression, b: Expression) -> Expression | None:
+    """Evaluate `gcd` on integer numerals only; Sage's own `gcd` treats a symbol as a polynomial and returns 1."""
+    if SR(a).is_integer() and SR(b).is_integer():
+        return SR(Integer(a).gcd(Integer(b)))
+    return None
+
+
+integer_gcd = function('gcd', nargs=2, eval_func=_integer_gcd)
 
 
 def create_ring(names: list[str]) -> MPolynomialRing_base:
@@ -92,12 +115,20 @@ class Side:
     text: str
 
 
-def parse_symbolic(text: object, symbols: dict[str, Expression]) -> Expression | Matrix | None:
+def parse_symbolic(
+    text: object,
+    symbols: dict[str, Expression],
+    typed: list[tuple[Expression, str]] | None = None,
+) -> Expression | Matrix | None:
     """Parse a symbolic expression serialized by Lean's symbolic translation, or return `None` when it does not parse.
+
+    `typed(e, 'ℕ')` markers (a sub-expression computed at another Lean type) evaluate to `e`, and are recorded in
+    `typed` when a list is given.
 
     Args:
         text: The expression in Sage syntax, over the variables in `symbols`.
         symbols: The symbolic variables by name.
+        typed: Where to record the marked sub-expressions with their Lean type.
 
     Returns:
         The expression in Sage's symbolic ring (a matrix over it for a matrix-valued expression), or `None`.
@@ -112,6 +143,11 @@ def parse_symbolic(text: object, symbols: dict[str, Expression]) -> Expression |
         mod(x0, 3)
         >>> parse_symbolic('(matrix(SR, [[1, x0]])) - (matrix(SR, [[1, 0]]))', {'x0': x0})
         [ 0 x0]
+        >>> marked = []
+        >>> parse_symbolic("typed(mod(x0, 7), 'ℕ') + gcd(x0, 6) + gcd(4, 6)", {'x0': x0}, marked)
+        gcd(x0, 6) + mod(x0, 7) + 2
+        >>> marked
+        [(mod(x0, 7), 'ℕ')]
     """
     if not isinstance(text, str):
         return None
@@ -130,7 +166,19 @@ def parse_symbolic(text: object, symbols: dict[str, Expression]) -> Expression |
         'mod': mod,
         'sum': symbolic_sum,
         'product': product,
-        'typed': lambda e, _ty: e,
+        'typed': lambda e, ty: _record(typed, e, ty),
+        'cosh': cosh,
+        'sinh': sinh,
+        'tanh': tanh,
+        'arcsin': arcsin,
+        'arccos': arccos,
+        'arctan': arctan,
+        'logb': lambda b, x: log(x) / log(b),
+        'floor': floor,
+        'ceil': ceil,
+        'factorial': factorial,
+        'binomial': binomial,
+        'gcd': integer_gcd,
         'matrix': matrix,
     }
     names.update({k: SR.var(k) for k in BOUND.findall(text)})
@@ -140,6 +188,13 @@ def parse_symbolic(text: object, symbols: dict[str, Expression]) -> Expression |
     except (TypeError, ValueError, SyntaxError, NameError, ArithmeticError, AttributeError):
         return None
     return value if isinstance(value, Expression | Matrix) else SR(value)
+
+
+def _record(typed: list[tuple[Expression, str]] | None, e: Expression, ty: str) -> Expression:
+    """Record a `typed` marker's sub-expression and type, and return the sub-expression."""
+    if typed is not None:
+        typed.append((SR(e), str(ty)))
+    return e
 
 
 @dataclass(frozen=True)
@@ -199,6 +254,7 @@ class Problem:
         domain: The domain conditions the problem's symbolic expressions need.
         symbols: The variables as symbolic-ring variables, by name, for symbolic work.
         tables: The translation tables in force, core first.
+        typed: The sub-expressions Lean computes at another type (`ℕ`, `ℤ`) than their context, with that type.
     """
 
     ring: MPolynomialRing_base
@@ -215,6 +271,7 @@ class Problem:
     domain: list[Condition] = field(default_factory=list)
     symbols: dict[str, Expression] = field(default_factory=dict)
     tables: tuple[Table, ...] = field(default_factory=lambda: (load_core_table(),))
+    typed: list[tuple[Expression, str]] = field(default_factory=list)
 
     def find_hyp(self, name: str, allowed: tuple[str, ...], family: str) -> Hyp:
         """Find the hypothesis named `name`, checking its relation is usable by `family`.
@@ -266,12 +323,18 @@ class Problem:
         return names
 
 
-def _read_constraint(item: object, where: str, ring: MPolynomialRing_base, symbols: dict[str, Expression]) -> Hyp:
+def _read_constraint(
+    item: object,
+    where: str,
+    ring: MPolynomialRing_base,
+    symbols: dict[str, Expression],
+    typed: list[tuple[Expression, str]],
+) -> Hyp:
     """Return one serialized hypothesis or goal as a `Hyp`, with or without polynomial and symbolic forms."""
     if not isinstance(item, dict):
         raise ParamError(param='problem', reason=f'{where}: must be an object')
     text = str(item.get('text', ''))
-    expr = parse_symbolic(item.get('expr'), symbols)
+    expr = parse_symbolic(item.get('expr'), symbols, typed)
     rel = item.get('rel')
     if rel is not None and rel not in RELATIONS:
         raise ParamError(param='problem', reason=f'{where}: bad relation {rel!r}')
@@ -287,10 +350,11 @@ def _read_constraints(
     where: str,
     ring: MPolynomialRing_base,
     symbols: dict[str, Expression],
+    typed: list[tuple[Expression, str]],
 ) -> list[Hyp]:
     """Return a serialized list of constraints as `Hyp`s, empty for anything that is not a list."""
     items = items if isinstance(items, list) else []
-    return [_read_constraint(h, f'{where} {i}', ring, symbols) for i, h in enumerate(items)]
+    return [_read_constraint(h, f'{where} {i}', ring, symbols, typed) for i, h in enumerate(items)]
 
 
 def _read_domain(items: object, symbols: dict[str, Expression]) -> list[Condition]:
@@ -305,6 +369,19 @@ def _read_domain(items: object, symbols: dict[str, Expression]) -> list[Conditio
         text = str(item.get('text', ''))
         conditions.append(Condition(text, expr, str(item['kind']), str(by) if by else None, bound))
     return conditions
+
+
+def _read_tables(problem: dict[str, object]) -> tuple[Table, ...]:
+    """Return the translation tables the problem was extracted with: the core, its active packs, its project entries."""
+    names = problem.get('namespaces') or [CORE_NAMESPACE]
+    if not isinstance(names, list):
+        raise ParamError(param='problem', reason="'namespaces' must be a list")
+    packs = [load_pack(str(n)) for n in names if n not in (CORE_NAMESPACE, PROJECT_NAMESPACE)]
+    extensions = problem.get('extensions') or []
+    if not isinstance(extensions, list):
+        raise ParamError(param='problem', reason="'extensions' must be a list")
+    project = [parse_table(t, f'problem extension {i}') for i, t in enumerate(extensions)]
+    return (load_core_table(), *packs, *project)
 
 
 def _read_names(problem: dict[str, object]) -> list[str]:
@@ -349,22 +426,25 @@ def read_problem(problem: object) -> Problem:
     atoms = problem.get('atoms', [])
     types = problem.get('atom_types', [])
     symbols = {n: SR.var(n) for n in names}
+    typed: list[tuple[Expression, str]] = []
     bound = Problem(
         ring=ring,
-        hyps=_read_constraints(problem.get('hyps', []), 'constraint', ring, symbols),
+        hyps=_read_constraints(problem.get('hyps', []), 'constraint', ring, symbols, typed),
         goal_kind=kind,
         atoms={n: str(a) for n, a in zip(names, atoms if isinstance(atoms, list) else [], strict=False)},
         carrier=str(problem.get('carrier', '')),
         atom_types={n: str(t) for n, t in zip(names, types if isinstance(types, list) else [], strict=False)},
         domain=_read_domain(problem.get('domain', []), symbols),
         symbols=symbols,
+        tables=_read_tables(problem),
+        typed=typed,
     )
     if kind in ('rel', 'other'):
-        bound.goal = _read_constraint({**goal, 'name': None}, 'goal', ring, symbols)
+        bound.goal = _read_constraint({**goal, 'name': None}, 'goal', ring, symbols, typed)
     if kind == 'rel' and 'lhs_poly' in goal:
         bound.lhs = Side(parse_polynomial(ring, goal.get('lhs_poly'), param='problem'), str(goal.get('lhs', '')))
         bound.rhs = Side(parse_polynomial(ring, goal.get('rhs_poly'), param='problem'), str(goal.get('rhs', '')))
     elif kind == 'exists':
         bound.binders = list(ring.gens()[: int(str(goal.get('binders', 0)))])
-        bound.body = _read_constraints(goal.get('body', []), 'body', ring, symbols)
+        bound.body = _read_constraints(goal.get('body', []), 'body', ring, symbols, typed)
     return bound
