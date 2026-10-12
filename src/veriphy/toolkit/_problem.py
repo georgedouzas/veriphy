@@ -22,6 +22,7 @@ from sage.all import (
     tan,
 )
 from sage.all import sum as symbolic_sum
+from sage.matrix.matrix0 import Matrix
 from sage.rings.polynomial.multi_polynomial import MPolynomial
 from sage.rings.polynomial.multi_polynomial_ring_base import MPolynomialRing_base
 from sage.symbolic.expression import Expression
@@ -90,7 +91,7 @@ class Side:
     text: str
 
 
-def parse_symbolic(text: object, symbols: dict[str, Expression]) -> Expression | None:
+def parse_symbolic(text: object, symbols: dict[str, Expression]) -> Expression | Matrix | None:
     """Parse a symbolic expression serialized by Lean's symbolic translation, or return `None` when it does not parse.
 
     Args:
@@ -98,7 +99,7 @@ def parse_symbolic(text: object, symbols: dict[str, Expression]) -> Expression |
         symbols: The symbolic variables by name.
 
     Returns:
-        The expression in Sage's symbolic ring, or `None`.
+        The expression in Sage's symbolic ring (a matrix over it for a matrix-valued expression), or `None`.
 
     Examples:
         >>> x0 = SR.var('x0')
@@ -108,6 +109,8 @@ def parse_symbolic(text: object, symbols: dict[str, Expression]) -> Expression |
         1/3*x0^3 - 1/2*x0^2 + 1/6*x0
         >>> parse_symbolic('mod(x0, 3)', {'x0': x0})
         mod(x0, 3)
+        >>> parse_symbolic('(matrix(SR, [[1, x0]])) - (matrix(SR, [[1, 0]]))', {'x0': x0})
+        [ 0 x0]
     """
     if not isinstance(text, str):
         return None
@@ -134,7 +137,7 @@ def parse_symbolic(text: object, symbols: dict[str, Expression]) -> Expression |
         value = sage_eval(text, locals=names)
     except (TypeError, ValueError, SyntaxError, NameError, ArithmeticError, AttributeError):
         return None
-    return SR(value) if not isinstance(value, Expression) else value
+    return value if isinstance(value, Expression | Matrix) else SR(value)
 
 
 @dataclass(frozen=True)
@@ -149,7 +152,7 @@ class Condition:
     """
 
     text: str
-    expr: Expression | None
+    expr: Expression | Matrix | None
     kind: str
     discharged_by: str | None = None
 
@@ -170,7 +173,7 @@ class Hyp:
     poly: MPolynomial | None
     rel: str | None
     text: str = ''
-    expr: Expression | None = None
+    expr: Expression | Matrix | None = None
 
 
 @dataclass

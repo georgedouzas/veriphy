@@ -2,7 +2,7 @@
 
 ## 0. Prerequisite
 
-- [ ] 0.1 Confirm that `sage-building-blocks` is archived and merged to `main`, and branch `symbolic-translation`. Verify with `git log` and a green `main`.
+- [x] 0.1 Confirm that `sage-building-blocks` is archived and merged to `main`, and branch `symbolic-translation`. Verify with `git log` and a green `main`.
 
 ## 1. Lean translation (symbolic-translation)
 
@@ -19,7 +19,7 @@
 
 ## 3. Recipes
 
-- [ ] 3.1 Write the `rational_inequality`, `transcendental_rewrite` and `matrix_from_goal` recipes, each with a tested template. Verify that their worked examples (including `x / (x ^ 2 + 1) ≤ 1 / 2` and `Real.exp a * Real.exp b = Real.exp (a + b)`) pass in `VeriphyTest/SageRun.lean` with replay on, and that the recipe-template pytest check passes.
+- [x] 3.1 Write the `rational_inequality`, `transcendental_rewrite` and `matrix_from_goal` recipes, each with a tested template. Verify that their worked examples (including `x / (x ^ 2 + 1) ≤ 1 / 2` and `Real.exp a * Real.exp b = Real.exp (a + b)`) pass in `VeriphyTest/SageRun.lean` with replay on, and that the recipe-template pytest check passes.
 - [ ] 3.2 Add the new recipes to the index in `prompts/prove.md` and to `prompts/certify.md`'s toolkit list, and credit LeanSage in the README and the user guide. Verify that the docs build.
 
 ## 4. Integration

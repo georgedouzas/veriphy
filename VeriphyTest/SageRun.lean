@@ -7,6 +7,8 @@ import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.Analysis.SpecialFunctions.Sqrt
 import Mathlib.Analysis.SpecialFunctions.Complex.Log
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
+import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
+import Mathlib.LinearAlgebra.Matrix.Trace
 import Veriphy
 
 set_option veriphy.checkReplay true
@@ -99,6 +101,26 @@ example (x : ℚ) : 0 ≤ x * x := by
 
 example : !![(0 : ℚ), 1; 1, 0] * !![1, 0; 0, -1] + !![1, 0; 0, -1] * !![(0 : ℚ), 1; 1, 0] = 0 := by
   sage_run file "prompts/recipes/templates/matrix_identity.sage"
+
+/-! ## Symbolic recipes -/
+
+-- rational_inequality
+example (x : ℝ) : x / (x ^ 2 + 1) ≤ 1 / 2 := by
+  sage_run file "prompts/recipes/templates/rational_inequality.sage"
+
+-- transcendental_rewrite
+example (a b : ℝ) : Real.exp a * Real.exp b = Real.exp (a + b) := by
+  sage_run file "prompts/recipes/templates/transcendental_rewrite.sage"
+example (x : ℝ) : Real.sin x ^ 2 + Real.cos x ^ 2 = 1 := by
+  sage_run file "prompts/recipes/templates/transcendental_rewrite.sage"
+
+-- matrix_from_goal
+example : !![(2 : ℚ), 1; 1, 1] * !![1, -1; -1, 2] = 1 := by
+  sage_run file "prompts/recipes/templates/matrix_from_goal.sage"
+example : !![(0 : ℚ), 1; 1, 0] * !![1, 0; 0, -1] + !![1, 0; 0, -1] * !![0, 1; 1, 0] = 0 := by
+  sage_run file "prompts/recipes/templates/matrix_from_goal.sage"
+example (c : ℚ) : Matrix.det !![(1 : ℚ), c; 0, 1] = 1 := by
+  sage_run file "prompts/recipes/templates/matrix_from_goal.sage"
 
 /-! ## Symbolic translation round trips
 
