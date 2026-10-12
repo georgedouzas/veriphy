@@ -36,7 +36,7 @@
 - [x] 3.4 Add `Veriphy/Tactic/SageRun.lean` (`sage_run "<script>"` and `sage_run file "<path>"`): resolve and read the file against the workspace root, parse the returned text, run it through `closeAndEmit`, and produce the three-section combined error. Verify in `VeriphyTest.lean` with replay on:
   - a hint example, a `calc` derivation, a case split, a witness with a `norm_num` side goal, a matrix identity, a residual-goal rewrite, and a file-based script;
   - failing examples under `#guard_msgs`: an unparseable block, a wrong hint, a script that raises, `sorry`, and a missing file.
-- [ ] 3.5 Add `veriphy.certificates` (the header parser, and `list`/`show` through `python -m`). Verify with pytest on a directory holding complete and incomplete headers, and with a run of `sage -python -m veriphy.certificates list` on a scratch project.
+- [x] 3.5 Add `veriphy.certificates` (the header parser, and `list`/`show` through `python -m`). Verify with pytest on a directory holding complete and incomplete headers, and with a run of `sage -python -m veriphy.certificates list` on a scratch project.
 
 ## 4. Persistent session (daemon-session)
 
