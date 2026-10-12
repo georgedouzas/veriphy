@@ -76,9 +76,9 @@ structure Problem where
   /-- Nameable hypotheses with no polynomial form, kept as text (lenient extraction only), with their
   symbolic form when they are relations. -/
   facts : Array (Name × Expr) := #[]
-  factExprs : Array (Option String) := #[]
+  factExprs : Array (Option (String × String)) := #[]
   /-- The symbolic form of an `other` goal that is a relation. -/
-  goalExpr : Option String := none
+  goalExpr : Option (String × String) := none
   /-- The Lean type of each atom: `ℕ`, `ℤ`, `ℚ`, `ℝ`, `ℂ`, `matrix` or `other`. -/
   atomTypes : Array String := #[]
   /-- Domain conditions: the Sage term, the kind (`ne`, `nonneg`, `pos`), its Lean text, and the hypothesis
@@ -145,10 +145,10 @@ private def collectAll (carrier : Option Expr) :
     | none => facts := facts.push (decl.userName, ty)
   return (carrier, hyps, facts)
 
-/-- The symbolic form `(lhs) - (rhs)` of a relation, over the shared atom table. -/
-private def relSym (prop : Expr) : SymM (Option String) := do
-  let some (_, a, b, _) := relOf? prop | return none
-  return some s!"({(← exprToSym a).toSage}) - ({(← exprToSym b).toSage})"
+/-- The relation tag and symbolic form `(a) - (b)` of a relation `a rel b`, over the shared atom table. -/
+private def relSym (prop : Expr) : SymM (Option (String × String)) := do
+  let some (_, a, b, r) := relOf? prop | return none
+  return some (r.tag, s!"({(← exprToSym a).toSage}) - ({(← exprToSym b).toSage})")
 
 private def kindTag : DomainKind → String
   | .ne => "ne" | .nonneg => "nonneg" | .pos => "pos"
@@ -158,9 +158,9 @@ pass meets (such as `x` inside `Real.sin x`) are appended to the shared table. -
 def Problem.enrich (p : Problem) : MetaM Problem := do
   let constraintSym (c : Constraint) : SymM Constraint := do
     match c.prop with
-    | some e => return { c with expr := ← relSym e }
+    | some e => return { c with expr := (← relSym e).map (·.2) }
     | none => return { c with expr := some s!"({(← exprToSym c.lhs).toSage}) - ({(← exprToSym c.rhs).toSage})" }
-  let symPass : SymM (Array Constraint × Array (Option String) × Goal × Option String) := do
+  let symPass : SymM (Array Constraint × Array (Option (String × String)) × Goal × Option (String × String)) := do
       let hyps ← p.hyps.mapM constraintSym
       let factExprs ← p.facts.mapM fun (_, e) => relSym e
       let (goal, goalExpr) ← match p.goal with
@@ -248,10 +248,12 @@ def Problem.toJson (p : Problem) : MetaM Json := do
       pure <| Json.mkObj [("kind", "exists"), ("binders", Json.num bs.size),
         ("body", Json.arr (← body.mapM (·.toJson)))]
     | .other e => do
-      let exprField : List (String × Json) := match p.goalExpr with | some x => [("expr", Json.str x)] | none => []
+      let exprField : List (String × Json) := match p.goalExpr with
+        | some (r, x) => [("expr", Json.str x), ("rel", Json.str r)] | none => []
       pure <| Json.mkObj ([("kind", Json.str "other"), ("text", ← text e)] ++ exprField)
   let facts ← (p.facts.zip (p.factExprs ++ Array.replicate p.facts.size none)).mapM fun ((n, e), x) => do
-    let exprField : List (String × Json) := match x with | some x => [("expr", Json.str x)] | none => []
+    let exprField : List (String × Json) := match x with
+      | some (r, x) => [("expr", Json.str x), ("rel", Json.str r)] | none => []
     return Json.mkObj ([("name", Json.str n.toString), ("text", ← text e)] ++ exprField)
   let conditions ← p.conditions.mapM fun (sage, kind, prop, discharge) => do
     let byField : List (String × Json) := match discharge with | some n => [("discharged_by", Json.str n.toString)] | none => []

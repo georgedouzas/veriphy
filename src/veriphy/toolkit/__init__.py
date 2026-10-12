@@ -29,10 +29,21 @@ from veriphy.toolkit._emit import (
 )
 from veriphy.toolkit._lean import Lean, parenthesize, polynomial, rational, tactic, term
 from veriphy.toolkit._lp import solve_exact_lp
-from veriphy.toolkit._problem import Hyp, Problem, Side, create_ring, parse_polynomial, read_problem
+from veriphy.toolkit._problem import (
+    Condition,
+    Hyp,
+    Problem,
+    Side,
+    create_ring,
+    parse_polynomial,
+    parse_symbolic,
+    read_problem,
+)
 from veriphy.toolkit._sos import sos_decomposition
+from veriphy.toolkit._symbolic_emit import field_simp_clearing, lemma_rewrite, matrix_term, require_domain, symbolic
 
 __all__ = [
+    'Condition',
     'Hyp',
     'Lean',
     'Problem',
@@ -43,9 +54,12 @@ __all__ = [
     'create_ring',
     'decide',
     'field_simp',
+    'field_simp_clearing',
     'fresh_name',
     'hyp',
+    'lemma_rewrite',
     'linear_combination',
+    'matrix_term',
     'mul_nonneg',
     'mul_pos',
     'negate_goal',
@@ -53,18 +67,21 @@ __all__ = [
     'norm_num',
     'parenthesize',
     'parse_polynomial',
+    'parse_symbolic',
     'polynomial',
     'positivity',
     'rational',
     'rcases',
     'read_problem',
     'refute',
+    'require_domain',
     'rewrite_by',
     'solve_exact_lp',
     'sos_decomposition',
     'sq_nonneg',
     'steps',
     'sum_by_induction',
+    'symbolic',
     'tactic',
     'term',
     'witness',

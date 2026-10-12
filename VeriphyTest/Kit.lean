@@ -27,7 +27,7 @@ elab "kit_lenient" : tactic => do
 
 -- lenient: function applications are atoms; a hypothesis with no polynomial form (`x ^ n`) is kept as text
 /--
-info: {"atom_types":["ℝ","ℝ","ℝ","ℕ"],"atoms":["Real.cos x","x","Real.sin x","n"],"carrier":"ℝ","domain":[],"goal":{"expr":"(cos(x1)) - (1)","kind":"rel","lhs":"Real.cos x","lhs_poly":"x0","poly":"(x0) - (1)","rel":"le","rhs":"1","rhs_poly":"1","text":"Real.cos x ≤ 1"},"hyps":[{"expr":"(x1) - (1)","name":"h","poly":"(x1) - (1)","rel":"le","text":"x ≤ 1"},{"expr":"(sin(x1)) - (1)","name":"hs","poly":"(x2) - (1)","rel":"le","text":"Real.sin x ≤ 1"},{"expr":"((x1)^(x3)) - (2)","name":"hn","text":"x ^ n ≤ 2"}],"vars":["x0","x1","x2","x3"]}
+info: {"atom_types":["ℝ","ℝ","ℝ","ℕ"],"atoms":["Real.cos x","x","Real.sin x","n"],"carrier":"ℝ","domain":[],"goal":{"expr":"(cos(x1)) - (1)","kind":"rel","lhs":"Real.cos x","lhs_poly":"x0","poly":"(x0) - (1)","rel":"le","rhs":"1","rhs_poly":"1","text":"Real.cos x ≤ 1"},"hyps":[{"expr":"(x1) - (1)","name":"h","poly":"(x1) - (1)","rel":"le","text":"x ≤ 1"},{"expr":"(sin(x1)) - (1)","name":"hs","poly":"(x2) - (1)","rel":"le","text":"Real.sin x ≤ 1"},{"expr":"((x1)^(x3)) - (2)","name":"hn","rel":"le","text":"x ^ n ≤ 2"}],"vars":["x0","x1","x2","x3"]}
 -/
 #guard_msgs (info, error, drop warning) in
 example (x : ℝ) (h : x ≤ 1) (hs : Real.sin x ≤ 1) (n : ℕ) (hn : x ^ n ≤ 2) : Real.cos x ≤ 1 := by
@@ -52,7 +52,7 @@ example (x : ℤ) (h : x = 2) : x ∣ 6 := by
 -- `≥` flips, `¬ (v = 0)` is `≠`, an inaccessible hypothesis is never offered, a hypothesis over
 -- another carrier is kept as text
 /--
-info: {"atom_types":["ℚ","ℚ","ℕ"],"atoms":["x","y","n"],"carrier":"ℚ","domain":[],"goal":{"expr":"(x0) - ((x1 + x0))","kind":"rel","lhs":"x","lhs_poly":"x0","poly":"(x0) - ((x1 + x0))","rel":"le","rhs":"y + x","rhs_poly":"(x1 + x0)","text":"x ≤ y + x"},"hyps":[{"expr":"(x1) - (x0)","name":"h1","poly":"(x1) - (x0)","rel":"le","text":"x ≥ y"},{"expr":"(x0) - (0)","name":"h2","poly":"(x0) - (0)","rel":"ne","text":"¬x = 0"},{"expr":"(x2) - (3)","name":"hn","text":"n = 3"}],"vars":["x0","x1","x2"]}
+info: {"atom_types":["ℚ","ℚ","ℕ"],"atoms":["x","y","n"],"carrier":"ℚ","domain":[],"goal":{"expr":"(x0) - ((x1 + x0))","kind":"rel","lhs":"x","lhs_poly":"x0","poly":"(x0) - ((x1 + x0))","rel":"le","rhs":"y + x","rhs_poly":"(x1 + x0)","text":"x ≤ y + x"},"hyps":[{"expr":"(x1) - (x0)","name":"h1","poly":"(x1) - (x0)","rel":"le","text":"x ≥ y"},{"expr":"(x0) - (0)","name":"h2","poly":"(x0) - (0)","rel":"ne","text":"¬x = 0"},{"expr":"(x2) - (3)","name":"hn","rel":"eq","text":"n = 3"}],"vars":["x0","x1","x2"]}
 -/
 #guard_msgs (info, error, drop warning) in
 example (x y : ℚ) (n : ℕ) (hn : n = 3) (h1 : x ≥ y) (h2 : ¬ (x = 0)) : y = x → x ≤ y + x := by

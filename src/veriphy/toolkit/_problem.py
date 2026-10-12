@@ -1,14 +1,37 @@
 """Bind a serialized Lean problem to Sage objects."""
 
+import re
 from dataclasses import dataclass, field
 
-from sage.all import QQ, PolynomialRing
+from sage.all import (
+    QQ,
+    SR,
+    I,
+    PolynomialRing,
+    abs_symbolic,
+    cos,
+    exp,
+    function,
+    log,
+    matrix,
+    pi,
+    product,
+    sage_eval,
+    sin,
+    sqrt,
+    tan,
+)
+from sage.all import sum as symbolic_sum
 from sage.rings.polynomial.multi_polynomial import MPolynomial
 from sage.rings.polynomial.multi_polynomial_ring_base import MPolynomialRing_base
+from sage.symbolic.expression import Expression
 
 from veriphy.core import RELATIONS, CertificateError, ParamError
 
 GOAL_KINDS = ('rel', 'false', 'exists', 'other')
+DOMAIN_KINDS = ('ne', 'nonneg', 'pos')
+BOUND = re.compile(r'\b[^\W\d]\w*_\b')
+mod = function('mod', nargs=2)
 
 
 def create_ring(names: list[str]) -> MPolynomialRing_base:
@@ -67,6 +90,70 @@ class Side:
     text: str
 
 
+def parse_symbolic(text: object, symbols: dict[str, Expression]) -> Expression | None:
+    """Parse a symbolic expression serialized by Lean's symbolic translation, or return `None` when it does not parse.
+
+    Args:
+        text: The expression in Sage syntax, over the variables in `symbols`.
+        symbols: The symbolic variables by name.
+
+    Returns:
+        The expression in Sage's symbolic ring, or `None`.
+
+    Examples:
+        >>> x0 = SR.var('x0')
+        >>> parse_symbolic('(sqrt(x0) + log(x0))', {'x0': x0})
+        sqrt(x0) + log(x0)
+        >>> parse_symbolic('sum((k_)^(2), k_, 0, x0 - 1)', {'x0': x0})
+        1/3*x0^3 - 1/2*x0^2 + 1/6*x0
+        >>> parse_symbolic('mod(x0, 3)', {'x0': x0})
+        mod(x0, 3)
+    """
+    if not isinstance(text, str):
+        return None
+    names: dict[str, object] = {
+        'SR': SR,
+        'pi': pi,
+        'I': I,
+        'X': SR.var('X'),
+        'sqrt': sqrt,
+        'exp': exp,
+        'log': log,
+        'sin': sin,
+        'cos': cos,
+        'tan': tan,
+        'abs': abs_symbolic,
+        'mod': mod,
+        'sum': symbolic_sum,
+        'product': product,
+        'matrix': matrix,
+    }
+    names.update({k: SR.var(k) for k in BOUND.findall(text)})
+    names.update(symbols)
+    try:
+        value = sage_eval(text, locals=names)
+    except (TypeError, ValueError, SyntaxError, NameError, ArithmeticError, AttributeError):
+        return None
+    return SR(value) if not isinstance(value, Expression) else value
+
+
+@dataclass(frozen=True)
+class Condition:
+    """Hold a domain condition a symbolic expression of the problem needs.
+
+    Args:
+        text: The Lean text of the condition, such as `y ≠ 0`.
+        expr: The constrained expression, in Sage's symbolic ring, or `None` when it does not parse.
+        kind: `ne` (`e ≠ 0`), `nonneg` (`0 ≤ e`) or `pos` (`0 < e`).
+        discharged_by: The hypothesis that states it, or `None`.
+    """
+
+    text: str
+    expr: Expression | None
+    kind: str
+    discharged_by: str | None = None
+
+
 @dataclass(frozen=True)
 class Hyp:
     """Hold one hypothesis or goal of a problem, as scripts see it.
@@ -76,12 +163,14 @@ class Hyp:
         poly: The polynomial `p` of the constraint `p rel 0`, or `None` when it has no polynomial form.
         rel: The relation tag, one of `eq`, `le`, `lt`, `ne`, or `None` without a polynomial form.
         text: The Lean text of the proposition.
+        expr: The symbolic form `e` of `e rel 0` (or of the proposition's sides' difference), or `None`.
     """
 
     name: str | None
     poly: MPolynomial | None
     rel: str | None
     text: str = ''
+    expr: Expression | None = None
 
 
 @dataclass
@@ -99,6 +188,9 @@ class Problem:
         carrier: The Lean text of the type the problem's polynomials live in (such as `ℚ`), empty when unknown.
         lhs: The left side of a relation goal, when the goal has a polynomial form.
         rhs: The right side of a relation goal, when the goal has a polynomial form.
+        atom_types: The Lean type of each variable (`ℕ`, `ℤ`, `ℚ`, `ℝ`, `ℂ`, `matrix` or `other`), by name.
+        domain: The domain conditions the problem's symbolic expressions need.
+        symbols: The variables as symbolic-ring variables, by name, for symbolic work.
     """
 
     ring: MPolynomialRing_base
@@ -111,6 +203,9 @@ class Problem:
     carrier: str = ''
     lhs: Side | None = None
     rhs: Side | None = None
+    atom_types: dict[str, str] = field(default_factory=dict)
+    domain: list[Condition] = field(default_factory=list)
+    symbols: dict[str, Expression] = field(default_factory=dict)
 
     def find_hyp(self, name: str, allowed: tuple[str, ...], family: str) -> Hyp:
         """Find the hypothesis named `name`, checking its relation is usable by `family`.
@@ -141,7 +236,7 @@ class Problem:
 
         Returns:
             `problem`, `R`, the generators by name, `hyps`, `goal`, `goal_kind`, `binders`, `body`, `atoms`, `lhs`,
-            `rhs` and `Hyp`.
+            `rhs`, `domain`, `symbols` and `Hyp`.
         """
         names: dict[str, object] = {
             'problem': self,
@@ -155,27 +250,50 @@ class Problem:
             'atoms': self.atoms,
             'lhs': self.lhs,
             'rhs': self.rhs,
+            'domain': self.domain,
+            'symbols': self.symbols,
         }
         names.update({str(g): g for g in self.ring.gens()})
         return names
 
 
-def _read_constraint(item: object, where: str, ring: MPolynomialRing_base) -> Hyp:
-    """Return one serialized hypothesis or goal as a `Hyp`, with or without a polynomial form."""
+def _read_constraint(item: object, where: str, ring: MPolynomialRing_base, symbols: dict[str, Expression]) -> Hyp:
+    """Return one serialized hypothesis or goal as a `Hyp`, with or without polynomial and symbolic forms."""
     if not isinstance(item, dict):
         raise ParamError(param='problem', reason=f'{where}: must be an object')
     text = str(item.get('text', ''))
-    if item.get('poly') is None:
-        return Hyp(item.get('name'), None, None, text)
+    expr = parse_symbolic(item.get('expr'), symbols)
     rel = item.get('rel')
-    if rel not in RELATIONS:
+    if rel is not None and rel not in RELATIONS:
         raise ParamError(param='problem', reason=f'{where}: bad relation {rel!r}')
-    return Hyp(item.get('name'), parse_polynomial(ring, item.get('poly'), param='problem'), str(rel), text)
+    if item.get('poly') is None:
+        return Hyp(item.get('name'), None, str(rel) if rel and expr is not None else None, text, expr)
+    if rel is None:
+        raise ParamError(param='problem', reason=f'{where}: bad relation {rel!r}')
+    return Hyp(item.get('name'), parse_polynomial(ring, item.get('poly'), param='problem'), str(rel), text, expr)
 
 
-def _read_constraints(items: object, where: str, ring: MPolynomialRing_base) -> list[Hyp]:
+def _read_constraints(
+    items: object,
+    where: str,
+    ring: MPolynomialRing_base,
+    symbols: dict[str, Expression],
+) -> list[Hyp]:
     """Return a serialized list of constraints as `Hyp`s, empty for anything that is not a list."""
-    return [_read_constraint(h, f'{where} {i}', ring) for i, h in enumerate(items if isinstance(items, list) else [])]
+    items = items if isinstance(items, list) else []
+    return [_read_constraint(h, f'{where} {i}', ring, symbols) for i, h in enumerate(items)]
+
+
+def _read_domain(items: object, symbols: dict[str, Expression]) -> list[Condition]:
+    """Return the serialized domain conditions, skipping malformed entries."""
+    conditions = []
+    for item in items if isinstance(items, list) else []:
+        if not isinstance(item, dict) or item.get('kind') not in DOMAIN_KINDS:
+            raise ParamError(param='problem', reason=f'bad domain condition {item!r}')
+        by = item.get('discharged_by')
+        expr = parse_symbolic(item.get('expr'), symbols)
+        conditions.append(Condition(str(item.get('text', '')), expr, str(item['kind']), str(by) if by else None))
+    return conditions
 
 
 def _read_names(problem: dict[str, object]) -> list[str]:
@@ -218,19 +336,24 @@ def read_problem(problem: object) -> Problem:
     if kind not in GOAL_KINDS:
         raise ParamError(param='problem', reason=f'unknown goal kind {kind!r}')
     atoms = problem.get('atoms', [])
+    types = problem.get('atom_types', [])
+    symbols = {n: SR.var(n) for n in names}
     bound = Problem(
         ring=ring,
-        hyps=_read_constraints(problem.get('hyps', []), 'constraint', ring),
+        hyps=_read_constraints(problem.get('hyps', []), 'constraint', ring, symbols),
         goal_kind=kind,
         atoms={n: str(a) for n, a in zip(names, atoms if isinstance(atoms, list) else [], strict=False)},
         carrier=str(problem.get('carrier', '')),
+        atom_types={n: str(t) for n, t in zip(names, types if isinstance(types, list) else [], strict=False)},
+        domain=_read_domain(problem.get('domain', []), symbols),
+        symbols=symbols,
     )
     if kind in ('rel', 'other'):
-        bound.goal = _read_constraint({**goal, 'name': None}, 'goal', ring)
+        bound.goal = _read_constraint({**goal, 'name': None}, 'goal', ring, symbols)
     if kind == 'rel' and 'lhs_poly' in goal:
         bound.lhs = Side(parse_polynomial(ring, goal.get('lhs_poly'), param='problem'), str(goal.get('lhs', '')))
         bound.rhs = Side(parse_polynomial(ring, goal.get('rhs_poly'), param='problem'), str(goal.get('rhs', '')))
     elif kind == 'exists':
         bound.binders = list(ring.gens()[: int(str(goal.get('binders', 0)))])
-        bound.body = _read_constraints(goal.get('body', []), 'body', ring)
+        bound.body = _read_constraints(goal.get('body', []), 'body', ring, symbols)
     return bound

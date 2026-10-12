@@ -13,9 +13,9 @@
 
 ## 2. Python binding and emitters (symbolic-emitters)
 
-- [ ] 2.1 Bind `Hyp.expr`, `Problem.atom_types` and `Problem.domain` (D4). Verify with pytest on serialized problems containing each kind.
-- [ ] 2.2 Implement `symbolic`, `matrix_term`, `field_simp_clearing` and `lemma_rewrite` (D5), each with a doctest and a Lean parse check. Verify that the function-table, `abs` dispatch and unmapped-function tests pass.
-- [ ] 2.3 Add round-trip tests (D6): one Lean example per covered construct, translated and rendered back, then proved equal. Verify that all pass.
+- [x] 2.1 Bind `Hyp.expr`, `Problem.atom_types` and `Problem.domain` (D4). Verify with pytest on serialized problems containing each kind.
+- [x] 2.2 Implement `symbolic`, `matrix_term`, `field_simp_clearing` and `lemma_rewrite` (D5), each with a doctest and a Lean parse check. Verify that the function-table, `abs` dispatch and unmapped-function tests pass.
+- [x] 2.3 Add round-trip tests (D6): one Lean example per covered construct, translated and rendered back, then proved equal. Verify that all pass.
 
 ## 3. Recipes
 
