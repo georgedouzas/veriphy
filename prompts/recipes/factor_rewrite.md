@@ -3,7 +3,7 @@
 ## When to use
 
 - An equality goal `lhs = rhs` where the next step needs the factored form of `lhs`: roots, signs, cancellation.
-- Leaves the goal `factored = rhs` open for the next tactic.
+- It does **not** close the goal: it leaves `factored = rhs` open, so follow it with a tactic (`ring`, a lemma about the factors, …).
 
 ## Template
 
@@ -13,7 +13,7 @@ Copy it to the project's `certificates/factor_rewrite.sage` (or a more specific 
 # name: factor_rewrite
 # technique: factorization rewrite
 # goal: lhs = rhs, to continue from the factored form of lhs
-# description: Replace the goal by factored(lhs) = rhs, the step certified by ring1; leaves that goal open.
+# description: Rewrite lhs to its factored form (certified by ring1); leaves factored = rhs open, so follow it with a tactic.
 assert lhs is not None, 'the goal must be a polynomial equality lhs = rhs'
 unit, factors = QQ(lhs.poly.factor().unit()), list(lhs.poly.factor())
 parts = [f'({polynomial(f, problem)})' + (f' ^ {m}' if m > 1 else '') for f, m in factors]

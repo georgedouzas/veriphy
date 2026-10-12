@@ -9,7 +9,6 @@ from veriphy.core import CertificateError, VeriphyError
 from veriphy.toolkit._lean import Lean, parenthesize, polynomial, rational, tactic, term
 from veriphy.toolkit._problem import Problem
 
-NEGATION_LEMMAS = ('not_le', 'not_lt', 'ge_iff_le', 'gt_iff_lt')
 RELATIONS_TEXT = {'eq': '=', 'le': '≤', 'lt': '<'}
 
 
@@ -406,9 +405,9 @@ def negate_goal(name: str) -> Lean:
     Examples:
         >>> print(negate_goal('hneg'))
         by_contra hneg
-        simp only [not_le, not_lt, ge_iff_le, gt_iff_lt] at hneg
+        push Not at hneg
     """
-    return steps(tactic(f'by_contra {name}'), tactic(f'simp only [{", ".join(NEGATION_LEMMAS)}] at {name}'))
+    return steps(tactic(f'by_contra {name}'), tactic(f'push Not at {name}'))
 
 
 def refute(kappa: object, *, strict: bool, weighted: Sequence[tuple[object, Lean]], problem: Problem) -> Lean:

@@ -1,7 +1,7 @@
 # name: factor_rewrite
 # technique: factorization rewrite
 # goal: lhs = rhs, to continue from the factored form of lhs
-# description: Replace the goal by factored(lhs) = rhs, the step certified by ring1; leaves that goal open.
+# description: Rewrite lhs to its factored form (certified by ring1); leaves factored = rhs open, so follow it with a tactic.
 assert lhs is not None, 'the goal must be a polynomial equality lhs = rhs'
 unit, factors = QQ(lhs.poly.factor().unit()), list(lhs.poly.factor())
 parts = [f'({polynomial(f, problem)})' + (f' ^ {m}' if m > 1 else '') for f, m in factors]

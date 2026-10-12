@@ -59,7 +59,7 @@
 
 ## 7. Effectiveness gate and integration
 
-- [ ] 7.1 Run the agent benchmark (D11): a fresh subagent with only the skills and procedures, given each benchmark statement with the proof blanked and no removed tactic names, works in a scratch Lake project that requires Veriphy and saves its scripts in that project's `certificates/`. Record the outcome, iterations and time per problem in `docs/development/benchmark.md`. Verify that every problem is solved. If any is not, improve a recipe, template or primitive and rerun. A tactic is never reinstated.
+- [x] 7.1 Run the agent benchmark (D11): a fresh subagent with only the skills and procedures, given each benchmark statement with the proof blanked and no removed tactic names, works in a scratch Lake project that requires Veriphy and saves its scripts in that project's `certificates/`. Record the outcome, iterations and time per problem in `docs/development/benchmark.md`. Verify that every problem is solved. If any is not, improve a recipe, template or primitive and rerun. A tactic is never reinstated.
 - [ ] 7.2 Run `uv run nox -s checks`, `uv run nox -s tests`, `lake build`, `lake build VeriphyTest`, `lake build VeriphyTest.Kit` and `lake build VeriphyTest.Benchmark`, all green. Then build the replayed replacements of every `sage_run` example with Sage off `PATH`, which must succeed. Push the branch and verify that CI is green.
 - [ ] 7.3 Run `openspec validate sage-building-blocks --strict` and verify that it passes.
 

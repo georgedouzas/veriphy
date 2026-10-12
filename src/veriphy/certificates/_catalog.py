@@ -29,10 +29,9 @@ def _scripts(directory: Path) -> list[Path]:
 
 
 def _describe(path: Path) -> str:
-    """Return one catalog line for a script, noting header keys it lacks."""
+    """Return one catalog line for a script: its path (what `sage_run file` takes), then its header fields."""
     header = _read_header(path)
-    fields = [header.get(key, '') for key in HEADER_KEYS]
-    fields[0] = fields[0] or path.stem
+    fields = [str(path), *(header.get(key, '') for key in HEADER_KEYS)]
     missing = [key for key in HEADER_KEYS if key not in header]
     note = f'  (incomplete header: missing {", ".join(missing)})' if missing else ''
     return ' | '.join(fields) + note

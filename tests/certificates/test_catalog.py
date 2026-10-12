@@ -26,8 +26,8 @@ def test_main_list_prints_catalog(project: Path, capsys: pytest.CaptureFixture[s
     main(['list', str(project)])
     lines = capsys.readouterr().out.splitlines()
     assert lines == [
-        'farkas_anomaly | farkas | False from linear hypotheses | Refute.',
-        'square_hint |  | 0 ≤ p |   (incomplete header: missing technique, description)',
+        f'{project / "farkas.sage"} | farkas_anomaly | farkas | False from linear hypotheses | Refute.',
+        f'{project / "hint.sage"} | square_hint |  | 0 ≤ p |   (incomplete header: missing technique, description)',
     ]
 
 

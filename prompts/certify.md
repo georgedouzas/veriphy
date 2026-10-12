@@ -21,20 +21,31 @@ them, and Lean checks the proof you emit. Sage is never trusted.
    - A hypothesis with no polynomial form has `poly = None`, and keeps its
      `text`.
 2. **Reuse before writing.** Run `sage -python -m veriphy.certificates list` in
-   the project, and `show <name>` to read a match. A saved script reads the
-   bound `problem`, so it usually runs unchanged on a goal of the same shape.
+   the project. Each line starts with the script's path, which is what
+   `sage_run file` takes. `show <name>` prints a script, so you can read its
+   code when the header is not enough to judge a match. A saved script reads
+   the bound `problem`, so it usually runs unchanged on a goal of the same
+   shape.
 3. **Otherwise pick a recipe.** Use the index in `prompts/prove.md` step 3, then
    read `prompts/recipes/<name>.md`. Copy its template to
    `certificates/<specific_name>.sage` in the project. Adapt the `EDIT` lines,
-   and update the header (`goal`, `description`).
+   and update the header: `name` the same as the file name, plus an accurate
+   `goal` and `description`. A script with goal-specific edits, such as
+   hard-coded `HINTS`, gets a goal-specific name, so it is not mistaken for a
+   general one. Never delete or rename a script someone else saved.
 4. **Run it:** `sage_run file "certificates/<specific_name>.sage"`.
 5. **Iterate on the feedback.** A failure shows the script's output, the Lean
    text it built, and Lean's error. The recipe's "Failure modes" section maps
    each symptom to the next step. A script that raises shows its traceback and
    output.
 6. **Commit the replacement.** Replace the `sage_run` call with the emitted
-   `Try this:` block. That block is the proof, and it builds without Sage.
-   Keep the script in `certificates/` with a complete header, for reuse.
+   `Try this:` block, parentheses included. The `[apply]` marker in the message
+   is not part of the proof. That block is the proof, and it builds without
+   Sage. Keep the script in `certificates/` with a complete header, for reuse.
+
+Shape the goal first. Introduce hypotheses (`intro`) and split conjunctions
+before calling `sage_run`, so the script sees a relation or `∃` it can work
+with, not an implication. An implication arrives as `goal_kind == 'other'`.
 
 ## The toolkit, pre-bound in every script
 
