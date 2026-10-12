@@ -40,7 +40,7 @@ The toolkit SHALL build rewrite and `calc` steps justified by named mathlib lemm
 
 #### Scenario: Side condition from the table
 - **WHEN** a script selects `Real.log_mul` for `Real.log (x * y)` and the context has `hx : x ≠ 0` and `hy : y ≠ 0`
-- **THEN** the emitted step is `rw [Real.log_mul hx hy]`
+- **THEN** the emitted step passes `hx` and `hy`, such as `rw [Real.log_mul (by assumption) (by assumption)]`, and closes the rewrite
 
 ## ADDED Requirements
 

@@ -30,11 +30,13 @@ from sage.all import (
 from veriphy.core import CertificateError
 from veriphy.toolkit import (
     Lean,
+    Problem,
     field_simp_clearing,
     lemma_rewrite,
     matrix_term,
     read_problem,
     require_domain,
+    rewrite_candidates,
     steps,
     symbolic,
 )
@@ -214,3 +216,55 @@ def test_typed_rendering_parses_in_lean(lean_parses: Callable[[list[Lean]], str]
         symbolic(arcsin(xr) + cosh(xr) + xr ** (SR(3) / 2), TYPED),
     ]
     assert lean_parses(snippets) == ''
+
+
+def _log_problem(goal_expr: str, goal_text: str, extensions: list[dict[str, object]] | None = None) -> Problem:
+    """Return a problem over `x`, `y` with `hx : x ≠ 0`, `hy : y ≠ 0` and the given goal."""
+    return read_problem(
+        {
+            'vars': ['x0', 'x1'],
+            'atoms': ['x', 'y'],
+            'carrier': 'ℝ',
+            'hyps': [
+                {'name': 'hx', 'poly': 'x0', 'rel': 'ne', 'text': 'x ≠ 0'},
+                {'name': 'hy', 'poly': 'x1', 'rel': 'ne', 'text': 'y ≠ 0'},
+            ],
+            'goal': {'kind': 'other', 'rel': 'eq', 'expr': goal_expr, 'text': goal_text},
+            'namespaces': ['mathlib', 'project'] if extensions else ['mathlib'],
+            'extensions': extensions or [],
+        },
+    )
+
+
+def test_rewrite_candidates_bind_side_conditions() -> None:
+    """Select `Real.log_mul` by its pattern, fill its side conditions from the bindings, and pass the hypotheses."""
+    prob = _log_problem('(log((x0 * x1))) - ((log(x0) + log(x1)))', 'Real.log (x * y) = Real.log x + Real.log y')
+    (candidate,) = rewrite_candidates(prob)
+    assert candidate.lemma == 'Real.log_mul'
+    assert sorted(candidate.side) == ['x ≠ 0', 'y ≠ 0']
+    assert str(candidate.emit(prob)) == 'rw [Real.log_mul (by assumption) (by assumption)]'
+
+
+def test_rewrite_candidates_prefer_the_quotient_lemma() -> None:
+    """Select `Real.log_div` for a quotient, ahead of `Real.log_mul`, whose pattern also matches it."""
+    prob = _log_problem('(log((x0 / x1))) - ((log(x0) - log(x1)))', 'Real.log (x / y) = Real.log x - Real.log y')
+    assert rewrite_candidates(prob)[0].lemma == 'Real.log_div'
+
+
+def test_rewrite_candidates_need_every_function_and_a_match() -> None:
+    """Offer nothing when the goal does not mention the entry's functions or its pattern does not match."""
+    assert rewrite_candidates(_log_problem('(log(x0)) - (x1)', 'Real.log x = y')) == []
+
+
+def test_rewrite_candidates_include_project_entries() -> None:
+    """Offer a project rewrite after the core ones, with an unfilled side condition reported on emission."""
+    extension = {
+        'namespace': 'project',
+        'rewrites': [{'lemma': 'Real.arcosh_cosh', 'functions': ['Real.arcosh'], 'side': ['0 ≤ x']}],
+    }
+    prob = _log_problem('(x0) - (x0)', 'Real.arcosh (Real.cosh x) = x', [extension])
+    (candidate,) = rewrite_candidates(prob)
+    assert candidate.namespace == 'project'
+    with pytest.raises(CertificateError, match='0 ≤ x'):
+        candidate.emit(prob)
+    assert str(candidate.emit(prob, proofs={'0 ≤ x': 'positivity'})) == 'rw [Real.arcosh_cosh (by positivity)]'

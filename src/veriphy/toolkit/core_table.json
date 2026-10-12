@@ -345,5 +345,106 @@
     }
   ],
   "namespace": "mathlib",
-  "rewrites": []
+  "rewrites": [
+    {
+      "example": "Real.exp a * Real.exp b = Real.exp (a + b)",
+      "functions": [
+        "Real.exp"
+      ],
+      "lemma": "Real.exp_add",
+      "reverse": true,
+      "side": []
+    },
+    {
+      "example": "Real.sin x ^ 2 + Real.cos x ^ 2 = 1",
+      "functions": [
+        "Real.sin",
+        "Real.cos"
+      ],
+      "lemma": "Real.sin_sq_add_cos_sq",
+      "reverse": false,
+      "side": []
+    },
+    {
+      "example": "Real.cosh x ^ 2 = Real.sinh x ^ 2 + 1",
+      "functions": [
+        "Real.cosh",
+        "Real.sinh"
+      ],
+      "lemma": "Real.cosh_sq",
+      "reverse": false,
+      "side": []
+    },
+    {
+      "example": "Real.log (x / y) = Real.log x - Real.log y",
+      "functions": [
+        "Real.log"
+      ],
+      "lemma": "Real.log_div",
+      "pattern": "log(w0*w1^(-1))",
+      "reverse": false,
+      "side": [
+        "#0 ≠ 0",
+        "#1 ≠ 0"
+      ]
+    },
+    {
+      "example": "Real.log (x * y) = Real.log x + Real.log y",
+      "functions": [
+        "Real.log"
+      ],
+      "lemma": "Real.log_mul",
+      "pattern": "log(w0*w1)",
+      "reverse": false,
+      "side": [
+        "#0 ≠ 0",
+        "#1 ≠ 0"
+      ]
+    },
+    {
+      "example": "Real.log (x ^ y) = y * Real.log x",
+      "functions": [
+        "Real.log"
+      ],
+      "lemma": "Real.log_rpow",
+      "pattern": "log(w0^w1)",
+      "reverse": false,
+      "side": [
+        "0 < #0"
+      ]
+    },
+    {
+      "example": "Real.exp (Real.log x) = x",
+      "functions": [
+        "Real.exp",
+        "Real.log"
+      ],
+      "lemma": "Real.exp_log",
+      "reverse": false,
+      "side": [
+        "0 < x"
+      ]
+    },
+    {
+      "example": "Real.log (Real.exp x) = x",
+      "functions": [
+        "Real.log",
+        "Real.exp"
+      ],
+      "lemma": "Real.log_exp",
+      "reverse": false,
+      "side": []
+    },
+    {
+      "example": "Real.sqrt a * Real.sqrt a = a",
+      "functions": [
+        "Real.sqrt"
+      ],
+      "lemma": "Real.sqrt_mul_self",
+      "reverse": false,
+      "side": [
+        "0 ≤ a"
+      ]
+    }
+  ]
 }

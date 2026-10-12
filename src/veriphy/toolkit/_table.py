@@ -82,8 +82,9 @@ class RewriteEntry:
         lemma: The lemma name.
         functions: The Sage function names it applies to.
         reverse: Rewrite right to left.
-        side: Its side conditions, as Lean text the script fills in.
+        side: Its side conditions, as Lean text in which `#i` stands for the argument bound to the wildcard `wi`.
         example: A worked example goal.
+        pattern: A Sage expression with wildcards `w0`, `w1`, … binding the lemma's arguments in a goal.
     """
 
     lemma: str
@@ -91,6 +92,7 @@ class RewriteEntry:
     reverse: bool = False
     side: tuple[str, ...] = ()
     example: str = ''
+    pattern: str | None = None
 
 
 @dataclass(frozen=True)
@@ -238,6 +240,7 @@ def _rewrite(obj: dict[str, object], source: str) -> RewriteEntry:
         reverse=_flag(obj, 'reverse', source),
         side=_strings(obj, 'side', source),
         example=_text(obj, 'example', source, ''),
+        pattern=_maybe_text(obj, 'pattern', source),
     )
 
 

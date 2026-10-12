@@ -119,6 +119,11 @@ example (a b : ℝ) : Real.exp a * Real.exp b = Real.exp (a + b) := by
   sage_run file "prompts/recipes/templates/transcendental_rewrite.sage"
 example (x : ℝ) : Real.sin x ^ 2 + Real.cos x ^ 2 = 1 := by
   sage_run file "prompts/recipes/templates/transcendental_rewrite.sage"
+-- a pattern entry: the tables bind `log_mul`'s arguments and its side conditions come from the hypotheses
+example (x y : ℝ) (hx : x ≠ 0) (hy : y ≠ 0) : Real.log (x * y) = Real.log x + Real.log y := by
+  sage_run file "prompts/recipes/templates/transcendental_rewrite.sage"
+example (x : ℝ) : Real.cosh x ^ 2 = Real.sinh x ^ 2 + 1 := by
+  sage_run file "prompts/recipes/templates/transcendental_rewrite.sage"
 
 -- matrix_from_goal
 example : !![(2 : ℚ), 1; 1, 1] * !![1, -1; -1, 2] = 1 := by

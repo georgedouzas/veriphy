@@ -5,6 +5,7 @@ Functions and constants render through the problem's translation tables (core fi
 """
 
 import operator
+import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
@@ -16,12 +17,13 @@ from sage.symbolic.operators import add_vararg, mul_vararg
 from veriphy.core import CertificateError
 from veriphy.toolkit._emit import field_simp, fresh_name, steps
 from veriphy.toolkit._lean import Lean, parenthesize, rational, tactic, term
-from veriphy.toolkit._problem import DOMAIN_KINDS, Condition, Problem
+from veriphy.toolkit._problem import DOMAIN_KINDS, Condition, Problem, parse_symbolic
 
 STRUCTURAL = ('abs', 'mod')
 INTEGER_OPERATORS = ('factorial', 'binomial', 'gcd', 'mod', 'floor', 'ceil')
 INTEGER_RESULT = ('floor', 'ceil')
 INTEGER_TYPES = ('ℕ', 'ℤ')
+WILDCARDS = 4
 
 
 @dataclass(frozen=True)
@@ -428,4 +430,116 @@ def lemma_rewrite(
     return tactic(f'rw [{rule}]' + (f' at {at}' if at else ''))
 
 
-__all__ = ['field_simp_clearing', 'lemma_rewrite', 'matrix_term', 'require_domain', 'symbolic']
+@dataclass(frozen=True)
+class RewriteCandidate:
+    """Hold a rewrite the problem's tables offer for its goal, with side conditions filled in where they could be.
+
+    Args:
+        lemma: The lemma name.
+        reverse: Rewrite right to left.
+        side: The side conditions as Lean text over the goal's atoms.
+        namespace: The table the entry came from.
+    """
+
+    lemma: str
+    reverse: bool
+    side: tuple[str, ...]
+    namespace: str
+
+    def emit(self, problem: Problem, proofs: Mapping[str, Lean | str] | None = None, at: str | None = None) -> Lean:
+        """Return the rewrite step, passing each side condition as `(by assumption)` or a supplied proof.
+
+        Sage orders the arguments of a commutative pattern its own way, so a stated side condition is passed as
+        `(by assumption)`, which Lean runs after unifying the lemma with the goal and which therefore finds the
+        right hypothesis whatever the order.
+
+        Args:
+            problem: The problem.
+            proofs: A tactic proving a side condition no hypothesis states, by its text.
+            at: A hypothesis to rewrite instead of the goal.
+
+        Returns:
+            The tactic.
+
+        Raises:
+            CertificateError: If a side condition is neither stated nor supplied, naming it.
+        """
+        proofs = proofs or {}
+        stated = {h.text for h in problem.hyps if h.name} | {c.text for c in problem.domain if c.discharged_by}
+        args = []
+        for condition in self.side:
+            if condition in proofs:
+                args.append(f'(by {proofs[condition]})')
+            elif condition in stated:
+                args.append('(by assumption)')
+            else:
+                message = f"side condition '{condition}' of {self.lemma} is not stated; pass its proof"
+                raise CertificateError(message)
+        rule = ' '.join([f'{"← " if self.reverse else ""}{self.lemma}', *args])
+        return tactic(f'rw [{rule}]' + (f' at {at}' if at else ''))
+
+
+def _mentions(function: str, text: str) -> bool:
+    """Return whether Lean text mentions a constant, by full name or by its last component."""
+    tokens = set(re.findall(r"[\w.'₀-₉]+", text))
+    short = {t.rsplit('.', 1)[-1] for t in tokens}
+    return function in tokens or function.rsplit('.', 1)[-1] in short
+
+
+def _bindings(pattern: str, expr: Expression) -> dict[int, Expression] | None:
+    """Return the wildcard bindings of the first sub-expression of `expr` that matches the pattern."""
+    wilds = {f'w{i}': SR.wild(i) for i in range(WILDCARDS)}
+    compiled = parse_symbolic(pattern, wilds)
+    if compiled is None:
+        message = f'rewrite pattern {pattern!r} does not parse'
+        raise CertificateError(message)
+    for sub in expr.find(compiled):
+        match = sub.match(compiled)
+        if match:
+            return {i: match[SR.wild(i)] for i in range(WILDCARDS) if SR.wild(i) in match}
+    return None
+
+
+def _fill(template: str, bindings: Mapping[int, Expression], problem: Problem) -> str:
+    """Replace each `#i` in a side-condition template by the Lean text of the argument bound to `wi`."""
+    return re.sub(r'#(\d+)', lambda m: str(symbolic(bindings[int(m.group(1))], problem, lean_type='')), template)
+
+
+def rewrite_candidates(problem: Problem) -> list[RewriteCandidate]:
+    """Return the rewrites the problem's tables (core, packs, project) offer for its goal, in table order.
+
+    An entry applies when the goal mentions every function it names, and, when it has a pattern, when the pattern
+    matches the goal's symbolic form; the pattern's bindings then fill the side conditions.
+
+    Args:
+        problem: The problem.
+
+    Returns:
+        The applicable rewrites.
+
+    Examples:
+        >>> from veriphy.toolkit import read_problem
+        >>> prob = read_problem({'vars': ['x0', 'x1'], 'atoms': ['x', 'y'], 'carrier': 'ℝ',
+        ...     'hyps': [{'name': 'hx', 'poly': 'x0', 'rel': 'ne', 'text': 'x ≠ 0'},
+        ...              {'name': 'hy', 'poly': 'x1', 'rel': 'ne', 'text': 'y ≠ 0'}],
+        ...     'goal': {'kind': 'other', 'rel': 'eq', 'expr': '(log((x0 * x1))) - ((log(x0) + log(x1)))',
+        ...              'text': 'Real.log (x * y) = Real.log x + Real.log y'}})
+        >>> [str(c.emit(prob)) for c in rewrite_candidates(prob)]
+        ['rw [Real.log_mul (by assumption) (by assumption)]']
+    """
+    goal = problem.goal
+    text = goal.text if goal is not None else ''
+    expr = goal.expr if goal is not None and isinstance(goal.expr, Expression) else None
+    found = []
+    for table in problem.tables:
+        for entry in table.rewrites:
+            if not all(_mentions(f, text) for f in entry.functions):
+                continue
+            side = entry.side
+            if entry.pattern is not None:
+                bindings = _bindings(entry.pattern, expr) if expr is not None else None
+                if bindings is None:
+                    continue
+                side = tuple(_fill(t, bindings, problem) for t in side)
+            found.append(RewriteCandidate(entry.lemma, entry.reverse, side, table.namespace))
+    return found
