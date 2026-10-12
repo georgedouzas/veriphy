@@ -23,7 +23,7 @@
 
 ## 4. Versioning and CI (releases)
 
-- [ ] 4.2 Adapt `.github/workflows/ci.yml` (D6): add the `lean` job (no Sage: `lake build`, `lake build VeriphyTest.Kit`) and the `integration` job (pinned `sagemath/sagemath` 10.x image, wheel install, pytest, `lake build VeriphyTest`, caches). Keep the template's `checks` job. Verify by validating the YAML with `actionlint`, then pushing the branch and confirming all jobs pass on GitHub Actions (a push of a non-default branch, which the author approves when we get there).
+- [x] 4.2 Adapt `.github/workflows/ci.yml` (D6): add the `lean` job (no Sage: `lake build`, `lake build VeriphyTest.Kit`) and the `integration` job (pinned `sagemath/sagemath` 10.x image, wheel install, pytest, `lake build VeriphyTest`, caches). Keep the template's `checks` job. Verify by validating the YAML with `actionlint`, then pushing the branch and confirming all jobs pass on GitHub Actions (a push of a non-default branch, which the author approves when we get there).
 
 ## 5. Documentation and plugin
 
@@ -33,13 +33,13 @@
 
 ## 6. Integration check
 
-- [ ] 6.1 From a clean clone of the branch: `uv build`, `sage -pip install dist/*.whl`, `lake build`, `lake build VeriphyTest`, `nox -s tests`, `nox -s checks -- all`. Verify that all are green, and record the outputs in the PR description.
+- [x] 6.1 From a clean clone of the branch: `uv build`, `sage -pip install dist/*.whl`, `lake build`, `lake build VeriphyTest`, `nox -s tests`, `nox -s checks -- all`. Verify that all are green, and record the outputs in the PR description.
 
 ## 7. PyPI publishing (last)
 
 - [x] 7.1 Keep the template-generated `.github/workflows/release.yml` unchanged: it already runs the reusable CI (including the `lean` and `integration` jobs) before `build`, then the GitHub release and trusted publishing through `pypa/gh-action-pypi-publish`, with no token. Release tags follow the template's `X.Y.Z` pattern (no `v`). Verified: `actionlint` passes, and `git diff` against the template baseline is empty.
 - [x] 7.2 Dry-run the release build: in a throwaway clone tagged `0.4.0`, `uv build` produces `veriphy-0.4.0*.whl`. Verify that `sage -pip install` of that wheel answers `ping` with `"veriphy": "0.4.0"`.
-- [ ] 7.3 Run `openspec validate package-and-distribute --strict` and verify that it passes.
+- [x] 7.3 Run `openspec validate package-and-distribute --strict` and verify that it passes.
 
 ## Workflow follow-up
 
