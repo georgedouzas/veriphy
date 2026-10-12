@@ -5,8 +5,10 @@ Coverage of the symbolic translation on a corpus of statements (Sage-free).
 (or, for the current file, whose own name does), opens their binders and translates every relation (`=`, `≠`, `≤`,
 `<`, `≥`, `>`) in the hypotheses and the conclusion. Each atom of a translation is classified:
 
-* local: a bound variable (or a numeral left untranslated);
-* uninterpreted: an application whose head is a bound variable, such as `f x`;
+* local: a bound variable, a numeral left untranslated, or a structure projection of a bound variable (`x.val`,
+  `p.1`), which is a variable in all but name;
+* uninterpreted: an application whose function is a bound variable, such as `f x`, including bundled maps applied
+  through their coercion (`DFunLike.coe f x` with `f` a variable);
 * opaque: a term whose head is a global constant the translation does not know, such as `Real.Gamma x`.
 
 A statement is fully covered when every atom is local. The report gives the shares, the most frequent opaque heads
@@ -32,11 +34,30 @@ inductive AtomKind
   | opaque (head : Name)
   deriving BEq, Inhabited
 
+/-- Is `e` a variable, possibly behind structure projections (`x.val`, `p.1.2`)? -/
+partial def isProjectedVariable (env : Environment) (e : Expr) : Bool :=
+  if e.isFVar then true else
+  match e with
+  | .proj _ _ s => isProjectedVariable env s
+  | _ =>
+    match e.getAppFn with
+    | .const n _ =>
+      -- a projection applied to exactly its parameters and the structure, not a coercion applied further
+      match env.getProjectionFnInfo? n with
+      | some info => e.getAppNumArgs == info.numParams + 1 && isProjectedVariable env e.appArg!
+      | none => false
+    | _ => false
+
 /-- Classify one atom by the head of its application. -/
-def classify (e : Expr) : AtomKind :=
+def classify (env : Environment) (e : Expr) : AtomKind :=
+  if isProjectedVariable env e then .local else
   match e.getAppFn with
-  | .fvar _ => if e.isFVar then .local else .uninterpreted
+  | .fvar _ => .uninterpreted
   | .lit _ => .local
+  | .const ``DFunLike.coe _ =>
+    match e.getAppArgs[4]? with
+    | some f => if isProjectedVariable env f || f.getAppFn.isFVar then .uninterpreted else .opaque ``DFunLike.coe
+    | none => .opaque ``DFunLike.coe
   | .const n _ => .opaque n
   | .proj s _ _ => .opaque s
   | _ => .opaque `«<other>»
@@ -56,7 +77,8 @@ private def dataRelation? (p : Expr) : MetaM (Option (Expr × Expr)) := do
 /-- Translate both sides of a relation and record the kinds of the atoms it needed. -/
 private def recordRelation (a b : Expr) : StateRefT Acc MetaM Unit := do
   let (_, st) ← (do let _ ← exprToSym a; let _ ← exprToSym b).run { atoms := #[] }
-  modify fun acc => { acc with relations := acc.relations + 1, kinds := acc.kinds ++ st.atoms.map classify }
+  let env ← getEnv
+  modify fun acc => { acc with relations := acc.relations + 1, kinds := acc.kinds ++ st.atoms.map (classify env) }
 
 /-- Visit a proposition: record its relations, looking through `∧`, `∨`, `↔`, `¬`, `∃` and `∀`. -/
 partial def visit (p : Expr) : StateRefT Acc MetaM Unit := do
@@ -103,11 +125,21 @@ def inCorpus (env : Environment) (prefixes : Array Name) (n : Name) : Bool :=
     | none => n
   prefixes.any (·.isPrefixOf source)
 
-/-- The theorems of the corpus, skipping internal and auxiliary declarations. -/
+/-- Suffixes of lemmas Lean and mathlib generate (congruence, equation and injectivity lemmas). -/
+def generatedSuffixes : List String := ["congr_simp", "eq_def", "injEq", "inj", "sizeOf_spec"]
+
+/-- Is the theorem generated rather than stated by an author? -/
+def isGenerated (n : Name) : Bool :=
+  n.isInternalDetail ||
+    match n with
+    | .str _ s => generatedSuffixes.contains s || (s.startsWith "eq_" && (s.drop 3).all Char.isDigit)
+    | _ => false
+
+/-- The theorems of the corpus, skipping internal and generated declarations. -/
 def corpus (env : Environment) (prefixes : Array Name) : Array (Name × Expr) :=
   env.constants.fold (init := #[]) fun acc n info =>
     match info with
-    | .thmInfo t => if !n.isInternalDetail && inCorpus env prefixes n then acc.push (n, t.type) else acc
+    | .thmInfo t => if !isGenerated n && inCorpus env prefixes n then acc.push (n, t.type) else acc
     | _ => acc
 
 /-- The aggregated report. -/

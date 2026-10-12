@@ -71,6 +71,7 @@ SYMBOLIC = {
     'domain': [
         {'discharged_by': 'hy', 'expr': 'x1', 'kind': 'ne', 'text': 'y ≠ 0'},
         {'expr': 'x2', 'kind': 'pos', 'text': '0 < x'},
+        {'expr': 'x1', 'kind': 'le', 'bound': 'x2', 'text': 'y ≤ x', 'discharged_by': 'hyx'},
     ],
     'goal': {'expr': '((x2 / x1)) - (sqrt(x2))', 'kind': 'other', 'rel': 'le', 'text': 'x / y ≤ √x'},
 }
@@ -92,7 +93,12 @@ def test_read_problem_binds_atom_types_and_domain() -> None:
     """Bind atom types and every domain condition kind, discharged or not."""
     bound = read_problem(SYMBOLIC)
     assert bound.atom_types == {'x0': 'ℝ', 'x1': 'ℝ', 'x2': 'ℝ'}
-    assert [(c.kind, c.text, c.discharged_by) for c in bound.domain] == [('ne', 'y ≠ 0', 'hy'), ('pos', '0 < x', None)]
+    assert [(c.kind, c.text, c.discharged_by) for c in bound.domain] == [
+        ('ne', 'y ≠ 0', 'hy'),
+        ('pos', '0 < x', None),
+        ('le', 'y ≤ x', 'hyx'),
+    ]
+    assert bound.domain[2].bound == bound.symbols['x2']
     assert bound.domain[1].expr == bound.symbols['x2']
     assert bound.to_namespace()['domain'] is bound.domain
 

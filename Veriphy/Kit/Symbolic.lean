@@ -41,6 +41,9 @@ inductive SymExpr
   /-- A method applied to its first argument in Sage (`det`, `trace`, `transpose`, `inverse`, polynomial
   `coefficient`, `degree`, evaluation). -/
   | method (name : String) (self : SymExpr) (args : List SymExpr)
+  /-- A sub-expression computed at another Lean type (`ℕ`, `ℤ`) than its context, such as the `n % 7` inside
+  `((n % 7 : ℕ) : ℝ)`; the rendering restores the cast. -/
+  | typed (ty : String) (e : SymExpr)
   deriving Inhabited, Repr
 
 /-- Sage syntax for a symbolic expression. -/
@@ -66,15 +69,18 @@ partial def SymExpr.toSage : SymExpr → String
     "matrix(SR, [" ++ ", ".intercalate (rows.map row) ++ "])"
   | .method m self args =>
     s!"({self.toSage}).{m}(" ++ ", ".intercalate (args.map (·.toSage)) ++ ")"
+  | .typed ty e => s!"typed({e.toSage}, '{ty}')"
 
 /-- The kind of domain condition an expression needs. -/
-inductive DomainKind | ne | nonneg | pos
+inductive DomainKind | ne | nonneg | pos | le
   deriving BEq, Inhabited, Repr
 
-/-- `e ≠ 0`, `0 ≤ e` or `0 < e`, required by a denominator, a `sqrt` or a `log`. -/
+/-- `e ≠ 0`, `0 ≤ e` or `0 < e` (a denominator, a `sqrt`, a `log`), or `e ≤ bound` for `le` (ℕ subtraction,
+inverse-trigonometric domains). -/
 structure Condition where
   term : Expr
   kind : DomainKind
+  bound : Option Expr := none
   deriving Inhabited
 
 /-- The translation state: the atom table (shared with the polynomial translator), the bound variables
@@ -88,12 +94,25 @@ structure SymState where
 
 abbrev SymM := StateRefT SymState MetaM
 
-private def note (term : Expr) (kind : DomainKind) : SymM Unit :=
-  modify fun s => { s with conditions := s.conditions.push { term, kind } }
+private def note (term : Expr) (kind : DomainKind) (bound : Option Expr := none) : SymM Unit :=
+  modify fun s => { s with conditions := s.conditions.push { term, kind, bound } }
+
+/-- An entry's operand: an argument `#i`, or an integer numeral at the type of the arguments. -/
+private def operand? (spec : String) (operands : Array Expr) : MetaM (Option Expr) := do
+  if spec.startsWith "#" then return (spec.drop 1).toString.toNat?.bind (operands[·]?)
+  let some ty ← operands[0]?.mapM inferType | return none
+  let some n := spec.toInt? | return none
+  let lit ← mkAppOptM ``OfNat.ofNat #[ty, mkRawNatLit n.natAbs, none]
+  if n < 0 then return some (← mkAppM ``Neg.neg #[lit]) else return some lit
 
 /-- Record the single-argument conditions an entry imposes on its operands. -/
 private def noteConditions (entry : FunctionEntry) (operands : Array Expr) : SymM Unit := do
   for c in entry.conditions do
+    if c.kind == "le" then
+      let (some l, some r) := (c.lhs, c.rhs) | continue
+      let (some a, some b) := (← operand? l operands, ← operand? r operands) | continue
+      note a .le b
+      continue
     let some i := c.arg | continue
     let some x := operands[i]? | continue
     match c.kind with
@@ -119,6 +138,18 @@ private partial def vecList (e : Expr) : Option (List Expr) :=
   | (`Matrix.vecEmpty, _) => some []
   | _ => none
 
+/-- The Lean type class of an atom: `ℕ`, `ℤ`, `ℚ`, `ℝ`, `ℂ`, `matrix` or `other`. -/
+def atomType (a : Expr) : MetaM String := do
+  let ty ← whnfR (← inferType a)
+  if ty.isAppOf `Matrix then return "matrix"
+  match ty.constName? with
+  | some ``Nat => return "ℕ"
+  | some ``Int => return "ℤ"
+  | some ``Rat => return "ℚ"
+  | some `Real => return "ℝ"
+  | some `Complex => return "ℂ"
+  | _ => return "other"
+
 /-- Translate a Lean term to a symbolic expression; anything outside the coverage list becomes an atom. -/
 partial def exprToSym (e : Expr) : SymM SymExpr := do
   if let some n := natLit? e then return .num n 1
@@ -134,7 +165,14 @@ partial def exprToSym (e : Expr) : SymM SymExpr := do
       return .call entry.sage (← operands.toList.mapM exprToSym)
   if let some c := tables.constant? f then
     if args.isEmpty then return .const c.sage
-  if tables.isCoercion f && args.size ≥ 1 then return ← exprToSym (lastArg e)
+  if tables.isCoercion f && args.size ≥ 1 then
+    let x := lastArg e
+    let inner ← exprToSym x
+    -- a compound ℕ or ℤ computation cast into a field keeps its type, so the rendering can restore the cast
+    let compound := !(x.isFVar || (natLit? x).isSome) && !(inner matches .atom _)
+    let srcTy ← atomType x
+    if compound && (srcTy == "ℕ" || srcTy == "ℤ") then return .typed srcTy inner
+    return inner
   match f, args with
   | ``HAdd.hAdd, #[_, _, _, _, a, b] => return .add (← exprToSym a) (← exprToSym b)
   | ``HSub.hSub, #[_, _, _, _, a, b] => return .sub (← exprToSym a) (← exprToSym b)
@@ -180,37 +218,40 @@ partial def exprToSym (e : Expr) : SymM SymExpr := do
     return .method "degree" (← exprToSym p) [.bvar "X"]
   | _, _ => symAtom e
 
-/-- The Lean type class of an atom: `ℕ`, `ℤ`, `ℚ`, `ℝ`, `ℂ`, `matrix` or `other`. -/
-def atomType (a : Expr) : MetaM String := do
-  let ty ← whnfR (← inferType a)
-  if ty.isAppOf `Matrix then return "matrix"
-  match ty.constName? with
-  | some ``Nat => return "ℕ"
-  | some ``Int => return "ℤ"
-  | some ``Rat => return "ℚ"
-  | some `Real => return "ℝ"
-  | some `Complex => return "ℂ"
-  | _ => return "other"
+/-- The zero of a term's type. -/
+private def zeroOf (e : Expr) : MetaM Expr := do
+  mkAppOptM ``OfNat.ofNat #[← inferType e, mkRawNatLit 0, none]
 
-/-- The proposition a condition asks for: `e ≠ 0`, `0 ≤ e` or `0 < e`. -/
+/-- The proposition a condition asks for: `e ≠ 0`, `0 ≤ e`, `0 < e` or `e ≤ bound`. -/
 def Condition.prop (c : Condition) : MetaM Expr := do
-  let zero ← mkAppOptM ``OfNat.ofNat #[← inferType c.term, mkRawNatLit 0, none]
-  match c.kind with
-  | .ne => mkAppM ``Ne #[c.term, zero]
-  | .nonneg => mkAppM ``LE.le #[zero, c.term]
-  | .pos => mkAppM ``LT.lt #[zero, c.term]
+  match c.kind, c.bound with
+  | .ne, _ => mkAppM ``Ne #[c.term, ← zeroOf c.term]
+  | .nonneg, _ => mkAppM ``LE.le #[← zeroOf c.term, c.term]
+  | .pos, _ => mkAppM ``LT.lt #[← zeroOf c.term, c.term]
+  | .le, some b => mkAppM ``LE.le #[c.term, b]
+  | .le, none => throwError "veriphy: an `le` condition needs a bound"
+
+/-- Forms of a hypothesis stronger than the condition that still discharge it. -/
+private def strongerForms (c : Condition) : MetaM (List Expr) := do
+  match c.kind, c.bound with
+  | .ne, _ => let z ← zeroOf c.term; pure [← mkAppM ``LT.lt #[z, c.term], ← mkAppM ``LT.lt #[c.term, z]]
+  | .nonneg, _ => pure [← mkAppM ``LT.lt #[← zeroOf c.term, c.term]]
+  | .le, some b => pure [← mkAppM ``LT.lt #[c.term, b]]
+  | _, _ => pure []
+
+/-- Do two conditions ask for the same thing? -/
+def Condition.same (c d : Condition) : MetaM Bool := do
+  unless c.kind == d.kind do return false
+  unless ← withReducible (isDefEq c.term d.term) do return false
+  match c.bound, d.bound with
+  | some a, some b => withReducible (isDefEq a b)
+  | none, none => return true
+  | _, _ => return false
 
 /-- The nameable hypothesis that states a condition (or a stronger form of it), if any. -/
 def Condition.dischargedBy (c : Condition) (nameable : LocalDecl → Bool) : MetaM (Option Name) := do
   let wanted ← c.prop
-  let stronger : List Expr ← match c.kind with
-    | .ne => do
-      let zero ← mkAppOptM ``OfNat.ofNat #[← inferType c.term, mkRawNatLit 0, none]
-      pure [← mkAppM ``LT.lt #[zero, c.term], ← mkAppM ``LT.lt #[c.term, zero]]
-    | .nonneg => do
-      let zero ← mkAppOptM ``OfNat.ofNat #[← inferType c.term, mkRawNatLit 0, none]
-      pure [← mkAppM ``LT.lt #[zero, c.term]]
-    | .pos => pure []
+  let stronger ← strongerForms c
   for decl in ← getLCtx do
     unless nameable decl do continue
     let ty ← instantiateMVars decl.type

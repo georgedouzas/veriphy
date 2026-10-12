@@ -31,7 +31,7 @@ from veriphy.core import RELATIONS, CertificateError, ParamError
 from veriphy.toolkit._table import Table, load_core_table
 
 GOAL_KINDS = ('rel', 'false', 'exists', 'other')
-DOMAIN_KINDS = ('ne', 'nonneg', 'pos')
+DOMAIN_KINDS = ('ne', 'nonneg', 'pos', 'le')
 BOUND = re.compile(r'\b[^\W\d]\w*_\b')
 mod = function('mod', nargs=2)
 
@@ -130,6 +130,7 @@ def parse_symbolic(text: object, symbols: dict[str, Expression]) -> Expression |
         'mod': mod,
         'sum': symbolic_sum,
         'product': product,
+        'typed': lambda e, _ty: e,
         'matrix': matrix,
     }
     names.update({k: SR.var(k) for k in BOUND.findall(text)})
@@ -148,14 +149,16 @@ class Condition:
     Args:
         text: The Lean text of the condition, such as `y ≠ 0`.
         expr: The constrained expression, in Sage's symbolic ring, or `None` when it does not parse.
-        kind: `ne` (`e ≠ 0`), `nonneg` (`0 ≤ e`) or `pos` (`0 < e`).
+        kind: `ne` (`e ≠ 0`), `nonneg` (`0 ≤ e`), `pos` (`0 < e`) or `le` (`e ≤ bound`).
         discharged_by: The hypothesis that states it, or `None`.
+        bound: The upper bound of an `le` condition, in Sage's symbolic ring.
     """
 
     text: str
     expr: Expression | Matrix | None
     kind: str
     discharged_by: str | None = None
+    bound: Expression | Matrix | None = None
 
 
 @dataclass(frozen=True)
@@ -298,7 +301,9 @@ def _read_domain(items: object, symbols: dict[str, Expression]) -> list[Conditio
             raise ParamError(param='problem', reason=f'bad domain condition {item!r}')
         by = item.get('discharged_by')
         expr = parse_symbolic(item.get('expr'), symbols)
-        conditions.append(Condition(str(item.get('text', '')), expr, str(item['kind']), str(by) if by else None))
+        bound = parse_symbolic(item.get('bound'), symbols)
+        text = str(item.get('text', ''))
+        conditions.append(Condition(text, expr, str(item['kind']), str(by) if by else None, bound))
     return conditions
 
 
