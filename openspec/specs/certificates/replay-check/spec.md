@@ -42,10 +42,7 @@ A replay SHALL run in a saved and restored state. It SHALL NOT change the tactic
 - **THEN** the elaborated proof and the single `Try this:` suggestion are identical to a run with the option off
 
 ### Requirement: Hygiene regression coverage
-The test suite SHALL include, with replay enabled:
-- a goal that needs a negation step with a fresh hypothesis (`sage_farkas` on `u ≤ 0`);
-- a context that contains an inaccessible hypothesis;
-- a certificate search over an empty constraint set.
+The test suite SHALL include, with replay enabled, `sage_run` examples covering: a refutation of a `≤` goal that introduces a fresh hypothesis, a context that contains an inaccessible hypothesis, and a certificate search over an empty constraint set.
 
 #### Scenario: Regression suite
 - **WHEN** `lake build VeriphyTest` runs with Sage available

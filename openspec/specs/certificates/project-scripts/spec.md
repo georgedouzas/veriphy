@@ -1,0 +1,38 @@
+# certificates/project-scripts Specification
+
+## Purpose
+Keeps the certificates that agents and users create in the project they belong to, discoverable and reusable there, while committed proofs stay Sage-free.
+
+## Requirements
+
+### Requirement: Scripts live in the caller's project
+Certificate scripts SHALL be stored as `.sage` files in a `certificates/` directory at the root of the project being proved, never in the Veriphy repository or package. `sage_run file "<path>"` SHALL run a script file, resolving relative paths against the Lean workspace root.
+
+#### Scenario: Run a saved script
+- **WHEN** a proof in a downstream project uses `sage_run file "certificates/anomaly_farkas.sage"`
+- **THEN** the script in that project's `certificates/` directory runs against the current goal, and the emitted replacement is the plain Lean proof
+
+#### Scenario: Missing file
+- **WHEN** the path names no file
+- **THEN** the tactic fails with an error naming the resolved path, without contacting Sage
+
+### Requirement: Script header
+Each saved script SHALL begin with a comment header giving `name`, `technique` (the recipe it follows), `goal` (the goal shape it closes) and `description`. A script without a complete header SHALL still run, and the catalog SHALL report its header as incomplete.
+
+#### Scenario: Incomplete header
+- **WHEN** a script lacks `technique`
+- **THEN** the catalog lists it with a note that `technique` is missing
+
+### Requirement: Discoverable catalog
+`sage -python -m veriphy.certificates list [dir]` SHALL print one line per script in the directory (default `certificates/`): name, technique, goal shape and description. `… show <name>` SHALL print one script.
+
+#### Scenario: Agent discovers existing scripts
+- **WHEN** an agent runs the list command in a project with three saved scripts
+- **THEN** it sees three entries, and can print any of them by name
+
+### Requirement: Reuse before writing, save after success
+The `prove` and `certify` workflows SHALL direct the agent to consult the project's catalog before writing a new script, to adapt a matching script when one exists, and to save a script that closed its goal, with a complete header, into the project's `certificates/`.
+
+#### Scenario: Second similar goal
+- **WHEN** the agent meets a goal of the same shape as a saved script's
+- **THEN** the workflow leads it to run or adapt that script rather than write one from scratch
