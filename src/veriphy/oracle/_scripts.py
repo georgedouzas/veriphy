@@ -13,6 +13,7 @@ from sage.rings.polynomial.multi_polynomial import MPolynomial
 from sage.rings.polynomial.multi_polynomial_ring_base import MPolynomialRing_base
 from sage.rings.rational import Rational
 
+import veriphy.toolkit
 from veriphy.core import CertificateError, Method, ParamError, ScriptError
 from veriphy.oracle._registry import (
     _coerce_int,
@@ -20,7 +21,7 @@ from veriphy.oracle._registry import (
     _coerce_str,
     _register_method,
 )
-from veriphy.toolkit import Problem, read_problem
+from veriphy.toolkit import Lean, Problem, read_problem
 
 SCRIPT_METHODS: dict[str, Method] = {}
 STDOUT_LIMIT = 20000
@@ -67,6 +68,8 @@ def _run_sage(script: str, namespace: dict[str, object], timeout: int) -> str:
     except Exception as exc:
         reason = f'{type(exc).__name__}: {exc}'
         raise ScriptError(reason, _truncate(buffer.getvalue())) from exc
+    finally:
+        sage_all.forget()
     return _truncate(buffer.getvalue())
 
 
@@ -82,6 +85,42 @@ def _run_derivation(script: str, timeout_s: int) -> dict[str, object]:
     namespace: dict[str, object] = {}
     out = _run_sage(script, namespace, timeout_s)
     return {'results': namespace.get('results'), 'stdout': out, 'advisory': True}
+
+
+def _toolkit_names() -> dict[str, object]:
+    """Return the toolkit's public names, which every proof script sees."""
+    return {name: getattr(veriphy.toolkit, name) for name in veriphy.toolkit.__all__}
+
+
+def _read_proof(namespace: dict[str, object], out: str) -> str:
+    """Return the Lean tactic block a script assigned to `proof`."""
+    if namespace.get('proof') is None:
+        message = 'the script did not assign `proof` (a Lean tactic block, as text or a toolkit `Lean` value)'
+        raise ScriptError(message, out)
+    proof = namespace['proof']
+    if isinstance(proof, Lean):
+        if proof.kind != 'tactic':
+            message = f'`proof` must be a Lean tactic, got a {proof.kind}: {proof.text}'
+            raise ScriptError(message, out)
+        return proof.text
+    if isinstance(proof, str):
+        return proof
+    message = f'`proof` must be Lean text or a toolkit `Lean` value, got {type(proof).__name__}'
+    raise ScriptError(message, out)
+
+
+@_register_method(
+    SCRIPT_METHODS,
+    'run',
+    problem=_coerce_json,
+    script=_coerce_str,
+    timeout_s=_coerce_int(DEFAULT_TIMEOUT_S),
+)
+def _run_proof_script(problem: object, script: str, timeout_s: int) -> dict[str, object]:
+    """Return the Lean tactic block a proof script builds, with the problem and the toolkit pre-bound."""
+    namespace = {**_toolkit_names(), **read_problem(problem).to_namespace(), 'proof': None}
+    out = _run_sage(script, namespace, timeout_s)
+    return {'lean': _read_proof(namespace, out), 'stdout': out}
 
 
 def _to_rational(v: object, what: str) -> Rational:

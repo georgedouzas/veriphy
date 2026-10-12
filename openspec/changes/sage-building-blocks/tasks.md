@@ -30,7 +30,7 @@
 
 ## 3. Script tactic (script-tactic, project-scripts)
 
-- [ ] 3.1 Add the daemon method `run` (`problem`, `script`, `timeout_s`), which returns `{lean, stdout}`, binds the problem and toolkit, and resets symbolic state after each request. Verify with pytest: a script that assigns `proof`, a missing `proof`, a script that raises (stdout included), and a no-leak test for `assume`.
+- [x] 3.1 Add the daemon method `run` (`problem`, `script`, `timeout_s`), which returns `{lean, stdout}`, binds the problem and toolkit, and resets symbolic state after each request. Verify with pytest: a script that assigns `proof`, a missing `proof`, a script that raises (stdout included), and a no-leak test for `assume`.
 - [ ] 3.2 Add the lenient extraction mode to `Veriphy/Kit/Problem.lean` (D2): every goal kind, and every nameable hypothesis with its text and an optional polynomial. Verify with Sage-free `#guard_msgs` tests in `VeriphyTest/Kit.lean` for a goal with `Real.sin` and a hypothesis that does not translate.
 - [ ] 3.3 Add the axiom guard to `closeAndEmit` (D3). Verify with Sage-free kit tests: a block using `sorry` is rejected with `sorryAx` named, `native_decide` is rejected with `Lean.ofReduceBool` named, a `decide` proof is accepted, and the existing kit tests stay green.
 - [ ] 3.4 Add `Veriphy/Tactic/SageRun.lean` (`sage_run "<script>"` and `sage_run file "<path>"`): resolve and read the file against the workspace root, parse the returned text, run it through `closeAndEmit`, and produce the three-section combined error. Verify in `VeriphyTest.lean` with replay on:
