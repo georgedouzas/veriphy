@@ -8,7 +8,7 @@
 
 - [x] 1.1 Create `src/veriphy/toolkit/` with `Problem`, `Hyp`, `read_problem`, `create_ring` and `parse_polynomial` (moved from the oracle and widened with Lean text and optional polynomial forms). `RELATIONS` moves to `core`. Verify with doctests and pytest cases binding a problem with a non-polynomial hypothesis and an `other` goal, and with the existing suite staying green.
 - [x] 1.2 Add `toolkit/_lean.py`: the `Lean` value (text and kind) and rendering of rationals and polynomials over atoms (compound atoms parenthesized). Verify with doctests, plus a pytest fixture that parses emitted text with `lake env lean` (term and tactic categories).
-- [ ] 1.3 Add `toolkit/_emit.py` builders:
+- [x] 1.3 Add `toolkit/_emit.py` builders:
   - hypothesis references (rejecting unknown names);
   - `linear_combination`;
   - `sq_nonneg`/`mul_nonneg`/`mul_pos`;

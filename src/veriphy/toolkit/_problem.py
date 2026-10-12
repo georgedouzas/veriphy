@@ -83,6 +83,7 @@ class Problem:
         binders: The generators bound by an `exists` goal.
         body: The constraints of an `exists` goal.
         atoms: The Lean text of each variable, by variable name.
+        carrier: The Lean text of the type the problem's polynomials live in (such as `ℚ`), empty when unknown.
     """
 
     ring: MPolynomialRing_base
@@ -92,6 +93,7 @@ class Problem:
     binders: list[MPolynomial] = field(default_factory=list)
     body: list[Hyp] = field(default_factory=list)
     atoms: dict[str, str] = field(default_factory=dict)
+    carrier: str = ''
 
     def find_hyp(self, name: str, allowed: tuple[str, ...], family: str) -> Hyp:
         """Find the hypothesis named `name`, checking its relation is usable by `family`.
@@ -202,6 +204,7 @@ def read_problem(problem: object) -> Problem:
         hyps=_read_constraints(problem.get('hyps', []), 'constraint', ring),
         goal_kind=kind,
         atoms={n: str(a) for n, a in zip(names, atoms if isinstance(atoms, list) else [], strict=False)},
+        carrier=str(problem.get('carrier', '')),
     )
     if kind in ('rel', 'other'):
         bound.goal = _read_constraint({**goal, 'name': None}, 'goal', ring)
