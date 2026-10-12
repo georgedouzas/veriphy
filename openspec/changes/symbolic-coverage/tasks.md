@@ -1,7 +1,5 @@
 # Tasks
 
-## Milestone 0.2.0: foundations and ODEs
-
 ## 0. Project layout (project-layout, project-scripts)
 
 - [ ] 0.1 Add `Veriphy.projectDir` and `veriphy.core.project_dir` (D14), and route `sage_run file` through them, so bare names resolve in `.veriphy/certificates/`. Verify with tests: a bare name, an explicit `.veriphy/...` path, a run from a subdirectory, and a missing file naming the resolved path.
@@ -55,7 +53,7 @@
 - [ ] 6.6 Add `_reflect` emitters with the size threshold and the bridge from `!![…]` literals (D9). Verify that a 2×2 identity emits the entrywise form, that a 16×16 identity emits the reflective form, and that both build without Sage.
 - [ ] 6.7 Add `scripts/bundle_check.py`, producing one copyable `VeriphyCheck.lean`. Verify that the bundled file builds in a scratch project that has only mathlib.
 
-## 7. Recipes for 0.2.0 (procedures, ode-bridge)
+## 7. Foundation recipes and ODEs (procedures, ode-bridge)
 
 - [ ] 7.1 Write the `derivative` recipe and template. Verify that its worked example passes in `VeriphyTest/SageRun.lean` with replay on, and that the recipe-template pytest check passes.
 - [ ] 7.2 Extend `sum_induction` to `Icc`/`Ico` sums. Verify with `∑ k ∈ Finset.Icc 1 n, (k : ℚ) = n * (n + 1) / 2` in the Lean suite.
@@ -63,13 +61,11 @@
 - [ ] 7.4 Add the ODE substitution emitter and the `ode_solution` recipe. Verify on the harmonic oscillator with initial conditions, on `x' = 2x` with `x 0 = 3` as an existential, and on a solution that fails with Lean's residual goal shown.
 - [ ] 7.5 Verify that `transcendental_rewrite` selects a project rewrite entry (`Real.cosh_sq` from a fixture) without edits, in a scratch project.
 
-## 8. Release 0.2.0 gate
+## 8. Foundations checkpoint
 
 - [ ] 8.1 Rerun the coverage runner and record the post-change numbers and classified top heads. Verify that the fully covered share is at least the baseline's for every corpus.
 - [ ] 8.2 Update the user guide (namespaces, project tables, typed rendering, ODEs, `VeriphyCheck`), the developer guide (adding core entries, packs and checkers), the README and the recipe index. Verify that `nox -s docs -- build` succeeds.
 - [ ] 8.3 Run `nox -s checks`, `nox -s tests`, `lake build VeriphyTest`, `lake build VeriphyCheck` and the Sage-free replay of every replacement, all green. Push and verify that CI is green.
-
-## Milestone 0.3.0: algebra
 
 ## 9. Lie algebras (lie-bridge)
 
@@ -100,12 +96,6 @@
 - [ ] 12.4 Add Pratt certificate search wired to the checker. Verify on a 40-digit prime.
 - [ ] 12.5 Write `infeasibility`, `matrix_normal_form`, `matrix_exponential` and `primality`. Verify their worked examples in the Lean suite.
 
-## 13. Release 0.3.0 gate
-
-- [ ] 13.1 Update the coverage report, the docs (an algebra chapter) and the recipe index. Run the full integration gate as in 8.3. Verify that everything is green, including CI.
-
-## Milestone 0.4.0: analysis and physics
-
 ## 14. Operators and Clifford algebras (operator-bridge)
 
 - [ ] 14.1 Add `_operators`: operators from multiplications and partial derivatives applied to a symbolic test function, with commutators and test-function proofs. Verify on `[d/dx, x]` and on `[L₁, L₂]` under `ContDiff ℝ 2 ψ`.
@@ -132,12 +122,6 @@
 - [ ] 17.2 Add root isolation by Sturm sequences with sign certificates and the intermediate value theorem, and eigenvalue bounds through characteristic polynomials. Verify on the spec's cubic and on a 3×3 symmetric matrix.
 - [ ] 17.3 Write `certified_bound` and `root_isolation`. Verify their worked examples and the `Gamma` refusal.
 
-## 18. Release 0.4.0 gate
-
-- [ ] 18.1 Update the coverage report, the docs (analysis and physics chapters) and the recipe index. Run the full integration gate. Verify that everything is green, including CI.
-
-## Milestone 0.5.0: fusion categories
-
 ## 19. Fusion categories (fusion-category-bridge)
 
 - [ ] 19.1 Write the mathlib-only asset `FusionData.lean` (multiplicity-free fusion data, pentagon and hexagon equations), with the trivial category as a sanity theorem. Verify that it builds in a mathlib-only scratch project.
@@ -145,12 +129,11 @@
 - [ ] 19.3 Add naturality certificates for explicit linear natural transformations. Verify on an intertwiner between two representations of a finite group.
 - [ ] 19.4 Write `fusion_category`. Verify its worked examples and the gauge-mismatch report.
 
-## 20. Release 0.5.0 gate and change completion
+## 20. Release gate
 
-- [ ] 20.1 Update the coverage report and the docs (a categories chapter). Run the full integration gate. Verify that everything is green, including CI.
+- [ ] 20.1 Rerun the coverage runner and record the final numbers and classified heads; update the docs with a chapter per component family (algebra, analysis and physics, categories) and the full recipe index. Run `nox -s checks`, `nox -s tests`, `lake build VeriphyTest`, `lake build VeriphyCheck` and the Sage-free replay, all green. Push and verify that CI is green.
 - [ ] 20.2 Run `openspec validate symbolic-coverage --strict` and verify that it passes.
 
 ## Workflow follow-up
 
-- Release each milestone (0.2.0 to 0.5.0) through the release flow once its gate is green. PyPI trusted publishing must be configured first.
-- Archive the change after 0.5.0 and merge to `main`.
+- Archive the change, merge to `main`, and release 0.2.0 through the release flow. PyPI trusted publishing must be configured first.
