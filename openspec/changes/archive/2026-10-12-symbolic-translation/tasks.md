@@ -24,5 +24,5 @@
 
 ## 4. Integration
 
-- [ ] 4.1 Run `nox -s checks`, `nox -s tests` and `lake build VeriphyTest`, all green, with the benchmark unchanged.
-- [ ] 4.2 Run `openspec validate symbolic-translation --strict` and verify that it passes.
+- [x] 4.1 Run `nox -s checks`, `nox -s tests` and `lake build VeriphyTest`, all green, with the benchmark unchanged.
+- [x] 4.2 Run `openspec validate symbolic-translation --strict` and verify that it passes.
