@@ -1,5 +1,6 @@
 """Development tasks."""
 
+import shlex
 import shutil
 import tomllib
 from pathlib import Path
@@ -150,7 +151,7 @@ def checks(session: nox.Session, file: str) -> None:
 
 @nox.session(python=False)
 def tests(session: nox.Session) -> None:
-    """Run tests, doctests and coverage in a venv over SageMath's interpreter that sees Sage's site-packages.
+    """Run tests, doctests and coverage in SageMath's environment, from a venv that sees Sage's site-packages.
 
     Arguments:
         session: The nox session.
@@ -180,9 +181,12 @@ def tests(session: nox.Session) -> None:
     env = {'VIRTUAL_ENV': str(venv)}
     session.run('uv', 'sync', '--active', env=env, external=True)
     selection = ['-k', *session.posargs] if session.posargs else []
-    session.run(str(venv / 'bin' / 'pytest'), '-n', 'auto', *selection, 'tests', 'src', env=env, external=True)
-    for step in (['report'], ['html'], ['xml']):
-        session.run(str(venv / 'bin' / 'coverage'), *step, env=env, external=True)
+    commands = [
+        [str(venv / 'bin' / 'pytest'), '-n', 'auto', *selection, 'tests', 'src'],
+        *([str(venv / 'bin' / 'coverage'), step] for step in ('report', 'html', 'xml')),
+    ]
+    for command in commands:
+        session.run(sage, '-sh', '-c', shlex.join(command), env=env, external=True)
 
 
 @nox.session
