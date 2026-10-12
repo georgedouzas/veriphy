@@ -150,7 +150,7 @@ def checks(session: nox.Session, file: str) -> None:
 
 @nox.session(python=False)
 def tests(session: nox.Session) -> None:
-    """Run tests, doctests and coverage in a venv over SageMath's interpreter.
+    """Run tests, doctests and coverage in a venv over SageMath's interpreter that sees Sage's site-packages.
 
     Arguments:
         session: The nox session.
@@ -160,7 +160,23 @@ def tests(session: nox.Session) -> None:
         session.skip('the tests need SageMath on PATH (`sage`)')
     venv = Path(session.create_tmp()) / 'sage-venv'
     if not (venv / 'bin' / 'python').exists():
-        session.run(sage, '-python', '-m', 'venv', '--system-site-packages', '--without-pip', str(venv), external=True)
+        session.run(sage, '-python', '-m', 'venv', '--without-pip', str(venv), external=True)
+    sage_paths = session.run(
+        sage,
+        '-python',
+        '-c',
+        'import site; print("\\n".join(site.getsitepackages()))',
+        external=True,
+        silent=True,
+    )
+    purelib = session.run(
+        str(venv / 'bin' / 'python'),
+        '-c',
+        'import sysconfig; print(sysconfig.get_path("purelib"))',
+        external=True,
+        silent=True,
+    )
+    Path(str(purelib).strip(), 'sage.pth').write_text(str(sage_paths))
     env = {'VIRTUAL_ENV': str(venv)}
     session.run('uv', 'sync', '--active', env=env, external=True)
     selection = ['-k', *session.posargs] if session.posargs else []
