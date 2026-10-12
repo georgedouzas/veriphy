@@ -486,3 +486,34 @@ info: {"atom_types":["ℝ","ℝ"],"atoms":["↑⌊x⌋","x"],"carrier":"ℝ","do
 -/
 #guard_msgs (info, error, drop warning) in
 example (x : ℝ) : (⌊x⌋ : ℝ) ≤ x := by kit_lenient
+
+/-! ## Core coverage: derivatives -/
+
+/--
+info: {"atom_types":["ℝ","ℝ"],"atoms":["deriv (fun x => x ^ 2 * Real.exp x) 1","Real.exp 1"],"carrier":"ℝ","domain":[],"goal":{"expr":"(diff(((d0_)^(2) * exp(d0_)), d0_).subs({d0_: 1})) - ((3 * exp(1)))","kind":"rel","lhs":"deriv (fun x => x ^ 2 * Real.exp x) 1","lhs_poly":"x0","poly":"(x0) - ((3 * x1))","rel":"eq","rhs":"3 * Real.exp 1","rhs_poly":"(3 * x1)","text":"deriv (fun x => x ^ 2 * Real.exp x) 1 = 3 * Real.exp 1"},"hyps":[],"namespaces":["mathlib"],"table_problems":[],"vars":["x0","x1"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example : deriv (fun x => x ^ 2 * Real.exp x) 1 = 3 * Real.exp 1 := by kit_lenient
+
+-- differentiability of `log` at `a` needs `a ≠ 0`
+/--
+info: {"atom_types":["ℝ","ℝ","ℝ"],"atoms":["deriv (fun x => Real.log x) a","1 / a","a"],"carrier":"ℝ","domain":[{"expr":"x2","kind":"ne","text":"a ≠ 0"}],"goal":{"expr":"(diff(log(d0_), d0_).subs({d0_: x2})) - ((1 / x2))","kind":"rel","lhs":"deriv (fun x => Real.log x) a","lhs_poly":"x0","poly":"(x0) - (x1)","rel":"eq","rhs":"1 / a","rhs_poly":"x1","text":"deriv (fun x => Real.log x) a = 1 / a"},"hyps":[],"namespaces":["mathlib"],"table_problems":[],"vars":["x0","x1","x2"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (a : ℝ) : deriv (fun x => Real.log x) a = 1 / a := by kit_lenient
+
+-- a body outside the coverage list keeps the derivative opaque
+/--
+info: {"atom_types":["ℝ","ℝ"],"atoms":["deriv (fun x => Real.Gamma x + x) a","a"],"carrier":"ℝ","domain":[],"goal":{"expr":"(x0) - (x1)","kind":"rel","lhs":"deriv (fun x => Real.Gamma x + x) a","lhs_poly":"x0","poly":"(x0) - (x1)","rel":"le","rhs":"a","rhs_poly":"x1","text":"deriv (fun x => Real.Gamma x + x) a ≤ a"},"hyps":[],"namespaces":["mathlib"],"table_problems":[],"vars":["x0","x1"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (a : ℝ) : deriv (fun x => Real.Gamma x + x) a ≤ a := by kit_lenient
+
+-- a partial derivative in the first coordinate, written through `Function.update`
+/--
+info: {"atom_types":["ℝ","ℝ","ℝ"],"atoms":["deriv (fun t => (fun y => y 0 ^ 2 * y 1) (Function.update x 0 t)) (x 0)","x 0","x 1"],"carrier":"ℝ","domain":[],"goal":{"expr":"(diff(((d0_)^(2) * x2), d0_).subs({d0_: x1})) - (((2 * x1) * x2))","kind":"rel","lhs":"deriv (fun t => (fun y => y 0 ^ 2 * y 1) (Function.update x 0 t)) (x 0)","lhs_poly":"x0","poly":"(x0) - (((2 * x1) * x2))","rel":"eq","rhs":"2 * x 0 * x 1","rhs_poly":"((2 * x1) * x2)","text":"deriv (fun t => (fun y => y 0 ^ 2 * y 1) (Function.update x 0 t)) (x 0) = 2 * x 0 * x 1"},"hyps":[],"namespaces":["mathlib"],"table_problems":[],"vars":["x0","x1","x2"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (x : Fin 2 → ℝ) :
+    deriv (fun t => (fun y : Fin 2 → ℝ => y 0 ^ 2 * y 1) (Function.update x 0 t)) (x 0) = 2 * x 0 * x 1 := by
+  kit_lenient

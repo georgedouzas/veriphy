@@ -27,6 +27,12 @@
           "kind": "nonneg"
         }
       ],
+      "derivConditions": [
+        {
+          "arg": 0,
+          "kind": "pos"
+        }
+      ],
       "example": "Real.sqrt x",
       "lean": "Real.sqrt",
       "result": "ℝ",
@@ -52,6 +58,12 @@
         {
           "arg": 0,
           "kind": "pos"
+        }
+      ],
+      "derivConditions": [
+        {
+          "arg": 0,
+          "kind": "ne"
         }
       ],
       "example": "Real.log x",

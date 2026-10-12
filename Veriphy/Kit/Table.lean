@@ -35,6 +35,9 @@ structure FunctionEntry where
   conditions : List CondSpec := []
   «example» : String := ""
   role : Option String := none
+  /-- The conditions under which Lean's derivative of the function agrees with the calculus one, when they differ
+  from `conditions` (`Real.log` is differentiable away from `0`, `Real.sqrt` only where it is positive). -/
+  derivConditions : Option (List CondSpec) := none
   deriving ToJson, FromJson, BEq, Repr, Inhabited
 
 /-- A constant such as `Real.pi`, written `sage` in Sage. -/
@@ -78,9 +81,11 @@ private def unary (lean sage ty : String) (conditions : List CondSpec := []) : F
 def coreTable : Table where
   «namespace» := "mathlib"
   functions := [
-    unary "Real.sqrt" "sqrt" "ℝ" [{ kind := "nonneg", arg := some 0 }],
+    { unary "Real.sqrt" "sqrt" "ℝ" [{ kind := "nonneg", arg := some 0 }] with
+      derivConditions := some [{ kind := "pos", arg := some 0 }] },
     unary "Real.exp" "exp" "ℝ",
-    unary "Real.log" "log" "ℝ" [{ kind := "pos", arg := some 0 }],
+    { unary "Real.log" "log" "ℝ" [{ kind := "pos", arg := some 0 }] with
+      derivConditions := some [{ kind := "ne", arg := some 0 }] },
     unary "Real.sin" "sin" "ℝ", unary "Real.cos" "cos" "ℝ", unary "Real.tan" "tan" "ℝ",
     unary "Real.cosh" "cosh" "ℝ", unary "Real.sinh" "sinh" "ℝ", unary "Real.tanh" "tanh" "ℝ",
     unary "Real.arctan" "arctan" "ℝ",
