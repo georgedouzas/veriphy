@@ -37,6 +37,8 @@ inductive SymExpr
   | const (name : String)
   /-- `∑ k ∈ Finset.range n, body`, or the product with `isSum := false`. -/
   | rangeOp (isSum : Bool) (k : String) (n body : SymExpr)
+  /-- `∑ k ∈ Finset.Icc lo hi, body` (and `Ico`, `univ` over `Fin n`), bounds inclusive; `isSum := false` for products. -/
+  | interval (isSum : Bool) (k : String) (lo hi body : SymExpr)
   | matrix (rows : List (List SymExpr))
   /-- A method applied to its first argument in Sage (`det`, `trace`, `transpose`, `inverse`, polynomial
   `coefficient`, `degree`, evaluation). -/
@@ -64,6 +66,8 @@ partial def SymExpr.toSage : SymExpr → String
   | .const c => c
   | .rangeOp true k n body => s!"sum({body.toSage}, {k}, 0, {n.toSage} - 1)"
   | .rangeOp false k n body => s!"product({body.toSage}, {k}, 0, {n.toSage} - 1)"
+  | .interval true k lo hi body => s!"sum({body.toSage}, {k}, {lo.toSage}, {hi.toSage})"
+  | .interval false k lo hi body => s!"product({body.toSage}, {k}, {lo.toSage}, {hi.toSage})"
   | .matrix rows =>
     let row (r : List SymExpr) := "[" ++ ", ".intercalate (r.map (·.toSage)) ++ "]"
     "matrix(SR, [" ++ ", ".intercalate (rows.map row) ++ "])"
@@ -116,7 +120,10 @@ private def noteConditions (entry : FunctionEntry) (operands : Array Expr) : Sym
     let some i := c.arg | continue
     let some x := operands[i]? | continue
     match c.kind with
-    | "ne" => note x .ne
+    | "ne" =>
+      match c.rhs with
+      | some r => if let some b ← operand? r operands then note x .ne b
+      | none => note x .ne
     | "nonneg" => note x .nonneg
     | "pos" => note x .pos
     | _ => pure ()
@@ -169,7 +176,7 @@ partial def exprToSym (e : Expr) : SymM SymExpr := do
     let x := lastArg e
     let inner ← exprToSym x
     -- a compound ℕ or ℤ computation cast into a field keeps its type, so the rendering can restore the cast
-    let compound := !(x.isFVar || (natLit? x).isSome) && !(inner matches .atom _)
+    let compound := !(inner matches .atom _ | .bvar _ | .num _ _)
     let srcTy ← atomType x
     if compound && (srcTy == "ℕ" || srcTy == "ℤ") then return .typed srcTy inner
     return inner
@@ -187,20 +194,39 @@ partial def exprToSym (e : Expr) : SymM SymExpr := do
     if natLit? a |>.isNone then note a .ne
     return .div (.num 1 1) (← exprToSym a)
   | ``Neg.neg, #[_, _, a] => return .neg (← exprToSym a)
-  | ``HPow.hPow, #[_, _, _, _, a, b] => return .pow (← exprToSym a) (← exprToSym b)
+  | ``HPow.hPow, #[α, β, _, _, a, b] =>
+    -- a real exponent is `Real.rpow`: Lean's value for a negative base differs from Sage's
+    if (← whnfR β).isConstOf `Real && (← whnfR α).isConstOf `Real then
+      let positiveNumeral := match natLit? b with | some n => decide (n > 0) | none => false
+      note a (if positiveNumeral then .nonneg else .pos)
+    return .pow (← exprToSym a) (← exprToSym b)
   | ``HMod.hMod, #[_, _, _, _, a, b] => return .mod (← exprToSym a) (← exprToSym b)
   | `abs, #[_, _, _, a] => return .fn "abs" (← exprToSym a)
   | `Finset.sum, #[_, _, _, s, body] | `Finset.prod, #[_, _, _, s, body] =>
     let isSum := f == `Finset.sum
-    let (`Finset.range, #[n]) := s.getAppFnArgs | return ← symAtom e
     let .lam k ty b bi := body | return ← symAtom e
-    let kName := s!"{k.eraseMacroScopes}_"
-    let n' ← exprToSym n
+    -- the inclusive bounds of the index set, or `none` for a set outside the coverage list
+    let bounds? : Option (Expr × Option Expr × Bool) := match s.getAppFnArgs with
+      | (`Finset.range, #[n]) => some (n, none, true)
+      | (`Finset.Icc, #[_, _, _, lo, hi]) => some (lo, some hi, false)
+      | (`Finset.Ico, #[_, _, _, lo, hi]) => some (lo, some hi, true)
+      | (`Finset.univ, #[α, _]) => match α.getAppFnArgs with
+        | (`Fin, #[n]) => some (n, none, true)
+        | _ => none
+      | _ => none
+    let some (a, b?, exclusive) := bounds? | return ← symAtom e
+    let taken := (← get).bound.map (·.2)
+    let base := s!"{k.eraseMacroScopes}_"
+    let kName := if taken.contains base then s!"{base}{taken.size}_" else base
+    let a' ← exprToSym a
+    let b'? ← b?.mapM exprToSym
     withLocalDecl k bi ty fun x => do
       modify fun st => { st with bound := st.bound.push (x, kName) }
-      let b' ← exprToSym (b.instantiate1 x)
+      let body' ← exprToSym (b.instantiate1 x)
       modify fun st => { st with bound := st.bound.pop }
-      return .rangeOp isSum kName n' b'
+      match b'? with
+      | none => return .rangeOp isSum kName a' body'
+      | some hi => return .interval isSum kName a' (if exclusive then .sub hi (.num 1 1) else hi) body'
   | ``DFunLike.coe, #[_, _, _, _, F, arg] =>
     if F.isAppOf `Matrix.of then
       let some rows := vecList arg | return ← symAtom e
@@ -225,7 +251,8 @@ private def zeroOf (e : Expr) : MetaM Expr := do
 /-- The proposition a condition asks for: `e ≠ 0`, `0 ≤ e`, `0 < e` or `e ≤ bound`. -/
 def Condition.prop (c : Condition) : MetaM Expr := do
   match c.kind, c.bound with
-  | .ne, _ => mkAppM ``Ne #[c.term, ← zeroOf c.term]
+  | .ne, some b => mkAppM ``Ne #[c.term, b]
+  | .ne, none => mkAppM ``Ne #[c.term, ← zeroOf c.term]
   | .nonneg, _ => mkAppM ``LE.le #[← zeroOf c.term, c.term]
   | .pos, _ => mkAppM ``LT.lt #[← zeroOf c.term, c.term]
   | .le, some b => mkAppM ``LE.le #[c.term, b]
@@ -234,7 +261,11 @@ def Condition.prop (c : Condition) : MetaM Expr := do
 /-- Forms of a hypothesis stronger than the condition that still discharge it. -/
 private def strongerForms (c : Condition) : MetaM (List Expr) := do
   match c.kind, c.bound with
-  | .ne, _ => let z ← zeroOf c.term; pure [← mkAppM ``LT.lt #[z, c.term], ← mkAppM ``LT.lt #[c.term, z]]
+  | .ne, b => do
+    let z ← match b with
+      | some b => pure b
+      | none => zeroOf c.term
+    pure [← mkAppM ``LT.lt #[z, c.term], ← mkAppM ``LT.lt #[c.term, z]]
   | .nonneg, _ => pure [← mkAppM ``LT.lt #[← zeroOf c.term, c.term]]
   | .le, some b => pure [← mkAppM ``LT.lt #[c.term, b]]
   | _, _ => pure []
