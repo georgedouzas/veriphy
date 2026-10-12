@@ -43,7 +43,7 @@ The toolkit SHALL choose reflection over entrywise proofs above a size threshold
 - **THEN** the emitted proof is the entrywise `ext … norm_num` form, readable in the committed file
 
 ### Requirement: Checkers depend on mathlib only
-The checkers and their soundness theorems SHALL form a Lean library, `VeriphyCheck`, that imports mathlib only: no Sage bridge, no tactic code. A proof using a checker therefore builds without Sage. The library SHALL also be offered as a single copyable file, so that proofs contributed to mathlib or Physlib carry no dependency on Veriphy. The emitted replacement SHALL state which checker module it needs.
+The checkers and their soundness theorems SHALL form a Lean library, `VeriphyCheck`, that imports mathlib only: no Sage bridge, no tactic code. A proof using a checker therefore builds without Sage. The library SHALL also be offered as a single file that a project copies into `.veriphy/lean/`, so that proofs contributed to mathlib or Physlib carry no dependency on Veriphy. The emitted replacement SHALL state which checker module it needs.
 
 #### Scenario: Proof contributed upstream
 - **WHEN** a replacement using the sparse-matrix checker is moved into a Physlib file

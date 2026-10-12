@@ -15,6 +15,13 @@ This change provides the components for all three. It also keeps translation cov
 
 ### Foundations
 
+- **One root for Veriphy artifacts:** everything Veriphy creates or reads in a downstream project lives under `.veriphy/` at the workspace root:
+  - `certificates/`: scripts;
+  - `translations/`: project entries;
+  - `lean/`: copied Lean assets, built through a declared `lean_lib`;
+  - `coverage/`: reports.
+
+  `sage_run file "name.sage"` resolves bare names in `.veriphy/certificates/`. Projects using the 0.1.0 `certificates/` layout get a warning and the `git mv` command that moves them. **BREAKING** for playbooks and docs, which now name `.veriphy/` paths.
 - **Core translation coverage.** Each new construct comes with its domain conditions, and with explicit handling where Lean and Sage disagree on meaning:
   - **Functions:** `rpow` with real exponents, `cosh`, `sinh`, `tanh`, `arctan`, `arcsin`, `arccos` and `Real.logb`. A shared rewrite table holds `exp_log`, `log_exp`, `log_mul`, `log_div`, `log_rpow`, `sqrt_mul_self`, `cosh_sq` and similar entries, with their side conditions.
   - **Sums and products** over `Finset.Icc`, `Finset.Ico` and `Finset.range` with symbolic bounds, nested.
@@ -25,7 +32,7 @@ This change provides the components for all three. It also keeps translation cov
 - **Table namespaces and extensions.** Translation and rewrite entries live in three namespaces:
   - `mathlib`: the core, always active;
   - library packs such as `physlib`: data shipped with Veriphy, active only when that library is in the environment, never imported by Veriphy;
-  - `project`: JSON files in the project's `translations/`.
+  - `project`: JSON files in the project's `.veriphy/translations/`.
 
   A later namespace never overrides an earlier one. Entries drive both translation directions, are checked by a round-trip command, are listed by `sage -python -m veriphy.translations list`, and are added by agents through the `certify` playbook with no Veriphy release. Library-specific recipes live under `prompts/recipes/<library>/`.
 - **Scalable checking.** `VeriphyCheck` is a mathlib-only Lean library of reflective checkers, each with a soundness theorem, evaluated by `decide` or `rfl` in the kernel, never by `native_decide`. It covers:
@@ -66,6 +73,7 @@ Each component has three parts: a concrete representation both sides can express
 ## Capabilities
 
 ### New Capabilities
+- `certificates/project-layout`: the `.veriphy/` directory as the single root of Veriphy artifacts in a downstream project, its resolution, copied Lean sources, and migration from 0.1.0.
 - `certificates/translation-extensions`: translation and rewrite entries in namespaces (mathlib core, library packs, project), their format, discovery, round-trip checking, conflict rules and agent workflow.
 - `certificates/translation-coverage`: measuring translation coverage on corpora, and reporting the opaque heads that matter most.
 - `certificates/scalable-checking`: mathlib-only reflective checkers with soundness theorems, and the switch to them above a size threshold.
@@ -80,6 +88,7 @@ Each component has three parts: a concrete representation both sides can express
 - `certificates/fusion-category-bridge`: fusion data with pentagon and hexagon equations, and naturality of explicit transformations.
 
 ### Modified Capabilities
+- `certificates/project-scripts`: scripts move to `.veriphy/certificates/`, bare names resolve there, and the catalog finds the workspace root from subdirectories.
 - `certificates/symbolic-translation`: the coverage list grows, domain conditions gain the two-term kind, semantic gaps must be bridged or left opaque, and type changes are marked.
 - `certificates/symbolic-emitters`: the function table grows, rendering becomes type-aware, rewrites come from one shared table, and derivative proofs get an emitter.
 - `certificates/procedures`: the recipe set gains `derivative`, `sum_induction` covers `Icc`/`Ico`, and `transcendental_rewrite` reads the shared table. Each bridge spec adds its own recipes.
@@ -106,5 +115,5 @@ Each component has three parts: a concrete representation both sides can express
 - **Recipes:** about 18 new recipes, plus library-specific ones under `prompts/recipes/physlib/`, all in the recipe index.
 - **Corpus runner:** `coverage/`, a separate Lake project requiring Veriphy by path and Physlib at a pinned commit (`ee0bfb40` or later with a matching mathlib). It is outside the library build and CI.
 - **Docs:** a user-guide chapter per component family, the developer guide (adding entries, packs and checkers), and `docs/development/coverage.md`.
-- **Compatibility:** additive. Existing scripts keep working. `symbolic` output may gain casts. Proofs that use a reflective checker depend on `VeriphyCheck`, a mathlib-only library, or on its copied file.
+- **Compatibility:** additive, except the project layout. Scripts move from `certificates/` to `.veriphy/certificates/`, with a warning and a migration command for 0.1.0 projects. Existing scripts keep working. `symbolic` output may gain casts. Proofs that use a reflective checker depend on `VeriphyCheck`, a mathlib-only library, or on its copied file.
 - **Release:** too large for one release with this scope. Tasks are grouped into milestones: 0.2.0 (foundations and ODE), 0.3.0 (algebra: Lie, representations, superalgebras, algebraic certificates), 0.4.0 (analysis and physics: operators, geometry, summation, numerics), 0.5.0 (fusion categories). Each milestone is releasable on its own.

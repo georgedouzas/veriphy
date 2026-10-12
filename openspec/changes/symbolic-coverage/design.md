@@ -31,7 +31,7 @@ lean, arity, sage, applies_to (argument types), result type,
 conditions [(argument index or pair, kind)], round_trip example
 ```
 
-Rewrite entries carry `lemma`, `functions`, `reverse`, `side` and `example`. The core tables become a Lean array of such records, plus a mirrored JSON file shipped in the Python package (`veriphy/toolkit/core_table.json`). A Sage-free Lean test checks that the two agree. Project entries are JSON under `translations/`.
+Rewrite entries carry `lemma`, `functions`, `reverse`, `side` and `example`. The core tables become a Lean array of such records, plus a mirrored JSON file shipped in the Python package (`veriphy/toolkit/core_table.json`). A Sage-free Lean test checks that the two agree. Project entries are JSON under `.veriphy/translations/`.
 
 **Alternatives considered:**
 - Code per entry, as now. It cannot be extended without a release.
@@ -39,7 +39,7 @@ Rewrite entries carry `lemma`, `functions`, `reverse`, `side` and `example`. The
 
 ### D2. Extensions travel with the problem
 
-At extraction time, Lean loads `translations/*.json` from the workspace root and validates each file (field names, arity, condition kinds, Lean constant exists in the environment). It merges the project entries after the core entries, rejects conflicts, and serializes the merged project entries in the problem (`"extensions"`). Python renders from core plus `problem.extensions`, so both directions use one table per call. The loaded tables are cached per Lean process, keyed by the files' modification times.
+At extraction time, Lean loads `.veriphy/translations/*.json` from the workspace root and validates each file (field names, arity, condition kinds, Lean constant exists in the environment). It merges the project entries after the core entries, rejects conflicts, and serializes the merged project entries in the problem (`"extensions"`). Python renders from core plus `problem.extensions`, so both directions use one table per call. The loaded tables are cached per Lean process, keyed by the files' modification times.
 
 ### D3. Conditions generalize to a proposition shape
 
@@ -83,7 +83,7 @@ The `derivative` recipe closes `deriv f a = v` with `rw [(term).deriv]` followed
 
 ### D7. Coverage measurement
 
-`#veriphy_coverage [Prefix, …] "out.json"` iterates the environment's constants whose module starts with a prefix, keeping theorems only. For each, it runs `forallTelescopeReducing` on the type, collects relations from hypothesis types and the conclusion, and runs the symbolic pass (with the project's tables). It classifies atoms by `getAppFn`: an fvar head is uninterpreted, a const head is opaque. It aggregates per statement and per head.
+`#veriphy_coverage [Prefix, …]` (writing its report to `.veriphy/coverage/<name>.json` unless a path is given) iterates the environment's constants whose module starts with a prefix, keeping theorems only. For each, it runs `forallTelescopeReducing` on the type, collects relations from hypothesis types and the conclusion, and runs the symbolic pass (with the project's tables). It classifies atoms by `getAppFn`: an fvar head is uninterpreted, a const head is opaque. It aggregates per statement and per head.
 
 The runner is `coverage/`, a Lake project with `require veriphy from ".."`, `require physlib` at a pinned commit, and mathlib's `Archive` through `lake build Archive`. Its `Coverage.lean` imports `Physlib` and `Archive` and runs the command twice. Results are copied into `docs/development/coverage.md`.
 
@@ -138,6 +138,22 @@ Each returns certificate objects with an `emit(problem)` method that produces Le
 ### D12. Physics conventions are explicit parameters
 
 Sign conventions (metric signature, `[Lᵢ, Lⱼ] = ±iεL`, Fierz basis normalization, gamma representation) are parameters of the component functions, never globals. The Physlib pack sets them to Physlib's conventions, and the templates expose them as `EDIT` lines.
+
+### D14. `.veriphy/` as the project root of artifacts
+
+A single Lean helper, `Veriphy.projectDir`, finds the workspace root (the nearest ancestor with a root lakefile, starting from the current directory). It returns `<root>/.veriphy`, and all readers and writers go through it: `sage_run file`, the translation loader, coverage output. Its Python mirror, `veriphy.core.project_dir(root=None)`, serves the catalogs. Directories are created on first write, never on read. Copied Lean assets go to `.veriphy/lean/`, which the project builds with:
+
+```toml
+[[lean_lib]]
+name = "VeriphyAssets"
+srcDir = ".veriphy/lean"
+```
+
+The recipes print this stanza.
+
+**Alternatives considered:**
+- Separate top-level directories (`certificates/`, `translations/`). That is the 0.1.0 state, and it scatters artifacts across the project root.
+- A hidden directory outside the project (`~/.veriphy`). Artifacts must be committed with the proofs they serve.
 
 ### D13. Milestones
 
