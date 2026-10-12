@@ -7,7 +7,7 @@
 
 ## Template
 
-Copy it to the project's `certificates/case_split.sage` (or a more specific name), adapt the lines marked `EDIT`, keep the header, and run it with `sage_run file "certificates/<name>.sage"`.
+Copy it to the project's `.veriphy/certificates/case_split.sage` (or a more specific name), adapt the lines marked `EDIT`, keep the header, and run it with `sage_run file "<name>.sage"`.
 
 ```sage
 # name: case_split
@@ -25,7 +25,7 @@ proof = by_cases(name, condition, on_true, on_false)
 
 ```lean
 example (x : ℚ) : 0 ≤ x * x := by
-  sage_run file "certificates/case_split.sage"
+  sage_run file "case_split.sage"
 ```
 
 ## Failure modes

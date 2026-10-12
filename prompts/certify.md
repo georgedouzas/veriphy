@@ -28,12 +28,12 @@ them, and Lean checks the proof you emit. Sage is never trusted.
    shape.
 3. **Otherwise pick a recipe.** Use the index in `prompts/prove.md` step 3, then
    read `prompts/recipes/<name>.md`. Copy its template to
-   `certificates/<specific_name>.sage` in the project. Adapt the `EDIT` lines,
+   `.veriphy/certificates/<specific_name>.sage` in the project. Adapt the `EDIT` lines,
    and update the header: `name` the same as the file name, plus an accurate
    `goal` and `description`. A script with goal-specific edits, such as
    hard-coded `HINTS`, gets a goal-specific name, so it is not mistaken for a
    general one. Never delete or rename a script someone else saved.
-4. **Run it:** `sage_run file "certificates/<specific_name>.sage"`.
+4. **Run it:** `sage_run file "<specific_name>.sage"`.
 5. **Iterate on the feedback.** A failure shows the script's output, the Lean
    text it built, and Lean's error. The recipe's "Failure modes" section maps
    each symptom to the next step. A script that raises shows its traceback and
@@ -41,11 +41,18 @@ them, and Lean checks the proof you emit. Sage is never trusted.
 6. **Commit the replacement.** Replace the `sage_run` call with the emitted
    `Try this:` block, parentheses included. The `[apply]` marker in the message
    is not part of the proof. That block is the proof, and it builds without
-   Sage. Keep the script in `certificates/` with a complete header, for reuse.
+   Sage. Keep the script in `.veriphy/certificates/` with a complete header, for reuse.
 
 Shape the goal first. Introduce hypotheses (`intro`) and split conjunctions
 before calling `sage_run`, so the script sees a relation or `∃` it can work
 with, not an implication. An implication arrives as `goal_kind == 'other'`.
+
+## Project layout
+
+Everything Veriphy-related in the project lives under `.veriphy/` at the workspace root: scripts in
+`.veriphy/certificates/` (run by bare name, `sage_run file "<name>.sage"`), translation entries in
+`.veriphy/translations/`, copied Lean assets in `.veriphy/lean/`, coverage reports in `.veriphy/coverage/`. Never
+write Veriphy artifacts anywhere else, and never move the committed proofs into `.veriphy/`.
 
 ## The toolkit, pre-bound in every script
 

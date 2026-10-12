@@ -8,7 +8,7 @@
 
 ## Template
 
-Copy it to the project's `certificates/ideal_membership.sage` (or a more specific name), adapt the lines marked `EDIT`, keep the header, and run it with `sage_run file "certificates/<name>.sage"`.
+Copy it to the project's `.veriphy/certificates/ideal_membership.sage` (or a more specific name), adapt the lines marked `EDIT`, keep the header, and run it with `sage_run file "<name>.sage"`.
 
 ```sage
 # name: ideal_membership
@@ -27,7 +27,7 @@ proof = linear_combination([(c, hyp(problem, h.name)) for c, h in zip(cofactors,
 
 ```lean
 example (a b : ℝ) (h : a + b = 3) (h' : a * b = 2) : a ^ 2 + b ^ 2 = 5 := by
-  sage_run file "certificates/ideal_membership.sage"
+  sage_run file "ideal_membership.sage"
 -- replacement: linear_combination (a + b + 3) * h + (-2) * h'
 ```
 

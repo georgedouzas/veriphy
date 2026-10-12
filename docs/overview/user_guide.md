@@ -78,10 +78,34 @@ leaves each **certificate** to whoever needs it:
 - **Skills** (`prove`, `certify`) run the loop: inspect, reuse a saved script, or adapt a recipe, then run, iterate
   and save.
 
-Scripts belong to the project being proved (its `certificates/` directory), and the catalog makes them reusable.
+Scripts belong to the project being proved, under its `.veriphy/` directory, and the catalog makes them reusable.
 Every problem the old tactics solved is in the benchmark (`VeriphyTest/Benchmark.lean`), solved by the recipes.
 `blocked-missing-building-block` now means the toolkit cannot express a proof: a missing Sage primitive or Lean
 emitter, named in the report.
+
+## Project layout
+
+Everything Veriphy creates or reads in your project lives under `.veriphy/` at the Lean workspace root (the directory
+with the root lakefile):
+
+| Directory | Holds |
+|---|---|
+| `.veriphy/certificates/` | certificate scripts, run with `sage_run file "<name>.sage"` |
+| `.veriphy/translations/` | your project's translation and rewrite entries |
+| `.veriphy/lean/` | Lean files copied from Veriphy, such as recipe assets |
+| `.veriphy/coverage/` | coverage reports |
+
+Commit `.veriphy/` with your proofs. The proofs themselves stay in your own Lean files. Lean files copied into
+`.veriphy/lean/` build through a library you declare once in `lakefile.toml`:
+
+```toml
+[[lean_lib]]
+name = "VeriphyAssets"
+srcDir = ".veriphy/lean"
+```
+
+Projects created with Veriphy 0.1.0 keep scripts in a top-level `certificates/`. The catalog still lists them, warns,
+and prints the command that moves them: `mkdir -p .veriphy && git mv certificates .veriphy/certificates`.
 
 ## Building proofs with `sage_run`
 
@@ -93,7 +117,7 @@ example (a b : ℝ) : 0 ≤ a ^ 2 * b ^ 2 - 2 * a * b + 1 := by
 
 -- a saved script from the project, here a Farkas refutation found by an exact LP
 example (x y : ℚ) (h1 : x + y ≤ 1) (h2 : x - y = 3) (h3 : 0 ≤ y) : False := by
-  sage_run file "certificates/farkas.sage"
+  sage_run file "farkas.sage"
 ```
 
 The steps are:
@@ -101,8 +125,8 @@ The steps are:
 1. **Inspect.** `sage_run "print(goal_kind, goal); print(hyps); print(atoms); proof = 'sorry'"` fails on purpose,
    and its error shows the problem.
 2. **Reuse.** `sage -python -m veriphy.certificates list` shows the project's saved scripts.
-3. **Adapt.** Otherwise copy a recipe template from `prompts/recipes/templates/` to `certificates/` and adapt the
-   lines marked `EDIT`.
+3. **Adapt.** Otherwise copy a recipe template from `prompts/recipes/templates/` to `.veriphy/certificates/` and
+   adapt the lines marked `EDIT`.
 4. **Iterate.** A failure shows the script's output, the Lean text and Lean's error together.
 5. **Commit** the emitted replacement, which builds without Sage, and keep the script.
 

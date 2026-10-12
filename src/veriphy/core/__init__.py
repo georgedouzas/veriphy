@@ -1,4 +1,4 @@
-"""Provide the shared leaves of veriphy: its named exceptions and the protocol's type vocabulary."""
+"""Provide the shared leaves of veriphy: its named exceptions, the protocol's type vocabulary, the project layout."""
 
 from veriphy.core._errors import (
     CertificateError,
@@ -8,9 +8,11 @@ from veriphy.core._errors import (
     ScriptError,
     VeriphyError,
 )
+from veriphy.core._project import PROJECT_DIR_NAME, find_workspace_root, project_dir
 from veriphy.core._types import RELATIONS, Coercer, JsonObject, JsonValue, Method
 
 __all__ = [
+    'PROJECT_DIR_NAME',
     'RELATIONS',
     'CertificateError',
     'Coercer',
@@ -22,4 +24,6 @@ __all__ = [
     'ParamError',
     'ScriptError',
     'VeriphyError',
+    'find_workspace_root',
+    'project_dir',
 ]

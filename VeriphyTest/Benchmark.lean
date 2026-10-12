@@ -49,7 +49,7 @@ example (x y : ℚ) : 0 ≤ (35 / 2 : ℚ) * x ^ 2 * y ^ 2 - 35 * x * y + 35 / 2
   sage_run file "prompts/recipes/templates/sos.sage"
 
 example (a b : ℚ) : 0 ≤ a ^ 4 + 2 * a ^ 2 * b ^ 2 + b ^ 4 - 2 * a ^ 2 - 2 * b ^ 2 + 1 + (a - b) ^ 2 := by
-  sage_run file "VeriphyTest/certificates/sos_hinted_quartic.sage"
+  sage_run file "sos_hinted_quartic.sage"
 
 example (a b : ℚ) : a * b ≤ (a ^ 2 + b ^ 2) / 2 := by
   sage_run file "prompts/recipes/templates/sos.sage"

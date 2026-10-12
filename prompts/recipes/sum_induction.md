@@ -7,7 +7,7 @@
 
 ## Template
 
-Copy it to the project's `certificates/sum_induction.sage` (or a more specific name), adapt the lines marked `EDIT`, keep the header, and run it with `sage_run file "certificates/<name>.sage"`.
+Copy it to the project's `.veriphy/certificates/sum_induction.sage` (or a more specific name), adapt the lines marked `EDIT`, keep the header, and run it with `sage_run file "<name>.sage"`.
 
 ```sage
 # name: sum_induction
@@ -25,7 +25,7 @@ proof = sum_by_induction(found.group(1))
 ```lean
 example (n : ℕ) :
     ∑ k ∈ Finset.range n, (k : ℚ) ^ 2 = (n : ℚ) ^ 3 / 3 - (n : ℚ) ^ 2 / 2 + (n : ℚ) / 6 := by
-  sage_run file "certificates/sum_induction.sage"
+  sage_run file "sum_induction.sage"
 ```
 
 ## Failure modes

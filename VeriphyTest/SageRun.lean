@@ -129,18 +129,18 @@ equal to `E`. -/
 
 -- rational function and powers
 example (x y : ℝ) (h : x / (x ^ 2 + 1) - 1 / y ^ 3 + x ^ 5 = 0) : True := by
-  sage_run file "VeriphyTest/certificates/round_trip.sage"
+  sage_run file "round_trip.sage"
 -- the real table: sqrt, exp, log, sin, cos, tan
 example (x : ℝ) (h : Real.sqrt x + Real.exp x * Real.log x - Real.sin x / Real.cos x + Real.tan x = 0) : True := by
-  sage_run file "VeriphyTest/certificates/round_trip.sage"
+  sage_run file "round_trip.sage"
 -- abs over ℝ and ℤ
 example (x : ℝ) (h : |x - 1| - 2 * |x| = 0) : True := by
-  sage_run file "VeriphyTest/certificates/round_trip.sage"
+  sage_run file "round_trip.sage"
 example (k : ℤ) (h : |k - 1| + k ^ 2 = 0) : True := by
-  sage_run file "VeriphyTest/certificates/round_trip.sage"
+  sage_run file "round_trip.sage"
 -- pi, casts from ℕ and ℤ, natural exponents
 example (x : ℝ) (n : ℕ) (k : ℤ) (h : Real.pi * x ^ n - (n : ℝ) / 2 + (k : ℝ) = 0) : True := by
-  sage_run file "VeriphyTest/certificates/round_trip.sage"
+  sage_run file "round_trip.sage"
 -- the complex table and I
 example (z : ℂ) (h : Complex.exp (z * Complex.I) - Complex.log z + Complex.I * Complex.sin z = 0) : True := by
-  sage_run file "VeriphyTest/certificates/round_trip.sage"
+  sage_run file "round_trip.sage"

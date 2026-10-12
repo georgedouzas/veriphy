@@ -2,9 +2,9 @@
 
 ## 0. Project layout (project-layout, project-scripts)
 
-- [ ] 0.1 Add `Veriphy.projectDir` and `veriphy.core.project_dir` (D14), and route `sage_run file` through them, so bare names resolve in `.veriphy/certificates/`. Verify with tests: a bare name, an explicit `.veriphy/...` path, a run from a subdirectory, and a missing file naming the resolved path.
-- [ ] 0.2 Move the catalog to `.veriphy/certificates/` with `--root`, and add the 0.1.0 warning with its `git mv` command. Verify with pytest on a fixture with the old layout and one with the new.
-- [ ] 0.3 Update `prompts/prove.md`, `prompts/certify.md`, both skills, every recipe ("copy it to `.veriphy/certificates/`"), the README and the user guide to the `.veriphy/` layout, including the `lean_lib` stanza for copied assets. Verify that a grep finds no project-path `certificates/` outside `.veriphy/` in prompts, skills and docs, and that the docs build.
+- [x] 0.1 Add `Veriphy.projectDir` and `veriphy.core.project_dir` (D14), and route `sage_run file` through them, so bare names resolve in `.veriphy/certificates/`. Verify with tests: a bare name, an explicit `.veriphy/...` path, a run from a subdirectory, and a missing file naming the resolved path.
+- [x] 0.2 Move the catalog to `.veriphy/certificates/` with `--root`, and add the 0.1.0 warning with its `git mv` command. Verify with pytest on a fixture with the old layout and one with the new.
+- [x] 0.3 Update `prompts/prove.md`, `prompts/certify.md`, both skills, every recipe ("copy it to `.veriphy/certificates/`"), the README and the user guide to the `.veriphy/` layout, including the `lean_lib` stanza for copied assets. Verify that a grep finds no project-path `certificates/` outside `.veriphy/` in prompts, skills and docs, and that the docs build.
 
 ## 1. Baseline measurement (translation-coverage)
 

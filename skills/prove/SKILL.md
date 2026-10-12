@@ -27,6 +27,6 @@ Hard rules:
 - Never invent a *definition*; flag it to the user and stop.
 - The final proof must contain no `sorry` and no live Sage call — only the
   Sage-free `Try this:` replacements `sage_run` emits.
-- Certificate scripts go in the project's `certificates/`, never in Veriphy.
+- Certificate scripts go in the project's `.veriphy/certificates/`, never in Veriphy.
 - A failure is a report (`blocked-library-gap` / `blocked-missing-building-block` /
   `statement-suspect`), stated precisely, not a silent stop.

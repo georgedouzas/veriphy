@@ -1,4 +1,4 @@
-"""Catalog a project's certificate scripts: `python -m veriphy.certificates list [dir]` or `show <name> [dir]`."""
+"""Catalog a project's `.veriphy/certificates/`: `python -m veriphy.certificates list` or `show <name>`."""
 
 from veriphy.certificates._catalog import main
 

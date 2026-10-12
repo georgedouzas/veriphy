@@ -212,3 +212,29 @@ info: {"atom_types":["ℚ","ℚ"],"atoms":["Polynomial.eval x (Polynomial.X ^ 2 
 -/
 #guard_msgs (info, error, drop warning) in
 example (x : ℚ) : (Polynomial.X ^ 2 + Polynomial.C 1 : Polynomial ℚ).eval x = x ^ 2 + 1 := by kit_lenient
+
+/-! ## Project layout -/
+
+-- a bare name lives in `.veriphy/certificates/`, other paths come from the workspace root, from any subdirectory
+/-- info: [true, true, true, true] -/
+#guard_msgs in
+#eval show IO (List Bool) from do
+  let root ← IO.currentDir
+  let sub := root / "VeriphyTest"
+  return [
+    (← Veriphy.workspaceRoot (some sub)) == root,
+    (← Veriphy.resolveScriptPath "anomaly.sage" (some sub)) == root / ".veriphy" / "certificates" / "anomaly.sage",
+    (← Veriphy.resolveScriptPath ".veriphy/certificates/anomaly.sage" (some sub)) ==
+      root / ".veriphy/certificates/anomaly.sage",
+    (← Veriphy.resolveScriptPath "prompts/recipes/templates/sos.sage") ==
+      root / "prompts/recipes/templates/sos.sage"]
+
+-- a missing script is reported with its resolved path, before any daemon call
+/-- info: true -/
+#guard_msgs in
+#eval show IO Bool from do
+  try
+    let _ ← Veriphy.readScript "no_such_script.sage"
+    return false
+  catch e =>
+    return (e.toString.splitOn ".veriphy/certificates/no_such_script.sage").length > 1

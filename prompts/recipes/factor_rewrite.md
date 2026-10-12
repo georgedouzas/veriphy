@@ -7,7 +7,7 @@
 
 ## Template
 
-Copy it to the project's `certificates/factor_rewrite.sage` (or a more specific name), adapt the lines marked `EDIT`, keep the header, and run it with `sage_run file "certificates/<name>.sage"`.
+Copy it to the project's `.veriphy/certificates/factor_rewrite.sage` (or a more specific name), adapt the lines marked `EDIT`, keep the header, and run it with `sage_run file "<name>.sage"`.
 
 ```sage
 # name: factor_rewrite
@@ -27,7 +27,7 @@ proof = tactic(f'refine Eq.trans (show {lhs.text} = {factored} by ring1) ?_')
 
 ```lean
 example (x : ℚ) : x ^ 4 - 1 = (x - 1) * (x + 1) * (x ^ 2 + 1) := by
-  sage_run file "certificates/factor_rewrite.sage"
+  sage_run file "factor_rewrite.sage"
   ring
 ```
 

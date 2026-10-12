@@ -7,7 +7,7 @@
 
 ## Template
 
-Copy it to the project's `certificates/calc_derivation.sage` (or a more specific name), adapt the lines marked `EDIT`, keep the header, and run it with `sage_run file "certificates/<name>.sage"`.
+Copy it to the project's `.veriphy/certificates/calc_derivation.sage` (or a more specific name), adapt the lines marked `EDIT`, keep the header, and run it with `sage_run file "<name>.sage"`.
 
 ```sage
 # name: calc_derivation
@@ -27,7 +27,7 @@ proof = calc_chain(term(start), chain, problem)
 
 ```lean
 example (x : ℚ) : (x + 1) ^ 2 - 1 = x * (x + 2) := by
-  sage_run file "certificates/calc_derivation.sage"
+  sage_run file "calc_derivation.sage"
 ```
 
 ## Failure modes
