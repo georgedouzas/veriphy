@@ -86,7 +86,7 @@ The dependency arrow points down only: Layer 1 is useful with no AI, Layer 2 wit
 no Lean. The `prove` skill orchestrates both: the **caller supplies the target**
 (a Lean statement, an informal statement, or a backlog item from a repo such as
 [Physlib](https://physlib.io)) and receives back a verified proof or a precise
-failure report (`blocked-library-gap` / `blocked-missing-tactic` /
+failure report (`blocked-library-gap` / `blocked-missing-building-block` /
 `statement-suspect`). What happens with the result is the caller's
 responsibility; the tool keeps no state and opens no PRs.
 
@@ -216,7 +216,7 @@ without an SDP solver (2026-10): five working tactics, all emitting Sage-free
 `Try this:` replacements. Tests: `VeriphyTest.lean` (running them requires
 Sage; the emitted replacements don't — verified by replay with Sage off PATH).
 Remaining catalog entries (`sage_branch`, `sage_eigen`, full SOS) are bounded,
-demand-driven additions — build them when a `blocked-missing-tactic` report
+demand-driven additions — build them when a `blocked-missing-building-block` report
 asks for them. The pipeline has cleared a real Physlib backlog item end to end
 (`isBounded_iff_of_𝓵_zero`). Next: persistent daemon (~2s spawn per call).
 

@@ -43,36 +43,34 @@ score, or committing to the target repo beyond what the caller asked for.
 3. **Prove.** In order of cheapness:
    a. `simp` / `norm_num` / `positivity` / `nlinarith` / `fun_prop` / `gcongr`
    b. premise search (loogle, LeanSearch, `exact?`) for the missing lemma
-   c. decompose: isolate the computational core (polynomial identity,
-      inequality, closed-form sum, rational root, linear system, witness) and
-      send it to the matching `sage_*` certificate tactic; prove the glue
-      yourself. Matching: identity from hypotheses → `sage_lincomb` (also
-      kernel spans); factorization → `sage_factor`; `0 ≤ p` → `sage_sos`
-      (pass candidate squares `sage_sos [q₁, …]` when `p` is a known sum of
-      squares that does not factor); large linear (in)feasibility, where
-      `linarith` times out → `sage_farkas`; `∃` with a rational witness
-      (eigenvector, feasible point, counterexample) → `sage_exists`;
-      closed-form sum → `#sage_sum` then `sage_sum n`
-   d. one-off certificate: when no `sage_*` tactic fits but the proof has a
-      checkable shape, write the certificate yourself in Sage with
-      `sage_certify <family> "<script>"`. The script sees the goal and
-      context already normalized — `R`, generators `x0, x1, …` (one per atom;
-      `atoms` maps each to its Lean text), `hyps` as `Hyp(name, poly, rel)`
-      meaning `poly rel 0` with `rel ∈ eq/le/lt/ne`, `goal` (same shape),
-      `binders`/`body` for `∃` — and must assign `certificate`:
-      - `identity` (goal `a = b`): `{'cofactors': {hyp_name: poly}}`, checked
-        by `linear_combination`;
-      - `inequality` (goal `a ≤ b`, `a < b` or `False`):
-        `{'weights': {hyp_name: w}, 'squares': [(c, q), …]}` — `w ≥ 0`
-        rationals on `≤`/`<` hypotheses (polynomials allowed on `=`), `c ≥ 0`
-        — checked by `linear_combination` with `sq_nonneg q` terms (for
-        `False`, through the constant the combination reduces to);
-      - `witness` (goal `∃ x₁ … xₙ, …`): `[v₁, …, vₙ]` rationals, checked by
-        `norm_num`.
-      A wrong certificate just fails; the script's printed output comes back
-      in the error, so iterate. Commit the emitted `Try this:` (plain
-      `linear_combination` / `exact ⟨…⟩`), never the `sage_certify` call.
-   e. oracle: when stuck on *what the proof even is* — solving an equation
+   c. build a certificate: isolate the computational core (polynomial
+      identity, inequality, closed-form sum, root, linear system, witness,
+      matrix identity) and build its proof with `sage_run`, following
+      `prompts/certify.md`. Prove the glue yourself. Veriphy ships no
+      ready-made certificates. You create each one from the recipes, reusing
+      what the project already has:
+      - first `sage -python -m veriphy.certificates list` in the project, and
+        adapt a saved script whose `goal` matches;
+      - otherwise pick a recipe from the index below, copy its template into
+        the project's `certificates/`, adapt it, and run it.
+
+      | goal shape | recipe |
+      |---|---|
+      | `a = b` from equality hypotheses | `ideal_membership` |
+      | `False`, `a ≤ b`, `a < b` linear in the hypotheses | `farkas` |
+      | `0 ≤ p`, `p` polynomial | `sos` |
+      | polynomial inequality needing products or squares | `hint_search` |
+      | `lhs = rhs` where the factored `lhs` helps | `factor_rewrite` |
+      | `∃ x₁ … xₙ, …` with rational values | `witness` |
+      | `∑ k ∈ Finset.range n, f k = F n` | `sum_induction` |
+      | long manipulation through intermediate forms | `calc_derivation` |
+      | easy on each side of a condition | `case_split` |
+      | identity between explicit matrices | `matrix_identity` |
+
+      Recipes are in `prompts/recipes/<name>.md`. Read only the one you use.
+      Save a script that closed its goal into the project's `certificates/`,
+      with its header, so the next similar goal reuses it.
+   d. oracle: when stuck on *what the proof even is* — solving an equation
       system (a kernel computation, an equilibrium, a change of variables),
       finding the case split, locating the closed form — ask the bridge's
       advisory methods (`solve`, `symbolic_check`, `matrix_check`). When the
@@ -82,22 +80,22 @@ score, or committing to the target repo beyond what the caller asked for.
       through `run_script` and read back its structured `results`. All of it
       is UNTRUSTED guidance: never transcribe it into the proof; re-prove in
       Lean whatever you take from it.
-   f. recursion: if a sub-lemma is missing, prove it first (lemmas only —
+   e. recursion: if a sub-lemma is missing, prove it first (lemmas only —
       never invent definitions; flag those to the caller).
    Budget: stop after ~30 min wall clock or 3 decomposition attempts.
 
 4. **Verify.** `lake build` from clean. Zero `sorry`. The final proof must not
-   invoke Sage — commit only the `Try this:` replacements the tactics emit.
+   invoke Sage — commit only the `Try this:` replacements `sage_run` emits.
 
 5. **Report to the caller** — one of:
-   - `proved`: the verified Lean proof (file/diff), noting which `sage_*`
-     tactics were used, if any;
+   - `proved`: the verified Lean proof (file/diff), noting which recipes and
+     saved scripts were used, if any;
    - `blocked-library-gap`: the statement needs theory that doesn't exist yet
      (name precisely what);
-   - `blocked-missing-tactic`: a Sage capability with a checkable certificate
-     would have closed it, and no checker family can verify that certificate
-     (so `sage_certify` could not express it either — describe the
-     certificate and the checker it would need);
+   - `blocked-missing-building-block`: the proof needs a Sage computation or
+     a Lean emitter that the toolkit lacks, so no `sage_run` script can build
+     it. Name the missing primitive or emitter, and the certificate it would
+     produce;
    - `statement-suspect`: the numeric test contradicted the claim (give the
      counterexample).
 

@@ -70,7 +70,7 @@ reduction over super coset spaces): the gauge-anomaly no-go systems exceeded
 factor, and mass spectra need eigenvector witnesses.
 
 Remaining entries (`sage_branch` for Lie branching rules, full SOS) are built
-**only when a `blocked-missing-tactic` report demands them**.
+**only when a `blocked-missing-building-block` report demands them**.
 If this repo is still growing tactics without such demand, something went
 wrong.
 
@@ -83,7 +83,7 @@ terms, or a `norm_num` refutation), `witness` (`norm_num`), `sum` (induction)
 and `cases` (`decide`). The agent can also write a one-off certificate itself:
 `sage_certify <family> "<sage script>"` runs a script against the normalized
 problem and checks its `certificate` with the family's checker, so a
-certificate that fits a family needs no new tactic. `blocked-missing-tactic`
+certificate that fits a family needs no new tactic. `blocked-missing-building-block`
 now means *no family can check it*. A new family is the unit of growth (see
 [Adding a certificate](../development/index.md#adding-a-certificate)).
 
@@ -96,7 +96,7 @@ Veriphy is a tool, not a campaign:
   [Physlib](https://physlib.io) `informal_lemma`). No target library is
   cloned, wired, or assumed by the repo.
 - **The caller owns the outcome.** The `prove` skill ends at a report —
-  `proved` / `blocked-library-gap` / `blocked-missing-tactic` /
+  `proved` / `blocked-library-gap` / `blocked-missing-building-block` /
   `statement-suspect` — and never opens PRs, keeps ledgers, or commits beyond
   what was asked. (An earlier design embedded a Physlib stub ledger and PR
   step; both were removed for this reason.)
