@@ -3,14 +3,14 @@ Symbolic translation: Lean terms → Sage symbolic-ring expressions, with typed 
 conditions (denominators nonzero, `sqrt` arguments nonnegative, `log` arguments positive) a Lean check
 of a proof built from them will need.
 
-The constant tables follow LeanSage's `ExprToAST.lean` (Oliver Dressler, MIT License,
-https://github.com/oOo0oOo/LeanSage), restricted to Veriphy's coverage list; `abs` is translated as
-the absolute value of the argument's own type (LeanSage maps it to `Int.natAbs`).
+The function, constant and coercion entries are data (`Veriphy.Kit.Table`, after LeanSage's `ExprToAST.lean`);
+`abs` is translated as the absolute value of the argument's own type (LeanSage maps it to `Int.natAbs`).
 
 Nothing here is trusted: a mistranslation makes the emitted proof fail in Lean, never prove
 something else.
 -/
 import Veriphy.Translate
+import Veriphy.Kit.Table
 
 namespace Veriphy
 
@@ -29,8 +29,10 @@ inductive SymExpr
   | neg (a : SymExpr)
   | pow (a b : SymExpr)
   | mod (a b : SymExpr)
-  /-- A function of the table (`sqrt`, `exp`, `log`, `sin`, `cos`, `tan`, `abs`). -/
+  /-- A one-argument function of the table (`sqrt`, `exp`, `log`, …, `abs`). -/
   | fn (name : String) (arg : SymExpr)
+  /-- A function of the table with several arguments (`binomial`, `log` to a base, …). -/
+  | call (name : String) (args : List SymExpr)
   /-- `pi` or `I`. -/
   | const (name : String)
   /-- `∑ k ∈ Finset.range n, body`, or the product with `isSum := false`. -/
@@ -55,6 +57,7 @@ partial def SymExpr.toSage : SymExpr → String
   | .pow a b => s!"({a.toSage})^({b.toSage})"
   | .mod a b => s!"mod({a.toSage}, {b.toSage})"
   | .fn f a => s!"{f}({a.toSage})"
+  | .call f as => s!"{f}(" ++ ", ".intercalate (as.map (·.toSage)) ++ ")"
   | .const c => c
   | .rangeOp true k n body => s!"sum({body.toSage}, {k}, 0, {n.toSage} - 1)"
   | .rangeOp false k n body => s!"product({body.toSage}, {k}, 0, {n.toSage} - 1)"
@@ -80,20 +83,24 @@ structure SymState where
   atoms : Array Expr
   bound : Array (Expr × String) := #[]
   conditions : Array Condition := #[]
+  /-- The translation tables in force, core first. -/
+  tables : Tables := [coreTable]
 
 abbrev SymM := StateRefT SymState MetaM
 
-/-- Unary functions of the table, by Lean constant (after LeanSage's `ExprToAST.lean`). -/
-def unaryFunctions : List (Name × String) :=
-  [(`Real.sqrt, "sqrt"), (`Real.exp, "exp"), (`Real.log, "log"), (`Real.sin, "sin"),
-   (`Real.cos, "cos"), (`Real.tan, "tan"), (`Complex.exp, "exp"), (`Complex.log, "log"),
-   (`Complex.sin, "sin"), (`Complex.cos, "cos"), (`Complex.tan, "tan")]
-
-/-- Coercions translated as their argument (the argument's atom keeps its own type). -/
-def coercions : List Name := [``Nat.cast, ``Int.cast, ``Rat.cast, `Complex.ofReal]
-
 private def note (term : Expr) (kind : DomainKind) : SymM Unit :=
   modify fun s => { s with conditions := s.conditions.push { term, kind } }
+
+/-- Record the single-argument conditions an entry imposes on its operands. -/
+private def noteConditions (entry : FunctionEntry) (operands : Array Expr) : SymM Unit := do
+  for c in entry.conditions do
+    let some i := c.arg | continue
+    let some x := operands[i]? | continue
+    match c.kind with
+    | "ne" => note x .ne
+    | "nonneg" => note x .nonneg
+    | "pos" => note x .pos
+    | _ => pure ()
 
 /-- Register `e` as an atom, reusing a definitionally equal one. -/
 private def symAtom (e : Expr) : SymM SymExpr := do
@@ -118,12 +125,16 @@ partial def exprToSym (e : Expr) : SymM SymExpr := do
   if e.isFVar then
     if let some (_, k) := (← get).bound.find? (·.1 == e) then return .bvar k
   let (f, args) := e.getAppFnArgs
-  if let some (_, name) := unaryFunctions.find? (·.1 == f) then
-    if args.size == 1 then
-      if f == `Real.sqrt then note args[0]! .nonneg
-      if f == `Real.log then note args[0]! .pos
-      return .fn name (← exprToSym args[0]!)
-  if coercions.contains f && args.size ≥ 1 then return ← exprToSym (lastArg e)
+  let tables := (← get).tables
+  if let some entry := tables.function? f then
+    if entry.arity ≥ 1 && args.size ≥ entry.arity then
+      let operands := args.extract (args.size - entry.arity) args.size
+      noteConditions entry operands
+      if entry.arity == 1 then return .fn entry.sage (← exprToSym operands[0]!)
+      return .call entry.sage (← operands.toList.mapM exprToSym)
+  if let some c := tables.constant? f then
+    if args.isEmpty then return .const c.sage
+  if tables.isCoercion f && args.size ≥ 1 then return ← exprToSym (lastArg e)
   match f, args with
   | ``HAdd.hAdd, #[_, _, _, _, a, b] => return .add (← exprToSym a) (← exprToSym b)
   | ``HSub.hSub, #[_, _, _, _, a, b] => return .sub (← exprToSym a) (← exprToSym b)
@@ -141,8 +152,6 @@ partial def exprToSym (e : Expr) : SymM SymExpr := do
   | ``HPow.hPow, #[_, _, _, _, a, b] => return .pow (← exprToSym a) (← exprToSym b)
   | ``HMod.hMod, #[_, _, _, _, a, b] => return .mod (← exprToSym a) (← exprToSym b)
   | `abs, #[_, _, _, a] => return .fn "abs" (← exprToSym a)
-  | `Real.pi, #[] => return .const "pi"
-  | `Complex.I, #[] => return .const "I"
   | `Finset.sum, #[_, _, _, s, body] | `Finset.prod, #[_, _, _, s, body] =>
     let isSum := f == `Finset.sum
     let (`Finset.range, #[n]) := s.getAppFnArgs | return ← symAtom e

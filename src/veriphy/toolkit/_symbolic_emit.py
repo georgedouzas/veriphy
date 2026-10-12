@@ -1,7 +1,7 @@
 """Render Sage symbolic expressions and matrices as Lean terms, and build domain-aware steps over them.
 
-The function table follows LeanSage's `ExprToAST.lean` (Oliver Dressler, MIT License,
-https://github.com/oOo0oOo/LeanSage); `abs` renders as `|·|` of the argument's own type.
+Functions and constants render through the problem's translation tables (core first, after LeanSage's
+`ExprToAST.lean`); `abs` renders as `|·|` of the argument's own type.
 """
 
 import operator
@@ -17,7 +17,7 @@ from veriphy.toolkit._emit import field_simp, fresh_name, steps
 from veriphy.toolkit._lean import Lean, parenthesize, rational, tactic, term
 from veriphy.toolkit._problem import DOMAIN_KINDS, Condition, Problem
 
-FUNCTIONS = ('sqrt', 'exp', 'log', 'sin', 'cos', 'tan')
+STRUCTURAL = ('abs', 'mod')
 
 
 def _is_complex(e: Expression, problem: Problem) -> bool:
@@ -37,11 +37,27 @@ def _looks_negative(e: Expression) -> bool:
 
 
 def _function(name: str, e: Expression, problem: Problem) -> str:
-    """Return the Lean name of a table function applied to `e`, dispatching on `e`'s type."""
-    if name not in FUNCTIONS:
-        message = f"no Lean rendering for the function '{name}' (supported: {', '.join(FUNCTIONS)}, abs, mod)"
-        raise CertificateError(message)
-    return f'{"Complex" if _is_complex(e, problem) else "Real"}.{name}'
+    """Return the Lean name of a table function applied to `e`, dispatching on `e`'s type (ℂ or ℝ)."""
+    wanted = 'ℂ' if _is_complex(e, problem) else 'ℝ'
+    for table in problem.tables:
+        for entry in table.functions:
+            if entry.sage == name and (not entry.types or wanted in entry.types):
+                return entry.lean
+    known = sorted({f.sage for t in problem.tables for f in t.functions} | set(STRUCTURAL))
+    message = (
+        f"no Lean rendering for the function '{name}' over {wanted} (known: {', '.join(known)}); "
+        'add an entry to the project\'s .veriphy/translations/'
+    )
+    raise CertificateError(message)
+
+
+def _constant(sage_name: str, problem: Problem) -> str | None:
+    """Return the Lean name of a table constant, by its Sage name."""
+    for table in problem.tables:
+        for entry in table.constants:
+            if entry.sage == sage_name:
+                return entry.lean
+    return None
 
 
 def _render_leaf(e: Expression, problem: Problem) -> str:
@@ -54,12 +70,11 @@ def _render_leaf(e: Expression, problem: Problem) -> str:
             return name[:-1]
         message = f"symbol '{name}' is not an atom of the problem"
         raise CertificateError(message)
-    if e == I:
-        return 'Complex.I'
     if e.is_numeric() and e in QQ:
         return str(rational(QQ(e)))
-    if str(e) == 'pi':
-        return 'Real.pi'
+    constant = _constant('I' if e == I else str(e), problem)
+    if constant is not None:
+        return constant
     message = f'no Lean rendering for the constant {e}'
     raise CertificateError(message)
 

@@ -10,6 +10,7 @@ import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
 import Mathlib.Algebra.Polynomial.Eval.Defs
+import Mathlib.Analysis.SpecialFunctions.Gamma.Basic
 import Veriphy.Kit
 
 open Lean Elab Tactic Meta Veriphy
@@ -238,3 +239,50 @@ example (x : ℚ) : (Polynomial.X ^ 2 + Polynomial.C 1 : Polynomial ℚ).eval x 
     return false
   catch e =>
     return (e.toString.splitOn ".veriphy/certificates/no_such_script.sage").length > 1
+
+/-! ## Coverage measurement -/
+
+namespace CoverageFixture
+theorem full (x : ℝ) (hx : 0 < x) : Real.log (x ^ 2) = 2 * Real.log x := by
+  rw [Real.log_pow]; norm_num
+theorem gamma (x : ℝ) (hx : 0 < x) : 0 < Real.Gamma x := Real.Gamma_pos_of_pos hx
+theorem uninterpreted (f : ℝ → ℝ) (x : ℝ) : f x ≤ f x + 1 := by linarith
+theorem noRelation (f : ℝ → ℝ) (h : Continuous f) : Continuous f := h
+theorem nested (a : ℝ) : (∃ b : ℝ, b ^ 2 = a) → 0 ≤ a := by
+  rintro ⟨b, rfl⟩; positivity
+end CoverageFixture
+
+/--
+info: theorems: 5, with a relation: 4, failed: 0
+fully covered: 2 (50.0%)
+covered up to uninterpreted functions: 3 (75.0%)
+opaque heads:
+  1  Real.Gamma  (e.g. CoverageFixture.gamma)
+-/
+#guard_msgs in
+set_option veriphy.coverage.write false in
+#veriphy_coverage [CoverageFixture]
+
+-- the JSON report carries the same numbers and the ranked heads
+#guard_msgs (drop info) in
+#veriphy_coverage [CoverageFixture] ".lake/veriphy-coverage-test.json"
+
+/-- info: [5, 4, 1, 2, 3, 0] Real.Gamma -/
+#guard_msgs in
+#eval show IO Unit from do
+  let j ← IO.ofExcept (Lean.Json.parse (← IO.FS.readFile ".lake/veriphy-coverage-test.json"))
+  let num (k : String) : Nat := ((j.getObjValAs? Nat k).toOption).getD 999
+  let head := ((j.getObjValAs? (Array Lean.Json) "opaque_heads").toOption.bind (·[0]?)).bind
+    (fun h => (h.getObjValAs? String "head").toOption)
+  IO.println s!"{[num "theorems", num "with_relation", num "no_relation", num "fully_covered",
+    num "covered_up_to_uninterpreted", num "failed"]} {head.getD "none"}"
+
+/-! ## Translation tables -/
+
+-- the Python toolkit's copy of the core table is the Lean one
+/-- info: true -/
+#guard_msgs in
+#eval show IO Bool from do
+  let j ← IO.ofExcept (Lean.Json.parse (← IO.FS.readFile "src/veriphy/toolkit/core_table.json"))
+  let t ← IO.ofExcept (Lean.fromJson? (α := Veriphy.Table) j)
+  return t == Veriphy.coreTable

@@ -102,6 +102,12 @@ example (x : ℚ) : 0 ≤ x * x := by
 example : !![(0 : ℚ), 1; 1, 0] * !![1, 0; 0, -1] + !![1, 0; 0, -1] * !![(0 : ℚ), 1; 1, 0] = 0 := by
   sage_run file "prompts/recipes/templates/matrix_identity.sage"
 
+/-! ## Recipe regressions -/
+
+-- farkas: more equalities than unknowns (the equality multipliers are free, so they are not minimized)
+example (x y : ℚ) (h1 : x + y = 1) (h2 : x - y = 0) (h3 : 2 * x = 3) : False := by
+  sage_run file "prompts/recipes/templates/farkas.sage"
+
 /-! ## Symbolic recipes -/
 
 -- rational_inequality
