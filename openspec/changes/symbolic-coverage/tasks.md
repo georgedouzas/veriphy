@@ -24,7 +24,7 @@
 
 - [x] 3.1 Functions: `rpow`, `cosh`, `sinh`, `tanh`, `arctan`, `arcsin`, `arccos`, `Real.logb`, each with its conditions (D4). Verify with one kit test per function, showing its form and conditions.
 - [x] 3.2 Sums and products over `Icc`, `Ico` and `range` with symbolic bounds, nested. Verify with kit tests, including a nested double sum.
-- [ ] 3.3 Integer functions, and integer `/`, `%` and ℕ subtraction with the gap rules (D4). Verify with kit tests: `n / 2` translated, `n / m` opaque without `0 < m`, `n - k` opaque without `k ≤ n` and translated with it.
+- [x] 3.3 Integer functions, and integer `/`, `%` and ℕ subtraction with the gap rules (D4). Verify with kit tests: `n / 2` translated, `n / m` opaque without `0 < m`, `n - k` opaque without `k ≤ n` and translated with it.
 - [ ] 3.4 `deriv` of covered bodies at covered points, with conditions at the point. Verify with kit tests for `deriv (fun x => x ^ 2 * Real.exp x) 1` and `deriv (fun x => Real.log x) a`, the second listing `a ≠ 0`.
 - [ ] 3.5 Partial derivatives along a coordinate through `Function.update`. Verify with a kit test translating `deriv (fun t => f (Function.update x 0 t)) (x 0)` for an explicit `f`.
 

@@ -14,6 +14,8 @@ import Mathlib.Analysis.SpecialFunctions.Gamma.Basic
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Inverse
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Arctan
 import Mathlib.Analysis.SpecialFunctions.Log.Base
+import Mathlib.Algebra.Order.Floor.Ring
+import Mathlib.Data.Nat.Choose.Basic
 import Veriphy.Kit
 
 open Lean Elab Tactic Meta Veriphy
@@ -366,7 +368,7 @@ def absentPack : Veriphy.Pack where
   table := { «namespace» := "absent", functions := [{ lean := "Real.sinh", sage := "sinh", arity := 1 }] }
 
 /--
-info: mathlib: 18 functions, 2 constants, 5 coercions, 0 rewrites
+info: mathlib: 24 functions, 2 constants, 5 coercions, 0 rewrites
 fixture: 2 functions, 0 constants, 0 coercions, 0 rewrites
 problem: fixture: constants not found (library version mismatch?): Fixture.missing
 problem: fixture: entry for Real.exp conflicts with the mathlib entry for Real.exp; the mathlib entry stays
@@ -390,7 +392,7 @@ example (x : ℝ) : Real.Gamma x + Real.exp x = 0 := by kit_sym_fixture
 
 -- the core alone has no shipped packs active here
 /--
-info: mathlib: 18 functions, 2 constants, 5 coercions, 0 rewrites
+info: mathlib: 24 functions, 2 constants, 5 coercions, 0 rewrites
 -/
 #guard_msgs in
 #veriphy_tables
@@ -441,3 +443,46 @@ info: {"atom_types":["ℝ","ℝ"],"atoms":["∑ i, ↑↑i ^ 2","∑ i, ∑ i, �
 -/
 #guard_msgs (info, error, drop warning) in
 example (x : Fin 3 → ℝ) : ∑ i : Fin 3, (i : ℝ) ^ 2 = ∑ i : Fin 3, ∑ i : Fin 2, (i : ℝ) := by kit_lenient
+
+/-! ## Core coverage: integer functions and semantic gaps -/
+
+-- a positive numeral divisor translates; a variable divisor stays opaque without `0 < m`
+/--
+info: {"atom_types":["ℕ","ℕ"],"atoms":["n","n / m"],"carrier":"ℕ","domain":[],"goal":{"expr":"((floor((x0 / 2)) + x1)) - (x0)","kind":"rel","lhs":"n / 2 + n / m","lhs_poly":"((x0 / 2) + x1)","poly":"(((x0 / 2) + x1)) - (x0)","rel":"le","rhs":"n","rhs_poly":"x0","text":"n / 2 + n / m ≤ n"},"hyps":[],"namespaces":["mathlib"],"table_problems":[],"vars":["x0","x1"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (n m : ℕ) : n / 2 + n / m ≤ n := by kit_lenient
+
+-- with `0 < m`, the division translates and the condition is listed as discharged
+/--
+info: {"atom_types":["ℕ","ℕ","ℕ","ℕ"],"atoms":["n / m","n % m","n","m"],"carrier":"ℕ","domain":[{"discharged_by":"hm","expr":"x3","kind":"pos","text":"0 < m"}],"goal":{"expr":"((floor((x2 / x3)) + mod(x2, x3))) - (x2)","kind":"rel","lhs":"n / m + n % m","lhs_poly":"(x0 + x1)","poly":"((x0 + x1)) - (x2)","rel":"le","rhs":"n","rhs_poly":"x2","text":"n / m + n % m ≤ n"},"hyps":[{"expr":"(0) - (x3)","name":"hm","poly":"(0) - (x3)","rel":"lt","text":"0 < m"}],"namespaces":["mathlib"],"table_problems":[],"vars":["x0","x1","x2","x3"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (n m : ℕ) (hm : 0 < m) : n / m + n % m ≤ n := by kit_lenient
+
+-- ℕ subtraction: opaque without `k ≤ n`, translated with it
+/--
+info: {"atom_types":["ℕ","ℕ","ℕ"],"atoms":["n","k","n - k"],"carrier":"ℕ","domain":[],"goal":{"expr":"(x2) - (x0)","kind":"rel","lhs":"n - k","lhs_poly":"(x0 - x1)","poly":"((x0 - x1)) - (x0)","rel":"le","rhs":"n","rhs_poly":"x0","text":"n - k ≤ n"},"hyps":[],"namespaces":["mathlib"],"table_problems":[],"vars":["x0","x1","x2"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (n k : ℕ) : n - k ≤ n := by kit_lenient
+
+/--
+info: {"atom_types":["ℕ","ℕ"],"atoms":["n","k"],"carrier":"ℕ","domain":[{"bound":"x0","discharged_by":"hk","expr":"x1","kind":"le","text":"k ≤ n"}],"goal":{"expr":"(((x0 - x1) + x1)) - (x0)","kind":"rel","lhs":"n - k + k","lhs_poly":"((x0 - x1) + x1)","poly":"(((x0 - x1) + x1)) - (x0)","rel":"eq","rhs":"n","rhs_poly":"x0","text":"n - k + k = n"},"hyps":[{"expr":"(x1) - (x0)","name":"hk","poly":"(x1) - (x0)","rel":"le","text":"k ≤ n"}],"namespaces":["mathlib"],"table_problems":[],"vars":["x0","x1"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (n k : ℕ) (hk : k ≤ n) : n - k + k = n := by kit_lenient
+
+-- factorial, choose, gcd, floor and ceil
+/--
+info: {"atom_types":["ℕ","ℕ","ℕ","ℕ","ℕ","ℕ"],"atoms":["n.choose 2","Nat.factorial 2","n.gcd 6","n","⌊x⌋.toNat","⌈x⌉.toNat"],"carrier":"ℕ","domain":[],"goal":{"expr":"(((binomial(x3, 2) * factorial(2)) + gcd(x3, 6))) - ((((x3)^(2) + x4) + x5))","kind":"rel","lhs":"n.choose 2 * Nat.factorial 2 + n.gcd 6","lhs_poly":"((x0 * x1) + x2)","poly":"(((x0 * x1) + x2)) - ((((x3)^2 + x4) + x5))","rel":"le","rhs":"n ^ 2 + ⌊x⌋.toNat + ⌈x⌉.toNat","rhs_poly":"(((x3)^2 + x4) + x5)","text":"n.choose 2 * Nat.factorial 2 + n.gcd 6 ≤ n ^ 2 + ⌊x⌋.toNat + ⌈x⌉.toNat"},"hyps":[],"namespaces":["mathlib"],"table_problems":[],"vars":["x0","x1","x2","x3","x4","x5"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (n : ℕ) (x : ℝ) : (Nat.choose n 2 * Nat.factorial 2 : ℕ) + Nat.gcd n 6 ≤ n ^ 2 + ⌊x⌋.toNat + ⌈x⌉.toNat := by
+  kit_lenient
+
+/--
+info: {"atom_types":["ℝ","ℝ"],"atoms":["↑⌊x⌋","x"],"carrier":"ℝ","domain":[],"goal":{"expr":"(typed(floor(x1), 'ℤ')) - (x1)","kind":"rel","lhs":"↑⌊x⌋","lhs_poly":"x0","poly":"(x0) - (x1)","rel":"le","rhs":"x","rhs_poly":"x1","text":"↑⌊x⌋ ≤ x"},"hyps":[],"namespaces":["mathlib"],"table_problems":[],"vars":["x0","x1"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (x : ℝ) : (⌊x⌋ : ℝ) ≤ x := by kit_lenient

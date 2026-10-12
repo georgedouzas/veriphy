@@ -92,6 +92,14 @@ def coreTable : Table where
       conditions := [{ kind := "pos", arg := some 0 }, { kind := "ne", arg := some 0, rhs := some "1" },
         { kind := "pos", arg := some 1 }],
       «example» := "Real.logb b x" },
+    { lean := "Nat.factorial", sage := "factorial", arity := 1, types := ["ℕ"], result := "ℕ",
+      «example» := "Nat.factorial n" },
+    { lean := "Nat.choose", sage := "binomial", arity := 2, types := ["ℕ"], result := "ℕ",
+      «example» := "Nat.choose n k" },
+    { lean := "Nat.gcd", sage := "gcd", arity := 2, types := ["ℕ"], result := "ℕ", «example» := "Nat.gcd m n" },
+    { lean := "Int.gcd", sage := "gcd", arity := 2, types := ["ℤ"], result := "ℕ", «example» := "Int.gcd a b" },
+    { lean := "Int.floor", sage := "floor", arity := 1, types := ["ℝ", "ℚ"], result := "ℤ", «example» := "⌊x⌋" },
+    { lean := "Int.ceil", sage := "ceil", arity := 1, types := ["ℝ", "ℚ"], result := "ℤ", «example» := "⌈x⌉" },
     unary "Complex.exp" "exp" "ℂ", unary "Complex.log" "log" "ℂ",
     unary "Complex.sin" "sin" "ℂ", unary "Complex.cos" "cos" "ℂ", unary "Complex.tan" "tan" "ℂ"]
   constants := [
