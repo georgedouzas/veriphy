@@ -2,49 +2,35 @@
 
 ## Purpose
 
-Packages SageMath's exact search power as small, composable functions whose results feed the emitters. Scripts get the hard-to-find data a Lean checker needs without reimplementing it.
+Provides the few exact solvers that are general and hard to get right in a few lines at proof time, so scripts can rely on them. Everything else a certificate needs is ordinary Sage code in the script, shown by the recipes.
 
 ## ADDED Requirements
 
 ### Requirement: Exact results
-Every search primitive SHALL return exact data (rationals, polynomials over QQ, rational matrices), never floating-point values. A primitive that finds nothing SHALL say so with a named error, or with an explicit "not found" value as documented. It SHALL NOT return an approximate answer.
+Every toolkit solver SHALL return exact rationals, never floating-point values. When it finds no solution it SHALL say so with an explicit result or a named error. It SHALL NOT return an approximate answer.
 
-#### Scenario: No certificate
-- **WHEN** the Farkas search runs on a consistent linear system
-- **THEN** it raises the toolkit's named "no certificate" error
+#### Scenario: Infeasible LP
+- **WHEN** the exact LP is given `t ≤ 0` and `t ≥ 1`
+- **THEN** it returns `None`
 
-### Requirement: Algebraic primitives
-The toolkit SHALL provide an exact LP (with guards for empty problems), ideal-membership cofactors (Gröbner `lift`), factorization over QQ, normal forms and substitutions, and a Farkas search for linear systems.
+### Requirement: Exact linear programming
+The toolkit SHALL provide an exact rational LP over equality and inequality rows, with optional nonnegativity and an objective. It SHALL handle problems with no variables or no constraints without failing.
 
-#### Scenario: Cofactors
-- **WHEN** a script asks for cofactors of `a^2 + b^2 - 5` over the hypotheses `a + b - 3` and `a*b - 2`
-- **THEN** it receives polynomial cofactors whose weighted sum equals the target exactly
+#### Scenario: Empty problem
+- **WHEN** the LP has variables but no constraints
+- **THEN** it returns the zero point instead of failing in the backend
 
-### Requirement: Positivity primitives
-The toolkit SHALL provide a search for `nlinarith` hint products (degree-2 products of hypotheses and squares that make a linear certificate exist) and SOS decomposition. SOS SHALL work factor-based, from hinted squares, or from a numeric SDP rounded to rationals and then verified exactly.
+#### Scenario: Fractional optimum
+- **WHEN** the only constraint is `3 t = 1`
+- **THEN** it returns `[1/3]` exactly
 
-#### Scenario: nlinarith product search
-- **WHEN** the goal is `a * b ≤ (a ^ 2 + b ^ 2) / 2` with no hypotheses
-- **THEN** the product search returns a hint list containing a square equivalent to `(a - b) ^ 2`
+### Requirement: Exact SOS from a numeric SDP
+The toolkit SHALL find a sum-of-squares decomposition `p = Σ cᵢ qᵢ²` with rational `cᵢ ≥ 0`: solve the Gram-matrix SDP numerically, round to rationals, project exactly onto coefficient matching, and verify positive semidefiniteness exactly. If any step fails it SHALL report that no exact SOS was found.
 
-#### Scenario: Rounded SOS is verified
-- **WHEN** the numeric SDP route returns a rounded decomposition that does not exactly equal the polynomial
-- **THEN** the primitive reports failure rather than returning the inexact decomposition
+#### Scenario: Irreducible quartic
+- **WHEN** the polynomial is an irreducible quartic that is a sum of squares but does not factor
+- **THEN** the solver returns rational weights and polynomials whose weighted squares sum exactly to it
 
-### Requirement: Witness and structure primitives
-The toolkit SHALL provide:
-- rational roots and rational points of equation systems;
-- real-root isolation with rational separating points;
-- enumeration of sign and case conditions;
-- matrix decompositions (inverse, kernel basis, eigenvectors, similarity transforms) whose correctness is a product identity.
-
-#### Scenario: Case split points
-- **WHEN** a script isolates the real roots of `x^2 - 2`
-- **THEN** it receives rational intervals, one around each root, together with rational points separating them
-
-### Requirement: Results compose with emitters
-Each primitive's result SHALL be directly accepted by the matching emitter. LP multipliers go to `linear_combination` sums, product lists to `nlinarith` hints, and decompositions to `calc` or `rw` steps.
-
-#### Scenario: Farkas to Lean
-- **WHEN** a script passes the Farkas search result to the refutation emitter
-- **THEN** the emitted block closes the `False` goal without further conversion
+#### Scenario: Rounding fails
+- **WHEN** the rounded decomposition cannot be made exact
+- **THEN** the solver reports failure rather than returning an inexact decomposition

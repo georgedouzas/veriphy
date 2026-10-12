@@ -64,11 +64,12 @@ Following the constitution, imports run downward: `core` → `toolkit` → `orac
 src/veriphy/toolkit/__init__.py     public surface (__all__), doctests run under Sage
 toolkit/_problem.py                 Problem, Hyp (moved from oracle/_scripts.py and widened)
 toolkit/_lean.py                    Lean value (text + category), rendering of rationals and polynomials over atoms
-toolkit/_emit.py                    builders: linear_combination, sq_nonneg/mul_*, hint calls, rw-show, calc, cases, witness, steps
-toolkit/_algebra.py                 exact LP (moved), cofactors, factorization, normal forms, Farkas (moved)
-toolkit/_positivity.py              nlinarith product search, SOS (factor, hinted, SDP + rationalize + verify)
-toolkit/_structure.py               roots, rational points (moved from exists), root isolation, sign/case enumeration, matrices
+toolkit/_emit.py                    builders: linear_combination, sq_nonneg/mul_*, hint calls, rw-show, calc, cases, witness, refute, steps
+toolkit/_lp.py                      exact LP (moved)
+toolkit/_sos.py                     SOS from a numeric SDP, rounded, projected and verified exactly
 ```
+
+**What the toolkit holds:** only what is general and hard to get right in a few lines at proof time. That means problem binding, emitters, the exact LP and exact SOS from an SDP. Technique-specific search (Farkas rows, `lift` cofactors, factorization, closed sums, product search, witnesses, root isolation, matrix decompositions) is a few lines of Sage over these. It lives in the recipes' templates, where the agent sees it and adapts it, and the benchmark tests it.
 
 The oracle methods `factor`, `sos`, `roots`, `lincomb`, `farkas`, `exists`, `sum` and `certify` are removed once their tactics are, and their algorithms live on as toolkit primitives. `run` executes scripts. The toolkit is the public surface for script authors, and each public name has a doctest.
 
@@ -78,23 +79,18 @@ The oracle methods `factor`, `sos`, `roots`, `lincomb`, `farkas`, `exists`, `sum
 
 Emitters do not try to typecheck. Lean does that, and its error comes back in the combined feedback (D2). The emitter guarantee is syntactic: the output parses in its category. Tests check this by parsing emitted text through `lake env lean`, using a small pytest fixture that writes a scratch file.
 
-### D6. nlinarith product search
+### D6. Hint search is a recipe
 
-Candidate products are formed from:
-- pairwise products of the nonnegative hypothesis forms (`b - a ≥ 0` for `a ≤ b`);
-- squares of the hypothesis polynomials;
-- squares of pairwise differences of atoms and of degree ≤ 1 combinations suggested by the goal's monomials.
+The `nlinarith` product search is a technique: form candidate products and squares from the hypotheses and the goal, then find nonnegative weights with `solve_exact_lp` that leave a nonnegative constant slack. It is written as the hint-search recipe's template (capped candidates, for example 60), not as a toolkit function.
 
-The search is an exact LP, as in Positivstellensatz degree 2. It looks for nonnegative weights on the candidates and hypotheses, plus a free multiple of each equality, that make `goal_slack` equal a nonnegative constant. It returns the products with nonzero weight as `nlinarith` hints. Candidate count and degree are capped (defaults 60 and 4) to keep it fast. *Alternative:* emit the full `linear_combination` certificate. That is also offered (`as_linear_combination=True`), but hints are the default because `nlinarith` is more robust to small mismatches.
-
-### D7. SOS via SDP, then exact
+### D7. SOS via SDP, then exact (`toolkit/_sos.py`)
 
 1. Solve the Gram-matrix SDP numerically (cvxopt).
 2. Round the entries to rationals with bounded denominators.
 3. Project onto the affine space of exact coefficient matching (an exact linear solve).
 4. Check positive semidefiniteness exactly with an LDLᵀ decomposition over QQ.
 
-If any step fails, report "no exact SOS found". The result is a list of `(c, q)` squares, which the existing squares emitter consumes.
+If any step fails, report "no exact SOS found". The result is a list of `(c, q)` squares, which the `sq_nonneg` and `linear_combination` emitters consume. Factor-based and hinted SOS are recipe code (`p.factor()`, and `solve_exact_lp` over hinted squares).
 
 ### D8. Procedures replace ready-made certificates
 
@@ -154,7 +150,7 @@ A shared repository of certificates, curated across projects, is future work for
 - **[Risk]** Free-form Lean text makes failures less structured than fixed families. → The combined feedback (D2) and well-formed emitters (D5) cover most of it, and the agent iterates quickly thanks to the session (D9).
 - **[Risk]** Parallel elaboration with one daemon could serialize work or deadlock. → A single mutex and request-id matching serialize requests. Throughput is bounded by Sage, which is single-threaded anyway, and the time limit prevents a stuck lock holder.
 - **[Risk]** `collectAxioms` on large proof terms is slow. → It runs per constant with a cache, and only once per successful tactic.
-- **[Risk]** The product search can blow up combinatorially. → Candidate and degree caps, configurable per call. On failure the search reports "no product certificate", and the agent can supply its own candidates.
+- **[Risk]** The hint-search recipe can blow up combinatorially. → Its template caps candidates and degree. The agent can adjust the caps or supply its own candidates.
 - **[Risk]** SDP rounding fails on degenerate problems. → The search is exact-verified or reports failure, never wrong, and hinted SOS remains available.
 - **[Trade-off]** Users lose one-word tactics, and each certificate costs a short script. This is accepted, because the long tail needs creation anyway. Recipes keep common cases to a few lines, and the benchmark proves no previously solved problem regresses.
 - **[Risk]** An agent following recipes does worse than the hard-coded tactics did. → The agent benchmark (D11) is a release gate, and failures improve recipes or primitives.
@@ -173,4 +169,4 @@ Rollback per step is a revert, and committed downstream proofs are unaffected be
 
 ## Open Questions
 
-- The default candidate cap and degree for the product search (60 and 4 are starting points). Tune against the test examples during implementation. This does not change the interfaces.
+- The default candidate cap and degree in the hint-search template (60 and 4 are starting points). Tune against the benchmark.

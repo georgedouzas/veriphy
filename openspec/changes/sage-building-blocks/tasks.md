@@ -22,13 +22,11 @@
   - fresh names.
 
   Verify with a doctest per builder and the parse fixture on each builder's output. The output must contain no `✝`.
-- [ ] 1.4 Move the exact LP, cofactors, factorization and Farkas search into `toolkit/_algebra.py`, and add normal forms, substitutions and range-sum closed forms (from the old `sum` method). Verify with a doctest per primitive and with the old method tests ported to the primitives.
-- [ ] 1.5 Move rational points and roots into `toolkit/_structure.py`, and add real-root isolation with rational separating points, sign/case enumeration and matrix decompositions. Verify with tests, including isolating `x^2 - 2`, a similarity transform checked by exact multiplication, and a kernel basis.
+- [x] 1.4 Move the exact LP into `toolkit/_lp.py` (public `solve_exact_lp`), keeping its tests. Technique-specific search stays out of the toolkit. Verify with the LP tests under `tests/toolkit/`, doctests, and the suite green.
 
-## 2. Positivity search (search-primitives)
+## 2. Exact SOS solver (search-primitives)
 
-- [ ] 2.1 Implement the `nlinarith` product search (D6), with caps and an optional `linear_combination` output. Verify with tests on `a*b ≤ (a^2+b^2)/2`, on an inequality that needs a product of two hypotheses, and on an infeasible case that reports "no product certificate".
-- [ ] 2.2 Implement SOS: the factor-based and hinted routes (moved), plus the SDP route with rounding, exact projection and an LDLᵀ check (D7). Verify on the old SOS inputs, on an irreducible quartic found only through the SDP, and with a test showing that a perturbed problem reports failure instead of an inexact result.
+- [ ] 2.1 Implement `toolkit/_sos.py`: SOS from a numeric SDP (cvxopt), rounding, exact projection and an LDLᵀ check (D7). Verify on an irreducible quartic that is a sum of squares, on the old `sage_sos` inputs, and with a test showing that a problem whose rounding cannot be made exact reports failure instead of an inexact result.
 
 ## 3. Script tactic (script-tactic, project-scripts)
 
@@ -51,7 +49,7 @@
 ## 5. Procedures, templates and benchmark (procedures)
 
 - [ ] 5.1 Create `VeriphyTest/Benchmark.lean` with every problem solved by a `sage_*` call in the pre-change `VeriphyTest.lean` (32 calls, including the regressions), each closed by `sage_run` following its recipe, with replay on. Verify that `lake build VeriphyTest.Benchmark` passes.
-- [ ] 5.2 Write `prompts/recipes/<technique>.md` for ideal membership, Farkas, SOS, factorization rewrite, witnesses, hint search, `calc` derivations, case splits, matrix identities and sums by induction. Each recipe gives when to use it, a template, a worked example (the benchmark's or one of 3.4's) and its failure modes. Verify with a pytest check that every recipe's template matches the code of its tested example.
+- [ ] 5.2 Write `prompts/recipes/<technique>.md` for ideal membership, Farkas, SOS, factorization rewrite, witnesses, hint search, `calc` derivations, case splits, matrix identities and sums by induction. Each recipe gives when to use it, a template, a worked example (the benchmark's or one of 3.4's) and its failure modes. The technique-specific search (Farkas rows, `lift` cofactors, factorization, closed sums, product search with caps, witness search, root isolation) is Sage code inside the templates. Verify with a pytest check that every recipe's template matches the code of its tested example.
 - [ ] 5.3 Write `skills/certify/SKILL.md` (the build loop with catalog-first reuse and saving), add the recipe index and the save/reuse rules to `prompts/prove.md`, and point `skills/prove/SKILL.md` step 3 at `certify`. Rename the report category to `blocked-missing-building-block`. Verify by reading each against the procedures and project-scripts specs, and that `grep -rn blocked-missing-tactic` is empty outside `openspec/changes/archive`.
 
 ## 6. Remove ready-made certificates (checker-families, agent-certify, proof-reconstruction, oracle-methods)

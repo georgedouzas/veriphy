@@ -13,6 +13,13 @@ The project SHALL provide one recipe per certificate technique, covering at leas
 - **WHEN** a user looks for what replaced `sage_farkas`
 - **THEN** the procedures map it to the Farkas recipe, whose template closes the former `sage_farkas` examples
 
+### Requirement: Technique search lives in templates
+Technique-specific search (Farkas rows, ideal lifts, product search, witness search, root isolation, closed sums) SHALL be Sage code inside the recipes' templates, built on the toolkit's solvers. It SHALL NOT be a toolkit function.
+
+#### Scenario: Agent adapts a search
+- **WHEN** the Farkas template's LP needs an extra constraint for a variant goal
+- **THEN** the agent edits the template's Sage code in its own script, with no change to Veriphy
+
 ### Requirement: Agent-agnostic and progressively loaded
 Recipes SHALL be plain markdown readable by any agent, indexed from the `prove` playbook, and loaded one at a time rather than all at once. A dedicated `certify` skill SHALL guide the build loop: inspect `problem`, choose a recipe, adapt its template, run, read the combined feedback, iterate.
 

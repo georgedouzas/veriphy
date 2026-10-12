@@ -4,7 +4,6 @@ Importing this package imports SageMath.
 """
 
 from veriphy.oracle._encoding import encode
-from veriphy.oracle._lp import solve_exact_lp
 from veriphy.oracle._protocol import answer_request
 
-__all__ = ['answer_request', 'encode', 'solve_exact_lp']
+__all__ = ['answer_request', 'encode']

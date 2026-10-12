@@ -13,7 +13,6 @@ from sage.rings.polynomial.polynomial_element import Polynomial
 from sage.rings.rational import Rational
 
 from veriphy.core import CertificateError, Method, ParamError
-from veriphy.oracle._lp import solve_exact_lp
 from veriphy.oracle._registry import (
     _coerce_poly,
     _coerce_poly_list,
@@ -23,6 +22,7 @@ from veriphy.oracle._registry import (
     _coerce_univariate_ring,
     _register_method,
 )
+from veriphy.toolkit import solve_exact_lp
 
 CERTIFICATE_METHODS: dict[str, Method] = {}
 QUADRATIC = 2

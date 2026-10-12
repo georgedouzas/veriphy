@@ -28,6 +28,7 @@ from veriphy.toolkit._emit import (
     witness,
 )
 from veriphy.toolkit._lean import Lean, parenthesize, polynomial, rational, tactic, term
+from veriphy.toolkit._lp import solve_exact_lp
 from veriphy.toolkit._problem import Hyp, Problem, create_ring, parse_polynomial, read_problem
 
 __all__ = [
@@ -57,6 +58,7 @@ __all__ = [
     'read_problem',
     'refute',
     'rewrite_by',
+    'solve_exact_lp',
     'sq_nonneg',
     'steps',
     'sum_by_induction',
