@@ -32,7 +32,7 @@
 
 - [x] 4.1 Bind `extensions` and `typed` in `read_problem`, and parse `typed` as the identity while recording marked sub-expressions. Verify with pytest on serialized problems containing each.
 - [x] 4.2 Extend the rendering table and make rendering type-aware (D5), with a `type=` parameter and outermost ascription. Verify with pytest for each new function, for `((n % 7 : ℕ) : ℝ) + x`, and for rendering at ℕ, plus the Lean parse check.
-- [ ] 4.3 Add the shared rewrite table across namespaces and `rewrite_candidates(problem)`, and move `transcendental_rewrite` onto it. Verify with pytest selecting `Real.log_mul` with its side conditions, and with the recipe's existing examples passing.
+- [x] 4.3 Add the shared rewrite table across namespaces and `rewrite_candidates(problem)`, and move `transcendental_rewrite` onto it. Verify with pytest selecting `Real.log_mul` with its side conditions, and with the recipe's existing examples passing.
 - [ ] 4.4 Add `has_deriv_at`, covering partial derivatives (D6). Verify with doctests, a pytest failure naming an undischarged `a ≠ 0`, and the Lean parse check.
 - [ ] 4.5 Extend the round-trip suite with one example per new construct. Verify that `lake env lean VeriphyTest/SageRun.lean` passes with replay on.
 

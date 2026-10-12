@@ -47,14 +47,16 @@ structure ConstantEntry where
   type : String
   deriving ToJson, FromJson, BEq, Repr, Inhabited
 
-/-- A rewrite by a named lemma: the functions it applies to, its direction, its side conditions (Lean text over the
-goal's atoms, filled in by the script) and a worked example goal. -/
+/-- A rewrite by a named lemma. It applies to goals that mention all of `functions` (Lean constants); `pattern`, a
+Sage expression with wildcards `w0`, `w1`, …, binds the lemma's arguments in the goal's symbolic form, and the side
+conditions are Lean text in which `#i` stands for the argument bound to `wi`. `example` is a worked goal. -/
 structure RewriteEntry where
   «lemma» : String
   functions : List String
   reverse : Bool := false
   side : List String := []
   «example» : String := ""
+  pattern : Option String := none
   deriving ToJson, FromJson, BEq, Repr, Inhabited
 
 /-- A convention a namespace fixes, such as the metric signature. -/
@@ -111,6 +113,25 @@ def coreTable : Table where
     { lean := "Real.pi", sage := "pi", type := "ℝ" },
     { lean := "Complex.I", sage := "I", type := "ℂ" }]
   coercions := ["Nat.cast", "Int.cast", "Rat.cast", "Complex.ofReal", "Fin.val"]
+  rewrites := [
+    { «lemma» := "Real.exp_add", functions := ["Real.exp"], reverse := true,
+      «example» := "Real.exp a * Real.exp b = Real.exp (a + b)" },
+    { «lemma» := "Real.sin_sq_add_cos_sq", functions := ["Real.sin", "Real.cos"],
+      «example» := "Real.sin x ^ 2 + Real.cos x ^ 2 = 1" },
+    { «lemma» := "Real.cosh_sq", functions := ["Real.cosh", "Real.sinh"],
+      «example» := "Real.cosh x ^ 2 = Real.sinh x ^ 2 + 1" },
+    { «lemma» := "Real.log_div", functions := ["Real.log"], pattern := some "log(w0*w1^(-1))",
+      side := ["#0 ≠ 0", "#1 ≠ 0"], «example» := "Real.log (x / y) = Real.log x - Real.log y" },
+    { «lemma» := "Real.log_mul", functions := ["Real.log"], pattern := some "log(w0*w1)",
+      side := ["#0 ≠ 0", "#1 ≠ 0"], «example» := "Real.log (x * y) = Real.log x + Real.log y" },
+    { «lemma» := "Real.log_rpow", functions := ["Real.log"], pattern := some "log(w0^w1)",
+      side := ["0 < #0"], «example» := "Real.log (x ^ y) = y * Real.log x" },
+    { «lemma» := "Real.exp_log", functions := ["Real.exp", "Real.log"], side := ["0 < x"],
+      «example» := "Real.exp (Real.log x) = x" },
+    { «lemma» := "Real.log_exp", functions := ["Real.log", "Real.exp"],
+      «example» := "Real.log (Real.exp x) = x" },
+    { «lemma» := "Real.sqrt_mul_self", functions := ["Real.sqrt"], side := ["0 ≤ a"],
+      «example» := "Real.sqrt a * Real.sqrt a = a" }]
 
 /-- The tables in force, in resolution order (core first). -/
 abbrev Tables := List Table

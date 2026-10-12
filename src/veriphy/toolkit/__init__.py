@@ -40,13 +40,22 @@ from veriphy.toolkit._problem import (
     read_problem,
 )
 from veriphy.toolkit._sos import sos_decomposition
-from veriphy.toolkit._symbolic_emit import field_simp_clearing, lemma_rewrite, matrix_term, require_domain, symbolic
+from veriphy.toolkit._symbolic_emit import (
+    RewriteCandidate,
+    field_simp_clearing,
+    lemma_rewrite,
+    matrix_term,
+    require_domain,
+    rewrite_candidates,
+    symbolic,
+)
 
 __all__ = [
     'Condition',
     'Hyp',
     'Lean',
     'Problem',
+    'RewriteCandidate',
     'Side',
     'by_cases',
     'calc_chain',
@@ -76,6 +85,7 @@ __all__ = [
     'refute',
     'require_domain',
     'rewrite_by',
+    'rewrite_candidates',
     'solve_exact_lp',
     'sos_decomposition',
     'sq_nonneg',
