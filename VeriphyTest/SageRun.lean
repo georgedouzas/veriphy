@@ -42,7 +42,7 @@ example (x y : ℚ) (h : (x - 1) * (x + 1) = y) : x ^ 2 - 1 = y := by
 
 -- a saved script from the project, here the Farkas refutation of a linear system
 example (x y : ℚ) (h1 : x + y ≤ 1) (h2 : x - y = 3) (h3 : 0 ≤ y) : False := by
-  sage_run file "VeriphyTest/certificates/farkas.sage"
+  sage_run file "prompts/recipes/templates/farkas.sage"
 
 /-! ## Failures carry the script output, the Lean text and the error -/
 

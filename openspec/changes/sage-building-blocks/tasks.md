@@ -48,7 +48,7 @@
 
 ## 5. Procedures, templates and benchmark (procedures)
 
-- [ ] 5.1 Create `VeriphyTest/Benchmark.lean` with every problem solved by a `sage_*` call in the pre-change `VeriphyTest.lean` (32 calls, including the regressions), each closed by `sage_run` following its recipe, with replay on. Verify that `lake build VeriphyTest.Benchmark` passes.
+- [x] 5.1 Create `VeriphyTest/Benchmark.lean` with every problem solved by a `sage_*` call in the pre-change `VeriphyTest.lean` (32 calls, including the regressions), each closed by `sage_run` following its recipe, with replay on. Verify that `lake build VeriphyTest.Benchmark` passes.
 - [ ] 5.2 Write `prompts/recipes/<technique>.md` for ideal membership, Farkas, SOS, factorization rewrite, witnesses, hint search, `calc` derivations, case splits, matrix identities and sums by induction. Each recipe gives when to use it, a template, a worked example (the benchmark's or one of 3.4's) and its failure modes. The technique-specific search (Farkas rows, `lift` cofactors, factorization, closed sums, product search with caps, witness search, root isolation) is Sage code inside the templates. Verify with a pytest check that every recipe's template matches the code of its tested example.
 - [ ] 5.3 Write `skills/certify/SKILL.md` (the build loop with catalog-first reuse and saving), add the recipe index and the save/reuse rules to `prompts/prove.md`, and point `skills/prove/SKILL.md` step 3 at `certify`. Rename the report category to `blocked-missing-building-block`. Verify by reading each against the procedures and project-scripts specs, and that `grep -rn blocked-missing-tactic` is empty outside `openspec/changes/archive`.
 

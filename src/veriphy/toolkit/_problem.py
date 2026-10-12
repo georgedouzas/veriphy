@@ -55,6 +55,18 @@ def parse_polynomial(ring: MPolynomialRing_base, s: object, *, param: str) -> MP
         raise ParamError(param=param, reason=f'not a polynomial in QQ[{gens}]: {s!r} ({exc})') from exc
 
 
+class Side(NamedTuple):
+    """Hold one side of a relation goal, as scripts see it.
+
+    Args:
+        poly: The side as a polynomial of the problem's ring.
+        text: The side's Lean text, exactly as the goal writes it.
+    """
+
+    poly: MPolynomial
+    text: str
+
+
 class Hyp(NamedTuple):
     """Hold one hypothesis or goal of a problem, as scripts see it.
 
@@ -84,6 +96,8 @@ class Problem:
         body: The constraints of an `exists` goal.
         atoms: The Lean text of each variable, by variable name.
         carrier: The Lean text of the type the problem's polynomials live in (such as `ℚ`), empty when unknown.
+        lhs: The left side of a relation goal, when the goal has a polynomial form.
+        rhs: The right side of a relation goal, when the goal has a polynomial form.
     """
 
     ring: MPolynomialRing_base
@@ -94,6 +108,8 @@ class Problem:
     body: list[Hyp] = field(default_factory=list)
     atoms: dict[str, str] = field(default_factory=dict)
     carrier: str = ''
+    lhs: Side | None = None
+    rhs: Side | None = None
 
     def find_hyp(self, name: str, allowed: tuple[str, ...], family: str) -> Hyp:
         """Find the hypothesis named `name`, checking its relation is usable by `family`.
@@ -123,8 +139,8 @@ class Problem:
         """Return the names a script sees.
 
         Returns:
-            `problem`, `R`, the generators by name, `hyps`, `goal`, `goal_kind`, `binders`, `body`, `atoms` and
-            `Hyp`.
+            `problem`, `R`, the generators by name, `hyps`, `goal`, `goal_kind`, `binders`, `body`, `atoms`, `lhs`,
+            `rhs` and `Hyp`.
         """
         names: dict[str, object] = {
             'problem': self,
@@ -136,6 +152,8 @@ class Problem:
             'binders': self.binders,
             'body': self.body,
             'atoms': self.atoms,
+            'lhs': self.lhs,
+            'rhs': self.rhs,
         }
         names.update({str(g): g for g in self.ring.gens()})
         return names
@@ -208,6 +226,9 @@ def read_problem(problem: object) -> Problem:
     )
     if kind in ('rel', 'other'):
         bound.goal = _read_constraint({**goal, 'name': None}, 'goal', ring)
+    if kind == 'rel' and 'lhs_poly' in goal:
+        bound.lhs = Side(parse_polynomial(ring, goal.get('lhs_poly'), param='problem'), str(goal.get('lhs', '')))
+        bound.rhs = Side(parse_polynomial(ring, goal.get('rhs_poly'), param='problem'), str(goal.get('rhs', '')))
     elif kind == 'exists':
         bound.binders = list(ring.gens()[: int(str(goal.get('binders', 0)))])
         bound.body = _read_constraints(goal.get('body', []), 'body', ring)

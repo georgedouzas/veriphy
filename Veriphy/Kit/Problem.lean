@@ -48,6 +48,9 @@ structure Constraint where
   src : Option Name := none
   /-- The proposition the constraint came from, for its Lean text. -/
   prop : Option Expr := none
+  /-- Sage polynomials of `lhs` and `rhs` on their own. -/
+  lhsPoly : String := ""
+  rhsPoly : String := ""
   deriving Inhabited
 
 /-- The printable reference to a constraint's source hypothesis (as a proof term). -/
@@ -90,7 +93,7 @@ def tryTranslate {α : Type} (x : ProblemM α) : ProblemM (Option α) := do
 def Constraint.mk' (lhs rhs : Expr) (rel : Rel) (src : Option Name := none) : ProblemM Constraint := do
   let l ← exprToSage lhs
   let r ← exprToSage rhs
-  return { lhs, rhs, rel, poly := s!"({l}) - ({r})", src }
+  return { lhs, rhs, rel, poly := s!"({l}) - ({r})", src, lhsPoly := l, rhsPoly := r }
 
 /-- Which goals and hypotheses a tactic accepts. -/
 structure ExtractOpts where
@@ -294,7 +297,11 @@ def Problem.toJson (p : Problem) : MetaM Json := do
         | some e => pure [("text", ← text e)]
         | none => pure []
       let base : List (String × Json) := [("kind", "rel"), ("poly", Json.str c.poly), ("rel", Json.str c.rel.tag)]
-      pure <| Json.mkObj (base ++ textField)
+      let lhsText ← text c.lhs
+      let rhsText ← text c.rhs
+      let sides : List (String × Json) := if c.lhsPoly.isEmpty then [] else
+        [("lhs", lhsText), ("rhs", rhsText), ("lhs_poly", Json.str c.lhsPoly), ("rhs_poly", Json.str c.rhsPoly)]
+      pure <| Json.mkObj (base ++ textField ++ sides)
     | .falsum => pure <| Json.mkObj [("kind", "false")]
     | .exists_ bs body => do
       pure <| Json.mkObj [("kind", "exists"), ("binders", Json.num bs.size),
