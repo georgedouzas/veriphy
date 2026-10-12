@@ -28,11 +28,30 @@ open Lean Elab Tactic Meta
 inductive Family | identity | inequality | witness | sum | cases
   deriving BEq, Repr, Inhabited
 
+/-- The axioms a Veriphy proof may depend on: Lean's standard three. -/
+def standardAxioms : List Name := [``propext, ``Classical.choice, ``Quot.sound]
+
+/-- Reject a proof of `goal` that uses `sorry` or depends on an axiom outside `standardAxioms`
+(such as `Lean.ofReduceBool`, which `native_decide` introduces). Unassigned subgoals are allowed. -/
+def checkAxioms (goal : MVarId) : MetaM Unit := do
+  let proof ← instantiateMVars (mkMVar goal)
+  if proof.hasSorry then
+    throwError "veriphy: the proof uses `sorry` (sorryAx); only fully checked proofs are accepted"
+  let mut checked : NameSet := {}
+  for c in proof.getUsedConstants do
+    for ax in ← collectAxioms c do
+      if checked.contains ax then continue
+      checked := checked.insert ax
+      unless standardAxioms.contains ax do
+        throwError "veriphy: the proof depends on the axiom `{ax}`; only `propext`, `Classical.choice` and \
+          `Quot.sound` are accepted"
+
 /-- Run `proof` on the main goal, replay it if `veriphy.checkReplay` is set, and emit it as the single
 `Sage-free replacement:` for the whole current tactic (`getRef`, so applying it also replaces the
 tactic's arguments). On failure the state is restored and nothing is emitted. -/
 def closeAndEmit (proof : TSyntax `tactic) : TacticM Unit := do
   let s₀ ← saveState
+  let goal ← getMainGoal
   let errors := fun (log : MessageLog) => log.reportedPlusUnreported.foldl
     (fun n m => if m.severity == .error then n + 1 else n) 0
   let before := errors (← Core.getMessageLog)
@@ -41,6 +60,7 @@ def closeAndEmit (proof : TSyntax `tactic) : TacticM Unit := do
     Term.withoutErrToSorry <| withoutRecover <| evalTactic proof
     if errors (← Core.getMessageLog) > before then
       throwError "veriphy: the certificate check failed (see the errors above)"
+    checkAxioms goal
   catch ex =>
     s₀.restore
     throw ex

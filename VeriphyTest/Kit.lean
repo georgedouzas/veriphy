@@ -315,3 +315,27 @@ example : (0 : ℚ) ≤ 1 := by kit_leaky
 set_option veriphy.checkReplay false in
 #guard_msgs (drop info) in
 example : (0 : ℚ) ≤ 1 := by kit_hygienic
+
+/-! ## Axiom guard -/
+
+/-- Test tactic: run any tactic through `closeAndEmit`. -/
+elab "kit_emit " t:tactic : tactic => closeAndEmit t
+
+/-- error: veriphy: the proof uses `sorry` (sorryAx); only fully checked proofs are accepted -/
+#guard_msgs in
+example : (2 : ℕ) + 2 = 4 := by kit_emit sorry
+
+/--
+error: veriphy: the proof depends on the axiom `_example._native.native_decide.ax_1`; only `propext`, `Classical.choice` and `Quot.sound` are accepted
+-/
+#guard_msgs in
+example : (2 : ℕ) + 2 = 4 := by kit_emit native_decide
+
+/-- info: Sage-free replacement: 
+  [apply] decide -/
+#guard_msgs in
+example : (2 : ℕ) + 2 = 4 := by kit_emit decide
+
+-- classical reasoning stays allowed
+#guard_msgs (drop info) in
+example (p : Prop) : p ∨ ¬p := by kit_emit exact Classical.em p
