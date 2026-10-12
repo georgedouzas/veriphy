@@ -22,7 +22,9 @@ structure CondSpec where
   deriving ToJson, FromJson, BEq, Repr, Inhabited
 
 /-- A function: the Lean constant applied to its last `arity` arguments, written `sage(…)` in Sage. `types` lists
-the argument types it applies to (empty: any), `example` is a Lean term over variables for the round-trip check. -/
+the argument types it applies to (empty: any), `example` is a Lean term over variables for the round-trip check.
+`role` is `none` for an ordinary function, `derivative` for a derivative applied as `(f, point)`, and `partial` for
+a partial derivative applied as `(coordinate, f, point)`. -/
 structure FunctionEntry where
   lean : String
   sage : String
@@ -31,6 +33,7 @@ structure FunctionEntry where
   result : String := ""
   conditions : List CondSpec := []
   «example» : String := ""
+  role : Option String := none
   deriving ToJson, FromJson, BEq, Repr, Inhabited
 
 /-- A constant such as `Real.pi`, written `sage` in Sage. -/
@@ -50,6 +53,12 @@ structure RewriteEntry where
   «example» : String := ""
   deriving ToJson, FromJson, BEq, Repr, Inhabited
 
+/-- A convention a namespace fixes, such as the metric signature. -/
+structure Convention where
+  key : String
+  value : String
+  deriving ToJson, FromJson, BEq, Repr, Inhabited
+
 /-- One namespace's entries. -/
 structure Table where
   «namespace» : String
@@ -57,6 +66,7 @@ structure Table where
   constants : List ConstantEntry := []
   coercions : List String := []
   rewrites : List RewriteEntry := []
+  conventions : Option (List Convention) := none
   deriving ToJson, FromJson, BEq, Repr, Inhabited
 
 private def unary (lean sage ty : String) (conditions : List CondSpec := []) : FunctionEntry :=
