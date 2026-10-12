@@ -82,3 +82,17 @@ example (x : ℚ) : x = x := by
 #guard_msgs (drop error) in
 example (x : ℚ) : x = x := by
   sage_run file "certificates/missing.sage"
+
+/-! ## Recipe templates on their worked examples -/
+
+example (a b : ℝ) : 0 ≤ a ^ 2 * b ^ 2 - 2 * a * b + 1 := by
+  sage_run file "prompts/recipes/templates/hint_search.sage"
+
+example (x : ℚ) : (x + 1) ^ 2 - 1 = x * (x + 2) := by
+  sage_run file "prompts/recipes/templates/calc_derivation.sage"
+
+example (x : ℚ) : 0 ≤ x * x := by
+  sage_run file "prompts/recipes/templates/case_split.sage"
+
+example : !![(0 : ℚ), 1; 1, 0] * !![1, 0; 0, -1] + !![1, 0; 0, -1] * !![(0 : ℚ), 1; 1, 0] = 0 := by
+  sage_run file "prompts/recipes/templates/matrix_identity.sage"
