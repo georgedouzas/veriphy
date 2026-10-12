@@ -3,7 +3,29 @@
 from collections.abc import Callable
 
 import pytest
-from sage.all import SR, I, abs_symbolic, cos, exp, gamma, log, matrix, pi, sin, sqrt, tan
+from sage.all import (
+    SR,
+    I,
+    abs_symbolic,
+    arccos,
+    arcsin,
+    arctan,
+    ceil,
+    cos,
+    cosh,
+    exp,
+    factorial,
+    floor,
+    gamma,
+    log,
+    matrix,
+    pi,
+    sin,
+    sinh,
+    sqrt,
+    tan,
+    tanh,
+)
 
 from veriphy.core import CertificateError
 from veriphy.toolkit import (
@@ -121,5 +143,74 @@ def test_symbolic_emitters_parse_in_lean(lean_parses: Callable[[list[Lean]], str
         symbolic(exp(I * z) - log(z), PROBLEM),
         matrix_term(matrix(SR, [[x, 1], [0, 1 / x]]), PROBLEM),
         steps(field_simp_clearing(PROBLEM, {'x ^ 2 + 1 ≠ 0': 'positivity'}), lemma_rewrite('Real.exp_add', PROBLEM)),
+    ]
+    assert lean_parses(snippets) == ''
+
+
+TYPED = read_problem(
+    {
+        'vars': ['x0', 'x1', 'x2'],
+        'atoms': ['x', 'n', 'k'],
+        'atom_types': ['ℝ', 'ℕ', 'ℤ'],
+        'carrier': 'ℝ',
+        'goal': {'expr': "(typed(mod(x1, 7), 'ℕ') + x0) - (x0)", 'kind': 'other', 'rel': 'le', 'text': ''},
+    },
+)
+xr, nn, kk = (TYPED.symbols[f'x{i}'] for i in range(3))
+
+
+@pytest.mark.parametrize(
+    ('function', 'lean'),
+    [
+        (cosh, 'Real.cosh'),
+        (sinh, 'Real.sinh'),
+        (tanh, 'Real.tanh'),
+        (arctan, 'Real.arctan'),
+        (arcsin, 'Real.arcsin'),
+        (arccos, 'Real.arccos'),
+    ],
+)
+def test_new_real_functions_render(function: Callable[[object], object], lean: str) -> None:
+    """Render the hyperbolic and inverse trigonometric functions through the core table."""
+    assert str(symbolic(function(xr), TYPED, lean_type='')) == f'{lean} x'
+
+
+def test_real_powers_and_logarithms_to_a_base() -> None:
+    """Render a real power and Sage's form of a logarithm to a base."""
+    assert str(symbolic(xr ** (SR(3) / 2), TYPED, lean_type='')) == 'x ^ (3 / 2 : ℝ)'
+    assert str(symbolic(log(xr) / log(SR(2)), TYPED, lean_type='')) == '(Real.log x) / (Real.log 2)'
+
+
+def test_integer_operators_render_at_their_type_and_cast() -> None:
+    """Render integer-valued operators at ℕ (or ℤ) and cast them into the carrier."""
+    assert str(symbolic(factorial(nn) + xr, TYPED)) == '(x + ((Nat.factorial n : ℕ) : ℝ) : ℝ)'
+    assert str(symbolic(floor(xr), TYPED)) == '((Int.floor x : ℤ) : ℝ)'
+    assert str(symbolic(ceil(xr), TYPED, lean_type='ℤ')) == '(Int.ceil x : ℤ)'
+    assert str(symbolic(TYPED.goal.expr + xr, TYPED)) == '(x + ((n % 7 : ℕ) : ℝ) : ℝ)'
+
+
+def test_rendering_at_a_named_integer_type() -> None:
+    """Render at ℕ or ℤ when asked, ascribing the term."""
+    assert str(symbolic(nn + 1, TYPED, lean_type='ℕ')) == '(n + 1 : ℕ)'
+    assert str(symbolic(kk - 1, TYPED, lean_type='ℤ')) == '(k - 1 : ℤ)'
+
+
+def test_rendering_refuses_meaningless_integer_text() -> None:
+    """Refuse a subtraction at ℕ and a fraction at ℕ or ℤ, pointing to a type where they mean what Sage means."""
+    with pytest.raises(CertificateError, match='truncates'):
+        symbolic(nn - 1, TYPED, lean_type='ℕ')
+    with pytest.raises(CertificateError, match='field type'):
+        symbolic(nn / 2, TYPED, lean_type='ℤ')
+    assert str(symbolic(nn * (nn - 1) / 2, TYPED, lean_type='ℚ')) == '((n - 1) * n / 2 : ℚ)'
+
+
+def test_typed_rendering_parses_in_lean(lean_parses: Callable[[list[Lean]], str]) -> None:
+    """Every typed rendering parses as Lean."""
+    snippets = [
+        symbolic(factorial(nn) + xr, TYPED),
+        symbolic(floor(xr) + ceil(xr), TYPED),
+        symbolic(TYPED.goal.expr + xr, TYPED),
+        symbolic(nn + 1, TYPED, lean_type='ℕ'),
+        symbolic(arcsin(xr) + cosh(xr) + xr ** (SR(3) / 2), TYPED),
     ]
     assert lean_parses(snippets) == ''

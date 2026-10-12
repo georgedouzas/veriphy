@@ -6,6 +6,7 @@ Functions and constants render through the problem's translation tables (core fi
 
 import operator
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 
 from sage.all import QQ, SR, I
 from sage.matrix.matrix0 import Matrix
@@ -18,6 +19,21 @@ from veriphy.toolkit._lean import Lean, parenthesize, rational, tactic, term
 from veriphy.toolkit._problem import DOMAIN_KINDS, Condition, Problem
 
 STRUCTURAL = ('abs', 'mod')
+INTEGER_OPERATORS = ('factorial', 'binomial', 'gcd', 'mod', 'floor', 'ceil')
+INTEGER_RESULT = ('floor', 'ceil')
+INTEGER_TYPES = ('ℕ', 'ℤ')
+
+
+@dataclass(frozen=True)
+class _Context:
+    """Hold what rendering a sub-expression needs: the problem, and the Lean type the text must have (empty: any)."""
+
+    problem: Problem
+    lean_type: str
+
+    def at(self, lean_type: str) -> '_Context':
+        """Return the same context at another type."""
+        return _Context(self.problem, lean_type)
 
 
 def _is_complex(e: Expression, problem: Problem) -> bool:
@@ -39,9 +55,10 @@ def _looks_negative(e: Expression) -> bool:
 def _function(name: str, e: Expression, problem: Problem) -> str:
     """Return the Lean name of a table function applied to `e`, dispatching on `e`'s type (ℂ or ℝ)."""
     wanted = 'ℂ' if _is_complex(e, problem) else 'ℝ'
+    integer = name in INTEGER_OPERATORS
     for table in problem.tables:
         for entry in table.functions:
-            if entry.sage == name and (not entry.types or wanted in entry.types):
+            if entry.sage == name and (integer or not entry.types or wanted in entry.types):
                 return entry.lean
     known = sorted({f.sage for t in problem.tables for f in t.functions} | set(STRUCTURAL))
     message = (
@@ -60,62 +77,123 @@ def _constant(sage_name: str, problem: Problem) -> str | None:
     return None
 
 
-def _render_leaf(e: Expression, problem: Problem) -> str:
+def _cast(text: str, own: str, ctx: _Context) -> str:
+    """Return `text`, computed at type `own`, cast to the context's type when the two differ."""
+    if not ctx.lean_type or own == ctx.lean_type:
+        return text
+    return f'(({text} : {own}) : {ctx.lean_type})'
+
+
+def _integer_type(e: Expression, problem: Problem) -> str:
+    """Return ℕ when every atom of `e` is a natural number, ℤ otherwise."""
+    return 'ℕ' if all(problem.atom_types.get(str(v)) == 'ℕ' for v in e.variables()) else 'ℤ'
+
+
+def _check_integral(e: Expression, ctx: _Context) -> None:
+    """Refuse a sub-expression that has no meaning at ℕ or ℤ: a fraction, or a subtraction at ℕ."""
+    if ctx.lean_type not in INTEGER_TYPES:
+        return
+    if e.is_numeric() and e in QQ and (QQ(e).denominator() != 1 or (ctx.lean_type == 'ℕ' and QQ(e) < 0)):
+        message = (
+            f'{e} has no exact meaning at {ctx.lean_type}; render this expression at a field type (lean_type=\'ℚ\')'
+        )
+        raise CertificateError(message)
+    if e.operator() == add_vararg and ctx.lean_type == 'ℕ' and any(_looks_negative(a) for a in e.operands()):
+        message = f'{e} subtracts at ℕ, where Lean truncates; render it at ℤ or a field (lean_type=\'ℤ\')'
+        raise CertificateError(message)
+
+
+def _render_leaf(e: Expression, ctx: _Context) -> str:
     """Return the Lean text of a symbol, number or constant."""
     if e.is_symbol():
         name = str(e)
-        if name in problem.atoms:
-            return parenthesize(problem.atoms[name])
+        if name in ctx.problem.atoms:
+            return parenthesize(ctx.problem.atoms[name])
         if name.endswith('_'):
             return name[:-1]
         message = f"symbol '{name}' is not an atom of the problem"
         raise CertificateError(message)
     if e.is_numeric() and e in QQ:
         return str(rational(QQ(e)))
-    constant = _constant('I' if e == I else str(e), problem)
+    constant = _constant('I' if e == I else str(e), ctx.problem)
     if constant is not None:
         return constant
     message = f'no Lean rendering for the constant {e}'
     raise CertificateError(message)
 
 
-def _render_sum(args: Sequence[Expression], problem: Problem) -> str:
+def _render_sum(args: Sequence[Expression], ctx: _Context) -> str:
     """Return a sum, writing terms with a negative coefficient as subtractions."""
-    text = _render(args[0], problem)
+    text = _render(args[0], ctx)
     for a in args[1:]:
-        text += f' - {_operand(-a, problem)}' if _looks_negative(a) else f' + {_operand(a, problem)}'
+        text += f' - {_operand(-a, ctx)}' if _looks_negative(a) else f' + {_operand(a, ctx)}'
     return text
 
 
-def _render(e: Expression, problem: Problem) -> str:
-    """Return the Lean text of a symbolic expression."""
+def _recorded_type(e: Expression, problem: Problem) -> str | None:
+    """Return the Lean type of `e` when Lean computes it at another type than its context (a `typed` marker)."""
+    for sub, lean_type in problem.typed:
+        if e.is_trivially_equal(sub):
+            return lean_type
+    return None
+
+
+def _render(e: Expression, ctx: _Context) -> str:
+    """Return the Lean text of a symbolic expression at the context's type."""
+    _check_integral(e, ctx)
+    recorded = _recorded_type(e, ctx.problem)
+    if recorded is not None and recorded != ctx.lean_type:
+        return _cast(_render(e, ctx.at(recorded)), recorded, ctx)
     op, args = e.operator(), e.operands()
     if op is None:
-        return _render_leaf(e, problem)
-    if op == add_vararg:
-        return _render_sum(args, problem)
-    if op == mul_vararg:
-        return _render_product(args, problem)
+        return _render_leaf(e, ctx)
+    renderers = {add_vararg: _render_sum, mul_vararg: _render_product}
+    if op in renderers:
+        return renderers[op](args, ctx)
     if op == operator.pow:
-        return _render_power(args[0], args[1], problem)
-    return _render_application(op.name() if hasattr(op, 'name') else str(op), args, problem)
+        return _render_power(args[0], args[1], ctx)
+    name = op.name() if hasattr(op, 'name') else str(op)
+    return _render_integer(name, e, args, ctx) if name in INTEGER_OPERATORS else _render_application(name, args, ctx)
 
 
-def _render_application(name: str, args: Sequence[Expression], problem: Problem) -> str:
-    """Return a function application: `|·|`, `%` or a table function."""
-    if name == 'abs':
-        return f'|{_render(args[0], problem)}|'
+def _render_integer(name: str, e: Expression, args: Sequence[Expression], ctx: _Context) -> str:
+    """Return an integer-valued operator at its own type (ℕ or ℤ), cast to the context's type."""
+    own = 'ℤ' if name in INTEGER_RESULT else _integer_type(e, ctx.problem)
+    inner = ctx.at(ctx.lean_type if name in INTEGER_RESULT else own)
     if name == 'mod':
-        return f'{_operand(args[0], problem)} % {_operand(args[1], problem)}'
-    return f'{_function(name, args[0], problem)} {_operand(args[0], problem)}'
+        text = f'{_operand(args[0], inner)} % {_operand(args[1], inner)}'
+    else:
+        lean = _function(name, args[0], ctx.problem)
+        text = f'{lean} ' + ' '.join(_operand(a, inner) for a in args)
+    return _cast(text, own, ctx)
 
 
-def _operand(e: Expression, problem: Problem) -> str:
-    """Return the Lean text of `e`, parenthesized unless atomic."""
-    return parenthesize(_render(e, problem))
+def _render_application(name: str, args: Sequence[Expression], ctx: _Context) -> str:
+    """Return a function application: `|·|` or a table function."""
+    if name == 'abs':
+        return f'|{_render(args[0], ctx)}|'
+    return f'{_function(name, args[0], ctx.problem)} ' + ' '.join(_operand(a, ctx) for a in args)
 
 
-def _render_product(args: Sequence[Expression], problem: Problem) -> str:
+def _is_grouped(text: str) -> bool:
+    """Return whether the whole text is one parenthesized group, such as a cast `((n : ℕ) : ℝ)`."""
+    if not (text.startswith('(') and text.endswith(')')):
+        return False
+    depth = 0
+    for i, char in enumerate(text):
+        depth += {'(': 1, ')': -1}.get(char, 0)
+        if depth == 0 and i < len(text) - 1:
+            return False
+    return True
+
+
+def _operand(e: Expression, ctx: _Context) -> str:
+    """Return the Lean text of `e`, parenthesized unless atomic or already one group."""
+    text = _render(e, ctx)
+    return text if _is_grouped(text) else parenthesize(text)
+
+
+def _render_product(args: Sequence[Expression], ctx: _Context) -> str:
     """Return a product, with negative integer powers moved to a denominator."""
     numerator: list[str] = []
     denominator: list[str] = []
@@ -129,38 +207,46 @@ def _render_product(args: Sequence[Expression], problem: Problem) -> str:
             if q.denominator() != 1:
                 denominator.insert(0, str(q.denominator()))
         elif a.operator() == operator.pow and a.operands()[1].is_numeric() and a.operands()[1] < 0:
-            denominator.append(_operand(a.operands()[0] ** -a.operands()[1], problem))
+            denominator.append(_operand(a.operands()[0] ** -a.operands()[1], ctx))
         else:
-            numerator.append(_operand(a, problem))
+            numerator.append(_operand(a, ctx))
+    if denominator and ctx.lean_type in INTEGER_TYPES:
+        message = f'a quotient has no exact meaning at {ctx.lean_type}; render this expression at a field type'
+        raise CertificateError(message)
     text = ' * '.join(numerator) or '1'
     if denominator:
         text += ' / ' + (denominator[0] if len(denominator) == 1 else f'({" * ".join(denominator)})')
     return f'{sign}{text}'
 
 
-def _render_power(base: Expression, exponent: Expression, problem: Problem) -> str:
+def _render_power(base: Expression, exponent: Expression, ctx: _Context) -> str:
     """Return a power: `sqrt` for exponent 1/2, a reciprocal for negative integers, `^` otherwise."""
     if exponent.is_numeric() and exponent in QQ:
         q = QQ(exponent)
         if q == QQ(1) / 2:
-            return f'{_function("sqrt", base, problem)} {_operand(base, problem)}'
+            return f'{_function("sqrt", base, ctx.problem)} {_operand(base, ctx)}'
         if q.denominator() == 1:
-            power = f'{_operand(base, problem)} ^ {abs(q)}'
+            power = f'{_operand(base, ctx)} ^ {abs(q)}'
             return power if q >= 0 else f'1 / {power}'
-        return f'{_operand(base, problem)} ^ ({rational(q)} : ℝ)'
-    return f'{_operand(base, problem)} ^ {_operand(exponent, problem)}'
+        return f'{_operand(base, ctx)} ^ ({rational(q)} : ℝ)'
+    return f'{_operand(base, ctx)} ^ {_operand(exponent, ctx)}'
 
 
-def symbolic(expr: object, problem: Problem) -> Lean:
+def symbolic(expr: object, problem: Problem, lean_type: str | None = None) -> Lean:
     """Render a Sage symbolic expression over the problem's variables as a Lean term over its atoms.
 
-    Functions dispatch on type: `exp`, `log`, `sqrt`, `sin`, `cos`, `tan` render as their `Complex` versions when the
-    argument mentions `I` or a ℂ atom and as `Real` versions otherwise; `abs` renders as `|·|`, `pi` as `Real.pi`, `I`
-    as `Complex.I`. Any other function, or a symbol that is not an atom, raises `CertificateError`.
+    Functions render through the problem's translation tables, dispatching on type: `exp`, `log`, `sin`, `cos`,
+    `tan` render as their `Complex` versions when the argument mentions `I` or a ℂ atom and as `Real` versions
+    otherwise; `abs` renders as `|·|`, `pi` as `Real.pi`, `I` as `Complex.I`. The term is rendered at `lean_type` (the
+    problem's carrier by default) and ascribed to it; integer-valued operators (`factorial`, `binomial`, `gcd`,
+    remainders, `floor`, `ceil`) and sub-expressions Lean computes at ℕ or ℤ render at that type and are cast. A
+    function outside the tables, a symbol that is not an atom, or a fraction or ℕ subtraction rendered at ℕ or ℤ
+    raises `CertificateError`.
 
     Args:
         expr: A symbolic expression, or anything Sage's symbolic ring converts, over `problem.symbols`.
         problem: The problem whose atoms name the variables.
+        lean_type: The Lean type of the term, the problem's carrier when `None`; empty for no ascription.
 
     Returns:
         The term.
@@ -173,8 +259,17 @@ def symbolic(expr: object, problem: Problem) -> Lean:
         >>> x0, x1 = prob.symbols['x0'], prob.symbols['x1']
         >>> str(symbolic(abs(x0 - 1), prob)), str(symbolic(exp(x1), prob)), str(symbolic(sqrt(x0) / (x0**2 + 1), prob))
         ('|x - 1|', 'Complex.exp z', '(Real.sqrt x) / (x ^ 2 + 1)')
+        >>> nat = read_problem({'vars': ['x0', 'x1'], 'atoms': ['x', 'n'], 'atom_types': ['ℝ', 'ℕ'], 'carrier': 'ℝ',
+        ...     'goal': {'expr': "(typed(mod(x1, 7), 'ℕ') + x0) - (x0)", 'kind': 'other', 'rel': 'le', 'text': ''}})
+        >>> str(symbolic(nat.goal.expr + nat.symbols['x0'], nat))
+        '(x + ((n % 7 : ℕ) : ℝ) : ℝ)'
+        >>> str(symbolic(nat.symbols['x1'] + 1, nat, lean_type='ℕ'))
+        '(n + 1 : ℕ)'
     """
-    return term(_render(SR(expr), problem))
+    ctx = _Context(problem, problem.carrier if lean_type is None else lean_type)
+    text = _render(SR(expr), ctx)
+    ascribed = _is_grouped(text) and text.endswith(f' : {ctx.lean_type})')
+    return term(f'({text} : {ctx.lean_type})' if ctx.lean_type and not ascribed else text)
 
 
 def matrix_term(m: Matrix, problem: Problem) -> Lean:
@@ -194,7 +289,8 @@ def matrix_term(m: Matrix, problem: Problem) -> Lean:
         >>> str(matrix_term(matrix(SR, [[1, prob.symbols['x0']], [0, 1/2]]), prob))
         '!![1, c; 0, 1 / 2]'
     """
-    rows = [', '.join(_render(SR(entry), problem) for entry in row) for row in m.rows()]
+    ctx = _Context(problem, '')
+    rows = [', '.join(_render(SR(entry), ctx) for entry in row) for row in m.rows()]
     return term('!![' + '; '.join(rows) + ']')
 
 
