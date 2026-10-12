@@ -6,6 +6,7 @@ from veriphy.core._errors import (
     MethodError,
     ParamError,
     ScriptError,
+    TableError,
     VeriphyError,
 )
 from veriphy.core._project import PROJECT_DIR_NAME, find_workspace_root, project_dir
@@ -23,6 +24,7 @@ __all__ = [
     'MethodError',
     'ParamError',
     'ScriptError',
+    'TableError',
     'VeriphyError',
     'find_workspace_root',
     'project_dir',

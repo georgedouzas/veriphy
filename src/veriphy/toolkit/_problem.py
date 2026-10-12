@@ -28,6 +28,7 @@ from sage.rings.polynomial.multi_polynomial_ring_base import MPolynomialRing_bas
 from sage.symbolic.expression import Expression
 
 from veriphy.core import RELATIONS, CertificateError, ParamError
+from veriphy.toolkit._table import Table, load_core_table
 
 GOAL_KINDS = ('rel', 'false', 'exists', 'other')
 DOMAIN_KINDS = ('ne', 'nonneg', 'pos')
@@ -194,6 +195,7 @@ class Problem:
         atom_types: The Lean type of each variable (`ℕ`, `ℤ`, `ℚ`, `ℝ`, `ℂ`, `matrix` or `other`), by name.
         domain: The domain conditions the problem's symbolic expressions need.
         symbols: The variables as symbolic-ring variables, by name, for symbolic work.
+        tables: The translation tables in force, core first.
     """
 
     ring: MPolynomialRing_base
@@ -209,6 +211,7 @@ class Problem:
     atom_types: dict[str, str] = field(default_factory=dict)
     domain: list[Condition] = field(default_factory=list)
     symbols: dict[str, Expression] = field(default_factory=dict)
+    tables: tuple[Table, ...] = field(default_factory=lambda: (load_core_table(),))
 
     def find_hyp(self, name: str, allowed: tuple[str, ...], family: str) -> Hyp:
         """Find the hypothesis named `name`, checking its relation is usable by `family`.

@@ -8,13 +8,13 @@
 
 ## 1. Baseline measurement (translation-coverage)
 
-- [ ] 1.1 Add `Veriphy/Kit/Coverage.lean` with `#veriphy_coverage [prefixes]` (writing to `.veriphy/coverage/` by default) (D7). It classifies atoms as local, uninterpreted or opaque, counts per statement and per head, and writes JSON plus a summary. Verify with Sage-free `#guard_msgs` tests in `VeriphyTest/Kit.lean` covering a fully covered statement, one with `Real.Gamma`, one with an uninterpreted `f x`, and one with no relation.
+- [x] 1.1 Add `Veriphy/Kit/Coverage.lean` with `#veriphy_coverage [prefixes]` (writing to `.veriphy/coverage/` by default) (D7). It classifies atoms as local, uninterpreted or opaque, counts per statement and per head, and writes JSON plus a summary. Verify with Sage-free `#guard_msgs` tests in `VeriphyTest/Kit.lean` covering a fully covered statement, one with `Real.Gamma`, one with an uninterpreted `f x`, and one with no relation.
 - [ ] 1.2 Create the `coverage/` runner project: `require veriphy from ".."`, Physlib at a commit whose mathlib pin matches Veriphy's, and mathlib's `Archive`, `Mathlib.Analysis.ODE`, `Mathlib.Algebra.Lie` and `Mathlib.Geometry.Manifold`. Verify that `lake build` in `coverage/` produces one JSON report per corpus.
 - [ ] 1.3 Record the baseline in `docs/development/coverage.md`: corpus revisions, date, the three numbers per corpus and the top 30 opaque heads. Verify that the page builds with `nox -s docs -- build`.
 
 ## 2. Tables, conditions and namespaces (symbolic-translation, translation-extensions)
 
-- [ ] 2.1 Turn the core function table into data records with a namespace field (D1), and add the mirrored `core_table.json` in the Python package. Verify with a Sage-free Lean test that the two agree, and that the existing kit and round-trip tests stay green.
+- [x] 2.1 Turn the core function table into data records with a namespace field (D1), and add the mirrored `core_table.json` in the Python package. Verify with a Sage-free Lean test that the two agree, and that the existing kit and round-trip tests stay green.
 - [ ] 2.2 Add the `le` condition kind with two terms and constant bounds (D3), including discharge by `b < a`. Verify with kit tests for `k ≤ n` discharged by `hk : k ≤ n` and by `hk : k < n`, and an undischarged one.
 - [ ] 2.3 Add `typed` sub-expressions and their serialization (D5). Verify with kit tests showing `typed(mod(x0, 7), 'ℕ')` for `((n % 7 : ℕ) : ℝ)`, and no marker in a pure ℕ goal.
 - [ ] 2.4 Add namespace resolution and library-pack activation by sentinel constant, with constant validation and conflict rejection (D8). Verify with kit tests using a fixture pack: inactive without its sentinel, active with it, a missing constant reported, and a conflict rejected.

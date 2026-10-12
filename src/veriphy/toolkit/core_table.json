@@ -1,0 +1,155 @@
+{
+  "coercions": [
+    "Nat.cast",
+    "Int.cast",
+    "Rat.cast",
+    "Complex.ofReal"
+  ],
+  "constants": [
+    {
+      "lean": "Real.pi",
+      "sage": "pi",
+      "type": "ℝ"
+    },
+    {
+      "lean": "Complex.I",
+      "sage": "I",
+      "type": "ℂ"
+    }
+  ],
+  "functions": [
+    {
+      "arity": 1,
+      "conditions": [
+        {
+          "arg": 0,
+          "kind": "nonneg"
+        }
+      ],
+      "example": "Real.sqrt x",
+      "lean": "Real.sqrt",
+      "result": "ℝ",
+      "sage": "sqrt",
+      "types": [
+        "ℝ"
+      ]
+    },
+    {
+      "arity": 1,
+      "conditions": [],
+      "example": "Real.exp x",
+      "lean": "Real.exp",
+      "result": "ℝ",
+      "sage": "exp",
+      "types": [
+        "ℝ"
+      ]
+    },
+    {
+      "arity": 1,
+      "conditions": [
+        {
+          "arg": 0,
+          "kind": "pos"
+        }
+      ],
+      "example": "Real.log x",
+      "lean": "Real.log",
+      "result": "ℝ",
+      "sage": "log",
+      "types": [
+        "ℝ"
+      ]
+    },
+    {
+      "arity": 1,
+      "conditions": [],
+      "example": "Real.sin x",
+      "lean": "Real.sin",
+      "result": "ℝ",
+      "sage": "sin",
+      "types": [
+        "ℝ"
+      ]
+    },
+    {
+      "arity": 1,
+      "conditions": [],
+      "example": "Real.cos x",
+      "lean": "Real.cos",
+      "result": "ℝ",
+      "sage": "cos",
+      "types": [
+        "ℝ"
+      ]
+    },
+    {
+      "arity": 1,
+      "conditions": [],
+      "example": "Real.tan x",
+      "lean": "Real.tan",
+      "result": "ℝ",
+      "sage": "tan",
+      "types": [
+        "ℝ"
+      ]
+    },
+    {
+      "arity": 1,
+      "conditions": [],
+      "example": "Complex.exp x",
+      "lean": "Complex.exp",
+      "result": "ℂ",
+      "sage": "exp",
+      "types": [
+        "ℂ"
+      ]
+    },
+    {
+      "arity": 1,
+      "conditions": [],
+      "example": "Complex.log x",
+      "lean": "Complex.log",
+      "result": "ℂ",
+      "sage": "log",
+      "types": [
+        "ℂ"
+      ]
+    },
+    {
+      "arity": 1,
+      "conditions": [],
+      "example": "Complex.sin x",
+      "lean": "Complex.sin",
+      "result": "ℂ",
+      "sage": "sin",
+      "types": [
+        "ℂ"
+      ]
+    },
+    {
+      "arity": 1,
+      "conditions": [],
+      "example": "Complex.cos x",
+      "lean": "Complex.cos",
+      "result": "ℂ",
+      "sage": "cos",
+      "types": [
+        "ℂ"
+      ]
+    },
+    {
+      "arity": 1,
+      "conditions": [],
+      "example": "Complex.tan x",
+      "lean": "Complex.tan",
+      "result": "ℂ",
+      "sage": "tan",
+      "types": [
+        "ℂ"
+      ]
+    }
+  ],
+  "namespace": "mathlib",
+  "rewrites": []
+}

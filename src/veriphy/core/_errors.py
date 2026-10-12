@@ -45,3 +45,22 @@ class ScriptError(VeriphyError):
         super().__init__(message)
         self.reason = reason
         self.stdout = stdout
+
+
+class TableError(VeriphyError):
+    """Signal a translation-table file that does not follow the schema.
+
+    Args:
+        source: The file the table came from.
+        field: The field at fault.
+        reason: What is wrong with it.
+    """
+
+    def __init__(self, source: str, field: str, reason: str) -> None:
+        message = (
+            f"{source}: {reason} '{field}'" if reason == 'missing field' else f"{source}: field '{field}' {reason}"
+        )
+        super().__init__(message)
+        self.source = source
+        self.field = field
+        self.reason = reason

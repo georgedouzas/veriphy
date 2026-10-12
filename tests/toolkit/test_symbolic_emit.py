@@ -36,12 +36,19 @@ x, z, k, n = (PROBLEM.symbols[f'x{i}'] for i in range(4))
 
 @pytest.mark.parametrize(
     ('function', 'name'),
-    [(sqrt, 'sqrt'), (exp, 'exp'), (log, 'log'), (sin, 'sin'), (cos, 'cos'), (tan, 'tan')],
+    [(exp, 'exp'), (log, 'log'), (sin, 'sin'), (cos, 'cos'), (tan, 'tan')],
 )
 def test_function_table_dispatches_on_type(function: Callable[[object], object], name: str) -> None:
     """Render each table function as its `Real` version on reals and its `Complex` version on complex atoms."""
     assert str(symbolic(function(x), PROBLEM)) == f'Real.{name} x'
     assert str(symbolic(function(z), PROBLEM)) == f'Complex.{name} z'
+
+
+def test_sqrt_is_real_only() -> None:
+    """Render `sqrt` on reals, and reject it on complex atoms, since mathlib has no `Complex.sqrt`."""
+    assert str(symbolic(sqrt(x), PROBLEM)) == 'Real.sqrt x'
+    with pytest.raises(CertificateError, match=r"'sqrt' over ℂ.*\.veriphy/translations/"):
+        symbolic(sqrt(z), PROBLEM)
 
 
 def test_abs_renders_bars_on_every_type() -> None:
