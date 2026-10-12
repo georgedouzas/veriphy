@@ -28,10 +28,13 @@ rows = [([QQ(int(j == i)) for j in range(n)], 0) for i in range(n) if not usable
 rows += [([f.monomial_coefficient(x) for f in forms], 0) for x in R.gens()]
 kappa = [f.constant_coefficient() for f in forms]
 nonneg = [i for i, h in enumerate(cons) if h.rel in ('le', 'lt')]
-weights = solve_exact_lp(n, eqs=rows, les=[([-k for k in kappa], 1)], objective=[1] * n, nonneg=nonneg)
+# Minimize only over the sign-constrained multipliers: the multipliers of equalities are free, and with more equalities
+# than unknowns they move along the left kernel, so Σ wᵢ over all of them is unbounded and the LP reports no solution.
+objective = [1 if i in nonneg else 0 for i in range(n)]
+weights = solve_exact_lp(n, eqs=rows, les=[([-k for k in kappa], 1)], objective=objective, nonneg=nonneg)
 if weights is None:
     strict = [1 if ok and h.rel == 'lt' else 0 for h, ok in zip(cons, usable)]
-    weights = solve_exact_lp(n, eqs=rows + [(kappa, 0)], les=[([-s for s in strict], 1)], objective=[1] * n, nonneg=nonneg)
+    weights = solve_exact_lp(n, eqs=rows + [(kappa, 0)], les=[([-s for s in strict], 1)], objective=objective, nonneg=nonneg)
 assert weights is not None, 'the hypotheses are consistent: no Farkas certificate'
 constant = sum(w * k for w, k in zip(weights, kappa))
 uses_strict = any(w != 0 and h.rel == 'lt' for w, h in zip(weights, cons))
