@@ -22,7 +22,16 @@ What generalizes is the division of labour. Sage finds whatever is expensive to 
   - **Search primitives:** exact LP, Gröbner `lift`, factorization, real-root isolation with rational separating points, a product search that picks `nlinarith` hint products, SOS with exact rationalization (hinted squares, or a numeric SDP rounded and verified exactly), substitutions and normal forms, matrix decompositions checked by multiplication, and enumeration of sign and case splits.
 - **Hint-oriented proofs.** The toolkit treats Lean automation plus Sage-found hints as a first-class proof shape. This is often far cheaper than a full certificate.
 - **Derivation chains.** Sage proposes intermediate expressions, and each `calc` step is checked independently, so a failure points at the step that broke.
-- **Presets.** The seven existing tactics (`sage_factor`, `sage_sos`, `sage_lincomb`, `sage_witness`, `sage_sum`, `sage_farkas`, `sage_exists`) keep their syntax, but are reimplemented as preset scripts on the toolkit. The scripts ship with the package, so the agent can read and adapt them. `sage_certify` is reimplemented the same way, as presets for its three families.
+- **No ready-made certificates.** The seven certificate tactics (`sage_factor`, `sage_sos`, `sage_lincomb`, `sage_witness`, `sage_sum`, `sage_farkas`, `sage_exists`) and `sage_certify` are removed, together with their daemon methods and the Lean-side reconstruction they needed. Every certificate is created per goal, by an agent or a human. Committed proofs are unaffected, because they contain only emitted replacements.
+- **Procedures, templates and skills.** The value moves into how to build certificates:
+  - one agent-agnostic recipe per technique, each with a decision rule, a fill-in `sage_run` template and its failure modes: ideal membership, Farkas, SOS, factorization, witnesses, hint search, `calc` derivations, case splits, matrix identities, sums by induction;
+  - a `certify` skill for the build loop;
+  - a recipe index in the `prove` playbook.
+- **Certificate scripts in the caller's project.** Scripts are `.sage` files in the project's `certificates/` directory, run with `sage_run file "…"`. Each carries a header (name, technique, goal shape, description), and `sage -python -m veriphy.certificates list` makes them discoverable to any agent. The playbook has the agent reuse before writing and save after success. A shared certificate repository is future work in a separate repo.
+- **Effectiveness gate.**
+  - Every problem the removed tactics solved becomes a benchmark solved with `sage_run` following its recipe.
+  - A fresh agent with only the skills must solve the whole benchmark from bare statements, with iterations and time recorded.
+  - The change does not ship with any regression.
 - **A persistent daemon session.** One daemon process per Lean process replaces the spawn per request. It is restarted on failure and stays disabled during replay. This removes about 2 s of start-up per call.
 - **Feedback for iteration.** When `sage_run` fails, the error contains:
   - the script's own output;
@@ -30,8 +39,8 @@ What generalizes is the division of labour. Sage finds whatever is expensive to 
   - Lean's elaboration error, located in that text.
 
   The agent fixes the script without guessing.
-- **Agent workflow.** `prompts/prove.md` is rewritten around the loop: inspect the goal and problem, script with the toolkit, emit Lean, iterate on the combined feedback, then commit the replacement. The presets are positioned as shortcuts. `blocked-missing-tactic` becomes `blocked-missing-building-block`: a Sage capability or emitter the toolkit lacks.
-- **BREAKING (report vocabulary only):** the `blocked-missing-tactic` report category is renamed. Tactic syntax is unchanged.
+- **Agent workflow.** `prompts/prove.md` is rewritten around the loop: inspect the goal and problem, script with the toolkit, emit Lean, iterate on the combined feedback, then commit the replacement. `blocked-missing-tactic` becomes `blocked-missing-building-block`: a Sage capability or emitter the toolkit lacks.
+- **BREAKING:** the certificate tactics, `sage_certify`, and the daemon methods `factor`, `sos`, `roots`, `lincomb`, `farkas`, `exists`, `sum` and `certify` are removed. The `blocked-missing-tactic` report category is renamed.
 
 ## Capabilities
 
@@ -41,9 +50,15 @@ What generalizes is the division of labour. Sage finds whatever is expensive to 
 - `certificates/search-primitives`: the toolkit's exact search functions and their result contracts.
 - `certificates/daemon-session`: the persistent daemon's lifecycle, recovery and isolation.
 
+- `certificates/project-scripts`: certificate scripts stored in the caller's project, their header format, the catalog, and running them from a file.
+- `certificates/procedures`: recipes, templates and skills for building certificates, and the benchmark showing they are at least as effective as the removed tactics.
+
 ### Modified Capabilities
-- `certificates/checker-families`: "Existing tactics preserve their interface". The replacements of the seven tactics may now come from preset scripts through the script-tactic pipeline, not only from a Lean-side checker family.
-- `certificates/agent-certify`: "Agent workflow documents the route". The workflow now leads with building proofs through `sage_run` and the toolkit, and the report category is renamed.
+- `certificates/checker-families`: the fixed Lean-side families and "Existing tactics preserve their interface" are removed (the tactics go).
+- `certificates/agent-certify`: `sage_certify` is removed, and the workflow requirement now leads with creating certificates through `sage_run` and the procedures.
+- `certificates/proof-reconstruction`: removed; Lean-side reconstruction is replaced by the Python emitters.
+- `certificates/oracle-methods`: the `certify` method and the certificate-search methods are removed (their algorithms live on as toolkit primitives).
+- `certificates/replay-check`: the hygiene regressions are expressed as `sage_run` examples.
 
 ## Impact
 
@@ -52,12 +67,11 @@ What generalizes is the division of labour. Sage finds whatever is expensive to 
   - `Veriphy/Kit/Family.lean` gains the axiom guard in `closeAndEmit`;
   - `Veriphy/Bridge.lean` gets a session (persistent process) in place of spawn-per-request;
   - `Veriphy/Kit/Problem.lean` serializes richer goal context (pretty-printed hypotheses and goal);
-  - the seven tactic files and `SageCertify.lean` shrink to preset calls.
+  - the seven tactic files, `SageCertify.lean` and most of `Kit/Build.lean` and the `Kit/Family.lean` checkers are deleted.
 - **Python:**
   - a new `src/veriphy/toolkit/` subpackage (emitters, search), public, with doctests;
-  - a new `src/veriphy/presets/` subpackage holding the preset scripts;
   - the oracle gains a `run` method that executes a script with the toolkit bound and returns Lean text;
   - the daemon serves many requests per process (already line-oriented).
-- **Tests:** `VeriphyTest.lean` keeps every existing example and adds `sage_run` examples, including hint, calc, case-split, matrix and witness cases, and the guard rejecting `sorry` and `native_decide`. pytest covers each emitter and primitive.
-- **Docs:** `prompts/prove.md`, `skills/prove/SKILL.md`, `docs/overview/user_guide.md`, `docs/development/index.md` and README.
+- **Tests:** every existing example in `VeriphyTest.lean` is ported to `sage_run` following its recipe (the benchmark), and new `sage_run` examples are added for hint, calc, case-split and matrix proofs and for the guard rejecting `sorry` and `native_decide`. pytest covers each emitter and primitive. An agent benchmark run is recorded under `docs/development/`.
+- **Docs and skills:** new `prompts/recipes/*.md` and `skills/certify/SKILL.md`; `prompts/prove.md`, `skills/prove/SKILL.md`, `docs/overview/user_guide.md`, `docs/development/index.md` and README are updated.
 - **Dependency:** builds on `package-and-distribute` (the `veriphy` package layout, the constitution, nox, CI), which must be merged first.

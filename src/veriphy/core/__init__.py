@@ -8,9 +8,10 @@ from veriphy.core._errors import (
     ScriptError,
     VeriphyError,
 )
-from veriphy.core._types import Coercer, JsonObject, JsonValue, Method
+from veriphy.core._types import RELATIONS, Coercer, JsonObject, JsonValue, Method
 
 __all__ = [
+    'RELATIONS',
     'CertificateError',
     'Coercer',
     'EncodingError',

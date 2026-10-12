@@ -20,13 +20,13 @@ The motivation is in proposal.md (Why). The state this change builds on, after `
 - Any proof a Sage script can assemble out of Lean text is reachable through one tactic, and only standard axioms are ever accepted.
 - The toolkit makes the common shapes one-liners: hints, `calc` chains, case splits, witnesses, `linear_combination`.
 - A script-then-check iteration costs well under a second after the first call.
-- The bespoke tactics stop being special. They become readable presets.
+- Veriphy ships no ready-made certificates. Its value is the procedures, templates and skills that make creating one cheap, and they are proven at least as effective as the tactics they replace.
 
 **Non-Goals:**
 - Trusting Sage in any form. Numeric SOS is only a search: results are rationalized and verified exactly, and Lean re-checks them.
 - A general CAS-to-Lean translator for transcendental functions. Non-polynomial hypotheses are visible to scripts as text only, and scripts handle them with Lean tactics they emit.
 - Running Lean inside Sage. The loop is Lean calling Sage, never the reverse.
-- Removing `sage_certify`. It stays, implemented as presets.
+- A shared certificate repository across projects (future work, a separate repo).
 
 ## Decisions
 
@@ -37,7 +37,7 @@ A script runs in a fresh namespace with these pre-bound:
 - the toolkit's public names;
 - `sage.all`.
 
-The script assigns `proof`, either a toolkit `Lean` value or a string. The new daemon method `run` takes `{problem, script | preset, args, timeout_s}` and returns `{lean, stdout}`. Errors keep the existing `ScriptError` path, which carries stdout. `run` is not advisory: its result is Lean text, which Lean checks.
+The script assigns `proof`, either a toolkit `Lean` value or a string. The new daemon method `run` takes `{problem, script, timeout_s}` and returns `{lean, stdout}`. Errors keep the existing `ScriptError` path, which carries stdout. `run` is not advisory: its result is Lean text, which Lean checks.
 
 ### D2. Lean side of `sage_run`
 
@@ -46,7 +46,7 @@ The script assigns `proof`, either a toolkit `Lean` value or a string. The new d
    - Every nameable hypothesis is included, with its text, and with a polynomial form when it translates.
 2. **Parsing:** the returned text is parsed with `Parser.runParserCategory env `tactic text "<sage_run>"`. Parse errors carry line and column within the text.
 3. **Running** goes through `closeAndEmit`. On any failure the error is re-raised with three sections (`script output`, `Lean text`, `Lean error`), so the agent gets the combined feedback in one message.
-4. `sage_run` is a plain tactic with syntax `sage_run str`. A file variant (`sage_run from "path"`) is out of scope.
+4. `sage_run` takes either an inline script (`sage_run "<script>"`) or a project file (`sage_run file "certificates/<name>.sage"`, see D12).
 
 ### D3. Axiom guard in `closeAndEmit`
 
@@ -54,11 +54,11 @@ After the tactic runs, the guard instantiates the original goal's assignment.
 - It rejects the proof if `Expr.hasSorry` holds.
 - Otherwise it collects every constant in the term and runs `collectAxioms` on each (the results are cached per constant). It rejects any axiom outside `{propext, Classical.choice, Quot.sound}`, which catches `Lean.ofReduceBool` from `native_decide` and any custom axiom.
 
-The guard lives in `closeAndEmit`, so every tactic, presets included, is covered. Residual goals are allowed, because metavariables in the term are skipped. *Alternative:* guard only `sage_run`. Rejected, because one guard at the shared exit is simpler and stronger.
+The guard lives in `closeAndEmit`, so every tactic that emits a replacement is covered. Residual goals are allowed, because metavariables in the term are skipped. *Alternative:* guard only `sage_run`. Rejected, because one guard at the shared exit is simpler and stronger.
 
 ### D4. Toolkit layout and dependency direction
 
-Following the constitution, imports run downward: `core` → `toolkit` → `oracle` / `presets` → `sage_server`.
+Following the constitution, imports run downward: `core` → `toolkit` → `oracle` → `sage_server`.
 
 ```
 src/veriphy/toolkit/__init__.py     public surface (__all__), doctests run under Sage
@@ -68,10 +68,9 @@ toolkit/_emit.py                    builders: linear_combination, sq_nonneg/mul_
 toolkit/_algebra.py                 exact LP (moved), cofactors, factorization, normal forms, Farkas (moved)
 toolkit/_positivity.py              nlinarith product search, SOS (factor, hinted, SDP + rationalize + verify)
 toolkit/_structure.py               roots, rational points (moved from exists), root isolation, sign/case enumeration, matrices
-src/veriphy/presets/                one module per preset: factor, sos, lincomb, witness, farkas, exists, certify_*
 ```
 
-The oracle methods `factor`, `sos`, `lincomb`, `farkas` and `exists` become thin wrappers over the toolkit, so the protocol stays compatible. `run` executes scripts and presets. The toolkit is the public surface for script authors, and each public name has a doctest.
+The oracle methods `factor`, `sos`, `roots`, `lincomb`, `farkas`, `exists`, `sum` and `certify` are removed once their tactics are, and their algorithms live on as toolkit primitives. `run` executes scripts. The toolkit is the public surface for script authors, and each public name has a doctest.
 
 ### D5. Emitters produce typed text
 
@@ -97,11 +96,23 @@ The search is an exact LP, as in Positivstellensatz degree 2. It looks for nonne
 
 If any step fails, report "no exact SOS found". The result is a list of `(c, q)` squares, which the existing squares emitter consumes.
 
-### D8. Presets replace bespoke Lean
+### D8. Procedures replace ready-made certificates
 
-Each of `sage_factor`, `sage_sos`, `sage_lincomb`, `sage_witness`, `sage_farkas` and `sage_exists` becomes a single line, `elab "sage_x" … => runPreset "x" args`, which reaches `run` with `preset := "x"`. `sage_sos [hints]` passes its hints as extra translated terms in `args`. `sage_factor` keeps its residual goal, because its preset emits the `refine Eq.trans (show … by ring1) ?_` step. `sage_sum` needs no Sage and stays a Lean-only family. `sage_certify` becomes three presets that run the user's script and convert its certificate with the emitters.
+The certificate tactics and `sage_certify` are deleted, with the daemon methods and Lean reconstruction only they used (`Kit/Build.lean`'s certificate builders and the `Kit/Family.lean` checkers; `closeAndEmit`, extraction and replay stay).
 
-The printed replacements may change in surface form, and the existing tests pin their behavior. `Veriphy/Kit/Build.lean`'s certificate builders stay for `sage_sum` and the kit tests, and any that become unused are removed.
+Their knowledge becomes procedures in agent-agnostic markdown, `prompts/recipes/<technique>.md`, one per technique. Each recipe has:
+- **When to use:** the goal shapes it fits and the signals that it applies;
+- **Template:** a fill-in `sage_run` script using toolkit primitives and emitters;
+- **Worked example:** the template instantiated, which is also a test;
+- **Failure modes:** symptoms in the combined feedback and the next step for each (for example "κ not constant: a nonlinear hypothesis was weighted; drop it or switch to hint search").
+
+`prompts/prove.md` gets a recipe index (a decision table from goal shape to recipe), and the agent loads one recipe at a time. A new `skills/certify/SKILL.md` is a short skill for the build loop that points into the recipes. `skills/prove` delegates to it in step 3. A mapping table in `docs/development/index.md` takes each removed tactic to its recipe, for users migrating a call.
+
+### D11. Benchmark and the effectiveness gate
+
+`VeriphyTest/Benchmark.lean` holds every problem a removed tactic solved: the 32 calls of the pre-change `VeriphyTest.lean`, which include the anomaly no-go system, SOS potentials and eigenvector witnesses from the physics work. Each problem is closed with `sage_run` following its recipe, with replay on. This is the mechanical half of the gate.
+
+The agent half: a fresh subagent gets the skills and procedures, and the benchmark statements with proofs blanked and the old tactic names stripped from its context. It must close every problem. A script records the outcome, iterations and wall time per problem into `docs/development/benchmark.md`. Any unsolved problem blocks the change, and the fix is a better recipe, template or primitive, never a reinstated tactic.
 
 ### D9. Session
 
@@ -121,11 +132,22 @@ On the Python side, each request already uses a fresh namespace. `run` also call
 `prompts/prove.md` step 3 is reorganized:
 1. cheap mathlib automation;
 2. premise search;
-3. **build with `sage_run`**: inspect `problem`, pick primitives, emit Lean, iterate on the combined feedback; presets are listed as shortcuts;
+3. **build with `sage_run`**: look for an existing project script, otherwise pick a recipe, adapt its template, emit Lean, iterate on the combined feedback, and save the script that worked;
 4. the advisory oracle;
 5. recursion.
 
 The report category becomes `blocked-missing-building-block`. The user guide gets a "Building proofs with sage_run" section with worked examples (hint, calc, case split, matrix and witness), and every example is also a test in `VeriphyTest.lean`.
+
+### D12. Certificate scripts live in the caller's project
+
+Scripts an agent or user creates belong to the project being proved, never to Veriphy:
+- **Location:** one `.sage` file per certificate in `certificates/` at the Lake workspace root. `sage_run file "certificates/<name>.sage"` resolves the path against the workspace root, which is Lean's working directory under Lake.
+- **Header:** each script starts with a comment block giving `name`, `technique` (the recipe it follows), `goal` (the goal shape it closes) and a one-line `description`.
+- **Catalog:** `sage -python -m veriphy.certificates list [dir]` (a small static module in the package) prints the catalog from those headers, so any agent can discover what a project already has. `… show <name>` prints one script.
+- **Workflow:** the playbook makes the agent check the catalog before writing a script, prefer adapting a matching one, and save a successful script with its header. Saved scripts are reusable on any goal of the same shape, because they read the bound `problem`.
+- **What gets committed:** the proof in Lean files is always the emitted replacement, so it builds without Sage. Committing `certificates/` is the caller's choice, and the scripts are its reusable source.
+
+A shared repository of certificates, curated across projects, is future work for a separate repo. It is out of scope here.
 
 ## Risks / Trade-offs
 
@@ -134,7 +156,8 @@ The report category becomes `blocked-missing-building-block`. The user guide get
 - **[Risk]** `collectAxioms` on large proof terms is slow. → It runs per constant with a cache, and only once per successful tactic.
 - **[Risk]** The product search can blow up combinatorially. → Candidate and degree caps, configurable per call. On failure the search reports "no product certificate", and the agent can supply its own candidates.
 - **[Risk]** SDP rounding fails on degenerate problems. → The search is exact-verified or reports failure, never wrong, and hinted SOS remains available.
-- **[Trade-off]** Presets in Python mean the Lean side no longer shows certificate logic. In exchange, the agent can read and adapt the presets, which is the point of the change.
+- **[Trade-off]** Users lose one-word tactics, and each certificate costs a short script. This is accepted, because the long tail needs creation anyway. Recipes keep common cases to a few lines, and the benchmark proves no previously solved problem regresses.
+- **[Risk]** An agent following recipes does worse than the hard-coded tactics did. → The agent benchmark (D11) is a release gate, and failures improve recipes or primitives.
 - **[Trade-off]** Renaming the report category breaks callers who parse `blocked-missing-tactic`. Callers are agents reading markdown, and the playbook defines the vocabulary.
 
 ## Migration Plan
@@ -143,8 +166,8 @@ The report category becomes `blocked-missing-building-block`. The user guide get
 2. Add the toolkit next to the oracle, moving functions over with their tests.
 3. Add `sage_run` and the axiom guard.
 4. Add the session.
-5. Migrate tactics to presets one at a time, keeping `VeriphyTest.lean` green after each.
-6. Rewrite the docs.
+5. Write the recipes and port each benchmark problem to `sage_run`. Then remove the tactics, methods and reconstruction.
+6. Write the skills and docs, then run the agent benchmark as the gate.
 
 Rollback per step is a revert, and committed downstream proofs are unaffected because they contain only replacements.
 

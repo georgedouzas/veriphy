@@ -7,10 +7,10 @@ from sage.rings.polynomial.multi_polynomial import MPolynomial
 from sage.rings.polynomial.polynomial_element import Polynomial
 from sage.structure.parent import Parent
 
-from veriphy.core import Coercer, JsonObject, JsonValue, Method, MethodError, ParamError, VeriphyError
+from veriphy.core import RELATIONS, Coercer, JsonObject, JsonValue, Method, MethodError, ParamError, VeriphyError
 from veriphy.oracle._encoding import encode
+from veriphy.toolkit import create_ring, parse_polynomial
 
-RELATIONS = ('eq', 'le', 'lt', 'ne')
 MISSING = object()
 
 
@@ -23,11 +23,6 @@ def _get_param(pname: str, req: JsonObject, default: object = MISSING) -> object
     raise ParamError(param=pname, reason='missing')
 
 
-def _create_ring(names: list[str]) -> Parent:
-    """Return the multivariate polynomial ring QQ[names], multivariate even for one name."""
-    return PolynomialRing(QQ, len(names), names)
-
-
 def _coerce_ring(pname: str, req: JsonObject, ctx: dict[str, object]) -> tuple[str, object]:
     """Return the multivariate ring QQ[vars] for a non-empty list of identifiers, passed as `R`."""
     names = _get_param(pname, req)
@@ -36,7 +31,7 @@ def _coerce_ring(pname: str, req: JsonObject, ctx: dict[str, object]) -> tuple[s
     bad = [n for n in names if not isinstance(n, str) or not n.isidentifier()]
     if bad:
         raise ParamError(param=pname, reason=f'not valid identifiers: {bad}')
-    ring = _create_ring(names)
+    ring = create_ring(names)
     ctx['R'] = ring
     return 'R', ring
 
@@ -55,13 +50,7 @@ def _parse_poly(pname: str, s: object, ctx: dict[str, object]) -> MPolynomial | 
     ring = ctx.get('R')
     if not isinstance(ring, Parent):
         raise ParamError(param=pname, reason='declared before the variables')
-    if not isinstance(s, str):
-        raise ParamError(param=pname, reason='must be a polynomial string')
-    try:
-        return ring(s)
-    except (TypeError, ValueError, SyntaxError, NameError) as exc:
-        gens = ', '.join(map(str, ring.gens()))
-        raise ParamError(param=pname, reason=f'not a polynomial in QQ[{gens}]: {s!r} ({exc})') from exc
+    return parse_polynomial(ring, s, param=pname)
 
 
 def _coerce_poly(pname: str, req: JsonObject, ctx: dict[str, object]) -> tuple[str, object]:
