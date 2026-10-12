@@ -45,6 +45,8 @@ inductive SymExpr
   | method (name : String) (self : SymExpr) (args : List SymExpr)
   /-- `deriv (fun k => body) point`: Sage's derivative of `body` in `k`, evaluated at `point`. -/
   | deriv (k : String) (body point : SymExpr)
+  /-- A partial derivative of `body` in the coordinate variable `k`, then each coordinate variable replaced. -/
+  | partialAt (k : String) (body : SymExpr) (subs : List (String × SymExpr))
   /-- A sub-expression computed at another Lean type (`ℕ`, `ℤ`) than its context, such as the `n % 7` inside
   `((n % 7 : ℕ) : ℝ)`; the rendering restores the cast. -/
   | typed (ty : String) (e : SymExpr)
@@ -77,6 +79,9 @@ partial def SymExpr.toSage : SymExpr → String
     s!"({self.toSage}).{m}(" ++ ", ".intercalate (args.map (·.toSage)) ++ ")"
   | .typed ty e => s!"typed({e.toSage}, '{ty}')"
   | .deriv k body point => s!"diff({body.toSage}, {k}).subs(\{{k}: {point.toSage}})"
+  | .partialAt k body subs =>
+    let pairs := ", ".intercalate (subs.map fun (c, v) => s!"{c}: {v.toSage}")
+    s!"diff({body.toSage}, {k}).subs(\{{pairs}})"
 
 /-- The kind of domain condition an expression needs. -/
 inductive DomainKind | ne | nonneg | pos | le
@@ -100,6 +105,10 @@ structure SymState where
   tables : Tables := [coreTable]
   /-- Inside the body of a `deriv`: conditions are those for differentiability. -/
   inDeriv : Bool := false
+  /-- Inside a partial derivative: the fresh point whose coordinates `y j` become Sage variables. -/
+  coordinates : Option Expr := none
+  /-- The coordinates used so far inside a partial derivative, with the term each came from. -/
+  coordinateUses : Array (Nat × Expr) := #[]
 
 abbrev SymM := StateRefT SymState MetaM
 
@@ -209,6 +218,36 @@ def Condition.dischargedBy (c : Condition) (nameable : LocalDecl → Bool) : Met
       if ← withReducible (isDefEq ty target) then return some decl.userName
   return none
 
+/-- Is `e` the variable `y`, possibly seen through structure projections such as `Space.val`? -/
+private partial def viewsOf (env : Environment) (y e : Expr) : Bool :=
+  e == y ||
+    match e.getAppFn with
+    | .const n _ =>
+      match env.getProjectionFnInfo? n with
+      | some info => e.getAppNumArgs == info.numParams + 1 && viewsOf env y e.appArg!
+      | none => false
+    | _ => false
+
+/-- The coordinate index of `e = y j` (with `y` possibly seen through a projection) at a numeral `j`. -/
+def coordinateIndex? (env : Environment) (y e : Expr) : Option Nat :=
+  if e.isApp && viewsOf env y e.appFn! then
+    natLit? e.appArg!
+  else none
+
+/-- A point of a type such as Physlib's `Time`, seen through the coercion a table lists for it (`t.val`), so that
+it stands for a number; any other point is returned as it is. -/
+private def numericView (point : Expr) : SymM Expr := do
+  let ty ← whnfR (← inferType point)
+  if [``Nat, ``Int, ``Rat, `Real, `Complex].any ty.isConstOf then return point
+  for t in (← get).tables do
+    for c in t.coercions do
+      try
+        let viewed ← mkAppM c.toName #[point]
+        let vty ← whnfR (← inferType viewed)
+        if [``Nat, ``Int, ``Rat, `Real, `Complex].any vty.isConstOf then return viewed
+      catch _ => pure ()
+  return point
+
 /-- Is the type ℕ or ℤ, where `/`, `%` and (on ℕ) `-` differ from field arithmetic? -/
 private def isIntegerType (ty : Expr) : MetaM Bool := do
   let ty ← whnfR ty
@@ -224,12 +263,19 @@ private def positiveDivisor (b : Expr) : SymM Bool := do
     return true
   return false
 
+mutual
+
 /-- Translate a Lean term to a symbolic expression; anything outside the coverage list becomes an atom. -/
 partial def exprToSym (e : Expr) : SymM SymExpr := do
   if let some n := natLit? e then return .num n 1
   if e.isFVar then
     if let some (_, k) := (← get).bound.find? (·.1 == e) then return .bvar k
   if e.getAppFn.isLambda then return ← exprToSym e.headBeta
+  if let some y := (← get).coordinates then
+    if let some j := coordinateIndex? (← getEnv) y e then
+      modify fun st => if st.coordinateUses.any (·.1 == j) then st
+        else { st with coordinateUses := st.coordinateUses.push (j, e) }
+      return .bvar s!"c{j}_"
   let (f, args) := e.getAppFnArgs
   -- `Function.update x i v j` at numeral coordinates: `v` when `i = j`, `x j` otherwise
   if f == ``Function.update && args.size == 7 then
@@ -240,6 +286,10 @@ partial def exprToSym (e : Expr) : SymM SymExpr := do
     if entry.arity ≥ 1 && args.size ≥ entry.arity then
       let operands := args.extract (args.size - entry.arity) args.size
       noteConditions entry operands
+      match entry.role with
+      | some "derivative" => return ← derivAt e operands[0]! operands[1]!
+      | some "partial" => if entry.arity == 3 then return ← partialAt e operands[0]! operands[1]! operands[2]!
+      | _ => pure ()
       if entry.arity == 1 then return .fn entry.sage (← exprToSym operands[0]!)
       return .call entry.sage (← operands.toList.mapM exprToSym)
   if let some c := tables.constant? f then
@@ -329,27 +379,63 @@ partial def exprToSym (e : Expr) : SymM SymExpr := do
   | `Polynomial.coeff, #[_, _, p, n] => return .method "coefficient" (← exprToSym p) [.bvar "X", ← exprToSym n]
   | `Polynomial.natDegree, #[_, _, p] | `Polynomial.degree, #[_, _, p] =>
     return .method "degree" (← exprToSym p) [.bvar "X"]
-  | `deriv, #[_, _, _, _, _, _, fn, point] =>
-    -- the body must translate without an opaque atom that depends on the variable, or Sage cannot differentiate it
-    let saved ← get
-    let ty ← inferType point
-    let kName := s!"d{saved.bound.size}_"
-    let result? ← withLocalDeclD `t ty fun x => do
-      let body := (mkApp fn x).headBeta
-      let before ← get
-      modify fun st => { st with bound := st.bound.push (x, kName), inDeriv := true }
-      let body' ← exprToSym body
-      let st ← get
-      set { st with bound := st.bound.pop, inDeriv := before.inDeriv }
-      if (st.atoms.extract before.atoms.size st.atoms.size).any (·.containsFVar x.fvarId!) then return none
-      -- the conditions met in the body hold at the point
-      let new := (st.conditions.extract before.conditions.size st.conditions.size).map fun c =>
-        { c with term := c.term.replaceFVar x point, bound := c.bound.map (·.replaceFVar x point) }
-      modify fun st' => { st' with conditions := before.conditions ++ new }
-      return some body'
-    match result? with
-    | none => set saved; symAtom e
-    | some body' => return .deriv kName body' (← exprToSym point)
+  | `deriv, #[_, _, _, _, _, _, fn, point] => derivAt e fn point
   | _, _ => symAtom e
+
+
+/-- `deriv (fun t => body) point`, or a library derivative applied as `(f, point)`: Sage's derivative of the body
+at the point. The body must translate without an opaque atom depending on the variable; otherwise the whole term
+is an atom. The body's conditions, taken for differentiability, are stated at the point. -/
+partial def derivAt (e fn point : Expr) : SymM SymExpr := do
+  let saved ← get
+  let ty ← inferType point
+  let kName := s!"d{saved.bound.size}_"
+  let result? ← withLocalDeclD `t ty fun x => do
+    let body := (mkApp fn x).headBeta
+    let before ← get
+    modify fun st => { st with bound := st.bound.push (x, kName), inDeriv := true }
+    let body' ← exprToSym body
+    let st ← get
+    set { st with bound := st.bound.pop, inDeriv := before.inDeriv }
+    if (st.atoms.extract before.atoms.size st.atoms.size).any (·.containsFVar x.fvarId!) then return none
+    let new := (st.conditions.extract before.conditions.size st.conditions.size).map fun c =>
+      { c with term := c.term.replaceFVar x point, bound := c.bound.map (·.replaceFVar x point) }
+    modify fun st' => { st' with conditions := before.conditions ++ new }
+    return some body'
+  match result? with
+  | none => set saved; symAtom e
+  | some body' =>
+    let viewed ← numericView point
+    -- a coerced point is kept whole as the atom (`t.val`), so the rendering names a number
+    let point' ← if viewed == point then exprToSym point else symAtom viewed
+    return .deriv kName body' point'
+
+/-- A partial derivative along coordinate `μ` of `f` at `point`, for a library operator applied as
+`(μ, f, point)`: each coordinate `y j` of the fresh point becomes a Sage variable, Sage differentiates in the
+`μ`-th, and every coordinate is then replaced by the point's. -/
+partial def partialAt (e μ fn point : Expr) : SymM SymExpr := do
+  let some m := natLit? μ | symAtom e
+  let saved ← get
+  let result? ← withLocalDeclD `y (← inferType point) fun y => do
+    let body := (mkApp fn y).headBeta
+    let before ← get
+    modify fun st => { st with inDeriv := true, coordinates := some y, coordinateUses := #[] }
+    let body' ← exprToSym body
+    let st ← get
+    set { st with inDeriv := before.inDeriv, coordinates := before.coordinates,
+                  coordinateUses := before.coordinateUses }
+    if (st.atoms.extract before.atoms.size st.atoms.size).any (·.containsFVar y.fvarId!) then return none
+    let new := (st.conditions.extract before.conditions.size st.conditions.size).map fun c =>
+      { c with term := c.term.replaceFVar y point, bound := c.bound.map (·.replaceFVar y point) }
+    modify fun st' => { st' with conditions := before.conditions ++ new }
+    let mut subs := #[]
+    for (j, coord) in st.coordinateUses do
+      subs := subs.push (s!"c{j}_", ← exprToSym (coord.replaceFVar y point))
+    return some (body', subs)
+  match result? with
+  | none => set saved; symAtom e
+  | some (body', subs) => return .partialAt s!"c{m}_" body' subs.toList
+
+end
 
 end Veriphy
