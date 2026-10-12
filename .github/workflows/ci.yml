@@ -130,21 +130,6 @@ jobs:
         curl -sSf https://elan.lean-lang.org/elan-init.sh | sh -s -- -y --default-toolchain none
         echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
 
-    - name: Probe the daemon over a pipe held open
-      run: |
-        (echo '{"id":1,"method":"ping"}'; sleep 20; echo '{"id":2,"method":"ping"}'; sleep 5) \
-          | timeout 90 sage -python -m veriphy.sage_server | while IFS= read -r l; do echo "$(date +%T) $l"; done
-        date +%T
-
-    - name: Probe one sage_run call
-      run: |
-        lake exe cache get
-        lake build Veriphy
-        printf 'import Veriphy\nexample (a : ℚ) : 0 ≤ a ^ 2 := by\n  sage_run "proof = nlinarith([sq_nonneg(x0, problem)])"\n' > Probe.lean
-        date +%T
-        VERIPHY_SAGE_TIMEOUT=60 timeout 300 lake env lean Probe.lean; echo "exit=$?"
-        date +%T
-
     - name: Run the tactic suite against the installed daemon
       run: |
         lake exe cache get

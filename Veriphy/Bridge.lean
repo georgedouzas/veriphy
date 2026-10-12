@@ -52,16 +52,16 @@ private def executableExists (exe : String) : IO Bool := do
   let dirs := ((← IO.getEnv "PATH").getD "").splitOn ":"
   dirs.anyM fun dir => System.FilePath.pathExists (System.FilePath.mk dir / exe)
 
-/-- The daemon process, with its stdin taken for writing. -/
-abbrev DaemonChild := IO.Process.Child { stdin := .null, stdout := .piped, stderr := .piped }
+/-- The daemon process, with its stdin taken for writing. Its stderr is discarded: a reader blocked on it
+would keep this Lean process from exiting while the daemon lives, and the daemon lives until Lean exits. -/
+abbrev DaemonChild := IO.Process.Child { stdin := .null, stdout := .piped, stderr := .null }
 
 /-- A running daemon serving every request of this Lean process. -/
 structure Session where
   exe : String
+  args : Array String
   stdin : IO.FS.Handle
   child : DaemonChild
-  /-- The last few kilobytes the daemon wrote to stderr (drained in the background, so it never blocks). -/
-  stderrTail : IO.Ref String
   nextId : Nat := 1
 
 /-- The session, guarded by a mutex: Lean elaborates declarations in parallel, the daemon answers one at a time. -/
@@ -71,40 +71,47 @@ initialize session : Std.Mutex (Option Session) ← Std.Mutex.new none
 def requestTimeout : IO Nat := do
   return ((← IO.getEnv "VERIPHY_SAGE_TIMEOUT").bind String.toNat?).getD 150
 
-/-- Start the daemon and drain its stderr in the background. -/
+/-- Start the daemon. -/
 private def start (cfg : Config) : IO Session := do
   let (exe, args) ← cfg.resolve
   unless ← executableExists exe do
     throw <| IO.userError s!"veriphy: could not start Sage: '{exe}' is not an executable on PATH — \
       install SageMath, or set VERIPHY_SAGE_CMD to the sage executable"
-  let child ← IO.Process.spawn { cmd := exe, args, stdin := .piped, stdout := .piped, stderr := .piped }
+  let child ← IO.Process.spawn { cmd := exe, args, stdin := .piped, stdout := .piped, stderr := .null }
   let (stdin, child) ← child.takeStdin
-  let tail ← IO.mkRef ""
-  let _ ← IO.asTask (prio := .dedicated) do
-    repeat
-      let line ← child.stderr.getLine
-      if line.isEmpty then break
-      tail.modify fun t => let all := t ++ line; (all.drop (all.length - 4000)).toString
-  return { exe, stdin, child, stderrTail := tail }
+  return { exe, args, stdin, child }
+
+/-- Why a fresh daemon gave no answer: rerun its command with no input and read what it printed. -/
+private def diagnose (s : Session) : IO IO.Error := do
+  let out ← IO.Process.output { cmd := s.exe, args := s.args, stdin := .null }
+  return startupFailure s.exe (out.stderr ++ out.stdout)
 
 /-- How an exchange with the daemon ended. -/
 inductive Reply | line (text : String) | eof | timeout
 
-/-- Send one request line and wait for one response line, up to `seconds`. -/
+/-- Send one request line and wait for one response line, up to `seconds`. The read blocks this thread; a
+watchdog polling every 100 ms kills the daemon at the limit, and ends as soon as the answer arrives. -/
 private def exchange (s : Session) (req : Json) (seconds : Nat) : IO Reply := do
   try
     s.stdin.putStr (req.compress ++ "\n")
     s.stdin.flush
   catch _ => return .eof
-  let reader ← IO.asTask (prio := .dedicated) do
-    let line ← s.child.stdout.getLine
-    return if line.isEmpty then Reply.eof else Reply.line line
-  let timer ← IO.asTask (prio := .dedicated) do
-    IO.sleep (seconds * 1000).toUInt32
-    return Reply.timeout
-  match ← IO.waitAny [reader, timer] with
-  | .ok reply => return reply
-  | .error _ => return .eof
+  let answered ← IO.mkRef false
+  let timedOut ← IO.mkRef false
+  let deadline := (← IO.monoMsNow) + seconds * 1000
+  let watchdog ← IO.asTask (prio := .dedicated) do
+    repeat
+      if ← answered.get then break
+      if (← IO.monoMsNow) ≥ deadline then
+        timedOut.set true
+        s.child.kill
+        break
+      IO.sleep 100
+  let line ← try s.child.stdout.getLine catch _ => pure ""
+  answered.set true
+  let _ ← IO.wait watchdog
+  if ← timedOut.get then return .timeout
+  return if line.isEmpty then .eof else .line line
 
 /-- Send one request to the daemon session and return its result. The session starts on first use, is
 restarted once if it died, and is killed when a request exceeds the time limit. -/
@@ -121,15 +128,13 @@ def request (cfg : Config := {}) (method : String) (params : Json := Json.null) 
       set (some { s with nextId := s.nextId + 1 })
       return some text
     | .timeout =>
-      s.child.kill
       set (none : Option Session)
       throw <| IO.userError s!"veriphy: the Sage request '{method}' exceeded {seconds}s; the daemon \
         was restarted (raise the limit with VERIPHY_SAGE_TIMEOUT)"
     | .eof =>
       set (none : Option Session)
       if retry && !fresh then return none
-      IO.sleep 200
-      throw (startupFailure s.exe (← s.stderrTail.get))
+      throw (← diagnose s)
   let answer ← session.atomically (m := IO) do
     match ← attempt true with
     | some text => pure text
