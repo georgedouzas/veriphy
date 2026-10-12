@@ -517,3 +517,16 @@ info: {"atom_types":["ℝ","ℝ","ℝ"],"atoms":["deriv (fun t => (fun y => y 0 
 example (x : Fin 2 → ℝ) :
     deriv (fun t => (fun y : Fin 2 → ℝ => y 0 ^ 2 * y 1) (Function.update x 0 t)) (x 0) = 2 * x 0 * x 1 := by
   kit_lenient
+
+/-! ## Inspecting a translation -/
+
+/--
+info: sage: diff(log(d0_), d0_).subs({d0_: x0})
+atoms:
+  x0 := a : ℝ
+conditions:
+  a ≠ 0
+-/
+#guard_msgs in
+variable (a : ℝ) in
+#veriphy_translate deriv (fun x => Real.log x) a

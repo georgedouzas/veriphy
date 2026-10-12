@@ -18,7 +18,7 @@
 - [x] 2.2 Add the `le` condition kind with two terms and constant bounds (D3), including discharge by `b < a`. Verify with kit tests for `k ≤ n` discharged by `hk : k ≤ n` and by `hk : k < n`, and an undischarged one.
 - [x] 2.3 Add `typed` sub-expressions and their serialization (D5). Verify with kit tests showing `typed(mod(x0, 7), 'ℕ')` for `((n % 7 : ℕ) : ℝ)`, and no marker in a pure ℕ goal.
 - [x] 2.4 Add namespace resolution and library-pack activation by sentinel constant, with constant validation and conflict rejection (D8). Verify with kit tests using a fixture pack: inactive without its sentinel, active with it, a missing constant reported, and a conflict rejected.
-- [ ] 2.5 Create the `physlib` pack: `∂ₜ`, `∂[i]`, `lorentzAlgebra` membership, the ladder and angular-momentum operators' unfolding lemmas, and Physlib's sign conventions (D12). Verify in the coverage runner that the pack activates with Physlib, and that a Physlib statement using `∂ₜ` translates to a derivative.
+- [x] 2.5 Create the `physlib` pack: `∂ₜ`, `∂[i]`, `lorentzAlgebra` membership, the ladder and angular-momentum operators' unfolding lemmas, and Physlib's sign conventions (D12). Verify in the coverage runner that the pack activates with Physlib, and that a Physlib statement using `∂ₜ` translates to a derivative.
 
 ## 3. Core coverage (symbolic-translation)
 
