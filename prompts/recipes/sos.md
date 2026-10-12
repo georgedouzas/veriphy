@@ -10,7 +10,7 @@
 
 ## Template
 
-Copy it to the project's `certificates/sos.sage` (or a more specific name), adapt the lines marked `EDIT`, keep the header, and run it with `sage_run file "certificates/<name>.sage"`.
+Copy it to the project's `.veriphy/certificates/sos.sage` (or a more specific name), adapt the lines marked `EDIT`, keep the header, and run it with `sage_run file "<name>.sage"`.
 
 ```sage
 # name: sos
@@ -57,7 +57,7 @@ proof = linear_combination([(c, sq_nonneg(q, problem)) for c, q in squares if q.
 
 ```lean
 example (a b : ℚ) : a * b ≤ (a ^ 2 + b ^ 2) / 2 := by
-  sage_run file "certificates/sos.sage"
+  sage_run file "sos.sage"
 -- replacement: linear_combination (1 / 2) * sq_nonneg (a - b)
 ```
 

@@ -30,8 +30,8 @@ rejects `sorry`, rejects any axiom beyond the standard three, and replays the pr
 Try this: nlinarith [sq_nonneg (a * b - 1)]
 ```
 
-Scripts usually live in your project's `certificates/` directory and run with
-`sage_run file "certificates/<name>.sage"`.
+Scripts usually live in your project's `.veriphy/certificates/` directory and run with
+`sage_run file "<name>.sage"`.
 
 ## What Veriphy provides
 
@@ -88,8 +88,8 @@ The tactic starts one daemon per Lean process, as `sage -python -m veriphy.sage_
    It fails on purpose, and the error shows the problem.
 2. Pick a recipe from the index in [`prompts/prove.md`](https://github.com/georgedouzas/veriphy/blob/main/prompts/prove.md) (step 3c).
 3. Copy the recipe's template from [`prompts/recipes/templates/`](https://github.com/georgedouzas/veriphy/blob/main/prompts/recipes/templates) into your project's
-   `certificates/`, and adapt the lines marked `EDIT`.
-4. Run it with `sage_run file "certificates/<name>.sage"`, and iterate on the feedback. A failure shows the script's
+   `.veriphy/certificates/`, and adapt the lines marked `EDIT`.
+4. Run it with `sage_run file "<name>.sage"`, and iterate on the feedback. A failure shows the script's
    output, the Lean text it built, and Lean's error.
 5. Replace the `sage_run` call with the emitted `Try this:` block, and keep the script for reuse.
 
@@ -106,7 +106,7 @@ The full procedure is in [`prompts/certify.md`](https://github.com/georgedouzas/
   when needed, verifies, and reports `proved`, `blocked-library-gap`, `blocked-missing-building-block` or
   `statement-suspect`. You own the outcome: it opens no PRs and keeps no state.
 - **`certify`**: builds one certificate for one goal with `sage_run`. It reuses the project's saved scripts, follows
-  the recipes otherwise, and saves what works in `certificates/`.
+  the recipes otherwise, and saves what works in `.veriphy/certificates/`.
 
 The skill logic is plain, agent-agnostic markdown (`prompts/prove.md`, `prompts/certify.md`, `prompts/recipes/`).
 The `skills/` files are thin Claude Code adapters.

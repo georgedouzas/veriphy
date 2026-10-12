@@ -8,7 +8,7 @@
 
 ## Template
 
-Copy it to the project's `certificates/transcendental_rewrite.sage` (or a more specific name), adapt the lines marked `EDIT`, keep the header, and run it with `sage_run file "certificates/<name>.sage"`.
+Copy it to the project's `.veriphy/certificates/transcendental_rewrite.sage` (or a more specific name), adapt the lines marked `EDIT`, keep the header, and run it with `sage_run file "<name>.sage"`.
 
 ```sage
 # name: transcendental_rewrite
@@ -41,11 +41,11 @@ proof = steps(*blocks, tactic(CLOSE)) if CLOSE else steps(*blocks)
 
 ```lean
 example (a b : ℝ) : Real.exp a * Real.exp b = Real.exp (a + b) := by
-  sage_run file "certificates/transcendental_rewrite.sage"
+  sage_run file "transcendental_rewrite.sage"
 -- replacement: rw [← Real.exp_add]
 
 example (x : ℝ) : Real.sin x ^ 2 + Real.cos x ^ 2 = 1 := by
-  sage_run file "certificates/transcendental_rewrite.sage"
+  sage_run file "transcendental_rewrite.sage"
 -- replacement: rw [Real.sin_sq_add_cos_sq]
 ```
 

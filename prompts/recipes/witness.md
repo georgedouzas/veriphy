@@ -7,7 +7,7 @@
 
 ## Template
 
-Copy it to the project's `certificates/witness.sage` (or a more specific name), adapt the lines marked `EDIT`, keep the header, and run it with `sage_run file "certificates/<name>.sage"`.
+Copy it to the project's `.veriphy/certificates/witness.sage` (or a more specific name), adapt the lines marked `EDIT`, keep the header, and run it with `sage_run file "<name>.sage"`.
 
 ```sage
 # name: witness
@@ -77,7 +77,7 @@ proof = witness(point, norm_num())
 
 ```lean
 example : ∃ v₁ v₂ : ℚ, 2 * v₁ + v₂ = 3 * v₁ ∧ v₁ + 2 * v₂ = 3 * v₂ ∧ v₁ ≠ 0 := by
-  sage_run file "certificates/witness.sage"
+  sage_run file "witness.sage"
 -- replacement: exact ⟨-1, -1, by norm_num⟩
 ```
 

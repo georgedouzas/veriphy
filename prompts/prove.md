@@ -52,7 +52,7 @@ score, or committing to the target repo beyond what the caller asked for.
       - first `sage -python -m veriphy.certificates list` in the project, and
         adapt a saved script whose `goal` matches;
       - otherwise pick a recipe from the index below, copy its template into
-        the project's `certificates/`, adapt it, and run it.
+        the project's `.veriphy/certificates/`, adapt it, and run it.
 
       | goal shape | recipe |
       |---|---|
@@ -71,7 +71,7 @@ score, or committing to the target repo beyond what the caller asked for.
       | `!![…]` identity, `det` or `trace` written in the goal | `matrix_from_goal` |
 
       Recipes are in `prompts/recipes/<name>.md`. Read only the one you use.
-      Save a script that closed its goal into the project's `certificates/`,
+      Save a script that closed its goal into the project's `.veriphy/certificates/`,
       with its header, so the next similar goal reuses it.
    d. oracle: when stuck on *what the proof even is* — solving an equation
       system (a kernel computation, an equilibrium, a change of variables),

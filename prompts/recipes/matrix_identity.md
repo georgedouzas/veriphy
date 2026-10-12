@@ -7,7 +7,7 @@
 
 ## Template
 
-Copy it to the project's `certificates/matrix_identity.sage` (or a more specific name), adapt the lines marked `EDIT`, keep the header, and run it with `sage_run file "certificates/<name>.sage"`.
+Copy it to the project's `.veriphy/certificates/matrix_identity.sage` (or a more specific name), adapt the lines marked `EDIT`, keep the header, and run it with `sage_run file "<name>.sage"`.
 
 ```sage
 # name: matrix_identity
@@ -24,7 +24,7 @@ proof = tactic('ext i j\nfin_cases i <;> fin_cases j <;> simp')  # entrywise; ad
 
 ```lean
 example : !![(0 : ℚ), 1; 1, 0] * !![1, 0; 0, -1] + !![1, 0; 0, -1] * !![(0 : ℚ), 1; 1, 0] = 0 := by
-  sage_run file "certificates/matrix_identity.sage"
+  sage_run file "matrix_identity.sage"
 ```
 
 ## Failure modes

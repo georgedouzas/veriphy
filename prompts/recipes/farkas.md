@@ -8,7 +8,7 @@
 
 ## Template
 
-Copy it to the project's `certificates/farkas.sage` (or a more specific name), adapt the lines marked `EDIT`, keep the header, and run it with `sage_run file "certificates/<name>.sage"`.
+Copy it to the project's `.veriphy/certificates/farkas.sage` (or a more specific name), adapt the lines marked `EDIT`, keep the header, and run it with `sage_run file "<name>.sage"`.
 
 ```sage
 # name: farkas
@@ -44,7 +44,7 @@ proof = steps(*steps_before, refute(constant, strict=uses_strict, weighted=weigh
 ```lean
 example (a b c : ℚ) (ha : 0 ≤ a) (hb : 0 ≤ b) (hc : 0 ≤ c)
     (e1 : 2 * a + b - c = 0) (e2 : a + 3 * c = 0) : a + b + c ≤ 0 := by
-  sage_run file "certificates/farkas.sage"
+  sage_run file "farkas.sage"
 ```
 
 ## Failure modes

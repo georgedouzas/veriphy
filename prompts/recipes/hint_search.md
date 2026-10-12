@@ -7,7 +7,7 @@
 
 ## Template
 
-Copy it to the project's `certificates/hint_search.sage` (or a more specific name), adapt the lines marked `EDIT`, keep the header, and run it with `sage_run file "certificates/<name>.sage"`.
+Copy it to the project's `.veriphy/certificates/hint_search.sage` (or a more specific name), adapt the lines marked `EDIT`, keep the header, and run it with `sage_run file "<name>.sage"`.
 
 ```sage
 # name: hint_search
@@ -36,7 +36,7 @@ proof = nlinarith([sq_nonneg(q, problem) for q, w in zip(squares, weights) if w 
 
 ```lean
 example (a b : ℝ) : 0 ≤ a ^ 2 * b ^ 2 - 2 * a * b + 1 := by
-  sage_run file "certificates/hint_search.sage"
+  sage_run file "hint_search.sage"
 -- replacement: nlinarith [sq_nonneg (a * b - 1)]
 ```
 

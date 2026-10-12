@@ -8,7 +8,7 @@
 
 ## Template
 
-Copy it to the project's `certificates/matrix_from_goal.sage` (or a more specific name), adapt the lines marked `EDIT`, keep the header, and run it with `sage_run file "certificates/<name>.sage"`.
+Copy it to the project's `.veriphy/certificates/matrix_from_goal.sage` (or a more specific name), adapt the lines marked `EDIT`, keep the header, and run it with `sage_run file "<name>.sage"`.
 
 ```sage
 # name: matrix_from_goal
@@ -41,13 +41,13 @@ else:
 
 ```lean
 example : !![(2 : ℚ), 1; 1, 1] * !![1, -1; -1, 2] = 1 := by
-  sage_run file "certificates/matrix_from_goal.sage"
+  sage_run file "matrix_from_goal.sage"
 -- replacement:
 --   ext i j
 --   fin_cases i <;> fin_cases j <;> norm_num
 
 example (c : ℚ) : Matrix.det !![(1 : ℚ), c; 0, 1] = 1 := by
-  sage_run file "certificates/matrix_from_goal.sage"
+  sage_run file "matrix_from_goal.sage"
 -- replacement:
 --   rw [Matrix.det_fin_two_of]
 --   ring

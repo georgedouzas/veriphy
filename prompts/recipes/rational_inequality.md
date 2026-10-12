@@ -8,7 +8,7 @@
 
 ## Template
 
-Copy it to the project's `certificates/rational_inequality.sage` (or a more specific name), adapt the lines marked `EDIT`, keep the header, and run it with `sage_run file "certificates/<name>.sage"`.
+Copy it to the project's `.veriphy/certificates/rational_inequality.sage` (or a more specific name), adapt the lines marked `EDIT`, keep the header, and run it with `sage_run file "<name>.sage"`.
 
 ```sage
 # name: rational_inequality
@@ -52,7 +52,7 @@ proof = steps(
 
 ```lean
 example (x : ℝ) : x / (x ^ 2 + 1) ≤ 1 / 2 := by
-  sage_run file "certificates/rational_inequality.sage"
+  sage_run file "rational_inequality.sage"
 -- replacement:
 --   have hD : 0 < 2 * (x ^ 2) + 2 := by positivity
 --   have hN : 0 ≤ x ^ 2 - 2 * x + 1 := by nlinarith [sq_nonneg (-x + 1)]
