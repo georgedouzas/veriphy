@@ -1,7 +1,6 @@
 """Bind a serialized Lean problem to Sage objects."""
 
 from dataclasses import dataclass, field
-from typing import NamedTuple
 
 from sage.all import QQ, PolynomialRing
 from sage.rings.polynomial.multi_polynomial import MPolynomial
@@ -55,7 +54,8 @@ def parse_polynomial(ring: MPolynomialRing_base, s: object, *, param: str) -> MP
         raise ParamError(param=param, reason=f'not a polynomial in QQ[{gens}]: {s!r} ({exc})') from exc
 
 
-class Side(NamedTuple):
+@dataclass(frozen=True)
+class Side:
     """Hold one side of a relation goal, as scripts see it.
 
     Args:
@@ -67,7 +67,8 @@ class Side(NamedTuple):
     text: str
 
 
-class Hyp(NamedTuple):
+@dataclass(frozen=True)
+class Hyp:
     """Hold one hypothesis or goal of a problem, as scripts see it.
 
     Args:

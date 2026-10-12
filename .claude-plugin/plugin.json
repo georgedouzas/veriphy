@@ -1,6 +1,6 @@
 {
   "name": "veriphy",
-  "description": "Machine-verified physics/math proofs in Lean 4 with SageMath as an untrusted oracle: the /prove skill, seven certificate tactics (sage_factor, sage_sos, sage_lincomb, sage_witness, sage_sum, sage_farkas, sage_exists), sage_certify for agent-written certificates, and four advisory bridge methods.",
+  "description": "Machine-verified physics/math proofs in Lean 4 with SageMath as an untrusted oracle: the prove and certify skills, the sage_run tactic, a toolkit and recipes for building kernel-checked certificates, and advisory bridge methods.",
   "version": "0.3.0",
   "author": {
     "name": "Georgios Douzas"

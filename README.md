@@ -86,8 +86,8 @@ The tactic starts one daemon per Lean process, as `sage -python -m veriphy.sage_
    ```
 
    It fails on purpose, and the error shows the problem.
-2. Pick a recipe from the index in [`prompts/prove.md`](prompts/prove.md) (step 3c).
-3. Copy the recipe's template from [`prompts/recipes/templates/`](prompts/recipes/templates) into your project's
+2. Pick a recipe from the index in [`prompts/prove.md`](https://github.com/georgedouzas/veriphy/blob/main/prompts/prove.md) (step 3c).
+3. Copy the recipe's template from [`prompts/recipes/templates/`](https://github.com/georgedouzas/veriphy/blob/main/prompts/recipes/templates) into your project's
    `certificates/`, and adapt the lines marked `EDIT`.
 4. Run it with `sage_run file "certificates/<name>.sage"`, and iterate on the feedback. A failure shows the script's
    output, the Lean text it built, and Lean's error.
@@ -97,7 +97,7 @@ The tactic starts one daemon per Lean process, as `sage -python -m veriphy.sage_
 description), and `… show <name>` prints one. A saved script reads the bound `problem`, so it runs unchanged on any
 goal of the same shape.
 
-The full procedure is in [`prompts/certify.md`](prompts/certify.md).
+The full procedure is in [`prompts/certify.md`](https://github.com/georgedouzas/veriphy/blob/main/prompts/certify.md).
 
 ## Skills
 
@@ -150,7 +150,7 @@ lake build VeriphyTest.Kit       # the kit alone, no Sage needed
 ```
 
 `VeriphyTest/Benchmark.lean` holds every problem the former certificate tactics solved, each now solved by a recipe
-template through `sage_run`, with replay on. See [the developer guide](docs/development/index.md) for how the pieces
+template through `sage_run`, with replay on. See [the developer guide](https://github.com/georgedouzas/veriphy/blob/main/docs/development/index.md) for how the pieces
 fit and how to add a recipe or a toolkit building block.
 
 ## Layers
@@ -191,4 +191,4 @@ Veriphy's own translation is narrower. Scripts see polynomial arithmetic over at
 `x / y`) is an opaque atom, and hypotheses with no polynomial form arrive as text. Extending it to rational functions
 and symbolic expressions, possibly by reusing LeanSage's translator, is future work.
 
-The design rationale is in [the user guide](docs/overview/user_guide.md).
+The design rationale is in [the user guide](https://github.com/georgedouzas/veriphy/blob/main/docs/overview/user_guide.md).

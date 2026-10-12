@@ -3,8 +3,8 @@
 How Veriphy works and why it is built this way. The design was distilled from
 the founding discussion (2026-10-07/08), and it records what was decided and
 *why*, so future changes argue against the original reasoning rather than
-rediscovering it. To add a certificate tactic, see
-[Development](../development/index.md#adding-a-certificate).
+rediscovering it. To add a recipe or a toolkit building block, see
+[Development](../development/index.md).
 
 ## The problem
 
@@ -46,46 +46,69 @@ unusable for mathlib/Physlib contributions. Veriphy deliberately occupies the
 complement: certification and the agent skill. Where practical, certificate
 checkers should be contributed upstream rather than duplicated.
 
-## Scope boundary: the certificate catalog
+## Scope boundary: building blocks, not certificates
 
-A `sage_*` tactic exists only where three things coincide: (1) finding ≫
-checking, (2) a known certificate format, (3) an existing Lean checker
-(`ring1`, `positivity`, `norm_num`, `linear_combination`, `decide`). That
-triple intersection is the classical, essentially closed catalog
-(Gröbner/ideal membership, factorization, SOS, WZ pairs, primality
-certificates, eigen witnesses, LP duality) — eight to ten entries, ever.
+A certificate is worth computing in Sage where three things coincide: (1) finding is much harder than checking,
+(2) there is a certificate format, and (3) an existing Lean checker accepts it (`ring1`, `linear_combination`,
+`nlinarith`, `positivity`, `norm_num`, `decide`). The classical examples are ideal membership, factorization, sums of
+squares, LP duality and witnesses.
 
-Implemented (2026-10): `sage_factor`, `sage_sos` (factorization + completed
-squares, plus caller-supplied candidate squares `sage_sos [q₁, …]`; full SOS
-needs an exact SDP step), `sage_lincomb` (local polyrith via `ideal.lift`;
-also kernel-span certificates), `sage_witness`, `sage_sum` (Sage discovers the
-closed form; the proof is kernel-only induction — Sage-free by construction),
-`sage_farkas` (LP duality: exact rational Farkas multipliers checked by
-`linear_combination`), `sage_exists` (rational witnesses checked by
-`norm_num`; this subsumes the planned `sage_eigen`).
+Veriphy first shipped one tactic per certificate (`sage_factor`, `sage_sos`, `sage_lincomb`, `sage_farkas`, …).
+That covered only the cases someone had already solved, and every new shape needed a Lean metaprogram, a daemon
+method and a release. Because real goals have a long tail, Veriphy now ships the **building blocks** instead and
+leaves each **certificate** to whoever needs it:
 
-The last three were added on demand from a physics formalization (Forgács–Manton
-reduction over super coset spaces): the gauge-anomaly no-go systems exceeded
-`linarith`, the potentials were sums of squares of field strengths that do not
-factor, and mass spectra need eigenvector witnesses.
+- **`sage_run`** runs a Sage script against the goal and checks the Lean block it returns. Only the kernel decides.
+  The block must not use `sorry` or non-standard axioms, and it is replayed from its printed text.
+- **The toolkit** binds the goal as a `problem`, provides emitters that write well-formed Lean (sums of weighted
+  hypotheses, `sq_nonneg` terms, `nlinarith` hints, `calc` chains, case splits, witnesses, refutations) and adds two
+  exact solvers that are hard to get right per proof: a rational LP, and SOS from a numeric SDP rounded and verified
+  exactly.
+- **Recipes** carry the knowledge the old tactics hard-coded. Each technique has its decision rule, a tested
+  template, a worked example and its failure modes.
+- **Skills** (`prove`, `certify`) run the loop: inspect, reuse a saved script, or adapt a recipe, then run, iterate
+  and save.
 
-Remaining entries (`sage_branch` for Lie branching rules, full SOS) are built
-**only when a `blocked-missing-building-block` report demands them**.
-If this repo is still growing tactics without such demand, something went
-wrong.
+Scripts belong to the project being proved (its `certificates/` directory), and the catalog makes them reusable.
+Every problem the old tactics solved is in the benchmark (`VeriphyTest/Benchmark.lean`), solved by the recipes.
+`blocked-missing-building-block` now means the toolkit cannot express a proof: a missing Sage primitive or Lean
+emitter, named in the report.
 
-Since 2026-10 the catalog grows by **checker families**, not bespoke tactics.
-Every tactic was the same six stages, and only the Sage solve step (plus the
-choice of checker) differed. The shared stages now live in a kit (`Veriphy/Kit/`),
-and a fixed set of families covers the checkers: `identity` (`ring1`,
-`linear_combination`), `inequality` (`linear_combination` with `sq_nonneg`
-terms, or a `norm_num` refutation), `witness` (`norm_num`), `sum` (induction)
-and `cases` (`decide`). The agent can also write a one-off certificate itself:
-`sage_certify <family> "<sage script>"` runs a script against the normalized
-problem and checks its `certificate` with the family's checker, so a
-certificate that fits a family needs no new tactic. `blocked-missing-building-block`
-now means *no family can check it*. A new family is the unit of growth (see
-[Adding a certificate](../development/index.md#adding-a-certificate)).
+## Building proofs with `sage_run`
+
+```lean
+-- the script sees the goal as `problem` (x0 = a, x1 = b) and returns a Lean tactic block
+example (a b : ℝ) : 0 ≤ a ^ 2 * b ^ 2 - 2 * a * b + 1 := by
+  sage_run "proof = nlinarith([sq_nonneg(x0*x1 - 1, problem)])"
+-- Try this: nlinarith [sq_nonneg (a * b - 1)]
+
+-- a saved script from the project, here a Farkas refutation found by an exact LP
+example (x y : ℚ) (h1 : x + y ≤ 1) (h2 : x - y = 3) (h3 : 0 ≤ y) : False := by
+  sage_run file "certificates/farkas.sage"
+```
+
+The steps are:
+
+1. **Inspect.** `sage_run "print(goal_kind, goal); print(hyps); print(atoms); proof = 'sorry'"` fails on purpose,
+   and its error shows the problem.
+2. **Reuse.** `sage -python -m veriphy.certificates list` shows the project's saved scripts.
+3. **Adapt.** Otherwise copy a recipe template from `prompts/recipes/templates/` to `certificates/` and adapt the
+   lines marked `EDIT`.
+4. **Iterate.** A failure shows the script's output, the Lean text and Lean's error together.
+5. **Commit** the emitted replacement, which builds without Sage, and keep the script.
+
+| Goal shape | Recipe |
+|---|---|
+| `a = b` from equality hypotheses | `ideal_membership` |
+| `False`, `a ≤ b`, `a < b` linear in the hypotheses | `farkas` |
+| `0 ≤ p`, `p` polynomial | `sos` |
+| polynomial inequality needing products or squares | `hint_search` |
+| `lhs = rhs` where the factored `lhs` helps | `factor_rewrite` |
+| `∃ x₁ … xₙ, …` with rational values | `witness` |
+| `∑ k ∈ Finset.range n, f k = F n` | `sum_induction` |
+| long manipulation through intermediate forms | `calc_derivation` |
+| easy on each side of a condition | `case_split` |
+| identity between explicit matrices | `matrix_identity` |
 
 ## Product decision: a pure tool
 
