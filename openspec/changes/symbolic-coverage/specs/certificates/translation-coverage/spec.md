@@ -35,9 +35,21 @@ The command SHALL write a JSON report and print a summary with:
 - **WHEN** the command runs over the `Archive` modules
 - **THEN** the report lists the three numbers and the ranked heads, and the JSON holds the same data
 
-### Requirement: Measured corpora and recorded results
-A runner, separate from the library build, SHALL measure Physlib (at a pinned revision compatible with Veriphy's mathlib) and Mathlib's `Archive`. The baseline before this change's core entries and the result after them SHALL be recorded in `docs/development/coverage.md`, with the corpus revisions, the date and the top opaque heads. Each listed head SHALL be marked as one of: added to the core, a candidate for a project entry, or out of scope (with the reason).
+### Requirement: Measured corpora
+A runner, separate from the library build, SHALL measure:
+- Physlib, at a pinned revision compatible with Veriphy's mathlib;
+- Mathlib's `Archive`;
+- mathlib's `Mathlib.Analysis.ODE`, `Mathlib.Algebra.Lie` and `Mathlib.Geometry.Manifold`.
+
+Results SHALL be reported per corpus and per active namespace.
+
+#### Scenario: Per-corpus report
+- **WHEN** the runner finishes
+- **THEN** there is one report per corpus, each listing the active namespaces
+
+### Requirement: Recorded results
+The baseline before this change's core entries and the result after them SHALL be recorded in `docs/development/coverage.md`, with the corpus revisions, the date and the top opaque heads. Each listed head SHALL be marked as one of: added to the core, added to a library pack, a candidate for a project entry, or out of scope (with the reason).
 
 #### Scenario: Before and after
 - **WHEN** the core categories of this change are implemented
-- **THEN** `docs/development/coverage.md` shows the baseline and post-change shares for both corpora, and the post-change fully-covered share is at least the baseline's for each
+- **THEN** `docs/development/coverage.md` shows the baseline and post-change shares for every corpus, and the post-change fully-covered share is at least the baseline's for each

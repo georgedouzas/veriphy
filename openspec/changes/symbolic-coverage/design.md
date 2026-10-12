@@ -4,7 +4,7 @@
 
 The symbolic translation (`Veriphy/Kit/Symbolic.lean`) maps Lean terms to a small IR (`SymExpr`) through hard-coded tables, and records domain conditions as `(term, ne | nonneg | pos)`. `Problem.enrich` runs it over every hypothesis and the goal. The Python toolkit parses the serialized forms into Sage's symbolic ring (`parse_symbolic`) and renders results back with a function table in `_symbolic_emit.py`. Rendering is untyped: a term is printed and Lean elaborates it with whatever type unification finds. The `transcendental_rewrite` template keeps its own lemma table.
 
-Physlib and Veriphy both pin mathlib `v4.34.1`, and mathlib declares an `Archive` library target, so one Lake project can import Veriphy, Physlib and `Archive` together.
+Physlib (commit `ee0bfb40`, the GUT branch) and Veriphy both pin mathlib `v4.34.1`, and mathlib declares an `Archive` library target, so one Lake project can import Veriphy, Physlib and `Archive` together.
 
 ## Goals / Non-Goals
 
@@ -15,7 +15,9 @@ Physlib and Veriphy both pin mathlib `v4.34.1`, and mathlib declares an `Archive
 
 **Non-Goals:**
 - Complex branch cuts beyond the existing `Complex` table (`Complex.log`, `Complex.arg` stay text-only).
-- Integrals, limits and series. They are candidates for later, chosen by the coverage report.
+- Integrals and limits as translated constructs. Series appear only inside certified numerics, as truncations with explicit remainders.
+- Abstract category theory (universal properties, limits, adjunctions). Mathlib's automation owns it. Veriphy covers categories only through explicit finite data: fusion categories and linear natural transformations.
+- Abstract manifolds. The geometry component works in coordinates, against reference definitions, until mathlib or Physlib provides coordinate expressions to state against.
 - Running the coverage measurement in CI, since it needs a Physlib build.
 
 ## Decisions
@@ -85,6 +87,68 @@ The `derivative` recipe closes `deriv f a = v` with `rw [(term).deriv]` followed
 
 The runner is `coverage/`, a Lake project with `require veriphy from ".."`, `require physlib` at a pinned commit, and mathlib's `Archive` through `lake build Archive`. Its `Coverage.lean` imports `Physlib` and `Archive` and runs the command twice. Results are copied into `docs/development/coverage.md`.
 
+### D8. Namespaces and library packs
+
+Each entry record carries its namespace. The `mathlib` core is compiled into Veriphy. A library pack is a directory of JSON entries plus recipes. It names its library's root module (`Physlib`) and the constants it refers to. At extraction, Lean activates a pack when `(← getEnv).contains` holds for the pack's sentinel constant, so no import is needed. It then validates that each referenced constant exists, and reports a pack/library version mismatch, naming the missing constants. Resolution order is `mathlib`, packs in alphabetical order, then `project`. A conflict rejects the later entry.
+
+**Alternative considered:** a separate Lake package per library (`veriphy-physlib`). That is heavier for users, and the pack is data, so it does not need compiling against Physlib.
+
+### D9. `VeriphyCheck`: reflection with kernel arithmetic
+
+The checkers work over plain data:
+- `List (Nat × Nat × Int × Nat)` for sparse matrices (row, column, numerator, denominator);
+- sorted monomial lists for polynomials;
+- arrays of `(i, j, k, c)` for structure constants;
+- recursive certificates for Pratt.
+
+The checker functions use only `Nat` and `Int` operations, which the kernel accelerates with GMP. Each comes with:
+- a `denote` function into mathlib's objects (`Matrix (Fin n) (Fin n) ℚ`, `MvPolynomial`, a Lie bracket on `Fin n → ℚ`, `Nat.Prime`);
+- a soundness theorem: `check c = true → denote c = …`.
+
+Emitted proofs are `VeriphyCheck.Matrix.eq_of_check (by decide)` plus a `simp only [denote_…]` bridge from the goal's literals. The library is a separate `lean_lib` with mathlib as its only import, and `scripts/bundle_check.py` bundles it into one file.
+
+**Alternatives considered:**
+- `native_decide`. It trusts the compiler, and the axiom guard rejects it.
+- Entrywise `norm_num`. It scales quadratically in proof size, so E₈'s adjoint representation (248²) is out of reach.
+
+### D10. Exact number fields
+
+Representations with square roots (Clebsch–Gordan coefficients), cyclotomic entries (fusion categories) and symbolic parameters (`D(2,1;α)`) need exact non-rational arithmetic. Sage computes in the number field or function field. Certificates come to Lean in one of three ways:
+- **Over `ℚ(√d)`:** as pairs over ℚ, with an emitted `Real.sqrt d` rendering and `Real.sq_sqrt` facts.
+- **Cyclotomic:** in `ℚ[x]/Φₙ`, with polynomial-reduction certificates checked by the polynomial checker, and the bridge to `CyclotomicField` through `IsPrimitiveRoot` facts.
+- **Over `ℚ(α)`:** by clearing denominators into polynomial identities in `α`.
+
+### D11. Component modules
+
+Each component is a private toolkit module with a narrow public surface, re-exported from `veriphy.toolkit`:
+- `_lie`: brackets, structure constants, Killing, Casimir, root data;
+- `_representation`: representations, decompositions, Clebsch–Gordan;
+- `_superalgebra`: grading, supertrace, super-Jacobi;
+- `_operators`: test-function operators, normal ordering;
+- `_clifford`: gamma matrices, traces, Fierz;
+- `_geometry`: SageManifolds adapters for metrics, curvature, forms, contraction;
+- `_algebraic`: Nullstellensatz, Positivstellensatz, normal forms, exponentials, Pratt;
+- `_summation`: WZ, Gosper, Zeilberger, guessing;
+- `_numerics`: series bounds, Sturm sequences, intervals;
+- `_fusion`: fusion rings, F/R-symbols, gauge;
+- `_reflect`: reflection emitters.
+
+Each returns certificate objects with an `emit(problem)` method that produces Lean text, choosing the entrywise or reflective form by size. Technique search that is specific to one goal stays in recipe templates, as before.
+
+### D12. Physics conventions are explicit parameters
+
+Sign conventions (metric signature, `[Lᵢ, Lⱼ] = ±iεL`, Fierz basis normalization, gamma representation) are parameters of the component functions, never globals. The Physlib pack sets them to Physlib's conventions, and the templates expose them as `EDIT` lines.
+
+### D13. Milestones
+
+The tasks are ordered so that each milestone releases on its own:
+- **0.2.0:** foundations (core coverage, namespaces and extensions, `VeriphyCheck`, coverage) and ODEs;
+- **0.3.0:** Lie, representations, superalgebras, algebraic certificates;
+- **0.4.0:** operators and Clifford, geometry, summation, numerics;
+- **0.5.0:** fusion categories.
+
+The change is archived once all milestones land. Each milestone runs the full integration gate and updates the coverage report.
+
 ## Risks / Trade-offs
 
 - **[Risk]** A cast is lost when Sage rewrites a recorded sub-expression, and the rendered term then elaborates at an unintended type. → Integer-valued operators are typed by rule regardless, the outermost ascription fixes the expected type, and a wrong elaboration fails in Lean rather than proving something else.
@@ -92,6 +156,12 @@ The runner is `coverage/`, a Lake project with `require veriphy from ".."`, `req
 - **[Risk]** Project entries make problems larger, since they are serialized with every call. → Only entries whose Lean constant occurs in the problem are serialized.
 - **[Trade-off]** Mirroring the core table in Lean and JSON duplicates one fact. → The agreement test makes the duplication checked rather than silent, and keeps the Lean side free of file I/O for the core.
 - **[Risk]** Wider coverage makes Sage simplify more, so rendered results drift further from the goal's shape. → Recipes keep rendering from the script's own constructed expressions, and Lean checks every result regardless.
+
+- **[Risk]** Kernel evaluation of large checkers is slow, even with GMP acceleration. → Sparse formats, and certificates sized to the claim (a basis rather than all products). Benchmarks in the test suite fix time budgets per checker. Above the budget, the template reports the size instead of emitting a proof that times out.
+- **[Risk]** Sage's representation and fusion solvers return data in conventions (gauges, bases, normalizations) different from the goal's. → Conventions are explicit parameters (D12), gauge and basis changes are themselves certified, and templates report mismatches with the transformation that relates them.
+- **[Risk]** SageManifolds and `ore_algebra` availability varies by Sage installation. → SageManifolds ships with Sage 10. `ore_algebra` is optional and named when missing, and the tests that need it are skipped with a reason when it is absent.
+- **[Risk]** A library pack drifts from its library's API. → The pack validates its constants on activation and reports the missing ones. The pack's tests run in the coverage runner against the pinned Physlib.
+- **[Trade-off]** Reference assets (coordinate geometry, fusion data) are definitions Veriphy did not get from mathlib. → They are mathlib-only, small, and written to be proposed upstream. Proofs against them are only as meaningful as the definitions, so each asset carries sanity theorems (the flat metric has zero curvature, the trivial fusion category satisfies the axioms).
 
 ## Migration Plan
 
