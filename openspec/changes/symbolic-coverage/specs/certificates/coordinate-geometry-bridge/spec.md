@@ -7,12 +7,17 @@ Lets scripts use SageManifolds to compute Christoffel symbols, curvature, Ricci 
 ## ADDED Requirements
 
 ### Requirement: Reference coordinate definitions
-Veriphy SHALL ship, as a recipe asset that a project copies, a Lean file defining these for a metric given as a matrix of functions of coordinates `Fin n → ℝ`:
+Veriphy SHALL ship, as a recipe asset that a project copies into `.veriphy/lean/`, a Lean file defining these for a metric given as a matrix of functions of coordinates `Fin n → ℝ`:
 - Christoffel symbols of the second kind;
 - the Riemann and Ricci tensors and the scalar curvature;
 - the Killing equation.
 
-All are defined through partial derivatives and the inverse metric. The definitions SHALL be stated with mathlib's `deriv` and `Matrix` API only, so they need no Veriphy import and can be proposed upstream.
+#### Scenario: Definitions present
+- **WHEN** a project copies the asset
+- **THEN** it can state `christoffel g i j k x`, `ricci g i j x` and `killing g X` for an explicit metric `g`
+
+### Requirement: Definitions use mathlib only
+The reference definitions SHALL be stated through partial derivatives and the inverse metric with mathlib's `deriv` and `Matrix` API only, so they need no Veriphy import and can be proposed upstream.
 
 #### Scenario: Copying the definitions
 - **WHEN** a project copies the asset into its sources

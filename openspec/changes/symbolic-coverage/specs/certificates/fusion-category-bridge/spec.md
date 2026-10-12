@@ -25,7 +25,7 @@ The toolkit SHALL emit Lean proofs that the F-symbols satisfy the pentagon equat
 - **THEN** it emits proofs of the hexagon equations over `ℚ(ζ₁₆)`
 
 ### Requirement: A Lean structure to state fusion data against
-Veriphy SHALL ship, as a recipe asset that projects copy, a mathlib-only Lean definition of multiplicity-free fusion data (labels, fusion rules, F-symbols, R-symbols) with the pentagon and hexagon equations as propositions. The bridge targets it until mathlib provides an equivalent.
+Veriphy SHALL ship, as a recipe asset that projects copy into `.veriphy/lean/`, a mathlib-only Lean definition of multiplicity-free fusion data (labels, fusion rules, F-symbols, R-symbols) with the pentagon and hexagon equations as propositions. The bridge targets it until mathlib provides an equivalent.
 
 #### Scenario: Asset builds alone
 - **WHEN** a project copies the fusion-data asset

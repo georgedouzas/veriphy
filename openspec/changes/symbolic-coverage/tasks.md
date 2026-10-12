@@ -1,10 +1,16 @@
 # Tasks
 
-# Milestone 0.2.0: foundations and ODEs
+## Milestone 0.2.0: foundations and ODEs
+
+## 0. Project layout (project-layout, project-scripts)
+
+- [ ] 0.1 Add `Veriphy.projectDir` and `veriphy.core.project_dir` (D14), and route `sage_run file` through them, so bare names resolve in `.veriphy/certificates/`. Verify with tests: a bare name, an explicit `.veriphy/...` path, a run from a subdirectory, and a missing file naming the resolved path.
+- [ ] 0.2 Move the catalog to `.veriphy/certificates/` with `--root`, and add the 0.1.0 warning with its `git mv` command. Verify with pytest on a fixture with the old layout and one with the new.
+- [ ] 0.3 Update `prompts/prove.md`, `prompts/certify.md`, both skills, every recipe ("copy it to `.veriphy/certificates/`"), the README and the user guide to the `.veriphy/` layout, including the `lean_lib` stanza for copied assets. Verify that a grep finds no project-path `certificates/` outside `.veriphy/` in prompts, skills and docs, and that the docs build.
 
 ## 1. Baseline measurement (translation-coverage)
 
-- [ ] 1.1 Add `Veriphy/Kit/Coverage.lean` with `#veriphy_coverage [prefixes] "out.json"` (D7). It classifies atoms as local, uninterpreted or opaque, counts per statement and per head, and writes JSON plus a summary. Verify with Sage-free `#guard_msgs` tests in `VeriphyTest/Kit.lean` covering a fully covered statement, one with `Real.Gamma`, one with an uninterpreted `f x`, and one with no relation.
+- [ ] 1.1 Add `Veriphy/Kit/Coverage.lean` with `#veriphy_coverage [prefixes]` (writing to `.veriphy/coverage/` by default) (D7). It classifies atoms as local, uninterpreted or opaque, counts per statement and per head, and writes JSON plus a summary. Verify with Sage-free `#guard_msgs` tests in `VeriphyTest/Kit.lean` covering a fully covered statement, one with `Real.Gamma`, one with an uninterpreted `f x`, and one with no relation.
 - [ ] 1.2 Create the `coverage/` runner project: `require veriphy from ".."`, Physlib at a commit whose mathlib pin matches Veriphy's, and mathlib's `Archive`, `Mathlib.Analysis.ODE`, `Mathlib.Algebra.Lie` and `Mathlib.Geometry.Manifold`. Verify that `lake build` in `coverage/` produces one JSON report per corpus.
 - [ ] 1.3 Record the baseline in `docs/development/coverage.md`: corpus revisions, date, the three numbers per corpus and the top 30 opaque heads. Verify that the page builds with `nox -s docs -- build`.
 
@@ -34,7 +40,7 @@
 
 ## 5. Project tables (translation-extensions)
 
-- [ ] 5.1 Load, validate and merge `translations/*.json` (D2): schema errors naming the file and field, conflicts naming both entries and namespaces, a per-process cache, and serialization of the entries the problem uses. Verify with kit tests on a fixture directory with valid, invalid and conflicting entries.
+- [ ] 5.1 Load, validate and merge `.veriphy/translations/*.json` (D2): schema errors naming the file and field, conflicts naming both entries and namespaces, a per-process cache, and serialization of the entries the problem uses. Verify with kit tests on a fixture directory with valid, invalid and conflicting entries.
 - [ ] 5.2 Add `veriphy.translations` (`list`, `show`, schema validation shared with the toolkit), showing namespaces. Verify with pytest on the fixture directory, and with a run of `sage -python -m veriphy.translations list`.
 - [ ] 5.3 Add the round-trip check command for function and rewrite entries. Verify on the fixture directory: valid entries pass, and one with a wrong Sage name fails with its error.
 - [ ] 5.4 Add the "unknown function" step to `prompts/certify.md` and the `certify` skill, the library-recipe section in the recipe index, and an example entry (`Real.arcosh`) in the user guide. Verify with a scratch project where `Real.arcosh` is opaque until the entry is added and checked, and is then translated.
@@ -63,7 +69,7 @@
 - [ ] 8.2 Update the user guide (namespaces, project tables, typed rendering, ODEs, `VeriphyCheck`), the developer guide (adding core entries, packs and checkers), the README and the recipe index. Verify that `nox -s docs -- build` succeeds.
 - [ ] 8.3 Run `nox -s checks`, `nox -s tests`, `lake build VeriphyTest`, `lake build VeriphyCheck` and the Sage-free replay of every replacement, all green. Push and verify that CI is green.
 
-# Milestone 0.3.0: algebra
+## Milestone 0.3.0: algebra
 
 ## 9. Lie algebras (lie-bridge)
 
@@ -98,7 +104,7 @@
 
 - [ ] 13.1 Update the coverage report, the docs (an algebra chapter) and the recipe index. Run the full integration gate as in 8.3. Verify that everything is green, including CI.
 
-# Milestone 0.4.0: analysis and physics
+## Milestone 0.4.0: analysis and physics
 
 ## 14. Operators and Clifford algebras (operator-bridge)
 
@@ -130,7 +136,7 @@
 
 - [ ] 18.1 Update the coverage report, the docs (analysis and physics chapters) and the recipe index. Run the full integration gate. Verify that everything is green, including CI.
 
-# Milestone 0.5.0: fusion categories
+## Milestone 0.5.0: fusion categories
 
 ## 19. Fusion categories (fusion-category-bridge)
 

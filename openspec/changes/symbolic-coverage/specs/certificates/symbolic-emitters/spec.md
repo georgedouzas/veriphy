@@ -25,7 +25,7 @@ An unmapped function SHALL be rejected with an error naming it and pointing at t
 
 #### Scenario: Unmapped function
 - **WHEN** a script renders `gamma(x0)` and no project entry maps `gamma`
-- **THEN** the toolkit raises an error naming `gamma` and the `translations/` directory
+- **THEN** the toolkit raises an error naming `gamma` and the `.veriphy/translations/` directory
 
 #### Scenario: Project entry
 - **WHEN** the project has an entry mapping Sage `cosh` to `Real.cosh` and a script renders `cosh(x0)`

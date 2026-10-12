@@ -10,7 +10,7 @@ Organizes translation and rewrite entries in namespaces by library (the mathlib 
 Entries SHALL belong to one of three namespaces:
 - `mathlib`: the core, which refers only to Lean core and mathlib constants and is always active;
 - a library pack named for its library, such as `physlib`, shipped with Veriphy as data;
-- `project`: the entries in the project's `translations/`.
+- `project`: the entries in the project's `.veriphy/translations/`.
 
 A library pack SHALL be active only when the elaboration environment contains its library's root module. Veriphy SHALL NOT import any library other than mathlib.
 
@@ -31,11 +31,11 @@ Recipes and recipe assets specific to a library SHALL live under `prompts/recipe
 - **THEN** the recipe index offers the Physlib Lorentz-algebra recipe alongside the generic `lie_structure`
 
 ### Requirement: Entries live in the project
-Translation entries SHALL be JSON files in the project's `translations/` directory, resolved against the workspace root as certificate scripts are. Each file SHALL be validated against a declared schema. An invalid file SHALL be reported naming the file and the field, and SHALL NOT be loaded.
+Translation entries SHALL be JSON files in `.veriphy/translations/` at the project root, as defined by the project layout. Each file SHALL be validated against a declared schema. An invalid file SHALL be reported naming the file and the field, and SHALL NOT be loaded.
 
 #### Scenario: Invalid entry
-- **WHEN** `translations/cosh.json` lacks its Sage name
-- **THEN** extraction reports `translations/cosh.json: missing field 'sage'` and the other entries still load
+- **WHEN** `.veriphy/translations/cosh.json` lacks its Sage name
+- **THEN** extraction reports `.veriphy/translations/cosh.json: missing field 'sage'` and the other entries still load
 
 ### Requirement: Entry format
 A function entry SHALL give:
@@ -76,12 +76,12 @@ A Lean command SHALL check every project entry. For each entry it translates the
 `sage -python -m veriphy.translations list` SHALL print every entry of the active namespaces: its namespace, the file, the Lean constant or lemma, the Sage name, and the conditions. `show <name>` SHALL print one entry in full. Both SHALL report invalid files without failing on them.
 
 #### Scenario: Listing a project's entries
-- **WHEN** `translations/` holds `hyperbolic.json` with `Real.cosh` and `Real.sinh`
+- **WHEN** `.veriphy/translations/` holds `hyperbolic.json` with `Real.cosh` and `Real.sinh`
 - **THEN** `list` prints both entries with their file, under the `project` namespace
 
 ### Requirement: Agent workflow for an unknown function
-The `certify` playbook SHALL instruct the agent as follows. When a script's problem shows an opaque atom whose head is a function that Sage knows, the agent adds an entry to the project's `translations/`, runs the round-trip check, and only then relies on the entry. The playbook SHALL instruct the agent never to edit Veriphy's core tables for this.
+The `certify` playbook SHALL instruct the agent as follows. When a script's problem shows an opaque atom whose head is a function that Sage knows, the agent adds an entry to the project's `.veriphy/translations/`, runs the round-trip check, and only then relies on the entry. The playbook SHALL instruct the agent never to edit Veriphy's core tables for this.
 
 #### Scenario: Agent meets `Real.cosh`
 - **WHEN** an agent's goal contains `Real.cosh x` and the problem shows `Real.cosh x` as an atom
-- **THEN** the playbook leads the agent to write `translations/cosh.json`, check it, and rerun the script with `cosh(x0)` in the symbolic form
+- **THEN** the playbook leads the agent to write `.veriphy/translations/cosh.json`, check it, and rerun the script with `cosh(x0)` in the symbolic form
