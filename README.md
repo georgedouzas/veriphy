@@ -39,7 +39,10 @@ Scripts usually live in your project's `.veriphy/certificates/` directory and ru
 |---|---|
 | `sage_run` | The tactic: runs a proof script against the goal, checks the emitted block, emits the replacement |
 | Toolkit (`veriphy.toolkit`) | Problem binding, Lean emitters (`linear_combination`, `sq_nonneg`, `nlinarith`, `calc`, case splits, witnesses, refutations, …), and exact solvers (rational LP, SOS from an SDP) |
-| Recipes (`prompts/recipes/`) | One per technique, each with when to use it, a tested template, a worked example and failure modes. Covers ideal membership, Farkas refutation, SOS, factorization rewrite, witnesses, hint search, calc derivations, case splits, matrix identities and sums by induction |
+| Recipes (`prompts/recipes/`) | One per technique, each with when to use it, a tested template, a worked example and failure modes. Covers ideal membership, Farkas refutation, SOS, factorization rewrite, witnesses, hint search, calc derivations, case splits, matrix identities, sums by induction, rational inequalities, transcendental rewrites, derivatives and ODE solutions |
+| Translation tables | Lean terms to Sage in three namespaces: the `mathlib` core, library packs (`physlib`) active when the library is imported, and the project's own entries in `.veriphy/translations/`, each checked by `#veriphy_check_translations` |
+| `VeriphyCheck` | Mathlib-only kernel checkers (`decide +kernel`) with soundness theorems, for matrix products, brackets, traces, structure constants and primality certificates too large for entrywise proofs |
+| Coverage | `#veriphy_coverage` measures which statements of a corpus translate without opaque atoms, and ranks the heads that do not |
 | Skills | `prove` (statement to verified proof, end to end) and `certify` (build one certificate with `sage_run`) |
 | Catalog | `sage -python -m veriphy.certificates list` lists a project's saved scripts, so they get reused |
 | Advisory oracle | `symbolic_check`, `matrix_check`, `solve`, `run_script`: Sage as guidance while formalizing, never transcribed into proofs |
@@ -158,6 +161,8 @@ fit and how to add a recipe or a toolkit building block.
 ```text
 Veriphy/            Lean library: sage_run, problem extraction, closeAndEmit (checks, replay), the daemon bridge
 src/veriphy/        The `veriphy` Python package: the Sage daemon, the toolkit, the certificate catalog
+VeriphyCheck/       Mathlib-only kernel checkers with soundness theorems, bundled by scripts/bundle_check.py
+coverage/           Lake project measuring translation coverage on Physlib and mathlib corpora
 prompts/            Playbooks (prove, certify) and recipes with templates — agent-agnostic markdown
 skills/             Claude Code adapters for the playbooks
 ```

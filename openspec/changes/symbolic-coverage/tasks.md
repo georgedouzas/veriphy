@@ -64,7 +64,7 @@
 ## 8. Foundations checkpoint
 
 - [ ] 8.1 Rerun the coverage runner and record the post-change numbers and classified top heads. Verify that the fully covered share is at least the baseline's for every corpus.
-- [ ] 8.2 Update the user guide (namespaces, project tables, typed rendering, ODEs, `VeriphyCheck`), the developer guide (adding core entries, packs and checkers), the README and the recipe index. Verify that `nox -s docs -- build` succeeds.
+- [x] 8.2 Update the user guide (namespaces, project tables, typed rendering, ODEs, `VeriphyCheck`), the developer guide (adding core entries, packs and checkers), the README and the recipe index. Verify that `nox -s docs -- build` succeeds.
 - [ ] 8.3 Run `nox -s checks`, `nox -s tests`, `lake build VeriphyTest`, `lake build VeriphyCheck` and the Sage-free replay of every replacement, all green. Push and verify that CI is green.
 
 ## 9. Lie algebras (lie-bridge)

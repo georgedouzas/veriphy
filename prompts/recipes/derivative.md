@@ -38,8 +38,7 @@ example : deriv (fun x : ℝ => x ^ 2 * Real.exp x) 1 = 3 * Real.exp 1 := by
 -- replacement:
 --   have hd : HasDerivAt (fun x => x ^ 2 * Real.exp x) ((3 * (Real.exp 1) : ℝ)) (1) := by
 --     convert (((hasDerivAt_id' (1 : ℝ)).pow 2).mul ((hasDerivAt_id' (1 : ℝ)).exp)) using 1
---     simp only [Pi.pow_apply]
---     ring1
+--     all_goals (simp only [Pi.pow_apply]; ring1)
 --   exact hd.deriv.trans (by rfl)
 ```
 

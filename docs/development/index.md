@@ -23,6 +23,7 @@ environment you can follow the next steps:
 - `uv run nox -s tests` runs pytest and the doctests on SageMath's interpreter.
 - `lake build VeriphyTest` runs the tactic suite against live Sage, with replay on.
 - `lake build VeriphyTest.Kit` runs the kit tests, which need no Sage.
+- `lake build VeriphyCheck` builds the checkers; `VeriphyTest/Check.lean` tests them without Sage.
 
 ## How the pieces fit
 
@@ -55,6 +56,53 @@ writes a Lean construct correctly, or an exact solver. Technique-specific search
 search) belongs in a recipe template. Each public toolkit function needs a docstring with a runnable example, a test,
 and for emitters a case in the Lean parse check (`tests/toolkit/conftest.py`).
 
+The toolkit is organized by **certificate shape**, not by mathematical definition. There are far more definitions
+than any toolkit could cover, but few ways for an untrusted computation to hand Lean something it can check cheaply:
+a linear combination of hypotheses, a sum of squares, a witness, a factorization, a chain of derivative lemmas, a
+substitution, a list a kernel checker reads. A module such as `_sos` exists because "a sum of squares plus a
+positive combination" is one such shape that many problems reduce to. A new mathematical area earns a module when it
+brings a new shape, or when emitting an existing shape for it is hard to get right (`_ode` reuses `_derivative`'s
+chains; `_reflect` packs data for the `VeriphyCheck` checkers). Otherwise it is a recipe.
+
+## Adding a core translation entry
+
+The core table (`mathlib` namespace) is `coreTable` in `Veriphy/Kit/Table.lean`; the Python toolkit reads a JSON
+copy.
+
+1. Add the function, constant, coercion or rewrite entry, with its domain conditions and an example.
+2. Run `scripts/sync_tables.sh` to regenerate `src/veriphy/toolkit/core_table.json` and the pack copies. A
+   Sage-free kit test fails until the copies match.
+3. Add a kit test in `VeriphyTest/Kit.lean` showing the translation and its conditions, and a round trip in
+   `VeriphyTest/SageRun.lean` if Sage's name differs from the obvious one.
+4. Rerun the coverage runner (`docs/development/coverage.md`) when the entry targets a frequent opaque head.
+
+## Adding a library pack
+
+A pack holds one library's translation entries, notations and sign conventions, in its own namespace. It is active
+only when the library is imported. Veriphy never imports the library: constants are named as strings and checked when
+the pack activates.
+
+1. Write `Veriphy/Packs/<Library>.lean` with a `Pack`: the library name, a sentinel constant whose presence means the
+   library is imported, and the table. Record sign conventions (metric signature, normalizations) under
+   `conventions`, because scripts read them to state results in the library's own terms.
+2. Add it to `shippedPacks` in `Veriphy/Kit/Packs.lean` and run `scripts/sync_tables.sh`.
+3. Test activation and translation in the coverage runner (`coverage/PackCheck.lean`), which imports the library.
+   Library recipes go in `prompts/recipes/<library>/`.
+
+## Adding a checker
+
+Checkers live in `VeriphyCheck/` and import only mathlib, so `scripts/bundle_check.py` can bundle them for projects
+that do not depend on Veriphy.
+
+1. Write a `Bool`-valued function computed by structural recursion over lists or `List.finRange` (no well-founded
+   recursion, which the kernel does not unfold efficiently), and a soundness theorem from `= true` to the mathlib
+   statement.
+2. Test it in `VeriphyTest/Check.lean` on a small true case, a false case the kernel refuses, a large case, and
+   `#print axioms` showing only `propext`, `Classical.choice` and `Quot.sound`.
+3. Add the emitter in `src/veriphy/toolkit/_reflect.py`, deciding by size between an entrywise proof and the
+   checker. Measure before adding: a kernel checker that is slower than mathlib's tactic on realistic inputs (as a
+   polynomial normalizer is against `ring`) does not belong.
+
 ## Migrating from the removed tactics
 
 | Removed | Use |
@@ -77,8 +125,6 @@ without Sage. `VeriphyTest/SageRun.lean` and `VeriphyTest/Benchmark.lean` need S
 
 ## Known future work
 
-- Broader translation, specified in the `symbolic-translation` change: rational functions, transcendental functions,
-  matrices and casts as Sage symbolic expressions, with domain conditions.
 - A daemon that installs without SageMath, through the modular
   [passagemath](https://github.com/passagemath/passagemath) wheels, once they are shown to cover what scripts need.
 - Exact SOS on the boundary of the PSD cone (facial reduction). Today that case needs hinted squares.
