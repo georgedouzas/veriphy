@@ -147,3 +147,29 @@ def test_read_problem_records_typed_sub_expressions() -> None:
     mod = function('mod', nargs=2)
     assert bound.typed == [(mod(x2, 7), 'ℕ')]
     assert bound.goal.expr == mod(x2, 7)
+
+
+def test_read_problem_accepts_lean_serialized_extensions() -> None:
+    """Read project entries as Lean serializes them: absent options as null, Lean-only fields included."""
+    extension = {
+        'namespace': 'project',
+        'functions': [
+            {
+                'lean': 'Real.Gamma',
+                'sage': 'gamma',
+                'arity': 1,
+                'types': ['ℝ'],
+                'result': 'ℝ',
+                'conditions': [{'kind': 'pos', 'arg': 0, 'lhs': None, 'rhs': None}],
+                'example': 'Real.Gamma x',
+                'role': None,
+                'derivConditions': None,
+            },
+        ],
+        'constants': [],
+        'coercions': [],
+        'rewrites': [],
+        'conventions': None,
+    }
+    bound = read_problem({**SYMBOLIC, 'namespaces': ['mathlib', 'project'], 'extensions': [extension]})
+    assert bound.tables[1].functions[0].conditions[0].kind == 'pos'
