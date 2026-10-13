@@ -28,6 +28,111 @@ lake build Coverage
 
 Each corpus writes its JSON report to `coverage/.veriphy/coverage/<prefix>.json`.
 
+## After this release (2026-10-13)
+
+Measured at Veriphy commit `9c5ed6e`, with the same pins as the baseline. The baseline's fully covered share is in
+parentheses; every corpus is at or above it.
+
+| Corpus | Theorems | With a relation | Fully covered | Up to uninterpreted | Failed |
+|---|---|---|---|---|---|
+| Physlib `master` at `0b252e14` | 7938 | 6051 | 6.9% (6.7%) | 8.0% | 0 |
+| mathlib `Archive` (v4.34.1, `d13f23b7`) | 972 | 748 | 29.1% (28.2%) | 37.3% | 0 |
+| mathlib `Mathlib.Analysis.ODE` | 119 | 69 | 33.3% (15.9%) | 37.7% | 0 |
+| mathlib `Mathlib.Algebra.Lie` | 1625 | 1148 | 4.1% (3.7%) | 7.6% | 0 |
+| mathlib `Mathlib.Geometry.Manifold` | 3033 | 1100 | 18.1% (16.6%) | 27.6% | 0 |
+
+The largest gains come from ODEs (local functions now translate as Sage symbolic functions), sums and products
+whose bodies depend on the index, and truncated natural subtraction, which translates exactly as `max(a - b, 0)`
+instead of being left opaque.
+
+### Remaining opaque heads, classified
+
+The top ten heads per corpus, each in one of four classes:
+
+- **structural:** coercions, projections and set-level operations (`DFunLike.coe`, `Subtype.val`, `Bot.bot`), which
+  no scalar translation entry can give a Sage meaning; the toolkit's components state such goals in their own
+  terms instead;
+- **entry:** a function with a Sage counterpart under a side condition, a candidate for a core or pack entry
+  (`Finset.card`, `Norm.norm` on scalars, `ite`);
+- **component:** covered by a toolkit component rather than by the translation (`Bracket.bracket` by `_lie` and
+  `_operators`, manifold derivatives by `_geometry` in coordinates);
+- **corpus:** a definition local to the corpus, which a project entry covers if it has a closed form.
+
+### Physlib `master` at `0b252e14`, after
+
+| Rank | Head | Statements | Class | Example |
+|---|---|---|---|---|
+| 1 | `DFunLike.coe` | 2008 | structural | `Space.distGrad_eq_sum_basis` |
+| 2 | `HSMul.hSMul` | 526 | entry | `FieldSpecification.FieldOpFreeAlgebra.normalOrderF_swap_anPartF_crPartF` |
+| 3 | `Finset.sum` | 357 | entry | `Space.distGrad_eq_sum_basis` |
+| 4 | `Subtype.val` | 244 | structural | `FieldSpecification.CrAnSection.congr_fst` |
+| 5 | `Norm.norm` | 135 | entry | `LinearPMap.state_uncertainty_squared_of_raw_commutator` |
+| 6 | `Inner.inner` | 134 | entry | `Space.grad_inner_repr_eq` |
+| 7 | `Time.deriv` | 102 | component | `ClassicalMechanics.SimplePendulum.deriv_cos_coord` |
+| 8 | `WithLp.ofLp` | 89 | structural | `Electromagnetism.DistElectromagneticPotential.gradLagrangian_sum_inr_i` |
+| 9 | `TensorSpecies.τ` | 65 | corpus | `TensorSpecies.Tensor.prodT_contrT_fst` |
+| 10 | `ite` | 65 | entry | `Fermion.DualRightHandedWeyl.basis_apply` |
+
+### mathlib `Archive` (v4.34.1, `d13f23b7`), after
+
+| Rank | Head | Statements | Class | Example |
+|---|---|---|---|---|
+| 1 | `Finset.card` | 45 | entry | `Imo2015Q6.b_pos` |
+| 2 | `DFunLike.coe` | 39 | structural | `Ballot.count_countedSequence` |
+| 3 | `Imo2024Q3.Condition.N'` | 23 | corpus | `Imo2024Q3.Condition.p_apply_sub_two_le_p_apply` |
+| 4 | `Finset.sum` | 20 | entry | `Theorems100.sum_lt_half_of_not_tendsto` |
+| 5 | `HSMul.hSMul` | 19 | entry | `Imo2019Q2.Imo2019q2Cfg.two_zsmul_oangle_QQ₁A₂_eq_two_zsmul_oangle_QPA₂` |
+| 6 | `Fintype.card` | 18 | entry | `Imo1987Q1.mem_fiber` |
+| 7 | `EuclideanGeometry.angle` | 16 | component | `Imo2001Q5.Setup.BAP_eq` |
+| 8 | `Compl.compl` | 15 | structural | `VeroffAlgebra.compl_le_compl_iff_le` |
+| 9 | `Imo2024Q5.Path.firstMonster` | 15 | corpus | `Imo2024Q5.Path.firstMonster_eq_none` |
+| 10 | `Imo2001Q5.Setup.x` | 13 | corpus | `Imo2001Q5.Setup.QB_by_AB` |
+
+### mathlib `Mathlib.Analysis.ODE`, after
+
+| Rank | Head | Statements | Class | Example |
+|---|---|---|---|---|
+| 1 | `NNReal.toReal` | 14 | entry | `dist_le_of_trajectories_ODE_of_mem` |
+| 2 | `Dist.dist` | 11 | entry | `dist_le_of_trajectories_ODE_of_mem` |
+| 3 | `ODE.FunSpace.toFun` | 10 | corpus | `ODE.FunSpace.apply_of_zero` |
+| 4 | `ODE.picard` | 8 | corpus | `ODE.contDiffOn_nat_picard_Icc` |
+| 5 | `gronwallBound` | 7 | corpus | `le_gronwallBound_of_liminf_deriv_right_le` |
+| 6 | `Norm.norm` | 4 | entry | `norm_le_gronwallBound_of_norm_deriv_right_le` |
+| 7 | `Finset.sum` | 3 | entry | `discrete_gronwall_prod_general` |
+| 8 | `ODE.FunSpace.compProj` | 3 | corpus | `ODE.FunSpace.compProj_val` |
+| 9 | `DFunLike.coe` | 1 | structural | `ODE.FunSpace.toContinuousMap_apply_eq_apply` |
+| 10 | `Finset.prod` | 1 | entry | `discrete_gronwall_prod_general` |
+
+### mathlib `Mathlib.Algebra.Lie`, after
+
+| Rank | Head | Statements | Class | Example |
+|---|---|---|---|---|
+| 1 | `DFunLike.coe` | 259 | structural | `LieAlgebra.ad_lie` |
+| 2 | `Bracket.bracket` | 186 | component | `lie_sum` |
+| 3 | `Bot.bot` | 118 | structural | `LieAlgebra.abelian_iff_derived_one_eq_bot` |
+| 4 | `Top.top` | 64 | structural | `LieSubmodule.iSup_toSubmodule_eq_top` |
+| 5 | `HSMul.hSMul` | 56 | entry | `LieAlgebra.IsKilling.chainLength_nsmul` |
+| 6 | `LieSubmodule.toSubmodule` | 45 | structural | `LieSubmodule.toSubmodule_mk` |
+| 7 | `SetLike.coe` | 38 | structural | `LieModule.coe_lowerCentralSeries_eq_int` |
+| 8 | `Subtype.val` | 38 | structural | `LieEquiv.lieSubalgebraMap_apply` |
+| 9 | `LieModule.genWeightSpace` | 37 | component | `LieModule.LinearWeights.map_add` |
+| 10 | `LieSubmodule.map` | 34 | structural | `LieSubmodule.map_le_iff_le_comap` |
+
+### mathlib `Mathlib.Geometry.Manifold`, after
+
+| Rank | Head | Statements | Class | Example |
+|---|---|---|---|---|
+| 1 | `DFunLike.coe` | 117 | structural | `mfderiv_prod_eq_add_apply` |
+| 2 | `mfderivWithin` | 43 | component | `MDifferentiableWithinAt.mfderivWithin_mono_of_mem_nhdsWithin` |
+| 3 | `mfderiv` | 42 | component | `inverse_mfderiv_add_left` |
+| 4 | `ContinuousLinearMap.comp` | 38 | structural | `mvfderiv_comp_mfderivWithin_of_eq` |
+| 5 | `Set.preimage` | 38 | structural | `Manifold.IsImmersionAtOfComplement.mk_of_charts` |
+| 6 | `HSMul.hSMul` | 36 | entry | `const_smul_mfderiv` |
+| 7 | `VectorField.mlieBracketWithin` | 29 | component | `VectorField.mlieBracketWithin_congr` |
+| 8 | `PartialEquiv.source` | 26 | structural | `contMDiffOn_iff_of_subset_source'` |
+| 9 | `PartialEquiv.target` | 25 | structural | `ModelWithCorners.extChartAt_transContinuousLinearEquiv_target` |
+| 10 | `Set.range` | 24 | structural | `range_euclideanQuadrant` |
+
 ## Baseline (2026-10-12)
 
 Measured before this release's new translation entries, at Veriphy commit `cf28d0c`, with Lean and

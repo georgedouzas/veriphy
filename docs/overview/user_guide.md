@@ -259,6 +259,7 @@ The steps are:
 | fusion or braided fusion data (pentagons, hexagons, gauges), naturality of an intertwiner | `fusion_category` |
 | graded brackets, super-Jacobi (`sl(m\|n)`, `osp`, `D(2,1;α)`, `G(3)`, `F(4)`) | `lie_superalgebra` |
 | (Physlib) an explicit matrix `∈ lorentzAlgebra` | `physlib/lorentz_algebra` |
+| (Physlib) a commutator of ladder operators, positions and momenta | `physlib/ladder_operators` |
 
 ## Product decision: a pure tool
 

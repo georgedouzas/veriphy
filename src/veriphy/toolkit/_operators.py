@@ -426,3 +426,73 @@ def canonical_commutator(left: dict[str, object], right: dict[str, object], hbar
     alpha_x, alpha_p = SR(left.get('x', 0)), SR(left.get('p', 0))
     beta_x, beta_p = SR(right.get('x', 0)), SR(right.get('p', 0))
     return (SR.I() * hbar * (alpha_x * beta_p - alpha_p * beta_x)).simplify_full()
+
+
+def ladder_combination(coefficients: dict[str, object], xi: object = None, hbar: object = None) -> dict[str, object]:
+    """Return a combination of `a`, `a†`, `x` and `p` (one coordinate) as coefficients of `x` and `p`.
+
+    Args:
+        coefficients: The coefficients of `'a'` (lowering), `'a†'` (raising), `'x'` and `'p'`.
+        xi: The length scale `ξ`; the symbol `xi` when `None`.
+        hbar: The reduced Planck constant; the symbol `hbar` when `None`.
+
+    Returns:
+        The coefficients of `'x'` and `'p'`.
+
+    Raises:
+        CertificateError: If a name is not one of `a`, `a†`, `x`, `p`.
+
+    Examples:
+        >>> ladder_combination({'a': 1, 'a†': 1})
+        {'x': sqrt(2)/xi, 'p': 0}
+    """
+    unknown = set(coefficients) - {'a', 'a†', 'x', 'p'}
+    if unknown:
+        message = f'unknown operators {sorted(unknown)}: combine a, a†, x and p'
+        raise CertificateError(message)
+    lowering, raising = ladder_operators(xi, hbar)
+    parts = {'a': lowering, 'a†': raising, 'x': {'x': 1}, 'p': {'p': 1}}
+    return {
+        axis: sum(SR(c) * SR(parts[name].get(axis, 0)) for name, c in coefficients.items()).simplify_full()
+        for axis in ('x', 'p')
+    }
+
+
+def ladder_commutator_proof(index: str = 'i', oscillator: str = 'Q') -> Lean:
+    """Return a proof of `⁅A, B⁆ = c • ContinuousLinearMap.id ℂ 𝓢(Space d, ℂ)` for Physlib's ladder operators.
+
+    `A` and `B` are combinations of `Q.loweringCLM i`, `Q.raisingCLM i`, `𝐱 i` and `𝐩 i`. The proof unfolds the
+    ladder operators, expands the bracket by bilinearity with Physlib's commutation lemmas, and closes the scalar
+    identity by `field_simp` and `ring`, with `i² = -1` and `(√2)² = 2`. The goal's file must make the bracket a
+    Lie ring, as Physlib does: `attribute [local instance 100] LieRing.ofAssociativeRing`.
+
+    Args:
+        index: The coordinate index of the goal.
+        oscillator: The `HarmonicOscillator` of the goal.
+
+    Returns:
+        The tactic.
+    """
+    h = 'QuantumMechanics.HarmonicOscillator'
+    unfold = (
+        f'{h}.loweringCLM, {h}.raisingCLM, lie_smul, smul_lie, add_lie, lie_add, sub_lie, lie_sub, '
+        'QuantumMechanics.position_commutation_position, QuantumMechanics.momentum_commutation_momentum, '
+        f'QuantumMechanics.position_commutation_momentum, ← lie_skew (QuantumMechanics.momentumCLM {index}) '
+        f'(QuantumMechanics.positionCLM {index}), smul_zero, zero_add, add_zero, sub_zero, zero_sub, smul_neg, '
+        'neg_neg, smul_smul, KroneckerDelta.eq_one_of_same, one_smul'
+    )
+    apply = (
+        'smul_apply, neg_apply, add_apply, sub_apply, ContinuousLinearMap.id_apply, zero_apply, smul_eq_mul'
+    )
+    close = f'Complex.I_sq, inv_pow, {h}.sqrt_two_sq_ofReal'
+    return tactic(
+        f'simp only [{unfold}]\n'
+        'ext ψ x\n'
+        f'simp only [{apply}]\n'
+        f'have hξ := {oscillator}.ξ_ofReal_ne_zero {index}\n'
+        'have hℏ := Constants.ℏ_ofReal_ne_zero\n'
+        'have h2 : ((Real.sqrt 2 : ℝ) : ℂ) ≠ 0 := by norm_num\n'
+        'field_simp\n'
+        f'all_goals first | ring1 | (ring_nf; simp only [{close}]; (try ring_nf); done) | '
+        '(ring_nf; simp only [Complex.I_sq]; ring1)',
+    )

@@ -20,6 +20,7 @@ nav:
   - Overview:
     - index.md
     - User guide: overview/user_guide.md
+    - Components: overview/components.md
     - Changelog: overview/changelog.md
     - License: overview/license.md
   - API: api/

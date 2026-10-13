@@ -3,15 +3,19 @@
 from collections.abc import Callable
 
 import pytest
-from sage.all import QuadraticField, matrix
+from sage.all import I, QuadraticField, matrix, sqrt, var
 
 from veriphy.core import CertificateError
 from veriphy.toolkit import (
     Coordinates,
     Lean,
+    canonical_commutator,
     commutator,
     complex_matrix_term,
+    ladder_combination,
+    ladder_commutator_proof,
     ladder_matrices,
+    ladder_operators,
     operator_identity,
     operator_relations,
     real_matrix_term,
@@ -65,3 +69,22 @@ def test_operator_proofs_parse_in_lean(lean_parses: Callable[[list[Lean]], str])
         operator_relations(pauli, ['s1', 's2', 's3']),
     ]
     assert lean_parses(proofs) == ''
+
+
+def test_ladder_commutators_from_the_canonical_relation() -> None:
+    """[a, a†] = 1, [a, x] = ξ/√2 and [a + a†, p] = 2iℏ/(√2 ξ), in Physlib's convention."""
+    xi, hbar = var('xi hbar')
+    lowering, raising = ladder_operators()
+    assert canonical_commutator(lowering, raising) == 1
+    assert bool(canonical_commutator(lowering, {'x': 1}) == xi / sqrt(2))
+    both = ladder_combination({'a': 1, 'a†': 1})
+    assert bool(canonical_commutator(both, ladder_combination({'p': 1})) == 2 * I * hbar / (sqrt(2) * xi))
+
+
+def test_ladder_refusals_and_proof_names() -> None:
+    """Unknown operator names are refused; the proof names the goal's index and oscillator."""
+    with pytest.raises(CertificateError, match='unknown operators'):
+        ladder_combination({'n': 1})
+    proof = str(ladder_commutator_proof(index='j', oscillator='H'))
+    assert 'have hξ := H.ξ_ofReal_ne_zero j' in proof
+    assert '← lie_skew (QuantumMechanics.momentumCLM j) (QuantumMechanics.positionCLM j)' in proof
