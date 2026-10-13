@@ -26,6 +26,7 @@ from sage.all import (
     tan,
     tanh,
 )
+from sage.matrix.matrix0 import Matrix
 
 from veriphy.core import CertificateError
 from veriphy.toolkit import (
@@ -275,3 +276,38 @@ def test_rewrite_candidates_include_project_entries() -> None:
     with pytest.raises(CertificateError, match='0 ≤ x'):
         candidate.emit(prob)
     assert str(candidate.emit(prob, proofs={'0 ≤ x': 'positivity'})) == 'rw [Real.arcosh_cosh (by positivity)]'
+
+
+BLOCKS = read_problem(
+    {
+        'vars': ['x0', 'x1', 'x2'],
+        'atoms': ['Matrix.fromBlocks !![c] …', '2 • 1', 'c'],
+        'atom_types': ['matrix', 'matrix', 'ℝ'],
+        'goal': {'kind': 'false'},
+        'hyps': [
+            {
+                'name': 'h',
+                'rel': 'eq',
+                'text': 'Matrix.fromBlocks … = 2 • 1',
+                'expr': '(block_matrix(SR, [[matrix(SR, [[x2]]), matrix(SR, [[0, 0, 0]])], '
+                '[matrix(SR, [[0], [0], [0]]), matrix(SR, [[(-1), 0, 0], [0, (-1), 0], [0, 0, (-1)]])]], '
+                'subdivide=False)) - ((2 * 1))',
+            },
+        ],
+        'matrix_indices': [{'rows': [1, 3], 'cols': [1, 3], 'text': 'Matrix (Fin 1 ⊕ Fin 3) (Fin 1 ⊕ Fin 3) ℝ'}],
+    },
+)
+
+
+def test_sum_indexed_matrix_is_one_sage_matrix_and_renders_back_by_blocks() -> None:
+    """See a `Fin 1 ⊕ Fin 3` matrix as a 4 by 4 Sage matrix, and render it back as a term of the same index type."""
+    residual = BLOCKS.hyps[0].expr
+    assert isinstance(residual, Matrix)
+    assert residual.dimensions() == (4, 4)
+    (index,) = BLOCKS.matrix_indices
+    assert str(matrix_term(residual, BLOCKS, index)) == (
+        '(Matrix.fromBlocks !![c - 2] !![0, 0, 0] !![0; 0; 0] !![-3, 0, 0; 0, -3, 0; 0, 0, -3] : '
+        'Matrix (Fin 1 ⊕ Fin 3) (Fin 1 ⊕ Fin 3) ℝ)'
+    )
+    with pytest.raises(CertificateError, match='does not split'):
+        matrix_term(residual[:3, :3], BLOCKS, index)

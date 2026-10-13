@@ -14,6 +14,7 @@ from sage.all import (
     arcsin,
     arctan,
     binomial,
+    block_matrix,
     ceil,
     cos,
     cosh,
@@ -180,6 +181,7 @@ def parse_symbolic(
         'binomial': binomial,
         'gcd': integer_gcd,
         'matrix': matrix,
+        'block_matrix': block_matrix,
     }
     names.update({k: SR.var(k) for k in BOUND.findall(text)})
     names.update(symbols)
@@ -230,6 +232,21 @@ class ExistsFunction:
     function: str
     lean: str
     conjuncts: tuple[tuple[Expression | None, Expression | None], ...]
+
+
+@dataclass(frozen=True)
+class MatrixIndex:
+    """Hold the index type of a matrix indexed by sums of `Fin` types, such as `Fin 1 ⊕ Fin 3`.
+
+    Args:
+        rows: The sizes of the row index's summands, in order.
+        cols: The sizes of the column index's summands, in order.
+        text: The matrix type's Lean text.
+    """
+
+    rows: tuple[int, ...]
+    cols: tuple[int, ...]
+    text: str
 
 
 @dataclass(frozen=True)
@@ -313,6 +330,7 @@ class Problem:
         functions: The unknown functions, by Sage name: their Lean name and arity.
         definitions: Explicit definitions of unknown functions from the hypotheses.
         exists_function: The goal's existential over an unknown function, when it is one.
+        matrix_indices: The index types of the matrices indexed by sums of `Fin` types, for rendering them back.
     """
 
     ring: MPolynomialRing_base
@@ -334,6 +352,7 @@ class Problem:
     functions: dict[str, tuple[str, int]] = field(default_factory=dict)
     definitions: list[Definition] = field(default_factory=list)
     exists_function: ExistsFunction | None = None
+    matrix_indices: list[MatrixIndex] = field(default_factory=list)
 
     def find_hyp(self, name: str, allowed: tuple[str, ...], family: str) -> Hyp:
         """Find the hypothesis named `name`, checking its relation is usable by `family`.
@@ -495,6 +514,17 @@ def _read_exists_function(item: object, symbols: dict[str, Expression]) -> Exist
     return ExistsFunction(str(item.get('function')), str(item.get('lean')), tuple(conjuncts))
 
 
+def _read_matrix_indices(items: object) -> list[MatrixIndex]:
+    """Return the index types of the problem's sum-indexed matrices."""
+    if not isinstance(items, list):
+        return []
+    return [
+        MatrixIndex(tuple(int(n) for n in i.get('rows', [])), tuple(int(n) for n in i.get('cols', [])), str(i['text']))
+        for i in items
+        if isinstance(i, dict) and 'text' in i
+    ]
+
+
 def _read_names(problem: dict[str, object]) -> list[str]:
     """Return the problem's variable names, or a single placeholder name for a problem without atoms."""
     names = problem.get('vars') or []
@@ -555,6 +585,7 @@ def read_problem(problem: object) -> Problem:
         functions=functions,
         definitions=_read_definitions(problem.get('definitions', []), symbols),
         exists_function=_read_exists_function(problem.get('exists_function'), symbols),
+        matrix_indices=_read_matrix_indices(problem.get('matrix_indices')),
     )
     if kind in ('rel', 'other'):
         bound.goal = _read_constraint({**goal, 'name': None}, 'goal', ring, symbols, typed)

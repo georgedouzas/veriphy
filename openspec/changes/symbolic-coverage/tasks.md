@@ -69,7 +69,7 @@
 
 ## 9. Lie algebras (lie-bridge)
 
-- [ ] 9.1 Translate `⁅A, B⁆` on matrices and on matrix Lie subalgebra elements, and matrices indexed by `Fin n` and by sums of `Fin` types, with index order recorded. Verify with kit tests on a 2×2 bracket and a `Fin 1 ⊕ Fin 3` matrix.
+- [x] 9.1 Translate `⁅A, B⁆` on matrices and on matrix Lie subalgebra elements, and matrices indexed by `Fin n` and by sums of `Fin` types, with index order recorded. Verify with kit tests on a 2×2 bracket and a `Fin 1 ⊕ Fin 3` matrix.
 - [ ] 9.2 Add `_lie`: structure constants from a basis, closure check, Killing form, Casimir, with entrywise or reflective emission. Verify on 𝔰𝔩₂ (bracket table, Casimir commuting) and on 𝔰𝔲(3) through the structure-constant checker.
 - [ ] 9.3 Add root data (Cartan matrices, inverses, Weyl group orders, positive roots) as checked statements against mathlib's `CartanMatrix`. Verify with `CartanMatrix.E₈.det = 1` and the inverse of `CartanMatrix.F₄`.
 - [ ] 9.4 Write `lie_structure` and the Physlib Lorentz-algebra recipe. Verify their worked examples in the Lean suite (the Physlib one in the coverage runner).
