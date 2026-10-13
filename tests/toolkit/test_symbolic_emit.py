@@ -1,6 +1,6 @@
 """Test rendering symbolic expressions and building domain-aware steps."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping, Sequence
 
 import pytest
 from sage.all import (
@@ -29,6 +29,7 @@ from sage.all import (
 
 from veriphy.core import CertificateError
 from veriphy.toolkit import (
+    Hyp,
     Lean,
     Problem,
     field_simp_clearing,
@@ -161,6 +162,12 @@ TYPED = read_problem(
 xr, nn, kk = (TYPED.symbols[f'x{i}'] for i in range(3))
 
 
+def _goal(problem: Problem) -> Hyp:
+    """Return the problem's goal, which these problems all have."""
+    assert problem.goal is not None
+    return problem.goal
+
+
 @pytest.mark.parametrize(
     ('function', 'lean'),
     [
@@ -188,7 +195,7 @@ def test_integer_operators_render_at_their_type_and_cast() -> None:
     assert str(symbolic(factorial(nn) + xr, TYPED)) == '(x + ((Nat.factorial n : ℕ) : ℝ) : ℝ)'
     assert str(symbolic(floor(xr), TYPED)) == '((Int.floor x : ℤ) : ℝ)'
     assert str(symbolic(ceil(xr), TYPED, lean_type='ℤ')) == '(Int.ceil x : ℤ)'
-    assert str(symbolic(TYPED.goal.expr + xr, TYPED)) == '(x + ((n % 7 : ℕ) : ℝ) : ℝ)'
+    assert str(symbolic(_goal(TYPED).expr + xr, TYPED)) == '(x + ((n % 7 : ℕ) : ℝ) : ℝ)'
 
 
 def test_rendering_at_a_named_integer_type() -> None:
@@ -211,14 +218,14 @@ def test_typed_rendering_parses_in_lean(lean_parses: Callable[[list[Lean]], str]
     snippets = [
         symbolic(factorial(nn) + xr, TYPED),
         symbolic(floor(xr) + ceil(xr), TYPED),
-        symbolic(TYPED.goal.expr + xr, TYPED),
+        symbolic(_goal(TYPED).expr + xr, TYPED),
         symbolic(nn + 1, TYPED, lean_type='ℕ'),
         symbolic(arcsin(xr) + cosh(xr) + xr ** (SR(3) / 2), TYPED),
     ]
     assert lean_parses(snippets) == ''
 
 
-def _log_problem(goal_expr: str, goal_text: str, extensions: list[dict[str, object]] | None = None) -> Problem:
+def _log_problem(goal_expr: str, goal_text: str, extensions: Sequence[Mapping[str, object]] | None = None) -> Problem:
     """Return a problem over `x`, `y` with `hx : x ≠ 0`, `hy : y ≠ 0` and the given goal."""
     return read_problem(
         {

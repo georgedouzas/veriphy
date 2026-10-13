@@ -414,15 +414,23 @@ partial def exprToSym (e : Expr) : SymM SymExpr := do
     let taken := (← get).bound.map (·.2)
     let base := s!"{k.eraseMacroScopes}_"
     let kName := if taken.contains base then s!"{base}{taken.size}_" else base
+    let saved ← get
     let a' ← exprToSym a
     let b'? ← b?.mapM exprToSym
-    withLocalDecl k bi ty fun x => do
+    -- an atom of the body that mentions the index (`v k` for a vector `v`) would be one Sage variable for every
+    -- `k`; the whole sum is then an atom
+    let body'? ← withLocalDecl k bi ty fun x => do
+      let before ← get
       modify fun st => { st with bound := st.bound.push (x, kName) }
       let body' ← exprToSym (b.instantiate1 x)
       modify fun st => { st with bound := st.bound.pop }
-      match b'? with
-      | none => return .rangeOp isSum kName a' body'
-      | some hi => return .interval isSum kName a' (if exclusive then .sub hi (.num 1 1) else hi) body'
+      let st ← get
+      if (st.atoms.extract before.atoms.size st.atoms.size).any (·.containsFVar x.fvarId!) then return none
+      return some body'
+    let some body' := body'? | set saved; symAtom e
+    match b'? with
+    | none => return .rangeOp isSum kName a' body'
+    | some hi => return .interval isSum kName a' (if exclusive then .sub hi (.num 1 1) else hi) body'
   | ``DFunLike.coe, #[_, _, _, _, F, arg] =>
     if F.isAppOf `Matrix.of then
       let some rows := vecList arg | return ← symAtom e

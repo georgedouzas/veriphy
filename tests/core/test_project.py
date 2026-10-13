@@ -27,6 +27,8 @@ def test_find_workspace_root_prefers_the_nearest_lakefile(tmp_path: Path) -> Non
 
 def test_find_workspace_root_without_a_lakefile(tmp_path: Path) -> None:
     """Fall back to the start directory when no ancestor is a workspace."""
+    if any((d / 'lakefile.toml').exists() or (d / 'lakefile.lean').exists() for d in tmp_path.resolve().parents):
+        pytest.skip('the temporary directory is inside a Lake workspace (as under nox)')
     assert find_workspace_root(tmp_path) == tmp_path.resolve()
 
 

@@ -150,6 +150,8 @@ structure Report where
   full : Nat
   upToUninterpreted : Nat
   failed : Nat
+  /-- The statements whose translation failed, with the error. -/
+  failures : Array (Name × String)
   /-- Opaque heads with their statement counts and one example statement, most frequent first. -/
   heads : Array (Name × Nat × Name)
 
@@ -157,7 +159,8 @@ structure Report where
 def topHeads : Nat := 30
 
 /-- Aggregate verdicts into a report. -/
-def aggregate (prefixes : Array Name) (theorems failed : Nat) (vs : Array Verdict) : Report := Id.run do
+def aggregate (prefixes : Array Name) (theorems : Nat) (failures : Array (Name × String)) (vs : Array Verdict) :
+    Report := Id.run do
   let rel := vs.filter (·.hasRelation)
   let mut counts : Std.HashMap Name (Nat × Name) := {}
   for v in rel do
@@ -166,7 +169,8 @@ def aggregate (prefixes : Array Name) (theorems failed : Nat) (vs : Array Verdic
   let sorted := counts.toArray.map (fun (h, c, ex) => (h, c, ex))
     |>.qsort fun (h₁, c₁, _) (h₂, c₂, _) => c₁ > c₂ || (c₁ == c₂ && h₁.toString < h₂.toString)
   return { prefixes, theorems, withRelation := rel.size, full := (rel.filter (·.full)).size,
-           upToUninterpreted := (rel.filter (·.upToUninterpreted)).size, failed, heads := sorted }
+           upToUninterpreted := (rel.filter (·.upToUninterpreted)).size, failed := failures.size, failures,
+           heads := sorted }
 
 /-- A share as a percentage with one decimal. -/
 def percent (part whole : Nat) : String :=
@@ -181,7 +185,8 @@ def Report.toJson (r : Report) : Json :=
     ("theorems", r.theorems), ("with_relation", r.withRelation), ("no_relation", r.theorems - r.withRelation - r.failed),
     ("fully_covered", r.full), ("covered_up_to_uninterpreted", r.upToUninterpreted), ("failed", r.failed),
     ("opaque_heads", Json.arr (r.heads.map fun (h, c, ex) =>
-      Json.mkObj [("head", h.toString), ("statements", c), ("example", ex.toString)]))]
+      Json.mkObj [("head", h.toString), ("statements", c), ("example", ex.toString)])),
+    ("failures", Json.arr (r.failures.map fun (n, e) => Json.mkObj [("statement", n.toString), ("error", e)]))]
 
 /-- The human summary: counts, shares and the top opaque heads. -/
 def Report.summary (r : Report) : String :=
@@ -196,14 +201,14 @@ def Report.summary (r : Report) : String :=
 def measure (prefixes : Array Name) : MetaM Report := do
   let thms := corpus (← getEnv) prefixes
   let mut verdicts := #[]
-  let mut failed := 0
+  let mut failures := #[]
   for (n, type) in thms do
     try
       let acc ← withCurrHeartbeats (statementAcc type)
       verdicts := verdicts.push (judge n acc)
-    catch _ =>
-      failed := failed + 1
-  return aggregate prefixes thms.size failed verdicts
+    catch ex =>
+      failures := failures.push (n, ← ex.toMessageData.toString)
+  return aggregate prefixes thms.size failures verdicts
 
 /-- `#veriphy_coverage [Prefix, …]` measures the translation's coverage of a corpus; see the module doc. -/
 syntax (name := veriphyCoverage) "#veriphy_coverage " "[" ident,* "]" (str)? : command
