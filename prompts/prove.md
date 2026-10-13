@@ -78,6 +78,7 @@ score, or committing to the target repo beyond what the caller asked for.
       | Smith or Jordan form, diagonalization of an explicit matrix | `matrix_normal_form` |
       | `NormedSpace.exp` of an explicit matrix (nilpotent, diagonalizable) | `matrix_exponential` |
       | commutators of explicit or differential operators; gamma-matrix identities | `operator_identity` |
+      | Christoffel symbols, Killing vectors, exact forms, contractions in coordinates | `coordinate_geometry` |
       | graded brackets, super-Jacobi (`sl(m\|n)`, `osp`, `D(2,1;α)`, `G(3)`, `F(4)`) | `lie_superalgebra` |
 
       Recipes are in `prompts/recipes/<name>.md`. Read only the one you use.
