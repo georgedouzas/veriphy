@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from sage.all import QQ, SR, I
 from sage.matrix.matrix0 import Matrix
 from sage.symbolic.expression import Expression
-from sage.symbolic.operators import add_vararg, mul_vararg
+from sage.symbolic.operators import FDerivativeOperator, add_vararg, mul_vararg
 
 from veriphy.core import CertificateError
 from veriphy.toolkit._emit import field_simp, fresh_name, steps
@@ -154,8 +154,29 @@ def _render(e: Expression, ctx: _Context) -> str:
         return renderers[op](args, ctx)
     if op == operator.pow:
         return _render_power(args[0], args[1], ctx)
+    return _render_operator(op, e, args, ctx)
+
+
+def _render_operator(op: object, e: Expression, args: Sequence[Expression], ctx: _Context) -> str:
+    """Return a function application: an unknown function or its derivative, an integer operator, or a table one."""
+    if isinstance(op, FDerivativeOperator):
+        return _render_derivative(op, args, ctx)
     name = op.name() if hasattr(op, 'name') else str(op)
+    if name in ctx.problem.functions:
+        return f'{ctx.problem.functions[name][0]} ' + ' '.join(_operand(a, ctx) for a in args)
     return _render_integer(name, e, args, ctx) if name in INTEGER_OPERATORS else _render_application(name, args, ctx)
+
+
+def _render_derivative(op: FDerivativeOperator, args: Sequence[Expression], ctx: _Context) -> str:
+    """Return a derivative of an unknown function of one variable: `deriv (deriv x) t`."""
+    name = op.function().name()
+    if name not in ctx.problem.functions or len(args) != 1:
+        message = f'no Lean rendering for the derivative of {name}; only unknown functions of one variable render'
+        raise CertificateError(message)
+    text = ctx.problem.functions[name][0]
+    for _ in op.parameter_set():
+        text = f'deriv {parenthesize(text)}' if text != ctx.problem.functions[name][0] else f'deriv {text}'
+    return f'{text} {_operand(args[0], ctx)}'
 
 
 def _render_integer(name: str, e: Expression, args: Sequence[Expression], ctx: _Context) -> str:

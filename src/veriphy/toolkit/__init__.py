@@ -30,9 +30,12 @@ from veriphy.toolkit._emit import (
 )
 from veriphy.toolkit._lean import Lean, parenthesize, polynomial, rational, tactic, term
 from veriphy.toolkit._lp import solve_exact_lp
+from veriphy.toolkit._ode import derivative_chain, derivative_order, solve_exists, verify_definition
 from veriphy.toolkit._problem import (
     Condition,
+    Definition,
     Derivative,
+    ExistsFunction,
     Hyp,
     Problem,
     Side,
@@ -62,7 +65,9 @@ from veriphy.toolkit._table import SHIPPED_PACKS, Table, load_core_table, load_p
 __all__ = [
     'SHIPPED_PACKS',
     'Condition',
+    'Definition',
     'Derivative',
+    'ExistsFunction',
     'Hyp',
     'Lean',
     'Problem',
@@ -74,6 +79,8 @@ __all__ = [
     'combination',
     'create_ring',
     'decide',
+    'derivative_chain',
+    'derivative_order',
     'field_simp',
     'field_simp_clearing',
     'fresh_name',
@@ -107,6 +114,7 @@ __all__ = [
     'rewrite_by',
     'rewrite_candidates',
     'solve_exact_lp',
+    'solve_exists',
     'sos_decomposition',
     'sq_nonneg',
     'steps',
@@ -115,5 +123,6 @@ __all__ = [
     'symbolic',
     'tactic',
     'term',
+    'verify_definition',
     'witness',
 ]

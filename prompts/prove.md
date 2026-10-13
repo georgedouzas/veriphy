@@ -70,6 +70,7 @@ score, or committing to the target repo beyond what the caller asked for.
       | identity of `exp`, `log`, `sqrt`, `sin`, `cos` by named lemmas | `transcendental_rewrite` |
       | `!![…]` identity, `det` or `trace` written in the goal | `matrix_from_goal` |
       | `deriv (fun x => f x) a = v` with an explicit `f` | `derivative` |
+      | ODE in `deriv x`, `x` given by `hx : x = fun s => …` or asked for by `∃ x` | `ode_solution` |
 
       Recipes are in `prompts/recipes/<name>.md`. Read only the one you use.
 

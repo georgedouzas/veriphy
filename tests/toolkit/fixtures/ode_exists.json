@@ -1,0 +1,66 @@
+{
+ "atom_types": [
+  "other",
+  "ℝ",
+  "ℝ",
+  "ℝ"
+ ],
+ "atoms": [
+  "x",
+  "ω",
+  "x₀",
+  "v₀"
+ ],
+ "carrier": "ℝ → ℝ",
+ "definitions": [],
+ "derivatives": [],
+ "domain": [],
+ "exists_function": {
+  "conjuncts": [
+   {
+    "expr": "((diff(F_x(s_), s_, 2).subs({s_: t_}) + ((x1)^(2) * F_x(t_)))) - (0)",
+    "var": "t_"
+   },
+   {
+    "expr": "(F_x(0)) - (x2)",
+    "var": ""
+   },
+   {
+    "expr": "(diff(F_x(s_), s_, 1).subs({s_: 0})) - (x3)",
+    "var": ""
+   }
+  ],
+  "function": "F_x",
+  "lean": "x"
+ },
+ "extensions": [],
+ "functions": [
+  {
+   "arity": 1,
+   "lean": "x",
+   "sage": "F_x"
+  }
+ ],
+ "goal": {
+  "kind": "other",
+  "text": "∃ x, (∀ (t : ℝ), deriv (deriv x) t + ω ^ 2 * x t = 0) ∧ x 0 = x₀ ∧ deriv x 0 = v₀"
+ },
+ "hyps": [
+  {
+   "expr": "(x1) - (0)",
+   "name": "hω",
+   "rel": "ne",
+   "text": "ω ≠ 0"
+  }
+ ],
+ "namespaces": [
+  "mathlib"
+ ],
+ "table_problems": [],
+ "vars": [
+  "x0",
+  "x1",
+  "x2",
+  "x3"
+ ]
+}

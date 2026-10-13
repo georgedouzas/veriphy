@@ -198,6 +198,41 @@ def _record(typed: list[tuple[Expression, str]] | None, e: Expression, ty: str) 
 
 
 @dataclass(frozen=True)
+class Definition:
+    """Hold an explicit definition of an unknown function, from a hypothesis `x = fun s => body`.
+
+    Args:
+        function: The function's Sage name.
+        var: The variable of the body, a Sage symbol.
+        body: The body, in `var` and the problem's variables.
+        hyp: The hypothesis stating the definition.
+        text: The Lean text of the function (the lambda).
+    """
+
+    function: str
+    var: Expression
+    body: Expression | None
+    hyp: str
+    text: str
+
+
+@dataclass(frozen=True)
+class ExistsFunction:
+    """Hold a goal `∃ x, C₁ ∧ C₂ ∧ …` over an unknown function.
+
+    Args:
+        function: The function's Sage name.
+        lean: The binder's Lean name.
+        conjuncts: Each conjunct as its universally quantified variable (`None` when none) and its symbolic form
+            `lhs - rhs`, in the function and the problem's variables.
+    """
+
+    function: str
+    lean: str
+    conjuncts: tuple[tuple[Expression | None, Expression | None], ...]
+
+
+@dataclass(frozen=True)
 class Derivative:
     """Hold a derivative the translation met, `deriv f point`.
 
@@ -275,6 +310,9 @@ class Problem:
         tables: The translation tables in force, core first.
         typed: The sub-expressions Lean computes at another type (`ℕ`, `ℤ`) than their context, with that type.
         derivatives: The derivatives the translation met, in the order it met them.
+        functions: The unknown functions, by Sage name: their Lean name and arity.
+        definitions: Explicit definitions of unknown functions from the hypotheses.
+        exists_function: The goal's existential over an unknown function, when it is one.
     """
 
     ring: MPolynomialRing_base
@@ -293,6 +331,9 @@ class Problem:
     tables: tuple[Table, ...] = field(default_factory=lambda: (load_core_table(),))
     typed: list[tuple[Expression, str]] = field(default_factory=list)
     derivatives: list[Derivative] = field(default_factory=list)
+    functions: dict[str, tuple[str, int]] = field(default_factory=dict)
+    definitions: list[Definition] = field(default_factory=list)
+    exists_function: ExistsFunction | None = None
 
     def find_hyp(self, name: str, allowed: tuple[str, ...], family: str) -> Hyp:
         """Find the hypothesis named `name`, checking its relation is usable by `family`.
@@ -418,6 +459,42 @@ def _read_derivatives(items: object, symbols: dict[str, Expression]) -> list[Der
     return derivatives
 
 
+def _read_functions(items: object) -> dict[str, tuple[str, int]]:
+    """Return the unknown functions by Sage name: Lean name and arity."""
+    functions = {}
+    for item in items if isinstance(items, list) else []:
+        if not isinstance(item, dict) or not str(item.get('sage', '')).isidentifier():
+            raise ParamError(param='problem', reason=f'bad function {item!r}')
+        functions[str(item['sage'])] = (str(item.get('lean', '')), int(str(item.get('arity', 1))))
+    return functions
+
+
+def _read_definitions(items: object, symbols: dict[str, Expression]) -> list[Definition]:
+    """Return the explicit definitions of unknown functions."""
+    definitions = []
+    for item in items if isinstance(items, list) else []:
+        if not isinstance(item, dict):
+            raise ParamError(param='problem', reason=f'bad definition {item!r}')
+        var = SR.var(str(item.get('var', 's_')))
+        body = parse_symbolic(item.get('body'), {**symbols, str(var): var})
+        definitions.append(
+            Definition(str(item.get('function')), var, body, str(item.get('hyp')), str(item.get('text'))),
+        )
+    return definitions
+
+
+def _read_exists_function(item: object, symbols: dict[str, Expression]) -> ExistsFunction | None:
+    """Return the goal's existential over an unknown function, or `None`."""
+    if not isinstance(item, dict):
+        return None
+    conjuncts = []
+    for c in item.get('conjuncts', []) if isinstance(item.get('conjuncts'), list) else []:
+        var = SR.var(str(c['var'])) if c.get('var') else None
+        scope = {**symbols, str(var): var} if var is not None else symbols
+        conjuncts.append((var, parse_symbolic(c.get('expr'), scope)))
+    return ExistsFunction(str(item.get('function')), str(item.get('lean')), tuple(conjuncts))
+
+
 def _read_names(problem: dict[str, object]) -> list[str]:
     """Return the problem's variable names, or a single placeholder name for a problem without atoms."""
     names = problem.get('vars') or []
@@ -459,7 +536,9 @@ def read_problem(problem: object) -> Problem:
         raise ParamError(param='problem', reason=f'unknown goal kind {kind!r}')
     atoms = problem.get('atoms', [])
     types = problem.get('atom_types', [])
+    functions = _read_functions(problem.get('functions', []))
     symbols = {n: SR.var(n) for n in names}
+    symbols.update({name: function(name) for name in functions})
     typed: list[tuple[Expression, str]] = []
     bound = Problem(
         ring=ring,
@@ -473,6 +552,9 @@ def read_problem(problem: object) -> Problem:
         tables=_read_tables(problem),
         typed=typed,
         derivatives=_read_derivatives(problem.get('derivatives', []), symbols),
+        functions=functions,
+        definitions=_read_definitions(problem.get('definitions', []), symbols),
+        exists_function=_read_exists_function(problem.get('exists_function'), symbols),
     )
     if kind in ('rel', 'other'):
         bound.goal = _read_constraint({**goal, 'name': None}, 'goal', ring, symbols, typed)

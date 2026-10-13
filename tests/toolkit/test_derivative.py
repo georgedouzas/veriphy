@@ -7,6 +7,7 @@ from sage.all import SR, diff, exp, log, sin
 
 from veriphy.core import CertificateError
 from veriphy.toolkit import Lean, has_deriv_at, has_deriv_at_proof, read_problem
+from veriphy.toolkit._derivative import CLOSE
 
 PROBLEM = read_problem(
     {
@@ -40,7 +41,7 @@ def test_exponent_depending_on_the_variable_is_refused() -> None:
 
 
 def test_proof_unfolds_exactly_the_pointwise_operations_it_applies() -> None:
-    """List only the `Pi` lemmas the term needs: none for a lambda product, more for an applied quotient."""
+    """List only the `Pi` lemmas the value needs: none for a lambda product, more for an applied quotient."""
     product = str(
         has_deriv_at_proof(
             log(t) * sin(t),
@@ -51,7 +52,7 @@ def test_proof_unfolds_exactly_the_pointwise_operations_it_applies() -> None:
             proofs={'a ≠ 0': 'positivity'},
         ),
     )
-    assert 'simp only' not in product
+    assert product.endswith(f'; done) | ({CLOSE})')  # the value needs no unfolding
     quotient = str(has_deriv_at_proof(t / (t**2 + 1), t, a, diff(t / (t**2 + 1), t).subs({t: a}), PROBLEM))
     assert 'simp only [Pi.add_apply, Pi.pow_apply]' in quotient
 
