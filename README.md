@@ -68,7 +68,7 @@ toolchain manager [elan](https://leanprover-community.github.io/get_started.html
    [[require]]
    name = "veriphy"
    git = "https://github.com/georgedouzas/veriphy"
-   rev = "0.1.0"
+   rev = "0.2.0"
    ```
 
    Then run `lake update && lake exe cache get && lake build`, and add `import Veriphy`.
