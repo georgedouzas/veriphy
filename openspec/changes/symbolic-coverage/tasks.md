@@ -65,7 +65,7 @@
 
 - [x] 8.1 Rerun the coverage runner and record the post-change numbers and classified top heads. Verify that the fully covered share is at least the baseline's for every corpus.
 - [x] 8.2 Update the user guide (namespaces, project tables, typed rendering, ODEs, `VeriphyCheck`), the developer guide (adding core entries, packs and checkers), the README and the recipe index. Verify that `nox -s docs -- build` succeeds.
-- [ ] 8.3 Run `nox -s checks`, `nox -s tests`, `lake build VeriphyTest`, `lake build VeriphyCheck` and the Sage-free replay of every replacement, all green. Push and verify that CI is green.
+- [x] 8.3 Run `nox -s checks`, `nox -s tests`, `lake build VeriphyTest`, `lake build VeriphyCheck` and the Sage-free replay of every replacement, all green. Push and verify that CI is green.
 
 ## 9. Lie algebras (lie-bridge)
 
@@ -131,8 +131,8 @@
 
 ## 20. Release gate
 
-- [ ] 20.1 Rerun the coverage runner and record the final numbers and classified heads; update the docs with a chapter per component family (algebra, analysis and physics, categories) and the full recipe index. Run `nox -s checks`, `nox -s tests`, `lake build VeriphyTest`, `lake build VeriphyCheck` and the Sage-free replay, all green. Push and verify that CI is green.
-- [ ] 20.2 Run `openspec validate symbolic-coverage --strict` and verify that it passes.
+- [x] 20.1 Rerun the coverage runner and record the final numbers and classified heads; update the docs with a chapter per component family (algebra, analysis and physics, categories) and the full recipe index. Run `nox -s checks`, `nox -s tests`, `lake build VeriphyTest`, `lake build VeriphyCheck` and the Sage-free replay, all green. Push and verify that CI is green.
+- [x] 20.2 Run `openspec validate symbolic-coverage --strict` and verify that it passes.
 
 ## Workflow follow-up
 
