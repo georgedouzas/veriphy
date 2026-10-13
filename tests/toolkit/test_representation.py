@@ -18,6 +18,8 @@ from veriphy.toolkit import (
     exterior_square,
     intertwiners,
     intertwining_facts,
+    natural_iso_facts,
+    naturality_proof,
     projector_facts,
     representation_relations,
     restrict,
@@ -118,3 +120,26 @@ def test_representation_facts_parse_in_lean(lean_parses: Callable[[list[Lean]], 
         change_of_basis_facts(one, SL2, SL2),
     ]
     assert lean_parses(facts) == ''
+
+
+CYCLE = matrix(QQ, [[0, 0, 1], [1, 0, 0], [0, 1, 0]])
+SWAP = matrix(QQ, [[0, 1, 0], [1, 0, 0], [0, 0, 1]])
+ONE = identity_matrix(QQ, 1)
+
+
+def test_naturality_squares_per_generator() -> None:
+    """Summing coordinates is natural from S₃'s permutation representation to the trivial one; a projection is not."""
+    proof = naturality_proof(matrix(QQ, [[1, 1, 1]]), [CYCLE, SWAP], [ONE, ONE], rho='perm', sigma='triv', closure='hS')
+    assert str(proof).splitlines()[:2] == [
+        'refine VeriphyCheck.intertwines_of_closure perm triv _ hS ?_',
+        'rintro s (rfl | rfl)',
+    ]
+    with pytest.raises(CertificateError, match='fails at generator 0'):
+        naturality_proof(matrix(QQ, [[1, 0, 0]]), [CYCLE, SWAP], [ONE, ONE], rho='perm', sigma='triv', closure='hS')
+
+
+def test_natural_isomorphisms_need_an_inverse() -> None:
+    """An invertible transformation gets both inverse facts; a singular one is refused."""
+    assert 'have hUT' in str(natural_iso_facts(matrix(QQ, [[1, 1], [0, 1]])))
+    with pytest.raises(CertificateError, match='not invertible'):
+        natural_iso_facts(matrix(QQ, [[1, 1], [1, 1]]))

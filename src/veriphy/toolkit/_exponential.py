@@ -79,13 +79,13 @@ def nilpotent_exponential(n: Matrix) -> tuple[Matrix, Lean]:
     e = sum((n**k / factorial(k) for k in range(index)), 0 * n)
     lines = [
         f'have hN : {_literal(n)} ^ {index} = 0 := by',
-        f'  ext i j; fin_cases i <;> fin_cases j <;> {ENTRY_SIMP.replace("simp [", "simp [pow_succ, ")}',
+        f'  ext i j\n  fin_cases i <;> fin_cases j <;> {ENTRY_SIMP.replace("simp [", "simp [pow_succ, ")}',
         'rw [NormedSpace.exp_eq_tsum_rat]',
         'beta_reduce',
         f'rw [tsum_eq_sum (s := Finset.range {index}) (fun n hn => by',
         '  simp only [Finset.mem_range, not_lt] at hn',
         '  rw [pow_eq_zero_of_le hn hN, smul_zero])]',
-        'ext i j; fin_cases i <;> fin_cases j <;>',
+        'ext i j\nfin_cases i <;> fin_cases j <;>',
         f'  {ENTRY_SIMP.replace("simp [", "simp [Finset.sum_range_succ, pow_succ, Rat.smul_def, ")} <;> norm_num',
     ]
     return e, tactic('\n'.join(lines))
@@ -125,14 +125,14 @@ def diagonalizable_exponential(a: Matrix, parameter: str = 't') -> tuple[Matrix,
     p_text, q_text = _literal(p), _literal(p.inverse())
     lines = [
         f'have hPQ : {p_text} * {q_text} = 1 := by',
-        '  ext i j; fin_cases i <;> fin_cases j <;> norm_num [Matrix.mul_apply, Fin.sum_univ_succ, Matrix.one_apply]',
+        '  ext i j\n  fin_cases i <;> fin_cases j <;> norm_num [Matrix.mul_apply, Fin.sum_univ_succ, Matrix.one_apply]',
         f'have hinv : {p_text}⁻¹ = {q_text} := Matrix.inv_eq_right_inv hPQ',
         f'have hunit : IsUnit {p_text} := ⟨⟨_, _, hPQ, mul_eq_one_comm.mp hPQ⟩, rfl⟩',
         f'have hconj : {parameter} • {_literal(a)} = {p_text} * Matrix.diagonal ![{eigen}] * {p_text}⁻¹ := by',
         '  rw [hinv]',
-        f'  ext i j; fin_cases i <;> fin_cases j <;> {ENTRY_SIMP} <;> ring',
+        f'  ext i j\n  fin_cases i <;> fin_cases j <;> {ENTRY_SIMP} <;> ring',
         'rw [hconj, Matrix.exp_conj _ _ hunit, Matrix.exp_diagonal, hinv, Pi.exp_def]',
-        'ext i j; fin_cases i <;> fin_cases j <;>',
+        'ext i j\nfin_cases i <;> fin_cases j <;>',
         f'  {ENTRY_SIMP.replace("]", ", ← Real.exp_eq_exp_ℝ, Real.cosh_eq, Real.sinh_eq]")} <;> ring',
     ]
     return e, tactic('\n'.join(lines))

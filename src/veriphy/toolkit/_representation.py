@@ -344,6 +344,83 @@ def intertwining_facts(t: Matrix, rho: Rep, sigma: Rep, name: str | None = None)
     return tactic('\n'.join(lines))
 
 
+def naturality_proof(
+    t: Matrix,
+    rho_generators: Sequence[Matrix],
+    sigma_generators: Sequence[Matrix],
+    *,
+    rho: str,
+    sigma: str,
+    closure: str,
+) -> Lean:
+    """Return a proof of `∀ g, T * ρ g = σ g * T`: naturality between two group representations as functors.
+
+    A representation of `G` is a functor from its one-object category, and `T` is natural when every square
+    `T ρ(g) = σ(g) T` commutes. Sage checks the squares for the generators; the kernel checks each again
+    (`decide +kernel`, unfolding `ρ` and `σ` at the generator), and `VeriphyCheck.intertwines_of_closure` extends them
+    to the whole group from the goal's closure fact. `VeriphyCheck.repHom` (or `repIso`, given `natural_iso_facts`)
+    packages the result as a morphism of `Rep`.
+
+    Args:
+        t: The candidate natural transformation.
+        rho_generators: `ρ` at the generators, in the order of the goal's generating set.
+        sigma_generators: `σ` at the generators.
+        rho: The Lean name of `ρ : G →* Matrix n n R`.
+        sigma: The Lean name of `σ`.
+        closure: The name of the hypothesis `Subgroup.closure {g₁, …} = ⊤`.
+
+    Returns:
+        The tactic.
+
+    Raises:
+        CertificateError: If a square fails, naming the generator.
+
+    Examples:
+        >>> swap = matrix(QQ, [[0, 1, 0], [1, 0, 0], [0, 0, 1]])
+        >>> cycle = matrix(QQ, [[0, 0, 1], [1, 0, 0], [0, 1, 0]])
+        >>> one = identity_matrix(QQ, 1)
+        >>> print(naturality_proof(matrix(QQ, [[1, 1, 1]]), [cycle, swap], [one, one], rho='perm', sigma='triv',
+        ...     closure='hS'))
+        refine VeriphyCheck.intertwines_of_closure perm triv _ hS ?_
+        rintro s (rfl | rfl)
+        · decide +kernel
+        · decide +kernel
+    """
+    for k, (a, b) in enumerate(zip(rho_generators, sigma_generators, strict=True)):
+        _require(t * a == b * t, f'the naturality square fails at generator {k}: T ρ(g{k}) ≠ σ(g{k}) T')
+    count = len(rho_generators)
+    pattern = 'rfl' if count == 1 else '(' + ' | '.join(['rfl'] * count) + ')'
+    lines = [
+        f'refine VeriphyCheck.intertwines_of_closure {rho} {sigma} _ {closure} ?_',
+        f'rintro s {pattern}',
+        *(['· decide +kernel'] * count),
+    ]
+    return tactic('\n'.join(lines))
+
+
+def natural_iso_facts(t: Matrix, name: str | None = None) -> Lean:
+    """Return facts `T * U = 1` and `U * T = 1` for an invertible natural transformation and its inverse `U`.
+
+    With the naturality fact they give `VeriphyCheck.repIso`, a natural isomorphism.
+
+    Args:
+        t: The transformation (square, invertible, rational).
+        name: A Lean name for `T`; its literal when `None`.
+
+    Returns:
+        The facts `hTU` and `hUT`.
+
+    Raises:
+        CertificateError: If `T` is not invertible.
+    """
+    _require(t.is_square() and t.det() != 0, 'the transformation is not invertible: no natural isomorphism')
+    term = _term(t, name)
+    inverse = rational_matrix_term(t.inverse())
+    return tactic(
+        f'have hTU : {term} * {inverse} = 1 := {PRODUCT}\nhave hUT : {inverse} * {term} = 1 := {PRODUCT}',
+    )
+
+
 def decomposition(rho: Rep, summands: Sequence[Matrix]) -> tuple[Matrix, Rep]:
     """Return the change of basis to a direct sum of invariant subspaces, and the block-diagonal matrices.
 

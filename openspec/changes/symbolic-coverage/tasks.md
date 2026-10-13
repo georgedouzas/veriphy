@@ -124,10 +124,10 @@
 
 ## 19. Fusion categories (fusion-category-bridge)
 
-- [ ] 19.1 Write the mathlib-only asset `FusionData.lean` (multiplicity-free fusion data, pentagon and hexagon equations), with the trivial category as a sanity theorem. Verify that it builds in a mathlib-only scratch project.
-- [ ] 19.2 Add `_fusion`: fusion rings and F/R-symbols from Sage, the associativity, pentagon and hexagon proofs over cyclotomic fields, and gauge transformations. Verify on SU(2) level 2, Fibonacci (pentagons) and Ising (hexagons over `ℚ(ζ₁₆)`).
-- [ ] 19.3 Add naturality certificates for explicit linear natural transformations. Verify on an intertwiner between two representations of a finite group.
-- [ ] 19.4 Write `fusion_category`. Verify its worked examples and the gauge-mismatch report.
+- [x] 19.1 Write the mathlib-only asset `FusionData.lean` (multiplicity-free fusion data, pentagon and hexagon equations), with the trivial category as a sanity theorem. Verify that it builds in a mathlib-only scratch project.
+- [x] 19.2 Add `_fusion`: fusion rings and F/R-symbols from Sage, the associativity, pentagon and hexagon proofs over cyclotomic fields, and gauge transformations. Verify on SU(2) level 2, Fibonacci (pentagons) and Ising (hexagons over `ℚ(ζ₁₆)`).
+- [x] 19.3 Add naturality certificates for explicit linear natural transformations. Verify on an intertwiner between two representations of a finite group.
+- [x] 19.4 Write `fusion_category`. Verify its worked examples and the gauge-mismatch report.
 
 ## 20. Release gate
 

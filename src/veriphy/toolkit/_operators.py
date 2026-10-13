@@ -375,3 +375,54 @@ def matrix_identity_proof() -> Lean:
         The tactic.
     """
     return tactic(ENTRYWISE)
+
+
+def ladder_operators(xi: object = None, hbar: object = None) -> tuple[dict[str, object], dict[str, object]]:
+    """Return the lowering and raising operators as combinations of one coordinate's position and momentum.
+
+    `a = (x/ξ + i ξ p/ℏ)/√2` and `a† = (x/ξ - i ξ p/ℏ)/√2`, Physlib's convention for the harmonic oscillator.
+
+    Args:
+        xi: The length scale `ξ`; the symbol `xi` when `None`.
+        hbar: The reduced Planck constant; the symbol `hbar` when `None`.
+
+    Returns:
+        The coefficients of `'x'` and `'p'` in `a` and in `a†`.
+
+    Examples:
+        >>> lowering, raising = ladder_operators()
+        >>> lowering['p']
+        1/2*I*sqrt(2)*xi/hbar
+    """
+    xi = var('xi') if xi is None else xi
+    hbar = var('hbar') if hbar is None else hbar
+    scale = 1 / SR(2).sqrt()
+    lowering = {'x': (scale / xi).simplify_full(), 'p': (scale * SR.I() * xi / hbar).simplify_full()}
+    raising = {'x': lowering['x'], 'p': -lowering['p']}
+    return lowering, raising
+
+
+def canonical_commutator(left: dict[str, object], right: dict[str, object], hbar: object = None) -> object:
+    """Return `[A, B]` as a multiple of the identity, for combinations of one coordinate's `x` and `p`.
+
+    With `[x, x] = [p, p] = 0` and `[x, p] = iℏ`, `[αₓ x + αₚ p, βₓ x + βₚ p] = iℏ (αₓ βₚ - αₚ βₓ)`.
+
+    Args:
+        left: The coefficients of `'x'` and `'p'` in `A` (missing ones zero).
+        right: Those of `B`.
+        hbar: The reduced Planck constant; the symbol `hbar` when `None`.
+
+    Returns:
+        The scalar, simplified.
+
+    Examples:
+        >>> lowering, raising = ladder_operators()
+        >>> canonical_commutator(lowering, raising)
+        1
+        >>> canonical_commutator(lowering, {'x': 1})
+        1/2*sqrt(2)*xi
+    """
+    hbar = var('hbar') if hbar is None else hbar
+    alpha_x, alpha_p = SR(left.get('x', 0)), SR(left.get('p', 0))
+    beta_x, beta_p = SR(right.get('x', 0)), SR(right.get('p', 0))
+    return (SR.I() * hbar * (alpha_x * beta_p - alpha_p * beta_x)).simplify_full()

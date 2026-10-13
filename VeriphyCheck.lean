@@ -7,3 +7,4 @@ import VeriphyCheck.StructureConstants
 import VeriphyCheck.Pratt
 import VeriphyCheck.Determinant
 import VeriphyCheck.SuperStructureConstants
+import VeriphyCheck.Intertwiner
