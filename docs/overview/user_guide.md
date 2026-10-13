@@ -244,6 +244,8 @@ The steps are:
 | `NormedSpace.exp` of an explicit matrix (nilpotent, diagonalizable) | `matrix_exponential` |
 | commutators of explicit or differential operators; gamma-matrix identities | `operator_identity` |
 | Christoffel symbols, Killing vectors, exact forms, contractions in coordinates | `coordinate_geometry` |
+| hypergeometric sums (binomials, factorials): WZ pairs, Gosper | `wz_certificate` |
+| closed forms of linear recurrences | `recurrence` |
 | graded brackets, super-Jacobi (`sl(m\|n)`, `osp`, `D(2,1;α)`, `G(3)`, `F(4)`) | `lie_superalgebra` |
 | (Physlib) an explicit matrix `∈ lorentzAlgebra` | `physlib/lorentz_algebra` |
 

@@ -112,9 +112,9 @@
 
 ## 16. Summation (summation-certificates)
 
-- [ ] 16.1 Add `_summation`: WZ pairs, Gosper and Zeilberger, with telescoping and induction proofs and denominator conditions. Verify on the binomial sum and the Gosper example.
-- [ ] 16.2 Add recurrence guessing and verification, with `ore_algebra` optional and named when missing. Verify on `a (n + 2) = 5 a (n + 1) - 6 a n`, and on the missing-package message.
-- [ ] 16.3 Write `wz_certificate` and `recurrence`, and point `sum_induction` at them. Verify their worked examples.
+- [x] 16.1 Add `_summation`: WZ pairs, Gosper and Zeilberger, with telescoping and induction proofs and denominator conditions. Verify on the binomial sum and the Gosper example.
+- [x] 16.2 Add recurrence guessing and verification, with `ore_algebra` optional and named when missing. Verify on `a (n + 2) = 5 a (n + 1) - 6 a n`, and on the missing-package message.
+- [x] 16.3 Write `wz_certificate` and `recurrence`, and point `sum_induction` at them. Verify their worked examples.
 
 ## 17. Certified numerics (certified-numerics)
 

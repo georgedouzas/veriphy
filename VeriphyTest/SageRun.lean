@@ -23,6 +23,7 @@ import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 import Mathlib.Analysis.Calculus.FDeriv.Symmetric
 import Mathlib.NumberTheory.Zsqrtd.GaussianInt
 import VeriphyAssets.CoordinateGeometry
+import Mathlib.Algebra.BigOperators.Ring.Finset
 import Veriphy
 import VeriphyCheck
 import Mathlib.LinearAlgebra.Matrix.Cartan.Basic
@@ -703,3 +704,32 @@ E1, E2, E3, B1, B2, B3 = var('E1 E2 E3 B1 B2 B3')
 F = matrix(SR, [[0, -E1, -E2, -E3], [E1, 0, -B3, B2], [E2, B3, 0, -B1], [E3, -B2, B1, 0]])
 assert field_invariant(F, diagonal_matrix(SR, [1, -1, -1, -1])) == (2 * (B1**2 + B2**2 + B3**2 - E1**2 - E2**2 - E3**2)).expand()
 proof = contraction_proof(['F', 'η'])"
+
+/-! ## Summation certificates -/
+
+/--
+error: sage daemon error: run: AssertionError: fill in SUMMAND (and CLOSED_FORM, CLOSED_FORM_LEAN for a definite sum) in a copy
+-/
+#guard_msgs in
+example : True := by
+  sage_run file "prompts/recipes/templates/wz_certificate.sage"
+
+-- a WZ pair: Σ C(n, k) = 2ⁿ
+example (n : ℕ) : ∑ k ∈ Finset.range (n + 1), (n.choose k : ℚ) = 2 ^ n := by
+  sage_run file "binomial_wz.sage"
+
+-- a Gosper antidifference: Σ k·k! = n! - 1
+example (n : ℕ) : ∑ k ∈ Finset.range n, (k * k.factorial : ℚ) = n.factorial - 1 := by
+  sage_run file "gosper_factorial.sage"
+
+/--
+error: sage daemon error: run: AssertionError: fill in COEFFICIENTS and INITIAL in a copy
+-/
+#guard_msgs in
+example : True := by
+  sage_run file "prompts/recipes/templates/recurrence.sage"
+
+-- a linear recurrence and its closed form, by strong induction
+example (a : ℕ → ℤ) (h0 : a 0 = 0) (h1 : a 1 = 1) (hrec : ∀ n, a (n + 2) = 5 * a (n + 1) - 6 * a n) (n : ℕ) :
+    a n = 3 ^ n - 2 ^ n := by
+  sage_run file "fibonacci_like.sage"
