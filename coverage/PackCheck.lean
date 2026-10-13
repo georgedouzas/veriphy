@@ -6,7 +6,7 @@ import Physlib
 import Veriphy
 
 /--
-info: mathlib: 24 functions, 2 constants, 5 coercions, 0 rewrites
+info: mathlib: 24 functions, 2 constants, 5 coercions, 9 rewrites
 physlib: 2 functions, 0 constants, 1 coercions, 6 rewrites
 -/
 #guard_msgs in
@@ -34,3 +34,14 @@ conditions:
 -/
 #guard_msgs in
 #veriphy_translate Space.deriv 0 (fun x : Space 2 => x 0 ^ 2 * x 1) p
+
+-- `∂ₜ` of an unknown trajectory: the derivative of a Sage symbolic function, at the number `t₀.val` throughout
+/--
+info: sage: (diff(F_x(s_), s_, 1).subs({s_: x0}) + (2 * F_x(x0)))
+atoms:
+  x0 := t₀.val : ℝ
+conditions:
+-/
+#guard_msgs in
+variable (x : Time → ℝ) in
+#veriphy_translate Time.deriv x t₀ + 2 * x t₀
