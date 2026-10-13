@@ -6,7 +6,7 @@ relation, a commutation) or as a structure-constant table that `VeriphyCheck`'s 
 
 from collections.abc import Sequence
 
-from sage.all import QQ, matrix, vector
+from sage.all import QQ, ZZ, CartanMatrix, RootSystem, WeylGroup, matrix, vector
 from sage.all import Sequence as SageSequence
 from sage.matrix.matrix0 import Matrix
 
@@ -317,3 +317,137 @@ def jacobi_certificate(table: Table, name: str = 'hjacobi') -> Lean:
         raise CertificateError(message)
     table_term = structure_constants_term(table)
     return tactic(f'have {name} := VeriphyCheck.jacobi_of_check (c := {table_term}) (by decide +kernel)')
+
+
+# mathlib's `CartanMatrix.B`, `C` and `F₄` are the transposes of Sage's; `A`, `D`, `E` and `G₂` agree
+TRANSPOSED_TYPES = ('B', 'C', 'F')
+
+
+def _cartan_type(name: str) -> tuple[str, int]:
+    """Return `('E', 8)` for `'E8'` (or `'E₈'`, `'E 8'`)."""
+    digits = str(name).translate(str.maketrans('₀₁₂₃₄₅₆₇₈₉', '0123456789')).replace(' ', '')
+    letter, rank = digits[:1].upper(), digits[1:]
+    if letter not in 'ABCDEFG' or not rank.isdigit():
+        message = f"unknown Cartan type {name!r}; write a letter A to G and a rank, as 'E8' or 'F4'"
+        raise CertificateError(message)
+    return letter, int(rank)
+
+
+def cartan_matrix(cartan_type: str) -> Matrix:
+    """Return the Cartan matrix of a type in mathlib's convention (`CartanMatrix.E 8`, `CartanMatrix.F₄`, …).
+
+    Args:
+        cartan_type: The type, as `'E8'`, `'F4'` or `'B3'`.
+
+    Returns:
+        The integer matrix.
+
+    Raises:
+        CertificateError: If the type is not a letter A to G with a rank.
+
+    Examples:
+        >>> cartan_matrix('F4')
+        [ 2 -1  0  0]
+        [-1  2 -2  0]
+        [ 0 -1  2 -1]
+        [ 0  0 -1  2]
+    """
+    letter, rank = _cartan_type(cartan_type)
+    m = matrix(ZZ, CartanMatrix([letter, rank]))
+    return m.transpose() if letter in TRANSPOSED_TYPES else m
+
+
+def weyl_group_order(cartan_type: str) -> int:
+    """Return the order of the Weyl group, from Sage.
+
+    Args:
+        cartan_type: The type, as `'E8'`.
+
+    Returns:
+        The order.
+
+    Examples:
+        >>> weyl_group_order('E8')
+        696729600
+    """
+    letter, rank = _cartan_type(cartan_type)
+    return int(WeylGroup([letter, rank]).cardinality())
+
+
+def positive_roots(cartan_type: str) -> list[list[int]]:
+    """Return the positive roots as their coefficients on the simple roots, in Sage's labeling.
+
+    Args:
+        cartan_type: The type, as `'G2'`.
+
+    Returns:
+        One coefficient list per root.
+
+    Examples:
+        >>> sorted(positive_roots('G2'))
+        [[0, 1], [1, 0], [1, 1], [2, 1], [3, 1], [3, 2]]
+    """
+    letter, rank = _cartan_type(cartan_type)
+    lattice = RootSystem([letter, rank]).root_lattice()
+    return [[int(root[i]) for i in lattice.index_set()] for root in lattice.positive_roots()]
+
+
+def _literal(m: Matrix, carrier: str) -> str:
+    """Return a typed `!![…]` literal of a rational matrix."""
+
+    def entry(x: object) -> str:
+        q = QQ(x)
+        return str(q) if q.denominator() == 1 else f'{q.numerator()} / {q.denominator()}'
+
+    rows = '; '.join(', '.join(entry(x) for x in row) for row in m.rows())
+    return f'(!![{rows}] : Matrix (Fin {m.nrows()}) (Fin {m.ncols()}) {carrier})'
+
+
+def det_certificate(m: Matrix) -> Lean:
+    """Return a proof term of `A.det = d` for an integer matrix, by an LU factorization over ℚ the kernel checks.
+
+    The factorization is Sage's, without pivoting; Cartan matrices (and any matrix whose leading minors are
+    nonzero) have one. The goal's matrix may be a definition (`CartanMatrix.E 8`) or a literal: the kernel unfolds it.
+
+    Args:
+        m: The integer matrix, as the goal states it.
+
+    Returns:
+        The term, for `exact`.
+
+    Raises:
+        CertificateError: If the matrix is not square and integral, or needs pivoting.
+
+    Examples:
+        >>> proof = str(det_certificate(matrix(ZZ, [[2, -1], [-1, 2]])))
+        >>> proof.startswith('VeriphyCheck.det_eq_of_lu_int (d := 3) (L := (!![1, 0; -1 / 2, 1] : ')
+        True
+        >>> '(U := (!![2, -1; 0, 3 / 2] : Matrix (Fin 2) (Fin 2) ℚ))' in proof
+        True
+    """
+    if not m.is_square() or not all(x in ZZ for x in m.list()):
+        message = 'the determinant certificate needs a square integer matrix'
+        raise CertificateError(message)
+    permutation, lower, upper = matrix(QQ, m).LU(pivot='nonzero')
+    if permutation != 1:
+        message = 'the matrix needs pivoting (a leading minor vanishes); reorder its rows and columns first'
+        raise CertificateError(message)
+    checks = ' '.join(['(by decide +kernel)'] * 4)
+    return Lean(
+        f'VeriphyCheck.det_eq_of_lu_int (d := {m.det()}) (L := {_literal(lower, "ℚ")}) '
+        f'(U := {_literal(upper, "ℚ")}) {checks}',
+        'term',
+    )
+
+
+def inverse_certificate() -> Lean:
+    """Return a proof term of `A⁻¹ = B` for explicit matrices: the kernel checks `A * B = 1`.
+
+    Returns:
+        The term, for `exact`.
+
+    Examples:
+        >>> print(inverse_certificate())
+        VeriphyCheck.inv_eq_of_check (by decide +kernel)
+    """
+    return Lean('VeriphyCheck.inv_eq_of_check (by decide +kernel)', 'term')
