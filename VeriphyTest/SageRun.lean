@@ -638,3 +638,15 @@ example : True := by
 gammas, eta = gamma_matrices('weyl', 'mostly_plus')
 coefficients, fact = fierz_fact(gammas, eta)
 proof = steps(fact, tactic('trivial'))"
+
+/-! ## The `operator_identity` recipe -/
+
+/--
+error: sage daemon error: run: AssertionError: fill in MATRICES and NAMES, or COORDINATES, LHS and RHS, in a copy
+-/
+#guard_msgs in
+example : True := by
+  sage_run file "prompts/recipes/templates/operator_identity.sage"
+
+example (ψ : ℝ → ℝ) (hψ : ContDiff ℝ 1 ψ) (x : ℝ) : deriv (fun y => y * ψ y) x - x * deriv ψ x = ψ x := by
+  sage_run file "canonical_commutator.sage"
