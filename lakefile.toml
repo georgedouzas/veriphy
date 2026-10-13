@@ -1,8 +1,12 @@
 name = "veriphy"
-defaultTargets = ["Veriphy"]
+defaultTargets = ["Veriphy", "VeriphyCheck"]
 
 [[lean_lib]]
 name = "Veriphy"
+
+# Reflective checkers with soundness theorems; imports mathlib only, so proofs using them build without Sage
+[[lean_lib]]
+name = "VeriphyCheck"
 
 # Tactic tests exercise the live Sage daemon: `lake build VeriphyTest`
 # (`VeriphyTest.Kit` is Sage-free: `lake build VeriphyTest.Kit`)

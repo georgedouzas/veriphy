@@ -93,23 +93,31 @@ Each entry record carries its namespace. The `mathlib` core is compiled into Ver
 
 **Alternative considered:** a separate Lake package per library (`veriphy-physlib`). That is heavier for users, and the pack is data, so it does not need compiling against Physlib.
 
-### D9. `VeriphyCheck`: reflection with kernel arithmetic
+### D9. `VeriphyCheck`: reflection with kernel evaluation
 
-The checkers work over plain data:
-- `List (Nat × Nat × Int × Nat)` for sparse matrices (row, column, numerator, denominator);
-- sorted monomial lists for polynomials;
-- arrays of `(i, j, k, c)` for structure constants;
-- recursive certificates for Pratt.
+Each checker is a `Bool` function over the goal's own data, evaluated by `decide +kernel` (no `native_decide`), with a
+soundness theorem into mathlib's statement. Matrix checkers take two forms:
+- **Direct:** `mulCheck A B C` reads the goal's matrices. It is simple, but each entry of a `!![…]` literal costs a
+  walk down its vector conses.
+- **List-carrying:** the certificate states the rows of `A`, `B` and the product as lists, packed one natural number
+  per row and decoded digit by digit, and builds matrices from them with the same vector conses a `!![…]` literal
+  elaborates to. The goal's matrices then agree with the certificate's by unfolding, and the check walks lists.
 
-The checker functions use only `Nat` and `Int` operations, which the kernel accelerates with GMP. Each comes with:
-- a `denote` function into mathlib's objects (`Matrix (Fin n) (Fin n) ℚ`, `MvPolynomial`, a Lie bracket on `Fin n → ℚ`, `Nat.Prime`);
-- a soundness theorem: `check c = true → denote c = …`.
+Measured on this machine (Lean v4.34.1):
+- **32×32 integer product, matrices given as definitions:** 4.4 s of kernel checking, 8 s in all.
+- **The same identity stated with inline `!![…]` literals:** elaborating the statement alone costs about 60 s of
+  typeclass inference, so large matrices belong in definitions.
+- **Rational entries:** about 10× slower than integers, so the emitter clears denominators and checks over ℤ.
+- **Polynomial identities, 462 monomials (`(a + b + c + d + e + 1)⁶`):** `ring` takes 140 s, and a kernel-evaluated
+  sparse normalizer did not finish in 600 s. Polynomial identities therefore go to `ring` and `linear_combination`,
+  and no polynomial checker ships.
 
-Emitted proofs are `VeriphyCheck.Matrix.eq_of_check (by decide)` plus a `simp only [denote_…]` bridge from the goal's literals. The library is a separate `lean_lib` with mathlib as its only import, and `scripts/bundle_check.py` bundles it into one file.
+The library is a separate `lean_lib` with mathlib as its only import, and `scripts/bundle_check.py` bundles it into
+one file.
 
 **Alternatives considered:**
 - `native_decide`. It trusts the compiler, and the axiom guard rejects it.
-- Entrywise `norm_num`. It scales quadratically in proof size, so E₈'s adjoint representation (248²) is out of reach.
+- Entrywise `norm_num`. Proof size grows with every entry, and it is slower than kernel evaluation above about 8×8.
 
 ### D10. Exact number fields
 

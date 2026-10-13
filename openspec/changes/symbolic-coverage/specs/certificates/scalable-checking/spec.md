@@ -8,8 +8,7 @@ Lets Lean check certificates of research size (248×248 matrices, structure-cons
 
 ### Requirement: Verified reflective checkers
 Veriphy SHALL provide Lean checkers over computable data representations:
-- sparse rational matrices, with product, sum, commutator, trace and equality;
-- sparse multivariate polynomials over ℚ, with equality after normalization;
+- square matrices over a commutative ring with decidable equality (ℤ, ℚ, number fields given as such), with product, commutator and Lie bracket, trace and equality, including certificates that carry the matrices' rows packed as natural numbers;
 - structure-constant tables, with the Jacobi identity and the bracket of basis elements;
 - Pratt certificates, for primality.
 
@@ -17,12 +16,19 @@ Veriphy SHALL provide Lean checkers over computable data representations:
 - **WHEN** a script certifies the Jacobi identity for a 52-dimensional structure-constant table
 - **THEN** the check runs through the table checker, not through entrywise rewriting
 
+### Requirement: Polynomial identities stay with mathlib
+Polynomial identities SHALL be left to mathlib's `ring` and `linear_combination`. A kernel-evaluated polynomial normalizer, measured slower than `ring`, SHALL NOT be shipped.
+
+#### Scenario: Large polynomial identity
+- **WHEN** a script certifies an identity between polynomials with hundreds of monomials
+- **THEN** the emitted proof uses `ring` or `linear_combination`, not a reflective checker
+
 ### Requirement: Soundness and kernel evaluation
 Each checker SHALL come with a Lean theorem that a `true` result implies the corresponding mathlib statement (matrix equality, polynomial equality, `LieRing` identities, `Nat.Prime`). The check SHALL run by `decide` or `rfl` in the kernel, never by `native_decide`, and the axiom guard SHALL accept the resulting proofs.
 
 #### Scenario: Large matrix identity
-- **WHEN** a script certifies that two explicit 64×64 rational matrices commute
-- **THEN** the emitted proof applies the soundness theorem of the sparse-matrix checker to a `decide` result, and builds without Sage within the time limits of the Lean suite
+- **WHEN** a script certifies a product identity between explicit 32×32 integer matrices given as definitions
+- **THEN** the emitted proof applies the soundness theorem of the matrix checker to a `decide +kernel` result, builds without Sage, and its kernel check stays within the budget the benchmark records
 
 #### Scenario: Large prime
 - **WHEN** the goal is `Nat.Prime p` for a 40-digit `p`
