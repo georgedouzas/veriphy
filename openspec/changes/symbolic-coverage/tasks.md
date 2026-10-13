@@ -50,8 +50,8 @@
 - [x] 6.3 Measure a kernel-evaluated polynomial checker against mathlib's `ring`, and ship it only if it is faster. Verify by recording both timings on the same identity in design D9.
 - [x] 6.4 Add the structure-constant checker (bracket, Jacobi) with soundness into a Lie ring on `Fin n → ℚ`. Verify on 𝔰𝔩₃'s table, and on a corrupted table that fails.
 - [x] 6.5 Add the Pratt checker with soundness to `Nat.Prime`. Verify with `Nat.Prime 1000000007` and a 40-digit prime.
-- [ ] 6.6 Add `_reflect` emitters with the size threshold and the bridge from `!![…]` literals (D9). Verify that a 2×2 identity emits the entrywise form, that a 16×16 identity emits the reflective form, and that both build without Sage.
-- [ ] 6.7 Add `scripts/bundle_check.py`, producing one copyable `VeriphyCheck.lean`. Verify that the bundled file builds in a scratch project that has only mathlib.
+- [x] 6.6 Add `_reflect` emitters with the size threshold and the bridge from `!![…]` literals (D9). Verify that a 2×2 identity emits the entrywise form, that a 16×16 identity emits the reflective form, and that both build without Sage.
+- [x] 6.7 Add `scripts/bundle_check.py`, producing one copyable `VeriphyCheck.lean`. Verify that the bundled file builds in a scratch project that has only mathlib.
 
 ## 7. Foundation recipes and ODEs (procedures, ode-bridge)
 

@@ -40,6 +40,12 @@ from veriphy.toolkit._problem import (
     parse_symbolic,
     read_problem,
 )
+from veriphy.toolkit._reflect import (
+    matrix_goal_proof,
+    packed_product_certificate,
+    prime_certificate,
+    structure_constants_term,
+)
 from veriphy.toolkit._sos import sos_decomposition
 from veriphy.toolkit._symbolic_emit import (
     RewriteCandidate,
@@ -76,18 +82,21 @@ __all__ = [
     'linear_combination',
     'load_core_table',
     'load_pack',
+    'matrix_goal_proof',
     'matrix_term',
     'mul_nonneg',
     'mul_pos',
     'negate_goal',
     'nlinarith',
     'norm_num',
+    'packed_product_certificate',
     'parenthesize',
     'parse_polynomial',
     'parse_symbolic',
     'parse_table',
     'polynomial',
     'positivity',
+    'prime_certificate',
     'rational',
     'rcases',
     'read_problem',
@@ -99,6 +108,7 @@ __all__ = [
     'sos_decomposition',
     'sq_nonneg',
     'steps',
+    'structure_constants_term',
     'sum_by_induction',
     'symbolic',
     'tactic',
