@@ -530,3 +530,28 @@ conditions:
 #guard_msgs in
 variable (a : ℝ) in
 #veriphy_translate deriv (fun x => Real.log x) a
+
+/-! ## Emitting what ran -/
+
+-- a `first` combinator is emitted as the alternative that closed the goal
+/--
+info: Sage-free replacement: 
+  [apply] rfl
+-/
+#guard_msgs (info, error, drop warning) in
+example : (2 : ℕ) + 2 = 4 := by kit_emit first | rfl | simp
+
+/--
+info: Sage-free replacement: 
+  [apply] (subst h; norm_num)
+-/
+#guard_msgs in
+example (x : ℚ) (h : x = 1) : x + 1 = 2 := by kit_emit first | rfl | (subst h; norm_num)
+
+/--
+info: Sage-free replacement: 
+  [apply] (constructor <;> (subst h; norm_num))
+-/
+#guard_msgs in
+example (x : ℚ) (h : x = 1) : x + 1 = 2 ∧ True := by
+  kit_emit (constructor <;> first | trivial | (subst h; first | rfl | norm_num))
