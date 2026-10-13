@@ -118,9 +118,9 @@
 
 ## 17. Certified numerics (certified-numerics)
 
-- [ ] 17.1 Add `_numerics`: series truncations with rational remainder bounds for `exp`, `log`, `sin`, `cos`, `arctan` and π, chosen by interval arithmetic, with mathlib's bounds preferred. Verify on `Real.exp 1 < 2.7183` and `3.14159 < Real.pi`.
-- [ ] 17.2 Add root isolation by Sturm sequences with sign certificates and the intermediate value theorem, and eigenvalue bounds through characteristic polynomials. Verify on the spec's cubic and on a 3×3 symmetric matrix.
-- [ ] 17.3 Write `certified_bound` and `root_isolation`. Verify their worked examples and the `Gamma` refusal.
+- [x] 17.1 Add `_numerics`: series truncations with rational remainder bounds for `exp`, `log`, `sin`, `cos`, `arctan` and π, chosen by interval arithmetic, with mathlib's bounds preferred. Verify on `Real.exp 1 < 2.7183` and `3.14159 < Real.pi`.
+- [x] 17.2 Add root isolation by Sturm sequences with sign certificates and the intermediate value theorem, and eigenvalue bounds through characteristic polynomials. Verify on the spec's cubic and on a 3×3 symmetric matrix.
+- [x] 17.3 Write `certified_bound` and `root_isolation`. Verify their worked examples and the `Gamma` refusal.
 
 ## 19. Fusion categories (fusion-category-bridge)
 

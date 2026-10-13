@@ -81,6 +81,8 @@ score, or committing to the target repo beyond what the caller asked for.
       | Christoffel symbols, Killing vectors, exact forms, contractions in coordinates | `coordinate_geometry` |
       | hypergeometric sums (binomials, factorials): WZ pairs, Gosper | `wz_certificate` |
       | closed forms of linear recurrences | `recurrence` |
+      | rational bounds on `exp`, `log`, `sin`, `cos`, `π` at explicit points | `certified_bound` |
+      | a real root or eigenvalue in an explicit interval | `root_isolation` |
       | graded brackets, super-Jacobi (`sl(m\|n)`, `osp`, `D(2,1;α)`, `G(3)`, `F(4)`) | `lie_superalgebra` |
 
       Recipes are in `prompts/recipes/<name>.md`. Read only the one you use.
