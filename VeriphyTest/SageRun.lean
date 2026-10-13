@@ -9,6 +9,12 @@ import Mathlib.Analysis.SpecialFunctions.Complex.Log
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
 import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
 import Mathlib.LinearAlgebra.Matrix.Trace
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Inverse
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Arctan
+import Mathlib.Analysis.SpecialFunctions.Log.Base
+import Mathlib.Analysis.SpecialFunctions.Pow.Real
+import Mathlib.Algebra.Order.Floor.Ring
+import Mathlib.Data.Nat.Choose.Basic
 import Veriphy
 
 set_option veriphy.checkReplay true
@@ -155,3 +161,22 @@ example (x : ℝ) (n : ℕ) (k : ℤ) (h : Real.pi * x ^ n - (n : ℝ) / 2 + (k 
 -- the complex table and I
 example (z : ℂ) (h : Complex.exp (z * Complex.I) - Complex.log z + Complex.I * Complex.sin z = 0) : True := by
   sage_run file "round_trip.sage"
+
+-- hyperbolic and inverse trigonometric functions, real powers
+example (x y : ℝ) (h : Real.cosh x - Real.sinh x * Real.tanh x + Real.arctan x - x ^ y = 0) : True := by
+  sage_run file "round_trip.sage"
+example (x : ℝ) (h : Real.arcsin x + 2 * Real.arccos x = 0) : True := by
+  sage_run file "round_trip.sage"
+-- factorial, choose, gcd, floor and ceil, rendered at their own type and cast
+example (x : ℝ) (m n k : ℕ) (h : (Nat.factorial n : ℝ) * x + Nat.choose n k - Nat.gcd m n = 0) : True := by
+  sage_run file "round_trip.sage"
+example (x : ℝ) (h : (⌊x⌋ : ℝ) + ⌈x⌉ - x = 0) : True := by
+  sage_run file "round_trip.sage"
+-- a natural-number remainder inside a real expression keeps its cast
+example (x : ℝ) (n : ℕ) (h : ((n % 7 : ℕ) : ℝ) + x = 0) : True := by
+  sage_run file "round_trip.sage"
+-- `logb` becomes `log x / log b` in Sage; unfolding `Real.logb` relates the two
+example (b x : ℝ) (h : Real.logb b x - 1 = 0) : True := by
+  sage_run "
+h = hyps[0]
+proof = steps(tactic(f'have _r : {symbolic(h.expr, problem)} = 0 := by\\n  simp only [Real.logb] at {h.name}\\n  linear_combination {h.name}'), tactic('trivial'))"
