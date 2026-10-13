@@ -326,3 +326,18 @@ assert [[list(r) for r in m.rows()] for m in expected] == [
     [[2, -1, 0], [-1, 2, -2], [0, -1, 2]], [[2, -1, 0], [-1, 2, -1], [0, -2, 2]],
     [[2, -1, 0, 0], [-1, 2, -1, -1], [0, -1, 2, 0], [0, -1, 0, 2]]], expected
 proof = tactic('exact ⟨by decide, by decide, by decide, by decide, by decide⟩')"
+
+/-! ## The `lie_structure` recipe -/
+
+-- a bracket of explicit matrices, with the template unedited
+example : ⁅!![(0 : ℚ), 1; 0, 0], !![(0 : ℚ), 0; 1, 0]⁆ = !![(1 : ℚ), 0; 0, -1] := by
+  sage_run file "prompts/recipes/templates/lie_structure.sage"
+
+-- the bracket table of 𝔰𝔩₂ by name, from a copy of the template with BASIS and NAMES filled in
+example : ⁅LieTest.h, LieTest.e⁆ = 2 • LieTest.e ∧ ⁅LieTest.e, LieTest.f⁆ = LieTest.h := by
+  sage_run file "lie_sl2.sage"
+
+-- the determinant of E₈, from a copy with CARTAN filled in
+set_option maxRecDepth 10000 in
+example : (CartanMatrix.E 8).det = 1 := by
+  sage_run file "cartan_e8.sage"
