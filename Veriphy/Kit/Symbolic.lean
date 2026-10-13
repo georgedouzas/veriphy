@@ -263,7 +263,16 @@ private def numericView (point : Expr) : SymM Expr := do
 /-- A local function the problem leaves unknown (`x : ℝ → ℝ`, `x : Time → ℝ`), and its Sage name. -/
 private def unknownFunction? (f : Expr) : SymM (Option String) := do
   unless f.isFVar do return none
-  unless (← whnfR (← inferType f)).isForall do return none
+  let .forallE _ dom _ _ ← whnfR (← inferType f) | return none
+  -- a function of a continuous variable (ℝ, ℂ, ℚ, or a type the tables view as a number, such as `Time`);
+  -- a function of a finite index (`Fin n → ℝ`) is a vector, whose entries stay coordinate atoms
+  let dom ← whnfR dom
+  let numeric := [`Real, `Complex, ``Rat].any dom.isConstOf
+  let viewed ← if numeric then pure true else do
+    withLocalDeclD `p dom fun y => do
+      let v ← numericView y
+      return v != y && [`Real, `Complex, ``Rat].any (← whnfR (← inferType v)).isConstOf
+  unless viewed do return none
   let name := s!"F_{(← f.fvarId!.getUserName).eraseMacroScopes}".map fun c => if c.isAlphanum || c == '_' then c else '_'
   unless (← get).functions.any (·.2 == f) do
     modify fun st => { st with functions := st.functions.push (name, f) }
