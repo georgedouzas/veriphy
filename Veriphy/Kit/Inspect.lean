@@ -1,6 +1,6 @@
 /-
 `#veriphy_translate t`: what Veriphy's symbolic translation makes of a term, without Sage — its Sage form, the
-atoms it needed and the domain conditions it imposes, under the tables in force (core, active packs).
+atoms it needed and the domain conditions it imposes, under the tables in force (core, active packs, project).
 -/
 import Veriphy.Kit.Packs
 import Veriphy.Kit.Symbolic
@@ -11,7 +11,9 @@ open Lean Elab Command Meta
 
 /-- The report for one term: Sage form, atoms (with types), conditions. -/
 def inspectTerm (e : Expr) : MetaM String := do
-  let (tables, problems) ← activeTables
+  let (project, loadProblems) ← projectTables (veriphy.translationsDir.get (← getOptions))
+  let (tables, resolveProblems) ← activeTables project
+  let problems := loadProblems ++ resolveProblems
   let (s, st) ← (exprToSym e).run { atoms := #[], tables }
   let atoms ← st.atoms.toList.mapIdxM fun i a => return s!"  x{i} := {← ppExpr a} : {← atomType a}"
   let conds ← st.conditions.toList.mapM fun c => return s!"  {← ppExpr (← c.prop)}"

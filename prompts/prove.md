@@ -71,6 +71,11 @@ score, or committing to the target repo beyond what the caller asked for.
       | `!![…]` identity, `det` or `trace` written in the goal | `matrix_from_goal` |
 
       Recipes are in `prompts/recipes/<name>.md`. Read only the one you use.
+
+      Recipes for one library live in `prompts/recipes/<library>/` and apply
+      only when that library's pack is active (`#veriphy_tables` lists the
+      active namespaces). They use the library's own definitions and sign
+      conventions, recorded in its pack.
       Save a script that closed its goal into the project's `.veriphy/certificates/`,
       with its header, so the next similar goal reuses it.
    d. oracle: when stuck on *what the proof even is* — solving an equation

@@ -41,7 +41,7 @@
 - [x] 5.1 Load, validate and merge `.veriphy/translations/*.json` (D2): schema errors naming the file and field, conflicts naming both entries and namespaces, a per-process cache, and serialization of the entries the problem uses. Verify with kit tests on a fixture directory with valid, invalid and conflicting entries.
 - [x] 5.2 Add `veriphy.translations` (`list`, `show`, schema validation shared with the toolkit), showing namespaces. Verify with pytest on the fixture directory, and with a run of `sage -python -m veriphy.translations list`.
 - [x] 5.3 Add the round-trip check command for function and rewrite entries. Verify on the fixture directory: valid entries pass, and one with a wrong Sage name fails with its error.
-- [ ] 5.4 Add the "unknown function" step to `prompts/certify.md` and the `certify` skill, the library-recipe section in the recipe index, and an example entry (`Real.arcosh`) in the user guide. Verify with a scratch project where `Real.arcosh` is opaque until the entry is added and checked, and is then translated.
+- [x] 5.4 Add the "unknown function" step to `prompts/certify.md` and the `certify` skill, the library-recipe section in the recipe index, and an example entry (`Real.arcosh`) in the user guide. Verify with a scratch project where `Real.arcosh` is opaque until the entry is added and checked, and is then translated.
 
 ## 6. Scalable checking (scalable-checking)
 

@@ -107,6 +107,44 @@ srcDir = ".veriphy/lean"
 Projects created with Veriphy 0.1.0 keep scripts in a top-level `certificates/`. The catalog still lists them, warns,
 and prints the command that moves them: `mkdir -p .veriphy && git mv certificates .veriphy/certificates`.
 
+## Extending the translation
+
+Veriphy translates Lean terms to Sage through tables in three namespaces, resolved in order:
+
+1. `mathlib`, the core: field arithmetic, elementary and inverse trigonometric functions, `rpow`, `logb`, sums and
+   products, integer functions, derivatives, matrices and polynomials;
+2. library packs shipped with Veriphy, such as `physlib`, active only when the library is imported;
+3. your project's entries in `.veriphy/translations/*.json`.
+
+A later namespace never overrides an earlier one. `#veriphy_tables` prints the namespaces in force,
+`#veriphy_translate t` shows how a term translates, and `sage -python -m veriphy.translations list` lists your
+project's entries (`--all` adds the core and the packs).
+
+When a function stays an atom, add an entry. For `Real.arcosh`, which Sage calls `arccosh` and which needs `1 ≤ x`:
+
+```json
+{
+  "functions": [
+    {"lean": "Real.arcosh", "sage": "arccosh", "arity": 1, "types": ["ℝ"], "result": "ℝ",
+     "conditions": [{"kind": "le", "lhs": "1", "rhs": "#0"}],
+     "example": "Real.arcosh x"}
+  ]
+}
+```
+
+A function entry names the Lean constant, the Sage function, the number of explicit arguments, the argument and
+result types, its domain conditions (`ne`, `nonneg` or `pos` on argument `#i`, or `le` between two sides) and an
+example term. A rewrite entry names a lemma, the functions it applies to, its direction, its side conditions (with
+`#i` for the argument a Sage `pattern` binds to `wi`) and an example signature such as
+`(x : ℝ) (hx : x ≠ 0) : Real.Gamma (x + 1) = x * Real.Gamma x`. Check every entry with:
+
+```lean
+#veriphy_check_translations
+```
+
+It translates each function's example, renders it back, proves the two equal, and closes each rewrite's example
+with its lemma, reporting each entry as passed or failed.
+
 ## Building proofs with `sage_run`
 
 ```lean
