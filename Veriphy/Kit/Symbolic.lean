@@ -307,7 +307,11 @@ partial def exprToSym (e : Expr) : SymM SymExpr := do
   if e.isApp && e.getAppFn.isFVar && !(← get).bound.any (·.1 == e.getAppFn) then
     if let some name ← unknownFunction? e.getAppFn then
       if (← get).coordinates.isNone then
-        return .fnApp name (← e.getAppArgs.toList.mapM exprToSym)
+        -- arguments of a type such as Physlib's `Time` are taken as numbers (`t.val`), as derivative points are
+        let args ← e.getAppArgs.toList.mapM fun a => do
+          let viewed ← numericView a
+          if viewed == a then exprToSym a else symAtom viewed
+        return .fnApp name args
   if let some y := (← get).coordinates then
     if let some j := coordinateIndex? (← getEnv) y e then
       modify fun st => if st.coordinateUses.any (·.1 == j) then st
