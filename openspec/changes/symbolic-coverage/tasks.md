@@ -63,7 +63,7 @@
 
 ## 8. Foundations checkpoint
 
-- [ ] 8.1 Rerun the coverage runner and record the post-change numbers and classified top heads. Verify that the fully covered share is at least the baseline's for every corpus.
+- [x] 8.1 Rerun the coverage runner and record the post-change numbers and classified top heads. Verify that the fully covered share is at least the baseline's for every corpus.
 - [x] 8.2 Update the user guide (namespaces, project tables, typed rendering, ODEs, `VeriphyCheck`), the developer guide (adding core entries, packs and checkers), the README and the recipe index. Verify that `nox -s docs -- build` succeeds.
 - [ ] 8.3 Run `nox -s checks`, `nox -s tests`, `lake build VeriphyTest`, `lake build VeriphyCheck` and the Sage-free replay of every replacement, all green. Push and verify that CI is green.
 
@@ -101,7 +101,7 @@
 - [x] 14.1 Add `_operators`: operators from multiplications and partial derivatives applied to a symbolic test function, with commutators and test-function proofs. Verify on `[d/dx, x]` and on `[L₁, L₂]` under `ContDiff ℝ 2 ψ`.
 - [x] 14.2 Add matrix-operator normal ordering and commutators. Verify on the Pauli matrices and on truncated ladder operators.
 - [x] 14.3 Add `_clifford`: gamma matrices by representation and signature, the Clifford relation, traces with `γ⁵`, contraction identities and Fierz coefficients. Verify the four-gamma trace for all index combinations through the reflective checker, and the Fierz matrix.
-- [ ] 14.4 Write `operator_identity` and the Physlib ladder-operator recipe. Verify their worked examples, the Physlib one in the coverage runner.
+- [x] 14.4 Write `operator_identity` and the Physlib ladder-operator recipe. Verify their worked examples, the Physlib one in the coverage runner.
 
 ## 15. Coordinate geometry (coordinate-geometry-bridge)
 
