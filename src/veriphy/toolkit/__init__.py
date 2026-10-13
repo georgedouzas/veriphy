@@ -4,6 +4,7 @@ A script sees the Lean goal as a `Problem`, finds what the proof needs with the 
 writes the proof with its Lean emitters. Importing this package imports SageMath.
 """
 
+from veriphy.toolkit._derivative import has_deriv_at, has_deriv_at_proof
 from veriphy.toolkit._emit import (
     by_cases,
     calc_chain,
@@ -65,6 +66,8 @@ __all__ = [
     'field_simp',
     'field_simp_clearing',
     'fresh_name',
+    'has_deriv_at',
+    'has_deriv_at_proof',
     'hyp',
     'lemma_rewrite',
     'linear_combination',

@@ -34,7 +34,64 @@ def checkAxioms (goal : MVarId) : MetaM Unit := do
         throwError "veriphy: the proof depends on the axiom `{ax}`; only `propext`, `Classical.choice` and \
           `Quot.sound` are accepted"
 
-/-- Run `proof` on the main goal, replay it if `veriphy.checkReplay` is set, and emit it as the single
+/-- The most `first` combinators a block may hold for its replacement to be minimized (each one costs reruns). -/
+def maxFirstNodes : Nat := 8
+
+/-- The `first` combinators of a tactic block, outermost first. -/
+partial def firstNodes (stx : Syntax) : Array Syntax :=
+  match stx with
+  | .node _ kind args =>
+    let inner := args.foldl (init := #[]) fun acc a => acc ++ firstNodes a
+    if kind == ``Lean.Parser.Tactic.first then #[stx] ++ inner else inner
+  | _ => #[]
+
+/-- Do two syntax nodes come from the same source range? -/
+private def sameRange (a b : Syntax) : Bool :=
+  a.getPos?.isSome && a.getPos? == b.getPos? && a.getTailPos? == b.getTailPos?
+
+/-- Replace the node with the same source range as `target` by `replacement`; `none` when it is not there. -/
+partial def replaceNode (stx target replacement : Syntax) : Option Syntax :=
+  if sameRange stx target then some replacement else
+  match stx with
+  | .node info kind args => Id.run do
+    for h : i in [0:args.size] do
+      if let some a := replaceNode args[i] target replacement then
+        return some (.node info kind (args.set i a))
+    return none
+  | _ => none
+
+/-- Does the block, run from `s₀`, close what the original closed: no error, and as many goals left? -/
+private def runsLike (s₀ : Tactic.SavedState) (block : Syntax) (goalsLeft : Nat) : TacticM Bool := do
+  s₀.restore
+  try
+    let errorsBefore := (← Core.getMessageLog).reportedPlusUnreported.size
+    Term.withoutErrToSorry <| withoutRecover <| evalTactic block
+    let clean := (← Core.getMessageLog).reportedPlusUnreported.size == errorsBefore
+    return clean && (← getUnsolvedGoals).length == goalsLeft
+  catch _ => return false
+
+/-- Replace each `first | t₁ | t₂ …` by its first alternative with which the whole block still succeeds, so the
+replacement shows what ran rather than every fallback. A `first` whose goals need different alternatives (under
+`<;>`, say) is kept. The state after the original run is restored. -/
+def keepRunAlternatives (s₀ : Tactic.SavedState) (proof : Syntax) : TacticM Syntax := do
+  let nodes := firstNodes proof
+  if nodes.isEmpty || nodes.size > maxFirstNodes then return proof
+  let s₁ ← saveState
+  let goalsLeft := (← getUnsolvedGoals).length
+  let mut current := proof
+  for node in nodes do
+    for alternative in (node[1].getArgs.map (·[1])) do
+      -- a single tactic stands on its own; a sequence is parenthesized
+      let tactics := alternative[0][0].getSepArgs
+      let wrapped ← if h : tactics.size = 1 then pure tactics[0] else `(tactic| ($(⟨alternative⟩)))
+      let some candidate := replaceNode current node wrapped | break
+      if ← runsLike s₀ candidate goalsLeft then
+        current := candidate
+        break
+  s₁.restore
+  return current
+
+/-- Run `proof` on the main goal, replay it if `veriphy.checkReplay` is set, and emit what ran as the single
 `Sage-free replacement:` for the whole current tactic (`getRef`, so applying it also replaces the
 tactic's arguments). On failure the state is restored and nothing is emitted. -/
 def closeAndEmit (proof : TSyntax `tactic) : TacticM Unit := do
@@ -55,6 +112,8 @@ def closeAndEmit (proof : TSyntax `tactic) : TacticM Unit := do
   catch ex =>
     s₀.restore
     throw ex
+  -- emit what ran: a `first | …` becomes the alternative that closed its goal (the replay checks the result)
+  let proof : TSyntax `tactic := ⟨← keepRunAlternatives s₀ proof⟩
   if veriphy.checkReplay.get (← getOptions) then
     replay s₀ proof (← getUnsolvedGoals)
   Lean.Meta.Tactic.TryThis.addSuggestion (← getRef) proof (header := "Sage-free replacement: ")
