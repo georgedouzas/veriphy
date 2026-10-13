@@ -93,6 +93,10 @@ structure Problem where
   extensions : List Table := []
   /-- The derivatives the translation met: variable, body and point in Sage syntax, function and point in Lean. -/
   derivatives : Array (String × String × String × String × String) := #[]
+  /-- The unknown functions met: Sage name, Lean name, arity. -/
+  functions : Array (String × String × Nat) := #[]
+  /-- Explicit definitions of unknown functions from hypotheses `x = fun t => body`: Sage name, variable, body. -/
+  definitions : Array (String × String × String) := #[]
 
 /-- The atom-table monad: translation state shared across one tactic invocation. -/
 abbrev ProblemM := StateRefT (Array Expr) MetaM
@@ -198,8 +202,25 @@ def Problem.enrich (p : Problem) : MetaM Problem := do
     { t with functions := t.functions.filter (used.contains ·.lean),
              constants := t.constants.filter (used.contains ·.lean) }
   let derivatives := st.derivatives.map fun (k, b, pt, f, at_) => (k, b.toSage, pt.toSage, f, at_)
+  -- hypotheses `x = fun t => body` define unknown functions explicitly
+  let mut definitions := #[]
+  for (sageName, f) in st.functions do
+    for decl in ← getLCtx do
+      unless nameable decl do continue
+      let some (_, lhs, rhs, .eq) := relOf? (← instantiateMVars decl.type) | continue
+      unless lhs == f do continue
+      let .lam n ty body bi := rhs | continue
+      let body' ← withLocalDecl n bi ty fun x => do
+        let state : SymState := { atoms := st.atoms, tables := tables, bound := #[(x, "s_")] }
+        let (sym, _) ← (exprToSym (body.instantiate1 x)).run { state with functions := st.functions }
+        return sym.toSage
+      definitions := definitions.push (sageName, "s_", body')
+  let functions ← st.functions.mapM fun (sageName, f) => do
+    let arity := (← forallTelescopeReducing (← inferType f) fun xs _ => pure xs.size)
+    return (sageName, toString (← f.fvarId!.getUserName), arity)
   let p : Problem := { p with namespaces := tables.map (·.«namespace»), tableProblems := tableProblems }
-  return { p with extensions := extensions, derivatives := derivatives }
+  let p : Problem := { p with extensions := extensions, derivatives := derivatives }
+  return { p with functions := functions, definitions := definitions }
 
 /-- Extract the main goal and every nameable hypothesis, never rejecting a goal: anything without a
 polynomial form is kept with its text. Runs `k` in the goal's context (extended with the binders of an
@@ -294,6 +315,10 @@ def Problem.toJson (p : Problem) : MetaM Json := do
     , ("extensions", Json.arr (p.extensions.toArray.map (Lean.toJson ·)))
     , ("derivatives", Json.arr (p.derivatives.map fun (k, b, pt, f, at_) =>
         Json.mkObj [("var", Json.str k), ("body", Json.str b), ("point", Json.str pt), ("function", Json.str f),
-          ("at", Json.str at_)])) ]
+          ("at", Json.str at_)]))
+    , ("functions", Json.arr (p.functions.map fun (s, l, a) =>
+        Json.mkObj [("sage", Json.str s), ("lean", Json.str l), ("arity", Json.num a)]))
+    , ("definitions", Json.arr (p.definitions.map fun (s, v, b) =>
+        Json.mkObj [("function", Json.str s), ("var", Json.str v), ("body", Json.str b)])) ]
 
 end Veriphy

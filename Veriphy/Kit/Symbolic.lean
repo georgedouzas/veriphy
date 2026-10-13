@@ -47,6 +47,10 @@ inductive SymExpr
   | deriv (k : String) (body point : SymExpr)
   /-- A partial derivative of `body` in the coordinate variable `k`, then each coordinate variable replaced. -/
   | partialAt (k : String) (body : SymExpr) (subs : List (String × SymExpr))
+  /-- An unknown function of the problem applied to arguments, `F_x(t)` in Sage. -/
+  | fnApp (name : String) (args : List SymExpr)
+  /-- The `order`-th derivative of an unknown function of one variable at `point`. -/
+  | fnDiff (name : String) (order : Nat) (point : SymExpr)
   /-- A sub-expression computed at another Lean type (`ℕ`, `ℤ`) than its context, such as the `n % 7` inside
   `((n % 7 : ℕ) : ℝ)`; the rendering restores the cast. -/
   | typed (ty : String) (e : SymExpr)
@@ -78,6 +82,8 @@ partial def SymExpr.toSage : SymExpr → String
   | .method m self args =>
     s!"({self.toSage}).{m}(" ++ ", ".intercalate (args.map (·.toSage)) ++ ")"
   | .typed ty e => s!"typed({e.toSage}, '{ty}')"
+  | .fnApp f args => s!"{f}(" ++ ", ".intercalate (args.map (·.toSage)) ++ ")"
+  | .fnDiff f k point => s!"diff({f}(s_), s_, {k}).subs(\{s_: {point.toSage}})"
   | .deriv k body point => s!"diff({body.toSage}, {k}).subs(\{{k}: {point.toSage}})"
   | .partialAt k body subs =>
     let pairs := ", ".intercalate (subs.map fun (c, v) => s!"{c}: {v.toSage}")
@@ -111,6 +117,8 @@ structure SymState where
   coordinateUses : Array (Nat × Expr) := #[]
   /-- The Lean constants whose table entries the translation used. -/
   usedEntries : Array String := #[]
+  /-- The unknown functions met (local functions applied to arguments): Sage name and Lean function. -/
+  functions : Array (String × Expr) := #[]
   /-- Each derivative translated: variable, body and point (Sage), and the Lean text of the function and point. -/
   derivatives : Array (String × SymExpr × SymExpr × String × String) := #[]
 
@@ -252,6 +260,27 @@ private def numericView (point : Expr) : SymM Expr := do
       catch _ => pure ()
   return point
 
+/-- A local function the problem leaves unknown (`x : ℝ → ℝ`, `x : Time → ℝ`), and its Sage name. -/
+private def unknownFunction? (f : Expr) : SymM (Option String) := do
+  unless f.isFVar do return none
+  unless (← whnfR (← inferType f)).isForall do return none
+  let name := s!"F_{(← f.fvarId!.getUserName).eraseMacroScopes}".map fun c => if c.isAlphanum || c == '_' then c else '_'
+  unless (← get).functions.any (·.2 == f) do
+    modify fun st => { st with functions := st.functions.push (name, f) }
+  return some name
+
+/-- `deriv (deriv … f)` with `f` an unknown function: the function and the number of derivatives. A library
+derivative (such as Physlib's `Time.deriv`) partially applied counts too. -/
+private partial def iteratedDerivOf (fn : Expr) : SymM (Option (Expr × Nat)) := do
+  if fn.isFVar then return some (fn, 1)
+  let (f, args) := fn.getAppFnArgs
+  let isDeriv := (f == `deriv && args.size == 7) || ((← get).tables.function? f).any (·.role == some "derivative")
+  unless isDeriv do return none
+  let some inner := args.back? | return none
+  match ← iteratedDerivOf inner with
+  | some (g, k) => return some (g, k + 1)
+  | none => return none
+
 /-- Is the type ℕ or ℤ, where `/`, `%` and (on ℕ) `-` differ from field arithmetic? -/
 private def isIntegerType (ty : Expr) : MetaM Bool := do
   let ty ← whnfR ty
@@ -274,7 +303,11 @@ partial def exprToSym (e : Expr) : SymM SymExpr := do
   if let some n := natLit? e then return .num n 1
   if e.isFVar then
     if let some (_, k) := (← get).bound.find? (·.1 == e) then return .bvar k
-  if e.getAppFn.isLambda then return ← exprToSym e.headBeta
+  if e.isApp && e.getAppFn.isLambda then return ← exprToSym e.headBeta
+  if e.isApp && e.getAppFn.isFVar && !(← get).bound.any (·.1 == e.getAppFn) then
+    if let some name ← unknownFunction? e.getAppFn then
+      if (← get).coordinates.isNone then
+        return .fnApp name (← e.getAppArgs.toList.mapM exprToSym)
   if let some y := (← get).coordinates then
     if let some j := coordinateIndex? (← getEnv) y e then
       modify fun st => if st.coordinateUses.any (·.1 == j) then st
@@ -292,7 +325,13 @@ partial def exprToSym (e : Expr) : SymM SymExpr := do
       let operands := args.extract (args.size - entry.arity) args.size
       noteConditions entry operands
       match entry.role with
-      | some "derivative" => return ← derivAt e operands[0]! operands[1]!
+      | some "derivative" =>
+        if let some (f, k) ← iteratedDerivOf operands[0]! then
+          if let some name ← unknownFunction? f then
+            let viewed ← numericView operands[1]!
+            let point ← if viewed == operands[1]! then exprToSym viewed else symAtom viewed
+            return .fnDiff name k point
+        return ← derivAt e operands[0]! operands[1]!
       | some "partial" => if entry.arity == 3 then return ← partialAt e operands[0]! operands[1]! operands[2]!
       | _ => pure ()
       if entry.arity == 1 then return .fn entry.sage (← exprToSym operands[0]!)
@@ -386,7 +425,11 @@ partial def exprToSym (e : Expr) : SymM SymExpr := do
   | `Polynomial.coeff, #[_, _, p, n] => return .method "coefficient" (← exprToSym p) [.bvar "X", ← exprToSym n]
   | `Polynomial.natDegree, #[_, _, p] | `Polynomial.degree, #[_, _, p] =>
     return .method "degree" (← exprToSym p) [.bvar "X"]
-  | `deriv, #[_, _, _, _, _, _, fn, point] => derivAt e fn point
+  | `deriv, #[_, _, _, _, _, _, fn, point] => do
+    if let some (f, k) ← iteratedDerivOf fn then
+      if let some name ← unknownFunction? f then
+        return .fnDiff name k (← exprToSym (← numericView point))
+    derivAt e fn point
   | _, _ => symAtom e
 
 
