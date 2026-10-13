@@ -18,3 +18,8 @@ globs = ["VeriphyTest", "VeriphyTest.+"]
 name = "mathlib"
 git = "https://github.com/leanprover-community/mathlib4"
 rev = "v4.34.1"
+
+# Recipe assets a project copies into `.veriphy/lean/` (mathlib only); built here so they stay checked
+[[lean_lib]]
+name = "VeriphyAssets"
+srcDir = "assets"
