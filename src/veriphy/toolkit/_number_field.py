@@ -8,8 +8,10 @@ from the relation), and normalizing again: the reduced form of an element is uni
 
 from dataclasses import dataclass
 
-from sage.all import QQ, PolynomialRing, factor
+from sage.all import QQ, FractionField, PolynomialRing, factor
 from sage.matrix.matrix0 import Matrix
+from sage.rings.fraction_field_element import FractionFieldElement
+from sage.rings.number_field.number_field_element import NumberFieldElement
 from sage.rings.polynomial.polynomial_element import Polynomial
 
 from veriphy.core import CertificateError
@@ -113,7 +115,7 @@ def quadratic_context(d: int, name: str = 'hs') -> FieldContext:
     )
 
 
-def cyclotomic_context(n: int, zeta: str = 'ζ', primitive: str = 'hζ', name: str = 'hΦ') -> FieldContext:
+def cyclotomic_context(n: int, zeta: str = 'ζ', primitive: str | None = 'hζ', name: str = 'hΦ') -> FieldContext:
     """Return ℚ(ζₙ) for a primitive root `ζ` with `primitive : IsPrimitiveRoot ζ n` among the hypotheses.
 
     The fact `Φₙ(ζ) = 0` is derived from mathlib's `IsPrimitiveRoot.isRoot_cyclotomic` and, for a prime power `n`,
@@ -171,7 +173,7 @@ def parameter_context(name: str = 'α') -> FieldContext:
     return FieldContext(name, None, None, None)
 
 
-def lift(x: object) -> Polynomial:
+def lift(x: NumberFieldElement | int) -> Polynomial:
     """Return the representative of a number-field element as a polynomial over ℚ in `x`.
 
     Args:
@@ -185,12 +187,12 @@ def lift(x: object) -> Polynomial:
         >>> lift(QuadraticField(2, 's').gen() / 2 + 1)
         1/2*x + 1
     """
-    if x in QQ:
-        return X.parent()(QQ(x))
-    return X.parent()(list(x.polynomial()))
+    if isinstance(x, NumberFieldElement):
+        return X.parent()(list(x.polynomial()))
+    return X.parent()(QQ(x))
 
 
-def render_element(x: object, context: FieldContext) -> str:
+def render_element(x: NumberFieldElement | FractionFieldElement | int, context: FieldContext) -> str:
     """Return a field element as Lean text in the context's generator (a rational function for a parameter).
 
     Args:
@@ -206,7 +208,8 @@ def render_element(x: object, context: FieldContext) -> str:
         '(1 / 2) * (Real.sqrt 2)'
     """
     if context.modulus is None:
-        numerator, denominator = x.numerator(), x.denominator()
+        value = FractionField(X.parent())(x) if not isinstance(x, FractionFieldElement) else x
+        numerator, denominator = value.numerator(), value.denominator()
         top = render_polynomial(X.parent()(list(numerator)), context.generator)
         if denominator == 1:
             return top
