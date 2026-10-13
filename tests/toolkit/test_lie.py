@@ -3,19 +3,23 @@
 from collections.abc import Callable
 
 import pytest
-from sage.all import QQ, QuadraticField, identity_matrix, matrix
+from sage.all import QQ, ZZ, QuadraticField, identity_matrix, matrix
 
 from veriphy.core import CertificateError
 from veriphy.toolkit import (
     Lean,
     bracket_relations,
+    cartan_matrix,
     casimir,
     commutation_facts,
+    det_certificate,
     jacobi_certificate,
     killing_form,
+    positive_roots,
     smul_combination,
     structure_constants,
     trace_form,
+    weyl_group_order,
 )
 
 E = matrix(QQ, [[0, 1], [0, 0]])
@@ -109,3 +113,22 @@ def test_lie_facts_parse_in_lean(lean_parses: Callable[[list[Lean]], str]) -> No
         jacobi_certificate(structure_constants(SL2)),
     ]
     assert lean_parses(facts) == ''
+
+
+def test_root_data_matches_the_classification() -> None:
+    """Determinants, Weyl group orders and root counts of the exceptional types."""
+    for name, det, order, roots in [('E8', 1, 696729600, 120), ('F4', 1, 1152, 24), ('G2', 1, 12, 6)]:
+        assert cartan_matrix(name).det() == det
+        assert weyl_group_order(name) == order
+        assert len(positive_roots(name)) == roots
+    assert cartan_matrix('E₈') == cartan_matrix('E 8')
+
+
+def test_unknown_types_and_pivoting_are_refused() -> None:
+    """Name the expected form of a type, and refuse a matrix whose leading minor vanishes."""
+    with pytest.raises(CertificateError, match='Cartan type'):
+        cartan_matrix('H3')
+    with pytest.raises(CertificateError, match='pivoting'):
+        det_certificate(matrix(ZZ, [[0, 1], [1, 0]]))
+    with pytest.raises(CertificateError, match='integer'):
+        det_certificate(matrix(QQ, [[QQ(1) / 2]]))

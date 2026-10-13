@@ -20,6 +20,7 @@ import Mathlib.Analysis.SpecialFunctions.Gamma.Basic
 import Mathlib.Analysis.SpecialFunctions.Arsinh
 import Veriphy
 import VeriphyCheck
+import Mathlib.LinearAlgebra.Matrix.Cartan.Basic
 
 set_option veriphy.checkReplay true
 
@@ -300,3 +301,28 @@ basis = [i*(E(0,0)-E(1,1)), i*(E(1,1)-E(2,2)), E(0,1)-E(1,0), E(0,2)-E(2,0), E(1
 proof = steps(jacobi_certificate(structure_constants(basis)), tactic('trivial'))"
 
 end LieTest
+
+/-! ## Root data, checked against mathlib's Cartan matrices -/
+
+-- the determinant of E₈ from an LU factorization over ℚ the kernel checks
+set_option maxRecDepth 10000 in
+example : (CartanMatrix.E 8).det = 1 := by
+  sage_run "proof = tactic('exact ' + str(det_certificate(cartan_matrix('E8'))))"
+
+-- the inverse of F₄, from Sage, checked by the product
+example : CartanMatrix.F₄⁻¹ = !![2, 3, 4, 2; 3, 6, 8, 4; 2, 4, 6, 3; 1, 2, 3, 2] := by
+  sage_run "
+assert cartan_matrix('F4').inverse() == matrix(QQ, [[2, 3, 4, 2], [3, 6, 8, 4], [2, 4, 6, 3], [1, 2, 3, 2]])
+proof = tactic('exact ' + str(inverse_certificate()))"
+
+-- the toolkit's conventions are mathlib's, type by type
+example : CartanMatrix.F₄ = !![2, -1, 0, 0; -1, 2, -2, 0; 0, -1, 2, -1; 0, 0, -1, 2] ∧
+    CartanMatrix.G₂ = !![2, -3; -1, 2] ∧ CartanMatrix.B 3 = !![2, -1, 0; -1, 2, -2; 0, -1, 2] ∧
+    CartanMatrix.C 3 = !![2, -1, 0; -1, 2, -1; 0, -2, 2] ∧ CartanMatrix.D 4 = !![2, -1, 0, 0; -1, 2, -1, -1; 0, -1, 2, 0; 0, -1, 0, 2] := by
+  sage_run "
+expected = [cartan_matrix(t) for t in ['F4', 'G2', 'B3', 'C3', 'D4']]
+assert [[list(r) for r in m.rows()] for m in expected] == [
+    [[2, -1, 0, 0], [-1, 2, -2, 0], [0, -1, 2, -1], [0, 0, -1, 2]], [[2, -3], [-1, 2]],
+    [[2, -1, 0], [-1, 2, -2], [0, -1, 2]], [[2, -1, 0], [-1, 2, -1], [0, -2, 2]],
+    [[2, -1, 0, 0], [-1, 2, -1, -1], [0, -1, 2, 0], [0, -1, 0, 2]]], expected
+proof = tactic('exact ⟨by decide, by decide, by decide, by decide, by decide⟩')"
