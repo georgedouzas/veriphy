@@ -149,18 +149,24 @@ def loadProjectTables (dir : System.FilePath) : IO (List Table × Array String) 
   return (tables, problems)
 
 /-- The project tables, cached per Lean process by the files' modification times. -/
-initialize projectTableCache : IO.Ref (Option (List (String × Nat) × List Table × Array String)) ← IO.mkRef none
+initialize projectTableCache :
+    IO.Ref (Option (String × List (String × Nat) × List Table × Array String)) ← IO.mkRef none
 
-/-- The project's tables from `.veriphy/translations/`, reloaded only when a file changed. -/
-def projectTables : IO (List Table × Array String) := do
-  let dir := (← projectDir) / "translations"
+register_option veriphy.translationsDir : String := {
+  defValue := ""
+  descr := "the directory of the project's translation entries (default: .veriphy/translations/ of the workspace)"
+}
+
+/-- The project's tables from `.veriphy/translations/` (or `override`), reloaded only when a file changed. -/
+def projectTables (override : String := "") : IO (List Table × Array String) := do
+  let dir ← if override.isEmpty then pure ((← projectDir) / "translations") else pure (System.FilePath.mk override)
   let stamps ← if ← dir.isDir then
       (← dir.readDir).toList.mapM fun f => return (f.fileName, (← f.path.metadata).modified.sec.toNat)
     else pure []
-  if let some (cached, tables, problems) := ← projectTableCache.get then
-    if cached == stamps then return (tables, problems)
+  if let some (cachedDir, cached, tables, problems) := ← projectTableCache.get then
+    if cachedDir == dir.toString && cached == stamps then return (tables, problems)
   let (tables, problems) ← loadProjectTables dir
-  projectTableCache.set (some (stamps, tables, problems))
+  projectTableCache.set (some (dir.toString, stamps, tables, problems))
   return (tables, problems)
 
 end Veriphy

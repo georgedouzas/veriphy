@@ -1,0 +1,9 @@
+{
+  "functions": [
+    {"lean": "Real.Gamma", "sage": "gamma", "arity": 1, "types": ["ℝ"], "result": "ℝ", "example": "Real.Gamma x"}
+  ],
+  "rewrites": [
+    {"lemma": "Real.Gamma_add_one", "functions": ["Real.Gamma"], "side": ["#0 ≠ 0"], "pattern": "gamma(w0 + 1)",
+     "example": "(x : ℝ) (hx : x ≠ 0) : Real.Gamma (x + 1) = x * Real.Gamma x"}
+  ]
+}
