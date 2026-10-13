@@ -198,6 +198,25 @@ def _record(typed: list[tuple[Expression, str]] | None, e: Expression, ty: str) 
 
 
 @dataclass(frozen=True)
+class Derivative:
+    """Hold a derivative the translation met, `deriv f point`.
+
+    Args:
+        var: The variable of differentiation, a Sage symbol.
+        body: The function's body, in `var` and the problem's variables.
+        point: The point, over the problem's variables.
+        function: The Lean text of the function.
+        at: The Lean text of the point.
+    """
+
+    var: Expression
+    body: Expression | None
+    point: Expression | None
+    function: str
+    at: str
+
+
+@dataclass(frozen=True)
 class Condition:
     """Hold a domain condition a symbolic expression of the problem needs.
 
@@ -255,6 +274,7 @@ class Problem:
         symbols: The variables as symbolic-ring variables, by name, for symbolic work.
         tables: The translation tables in force, core first.
         typed: The sub-expressions Lean computes at another type (`ℕ`, `ℤ`) than their context, with that type.
+        derivatives: The derivatives the translation met, in the order it met them.
     """
 
     ring: MPolynomialRing_base
@@ -272,6 +292,7 @@ class Problem:
     symbols: dict[str, Expression] = field(default_factory=dict)
     tables: tuple[Table, ...] = field(default_factory=lambda: (load_core_table(),))
     typed: list[tuple[Expression, str]] = field(default_factory=list)
+    derivatives: list[Derivative] = field(default_factory=list)
 
     def find_hyp(self, name: str, allowed: tuple[str, ...], family: str) -> Hyp:
         """Find the hypothesis named `name`, checking its relation is usable by `family`.
@@ -384,6 +405,19 @@ def _read_tables(problem: dict[str, object]) -> tuple[Table, ...]:
     return (load_core_table(), *packs, *project)
 
 
+def _read_derivatives(items: object, symbols: dict[str, Expression]) -> list[Derivative]:
+    """Return the serialized derivatives, each body parsed with its own variable."""
+    derivatives = []
+    for item in items if isinstance(items, list) else []:
+        if not isinstance(item, dict) or not isinstance(item.get('var'), str):
+            raise ParamError(param='problem', reason=f'bad derivative {item!r}')
+        var = SR.var(str(item['var']))
+        body = parse_symbolic(item.get('body'), {**symbols, str(var): var})
+        point = parse_symbolic(item.get('point'), symbols)
+        derivatives.append(Derivative(var, body, point, str(item.get('function', '')), str(item.get('at', ''))))
+    return derivatives
+
+
 def _read_names(problem: dict[str, object]) -> list[str]:
     """Return the problem's variable names, or a single placeholder name for a problem without atoms."""
     names = problem.get('vars') or []
@@ -438,6 +472,7 @@ def read_problem(problem: object) -> Problem:
         symbols=symbols,
         tables=_read_tables(problem),
         typed=typed,
+        derivatives=_read_derivatives(problem.get('derivatives', []), symbols),
     )
     if kind in ('rel', 'other'):
         bound.goal = _read_constraint({**goal, 'name': None}, 'goal', ring, symbols, typed)

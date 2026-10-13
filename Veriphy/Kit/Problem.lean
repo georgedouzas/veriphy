@@ -91,6 +91,8 @@ structure Problem where
   tableProblems : Array String := #[]
   /-- The project's table entries the problem uses, serialized for the daemon. -/
   extensions : List Table := []
+  /-- The derivatives the translation met: variable, body and point in Sage syntax, function and point in Lean. -/
+  derivatives : Array (String × String × String × String × String) := #[]
 
 /-- The atom-table monad: translation state shared across one tactic invocation. -/
 abbrev ProblemM := StateRefT (Array Expr) MetaM
@@ -195,7 +197,9 @@ def Problem.enrich (p : Problem) : MetaM Problem := do
   let extensions := (tables.filter (·.«namespace» == "project")).map fun t =>
     { t with functions := t.functions.filter (used.contains ·.lean),
              constants := t.constants.filter (used.contains ·.lean) }
-  return { p with namespaces := tables.map (·.«namespace»), tableProblems := tableProblems, extensions }
+  let derivatives := st.derivatives.map fun (k, b, pt, f, at_) => (k, b.toSage, pt.toSage, f, at_)
+  let p : Problem := { p with namespaces := tables.map (·.«namespace»), tableProblems := tableProblems }
+  return { p with extensions := extensions, derivatives := derivatives }
 
 /-- Extract the main goal and every nameable hypothesis, never rejecting a goal: anything without a
 polynomial form is kept with its text. Runs `k` in the goal's context (extended with the binders of an
@@ -287,6 +291,9 @@ def Problem.toJson (p : Problem) : MetaM Json := do
     , ("domain", Json.arr conditions)
     , ("namespaces", Json.arr (p.namespaces.toArray.map Json.str))
     , ("table_problems", Json.arr (p.tableProblems.map Json.str))
-    , ("extensions", Json.arr (p.extensions.toArray.map (Lean.toJson ·))) ]
+    , ("extensions", Json.arr (p.extensions.toArray.map (Lean.toJson ·)))
+    , ("derivatives", Json.arr (p.derivatives.map fun (k, b, pt, f, at_) =>
+        Json.mkObj [("var", Json.str k), ("body", Json.str b), ("point", Json.str pt), ("function", Json.str f),
+          ("at", Json.str at_)])) ]
 
 end Veriphy

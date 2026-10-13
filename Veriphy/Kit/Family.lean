@@ -45,13 +45,14 @@ partial def firstNodes (stx : Syntax) : Array Syntax :=
     if kind == ``Lean.Parser.Tactic.first then #[stx] ++ inner else inner
   | _ => #[]
 
-/-- Do two syntax nodes come from the same source range? -/
-private def sameRange (a b : Syntax) : Bool :=
-  a.getPos?.isSome && a.getPos? == b.getPos? && a.getTailPos? == b.getTailPos?
+/-- Are two syntax nodes the same node of the source: same kind and same range? (A node and the sequence that
+holds only it share a range, so the kind is needed.) -/
+private def sameNode (a b : Syntax) : Bool :=
+  a.getKind == b.getKind && a.getPos?.isSome && a.getPos? == b.getPos? && a.getTailPos? == b.getTailPos?
 
 /-- Replace the node with the same source range as `target` by `replacement`; `none` when it is not there. -/
 partial def replaceNode (stx target replacement : Syntax) : Option Syntax :=
-  if sameRange stx target then some replacement else
+  if sameNode stx target then some replacement else
   match stx with
   | .node info kind args => Id.run do
     for h : i in [0:args.size] do

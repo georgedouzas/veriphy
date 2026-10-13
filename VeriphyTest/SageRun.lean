@@ -119,6 +119,13 @@ example (x y : ℚ) (h1 : x + y = 1) (h2 : x - y = 0) (h3 : 2 * x = 3) : False :
 
 /-! ## Symbolic recipes -/
 
+-- derivative
+example : deriv (fun x : ℝ => x ^ 2 * Real.exp x) 1 = 3 * Real.exp 1 := by
+  sage_run file "prompts/recipes/templates/derivative.sage"
+example (a : ℝ) (ha : a ≠ 0) : deriv (fun x : ℝ => Real.log x * Real.sin x) a =
+    Real.sin a / a + Real.log a * Real.cos a := by
+  sage_run file "prompts/recipes/templates/derivative.sage"
+
 -- rational_inequality
 example (x : ℝ) : x / (x ^ 2 + 1) ≤ 1 / 2 := by
   sage_run file "prompts/recipes/templates/rational_inequality.sage"
