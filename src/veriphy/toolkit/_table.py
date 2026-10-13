@@ -13,6 +13,7 @@ from veriphy.core import TableError
 
 CORE_TABLE_FILE = 'core_table.json'
 PACKS_DIR = 'packs'
+SHIPPED_PACKS = ('physlib',)
 ROLES = ('derivative', 'partial')
 CONDITION_KINDS = ('ne', 'nonneg', 'pos', 'le')
 
@@ -244,12 +245,13 @@ def _rewrite(obj: dict[str, object], source: str) -> RewriteEntry:
     )
 
 
-def parse_table(data: object, source: str) -> Table:
+def parse_table(data: object, source: str, default_namespace: str | None = None) -> Table:
     """Validate a table read from JSON against the schema and return it.
 
     Args:
         data: The parsed JSON.
         source: Where it came from (a file name), named in errors.
+        default_namespace: The namespace of a table that names none (`project` for a project file).
 
     Returns:
         The table.
@@ -270,7 +272,7 @@ def parse_table(data: object, source: str) -> Table:
     if not isinstance(data, dict):
         raise TableError(source, '<root>', 'must be a JSON object')
     return Table(
-        namespace=_text(data, 'namespace', source),
+        namespace=_text(data, 'namespace', source, default_namespace),
         functions=tuple(_function(f, source) for f in _objects(data, 'functions', source)),
         constants=tuple(_constant(c, source) for c in _objects(data, 'constants', source)),
         coercions=_strings(data, 'coercions', source),
