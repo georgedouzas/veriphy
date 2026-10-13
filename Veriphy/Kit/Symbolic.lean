@@ -261,7 +261,7 @@ private def numericView (point : Expr) : SymM Expr := do
   return point
 
 /-- A local function the problem leaves unknown (`x : ℝ → ℝ`, `x : Time → ℝ`), and its Sage name. -/
-private def unknownFunction? (f : Expr) : SymM (Option String) := do
+def unknownFunction? (f : Expr) : SymM (Option String) := do
   unless f.isFVar do return none
   let .forallE _ dom _ _ ← whnfR (← inferType f) | return none
   -- a function of a continuous variable (ℝ, ℂ, ℚ, or a type the tables view as a number, such as `Time`);

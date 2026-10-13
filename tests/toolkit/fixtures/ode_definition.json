@@ -1,0 +1,76 @@
+{
+ "atom_types": [
+  "ℝ",
+  "ℝ",
+  "ℝ",
+  "other",
+  "other",
+  "ℝ",
+  "ℝ",
+  "ℝ"
+ ],
+ "atoms": [
+  "deriv (deriv x) t",
+  "ω",
+  "x t",
+  "x",
+  "fun s => A * Real.cos (ω * s) + B * Real.sin (ω * s)",
+  "t",
+  "A",
+  "B"
+ ],
+ "carrier": "ℝ",
+ "definitions": [
+  {
+   "body": "((x6 * cos((x1 * s_))) + (x7 * sin((x1 * s_))))",
+   "function": "F_x",
+   "hyp": "hx",
+   "text": "fun s => A * Real.cos (ω * s) + B * Real.sin (ω * s)",
+   "var": "s_"
+  }
+ ],
+ "derivatives": [],
+ "domain": [],
+ "exists_function": null,
+ "extensions": [],
+ "functions": [
+  {
+   "arity": 1,
+   "lean": "x",
+   "sage": "F_x"
+  }
+ ],
+ "goal": {
+  "expr": "((diff(F_x(s_), s_, 2).subs({s_: x5}) + ((x1)^(2) * F_x(x5)))) - (0)",
+  "kind": "rel",
+  "lhs": "deriv (deriv x) t + ω ^ 2 * x t",
+  "lhs_poly": "(x0 + ((x1)^2 * x2))",
+  "poly": "((x0 + ((x1)^2 * x2))) - (0)",
+  "rel": "eq",
+  "rhs": "0",
+  "rhs_poly": "0",
+  "text": "deriv (deriv x) t + ω ^ 2 * x t = 0"
+ },
+ "hyps": [
+  {
+   "expr": "(x3) - (x4)",
+   "name": "hx",
+   "rel": "eq",
+   "text": "x = fun s => A * Real.cos (ω * s) + B * Real.sin (ω * s)"
+  }
+ ],
+ "namespaces": [
+  "mathlib"
+ ],
+ "table_problems": [],
+ "vars": [
+  "x0",
+  "x1",
+  "x2",
+  "x3",
+  "x4",
+  "x5",
+  "x6",
+  "x7"
+ ]
+}

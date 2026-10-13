@@ -17,7 +17,10 @@ NONZERO_LEMMAS = {'log': 'log'}
 POINTWISE = ('add', 'mul', 'div', 'pow')
 APPLYING = ('mul', 'div', 'pow', 'sqrt', 'rpow_const', 'exp', 'sin', 'cos', 'log')
 PI_LEMMAS = {'add': 'Pi.add_apply', 'mul': 'Pi.mul_apply', 'div': 'Pi.div_apply', 'pow': 'Pi.pow_apply'}
-CLOSE = 'first | ring1 | (field_simp; ring1) | field_simp | norm_num'
+CLOSE = (
+    'first | ring1 | (ring_nf; done) | (field_simp; done) | (field_simp; ring1) | (field_simp; ring_nf; done)'
+    ' | (norm_num; done)'
+)
 
 
 class _Builder:
@@ -154,6 +157,18 @@ def _combinator(e: Expression, var: Expression) -> str | None:
     return None
 
 
+def _pointwise_lemmas(e: Expression, var: Expression) -> set[str]:
+    """Return the `Pi` lemmas that unfold the pointwise operations of the function a term for `e` proves."""
+    kind = _combinator(e, var)
+    if kind is None:
+        return set()
+    children = [e.operands()[0]] if kind == 'pow' else [a for a in e.operands() if a.has(var)]
+    found = {PI_LEMMAS[kind]}
+    for child in children:
+        found |= _pointwise_lemmas(child**-1 if _is_reciprocal(child) else child, var)
+    return found
+
+
 def _is_reciprocal(e: Expression) -> bool:
     """Return whether `e` is a power with a negative numeral exponent, a factor of a denominator."""
     if e.operator() != operator.pow:
@@ -243,11 +258,12 @@ def has_deriv_at_proof(
         >>> from veriphy.toolkit import read_problem
         >>> prob = read_problem({'vars': ['x0'], 'atoms': ['a'], 'carrier': 'ℝ', 'goal': {'kind': 'false'}})
         >>> t = SR.var('t_')
-        >>> print(has_deriv_at_proof(t**2 * exp(t), t, 1, 3 * exp(1), prob))
+        >>> first, second, closing = str(has_deriv_at_proof(t**2 * exp(t), t, 1, 3 * exp(1), prob)).splitlines()
+        >>> print(first); print(second)
         have hd : HasDerivAt (fun t => ((t ^ 2) * (Real.exp t) : ℝ)) ((3 * (Real.exp 1) : ℝ)) (1 : ℝ) := by
           convert (((hasDerivAt_id' (1 : ℝ)).pow 2).mul ((hasDerivAt_id' (1 : ℝ)).exp)) using 1
-          simp only [Pi.pow_apply]
-          first | ring1 | (field_simp; ring1) | field_simp | norm_num
+        >>> closing.split(' | (simp only')[0]
+        '  all_goals first | rfl | (funext y; simp only [Pi.mul_apply, Pi.pow_apply]; ring_nf; done)'
     """
     builder = _Builder(var, SR(point), problem, proofs or {})
     built = builder.build(SR(expr))
@@ -258,7 +274,10 @@ def has_deriv_at_proof(
         f'have {name} : HasDerivAt ({stated_function}) ({stated_value}) {stated_point} := by',
         f'  convert {built} using 1',
     ]
-    if builder.pi_lemmas:
-        lines.append(f'  simp only [{", ".join(sorted(builder.pi_lemmas))}]')
-    lines.append(f'  {CLOSE}')
+    applied = ', '.join(sorted(builder.pi_lemmas))
+    value_close = f'(simp only [{applied}]; {CLOSE})' if applied else f'({CLOSE})'
+    # `convert` may leave the function too, when the stated text orders arguments as Sage does (`s * ω`)
+    unfold = ', '.join(sorted(_pointwise_lemmas(SR(expr), var)))
+    function_close = f'(funext y; simp only [{unfold}]; ring_nf; done)' if unfold else '(funext y; ring_nf; done)'
+    lines.append(f'  all_goals first | rfl | {function_close} | {value_close}')
     return Lean('\n'.join(lines), 'tactic')

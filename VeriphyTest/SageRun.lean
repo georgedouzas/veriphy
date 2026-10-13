@@ -127,6 +127,36 @@ example (n : ℕ) : ∑ k ∈ Finset.Ico 1 n, (2 * k : ℚ) = n * (n - 1) := by
 example (n : ℕ) : ∑ k ∈ Finset.Ico 0 n, (k : ℚ) ^ 3 = (n * (n - 1) / 2) ^ 2 := by
   sage_run file "prompts/recipes/templates/sum_induction.sage"
 
+-- ODEs: a stated solution, and solutions Sage finds
+example (ω A B : ℝ) (x : ℝ → ℝ) (hx : x = fun s => A * Real.cos (ω * s) + B * Real.sin (ω * s)) (t : ℝ) :
+    deriv (deriv x) t + ω ^ 2 * x t = 0 := by
+  sage_run "proof = verify_definition(problem)"
+example : ∃ x : ℝ → ℝ, (∀ t, deriv x t = 2 * x t) ∧ x 0 = 3 := by
+  sage_run file "prompts/recipes/templates/ode_solution.sage"
+example (ω x₀ v₀ : ℝ) (hω : ω ≠ 0) :
+    ∃ x : ℝ → ℝ, (∀ t, deriv (deriv x) t + ω ^ 2 * x t = 0) ∧ x 0 = x₀ ∧ deriv x 0 = v₀ := by
+  sage_run file "prompts/recipes/templates/ode_solution.sage"
+-- a wrong solution fails with the residual Lean could not close
+/--
+error: sage_run: the script's proof does not close the goal:
+veriphy: the certificate check failed:
+unsolved goals
+d1 : (deriv fun s => 3 * Real.exp (3 * s)) = fun s => 9 * Real.exp (3 * s)
+t : ℝ
+⊢ Real.exp (t * 3) * 9 = Real.exp (t * 3) * 6
+── Lean text ──
+have d1 : deriv (fun s => 3 * (Real.exp (3 * s))) = fun s => 9 * (Real.exp (3 * s)) := by
+  funext s
+  have hd : HasDerivAt (fun s => 3 * (Real.exp (3 * s))) ((9 * (Real.exp (3 * s)) : ℝ)) (s) := by
+    convert ((((hasDerivAt_id' (s : ℝ)).const_mul (3 : ℝ)).exp).const_mul (3 : ℝ)) using 1
+    all_goals first | rfl | (funext y; ring_nf; done) | (first | ring1 | (ring_nf; done) | (field_simp; done) | (field_simp; ring1) | (field_simp; ring_nf; done) | (norm_num; done))
+  exact hd.deriv
+exact ⟨fun s => 3 * (Real.exp (3 * s)), fun t => by (simp only [d1]; first | ring1 | (ring_nf; done) | (field_simp; done) | (field_simp; ring1) | (field_simp; ring_nf; done) | (norm_num; done) | ring_nf)⟩
+-/
+#guard_msgs in
+example : ∃ x : ℝ → ℝ, ∀ t, deriv x t = 2 * x t := by
+  sage_run "proof = solve_exists(problem, solution=3 * exp(3 * SR.var('s_')))"
+
 -- derivative
 example : deriv (fun x : ℝ => x ^ 2 * Real.exp x) 1 = 3 * Real.exp 1 := by
   sage_run file "prompts/recipes/templates/derivative.sage"

@@ -95,8 +95,12 @@ structure Problem where
   derivatives : Array (String × String × String × String × String) := #[]
   /-- The unknown functions met: Sage name, Lean name, arity. -/
   functions : Array (String × String × Nat) := #[]
-  /-- Explicit definitions of unknown functions from hypotheses `x = fun t => body`: Sage name, variable, body. -/
-  definitions : Array (String × String × String) := #[]
+  /-- Explicit definitions of unknown functions from hypotheses `x = fun t => body`: Sage name, variable, body,
+  the hypothesis and the Lean text of the function. -/
+  definitions : Array (String × String × String × String × String) := #[]
+  /-- An existential over an unknown function, `∃ x, C₁ ∧ C₂ ∧ …`: the function's Sage and Lean names, and each
+  conjunct as its universally quantified variable (empty when none) and Sage form. -/
+  existsFunction : Option (String × String × Array (String × String)) := none
 
 /-- The atom-table monad: translation state shared across one tactic invocation. -/
 abbrev ProblemM := StateRefT (Array Expr) MetaM
@@ -204,23 +208,62 @@ def Problem.enrich (p : Problem) : MetaM Problem := do
   let derivatives := st.derivatives.map fun (k, b, pt, f, at_) => (k, b.toSage, pt.toSage, f, at_)
   -- hypotheses `x = fun t => body` define unknown functions explicitly
   let mut definitions := #[]
+  let mut st := st
   for (sageName, f) in st.functions do
     for decl in ← getLCtx do
       unless nameable decl do continue
       let some (_, lhs, rhs, .eq) := relOf? (← instantiateMVars decl.type) | continue
       unless lhs == f do continue
       let .lam n ty body bi := rhs | continue
-      let body' ← withLocalDecl n bi ty fun x => do
-        let state : SymState := { atoms := st.atoms, tables := tables, bound := #[(x, "s_")] }
-        let (sym, _) ← (exprToSym (body.instantiate1 x)).run { state with functions := st.functions }
-        return sym.toSage
-      definitions := definitions.push (sageName, "s_", body')
+      -- translated in the problem's state, so atoms met only here (the definition's parameters) are kept
+      let (body', st2) ← withLocalDecl n bi ty fun x => do
+        let (sym, st2) ← (exprToSym (body.instantiate1 x)).run { st with bound := #[(x, "s_")] }
+        return (sym.toSage, { st2 with bound := st.bound })
+      st := st2
+      definitions := definitions.push (sageName, "s_", body', decl.userName.toString, toString (← ppExpr rhs))
+  -- `∃ x : ℝ → ℝ, C₁ ∧ …` (a goal the polynomial extraction leaves as `other`): open the binder as an unknown
+  -- function and translate each conjunct, under its `∀ t` when it has one
+  let mut existsFunction := none
+  let mut existsArity : Option (String × String × Nat) := none
+  if let .other tgt := p.goal then
+    if let (``Exists, #[_, .lam n ty body bi]) := tgt.getAppFnArgs then
+      if (← whnfR ty).isForall then
+        let (ef, st') ← withLocalDecl n bi ty fun f => do
+          let conjs := conjuncts (body.instantiate1 f)
+          let pass : SymM (String × Array (String × String)) := do
+            let some name ← unknownFunction? f | return ("", #[])
+            let mut out := #[]
+            for c in conjs do
+              if c.isForall then
+                let .forallE tn tty tb tbi := c | continue
+                let r ← withLocalDecl tn tbi tty fun t => do
+                  modify fun s => { s with bound := s.bound.push (t, "t_") }
+                  let r ← relSym (tb.instantiate1 t)
+                  modify fun s => { s with bound := s.bound.pop }
+                  return r
+                if let some (_, e) := r then out := out.push ("t_", e)
+              else if let some (_, e) ← relSym c then out := out.push ("", e)
+            return (name, out)
+          let ((name, cs), st') ← pass.run st
+          let arity ← forallTelescopeReducing ty fun xs _ => pure xs.size
+          -- the binder's scope ends here: record it apart and keep it out of the state's functions
+          return ((name, toString n, cs, arity), { st' with functions := st'.functions.filter (·.2 != f) })
+        if !ef.1.isEmpty then
+          existsFunction := some (ef.1, ef.2.1, ef.2.2.1)
+          existsArity := some (ef.1, ef.2.1, ef.2.2.2)
+          st := st'
   let functions ← st.functions.mapM fun (sageName, f) => do
     let arity := (← forallTelescopeReducing (← inferType f) fun xs _ => pure xs.size)
     return (sageName, toString (← f.fvarId!.getUserName), arity)
   let p : Problem := { p with namespaces := tables.map (·.«namespace»), tableProblems := tableProblems }
   let p : Problem := { p with extensions := extensions, derivatives := derivatives }
-  return { p with functions := functions, definitions := definitions }
+  let functions := match existsArity with
+    | some fn => functions.push fn
+    | none => functions
+  -- the definition and existential passes may add atoms (their parameters): the problem carries the final table
+  let atomTypes ← st.atoms.mapM atomType
+  let p : Problem := { p with atoms := st.atoms, atomTypes := atomTypes }
+  return { p with functions := functions, definitions := definitions, existsFunction := existsFunction }
 
 /-- Extract the main goal and every nameable hypothesis, never rejecting a goal: anything without a
 polynomial form is kept with its text. Runs `k` in the goal's context (extended with the binders of an
@@ -318,7 +361,12 @@ def Problem.toJson (p : Problem) : MetaM Json := do
           ("at", Json.str at_)]))
     , ("functions", Json.arr (p.functions.map fun (s, l, a) =>
         Json.mkObj [("sage", Json.str s), ("lean", Json.str l), ("arity", Json.num a)]))
-    , ("definitions", Json.arr (p.definitions.map fun (s, v, b) =>
-        Json.mkObj [("function", Json.str s), ("var", Json.str v), ("body", Json.str b)])) ]
+    , ("definitions", Json.arr (p.definitions.map fun (s, v, b, h, t) =>
+        Json.mkObj [("function", Json.str s), ("var", Json.str v), ("body", Json.str b), ("hyp", Json.str h),
+          ("text", Json.str t)]))
+    , ("exists_function", match p.existsFunction with
+        | none => Json.null
+        | some (s, l, cs) => Json.mkObj [("function", Json.str s), ("lean", Json.str l),
+            ("conjuncts", Json.arr (cs.map fun (v, e) => Json.mkObj [("var", Json.str v), ("expr", Json.str e)]))]) ]
 
 end Veriphy
