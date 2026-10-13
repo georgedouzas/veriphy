@@ -71,6 +71,7 @@ score, or committing to the target repo beyond what the caller asked for.
       | `!![…]` identity, `det` or `trace` written in the goal | `matrix_from_goal` |
       | `deriv (fun x => f x) a = v` with an explicit `f` | `derivative` |
       | ODE in `deriv x`, `x` given by `hx : x = fun s => …` or asked for by `∃ x` | `ode_solution` |
+      | bracket relations, Casimirs, Cartan-matrix facts of explicit matrices | `lie_structure` |
 
       Recipes are in `prompts/recipes/<name>.md`. Read only the one you use.
 
@@ -78,6 +79,10 @@ score, or committing to the target repo beyond what the caller asked for.
       only when that library's pack is active (`#veriphy_tables` lists the
       active namespaces). They use the library's own definitions and sign
       conventions, recorded in its pack.
+
+      | library | goal shape | recipe |
+      |---|---|---|
+      | Physlib | an explicit matrix `∈ lorentzAlgebra` | `physlib/lorentz_algebra` |
       Save a script that closed its goal into the project's `.veriphy/certificates/`,
       with its header, so the next similar goal reuses it.
    d. oracle: when stuck on *what the proof even is* — solving an equation

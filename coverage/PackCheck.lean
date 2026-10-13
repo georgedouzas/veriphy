@@ -6,7 +6,7 @@ import Physlib
 import Veriphy
 
 /--
-info: mathlib: 24 functions, 2 constants, 5 coercions, 9 rewrites
+info: mathlib: 26 functions, 2 constants, 5 coercions, 9 rewrites
 physlib: 2 functions, 0 constants, 1 coercions, 6 rewrites
 -/
 #guard_msgs in
