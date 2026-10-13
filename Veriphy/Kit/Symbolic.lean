@@ -40,6 +40,8 @@ inductive SymExpr
   /-- `∑ k ∈ Finset.Icc lo hi, body` (and `Ico`, `univ` over `Fin n`), bounds inclusive; `isSum := false` for products. -/
   | interval (isSum : Bool) (k : String) (lo hi body : SymExpr)
   | matrix (rows : List (List SymExpr))
+  /-- `Matrix.fromBlocks A B C D`, a matrix indexed by sums of index types, as one Sage block matrix. -/
+  | blocks (rows : List (List SymExpr))
   /-- A method applied to its first argument in Sage (`det`, `trace`, `transpose`, `inverse`, polynomial
   `coefficient`, `degree`, evaluation). -/
   | method (name : String) (self : SymExpr) (args : List SymExpr)
@@ -79,6 +81,9 @@ partial def SymExpr.toSage : SymExpr → String
   | .matrix rows =>
     let row (r : List SymExpr) := "[" ++ ", ".intercalate (r.map (·.toSage)) ++ "]"
     "matrix(SR, [" ++ ", ".intercalate (rows.map row) ++ "])"
+  | .blocks rows =>
+    let row (r : List SymExpr) := "[" ++ ", ".intercalate (r.map (·.toSage)) ++ "]"
+    "block_matrix(SR, [" ++ ", ".intercalate (rows.map row) ++ "], subdivide=False)"
   | .method m self args =>
     s!"({self.toSage}).{m}(" ++ ", ".intercalate (args.map (·.toSage)) ++ ")"
   | .typed ty e => s!"typed({e.toSage}, '{ty}')"
@@ -121,6 +126,8 @@ structure SymState where
   functions : Array (String × Expr) := #[]
   /-- Each derivative translated: variable, body and point (Sage), and the Lean text of the function and point. -/
   derivatives : Array (String × SymExpr × SymExpr × String × String) := #[]
+  /-- The block sizes of each matrix indexed by sums of `Fin` types (rows, columns), with its Lean type. -/
+  matrixIndices : Array (List Nat × List Nat × String) := #[]
 
 abbrev SymM := StateRefT SymState MetaM
 
@@ -305,6 +312,35 @@ private def positiveDivisor (b : Expr) : SymM Bool := do
     return true
   return false
 
+/-- The sizes of the `Fin` summands of an index type `Fin a ⊕ Fin b ⊕ …`, `none` for any other type. -/
+private partial def finSummands? (ty : Expr) : Option (List Nat) :=
+  match ty.getAppFnArgs with
+  | (``Sum, #[a, b]) => do return (← finSummands? a) ++ (← finSummands? b)
+  | (``Fin, #[n]) => natLit? n |>.map ([·])
+  | _ => none
+
+/-- Record the block sizes of a sum-indexed matrix, once per Lean type. -/
+private def noteMatrixIndex (e : Expr) : SymM Unit := do
+  let ty ← inferType e
+  let some (rows, cols) := (do
+      let args := ty.getAppArgs
+      guard (ty.isAppOf `Matrix && args.size == 3)
+      return (← finSummands? args[0]!, ← finSummands? args[1]!)) | return
+  let text := toString (← ppExpr ty)
+  modify fun st => if st.matrixIndices.any (·.2.2 == text) then st
+    else { st with matrixIndices := st.matrixIndices.push (rows, cols, text) }
+
+/-- Is `ty` a type of matrices, or the type of elements of a subalgebra of matrices (`↥L`)? Returns whether the
+elements must be coerced to their matrix first. -/
+private def matrixCarrier? (ty : Expr) : MetaM (Option Bool) := do
+  if ty.isAppOf `Matrix then return some false
+  let ty ← whnfR ty
+  if ty.isAppOf `Matrix then return some false
+  if ty.isAppOf ``Subtype then
+    let .lam _ dom _ _ := ty.appArg! | return none
+    if dom.isAppOf `Matrix || (← whnfR dom).isAppOf `Matrix then return some true
+  return none
+
 mutual
 
 /-- Translate a Lean term to a symbolic expression; anything outside the coverage list becomes an atom. -/
@@ -387,6 +423,26 @@ partial def exprToSym (e : Expr) : SymM SymExpr := do
     if natLit? a |>.isNone then note a .ne
     return .div (.num 1 1) (← exprToSym a)
   | ``Neg.neg, #[_, _, a] => return .neg (← exprToSym a)
+  -- a scalar multiple of a matrix
+  | ``HSMul.hSMul, #[_, β, _, _, c, a] =>
+    if (← matrixCarrier? β) == some false then return .mul (← exprToSym c) (← exprToSym a)
+    symAtom e
+  -- the Lie bracket of matrices, or of elements of a matrix Lie subalgebra through their matrices, is a commutator
+  | ``Bracket.bracket, #[ty, _, _, a, b] =>
+    let some coerce ← matrixCarrier? ty | return ← symAtom e
+    let (a, b) ← if coerce then pure (← mkAppM ``Subtype.val #[a], ← mkAppM ``Subtype.val #[b]) else pure (a, b)
+    let (a', b') := (← exprToSym a, ← exprToSym b)
+    return .sub (.method "__mul__" a' [b']) (.method "__mul__" b' [a'])
+  | ``Subtype.val, #[_, _, x] =>
+    if x.isAppOf ``Bracket.bracket then return ← exprToSym x
+    symAtom e
+  | `Matrix.fromBlocks, args =>
+    let some (a, b, c, d) := (do
+        guard (args.size ≥ 4)
+        return (args[args.size - 4]!, args[args.size - 3]!, args[args.size - 2]!, args[args.size - 1]!))
+      | return ← symAtom e
+    noteMatrixIndex e
+    return .blocks [[← exprToSym a, ← exprToSym b], [← exprToSym c, ← exprToSym d]]
   | ``HPow.hPow, #[α, β, _, _, a, b] =>
     -- a real exponent is `Real.rpow`: Lean's value for a negative base differs from Sage's
     if (← whnfR β).isConstOf `Real && (← whnfR α).isConstOf `Real then

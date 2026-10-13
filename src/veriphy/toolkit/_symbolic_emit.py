@@ -17,7 +17,7 @@ from sage.symbolic.operators import FDerivativeOperator, add_vararg, mul_vararg
 from veriphy.core import CertificateError
 from veriphy.toolkit._emit import field_simp, fresh_name, steps
 from veriphy.toolkit._lean import Lean, parenthesize, rational, tactic, term
-from veriphy.toolkit._problem import DOMAIN_KINDS, Condition, Problem, parse_symbolic
+from veriphy.toolkit._problem import DOMAIN_KINDS, Condition, MatrixIndex, Problem, parse_symbolic
 
 STRUCTURAL = ('abs', 'mod')
 INTEGER_OPERATORS = ('factorial', 'binomial', 'gcd', 'mod', 'floor', 'ceil')
@@ -295,15 +295,20 @@ def symbolic(expr: object, problem: Problem, lean_type: str | None = None) -> Le
     return term(f'({text} : {ctx.lean_type})' if ctx.lean_type and not ascribed else text)
 
 
-def matrix_term(m: Matrix, problem: Problem) -> Lean:
-    """Render a Sage matrix as a Lean `!![…]` literal over the problem's atoms.
+def matrix_term(m: Matrix, problem: Problem, index: MatrixIndex | None = None) -> Lean:
+    """Render a Sage matrix as a Lean `!![…]` literal over the problem's atoms, or by blocks for a sum index.
 
     Args:
         m: A Sage matrix with entries Sage's symbolic ring converts.
         problem: The problem whose atoms name the variables.
+        index: The index type of a matrix indexed by `Fin a ⊕ Fin b` (from `problem.matrix_indices`): the matrix is
+            rendered as `Matrix.fromBlocks` of its blocks, a term of that type.
 
     Returns:
         The term.
+
+    Raises:
+        CertificateError: If the matrix's size does not match the index type.
 
     Examples:
         >>> from veriphy.toolkit import read_problem
@@ -311,10 +316,26 @@ def matrix_term(m: Matrix, problem: Problem) -> Lean:
         >>> prob = read_problem({'vars': ['x0'], 'atoms': ['c'], 'goal': {'kind': 'false'}})
         >>> str(matrix_term(matrix(SR, [[1, prob.symbols['x0']], [0, 1/2]]), prob))
         '!![1, c; 0, 1 / 2]'
+        >>> sum_index = MatrixIndex((1, 2), (1, 2), 'Matrix (Fin 1 ⊕ Fin 2) (Fin 1 ⊕ Fin 2) ℚ')
+        >>> str(matrix_term(matrix(SR, [[1, 0, 0], [0, -1, 0], [0, 0, -1]]), prob, sum_index))
+        '(Matrix.fromBlocks !![1] !![0, 0] !![0; 0] !![-1, 0; 0, -1] : Matrix (Fin 1 ⊕ Fin 2) (Fin 1 ⊕ Fin 2) ℚ)'
     """
     ctx = _Context(problem, '')
-    rows = [', '.join(_render(SR(entry), ctx) for entry in row) for row in m.rows()]
-    return term('!![' + '; '.join(rows) + ']')
+
+    def literal(block: Matrix) -> str:
+        """Return the `!![…]` literal of a block."""
+        rows = [', '.join(_render(SR(entry), ctx) for entry in row) for row in block.rows()]
+        return '!![' + '; '.join(rows) + ']'
+
+    if index is None:
+        return term(literal(m))
+    two_blocks = len(index.rows) == len(index.cols) == len(('inl', 'inr'))
+    if not two_blocks or (m.nrows(), m.ncols()) != (sum(index.rows), sum(index.cols)):
+        message = f'a {m.nrows()} by {m.ncols()} matrix does not split into the blocks of {index.text}'
+        raise CertificateError(message)
+    (r, _), (c, _) = index.rows, index.cols
+    blocks = [m[:r, :c], m[:r, c:], m[r:, :c], m[r:, c:]]
+    return term(f'(Matrix.fromBlocks {" ".join(literal(b) for b in blocks)} : {index.text})')
 
 
 def require_domain(

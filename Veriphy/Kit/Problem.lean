@@ -101,6 +101,8 @@ structure Problem where
   /-- An existential over an unknown function, `∃ x, C₁ ∧ C₂ ∧ …`: the function's Sage and Lean names, and each
   conjunct as its universally quantified variable (empty when none) and Sage form. -/
   existsFunction : Option (String × String × Array (String × String)) := none
+  /-- The block sizes (rows, columns) and Lean type of each matrix indexed by sums of `Fin` types. -/
+  matrixIndices : Array (List Nat × List Nat × String) := #[]
 
 /-- The atom-table monad: translation state shared across one tactic invocation. -/
 abbrev ProblemM := StateRefT (Array Expr) MetaM
@@ -263,7 +265,8 @@ def Problem.enrich (p : Problem) : MetaM Problem := do
   -- the definition and existential passes may add atoms (their parameters): the problem carries the final table
   let atomTypes ← st.atoms.mapM atomType
   let p : Problem := { p with atoms := st.atoms, atomTypes := atomTypes }
-  return { p with functions := functions, definitions := definitions, existsFunction := existsFunction }
+  return { p with functions := functions, definitions := definitions, existsFunction := existsFunction,
+                  matrixIndices := st.matrixIndices }
 
 /-- Extract the main goal and every nameable hypothesis, never rejecting a goal: anything without a
 polynomial form is kept with its text. Runs `k` in the goal's context (extended with the binders of an
@@ -367,6 +370,8 @@ def Problem.toJson (p : Problem) : MetaM Json := do
     , ("exists_function", match p.existsFunction with
         | none => Json.null
         | some (s, l, cs) => Json.mkObj [("function", Json.str s), ("lean", Json.str l),
-            ("conjuncts", Json.arr (cs.map fun (v, e) => Json.mkObj [("var", Json.str v), ("expr", Json.str e)]))]) ]
+            ("conjuncts", Json.arr (cs.map fun (v, e) => Json.mkObj [("var", Json.str v), ("expr", Json.str e)]))])
+    , ("matrix_indices", Json.arr (p.matrixIndices.map fun (rows, cols, text) =>
+        Json.mkObj [("rows", Lean.toJson rows), ("cols", Lean.toJson cols), ("text", Json.str text)])) ]
 
 end Veriphy
