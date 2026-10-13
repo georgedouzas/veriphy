@@ -85,6 +85,13 @@ from veriphy.toolkit._number_field import (
     render_element,
     render_polynomial,
 )
+from veriphy.toolkit._numerics import (
+    bound_proof,
+    characteristic_polynomial,
+    eigenvalue_proof,
+    isolate_roots,
+    root_proof,
+)
 from veriphy.toolkit._ode import derivative_chain, derivative_order, solve_exists, verify_definition
 from veriphy.toolkit._operators import (
     Coordinates,
@@ -195,12 +202,14 @@ __all__ = [
     'Table',
     'adjoint_matrices',
     'block_matrix_rows',
+    'bound_proof',
     'bracket_relations',
     'by_cases',
     'calc_chain',
     'cartan_matrix',
     'casimir',
     'change_of_basis_facts',
+    'characteristic_polynomial',
     'check_matrix_identity',
     'christoffel_proof',
     'christoffel_symbols',
@@ -226,6 +235,7 @@ __all__ = [
     'det_certificate',
     'diagonalizable_exponential',
     'eigen_projectors',
+    'eigenvalue_proof',
     'exact_form_proof',
     'exterior_square',
     'f4',
@@ -256,6 +266,7 @@ __all__ = [
     'intertwining_facts',
     'invariant_forms',
     'inverse_certificate',
+    'isolate_roots',
     'jacobi_certificate',
     'jordan_certificate',
     'killing_form',
@@ -311,6 +322,7 @@ __all__ = [
     'restrict',
     'rewrite_by',
     'rewrite_candidates',
+    'root_proof',
     'smith_certificate',
     'smul_combination',
     'so7_spinor_gammas',

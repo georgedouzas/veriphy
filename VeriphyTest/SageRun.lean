@@ -24,6 +24,10 @@ import Mathlib.Analysis.Calculus.FDeriv.Symmetric
 import Mathlib.NumberTheory.Zsqrtd.GaussianInt
 import VeriphyAssets.CoordinateGeometry
 import Mathlib.Algebra.BigOperators.Ring.Finset
+import Mathlib.Analysis.Complex.ExponentialBounds
+import Mathlib.Analysis.Real.Pi.Bounds
+import Mathlib.Analysis.Calculus.Deriv.MeanValue
+import Mathlib.Topology.Order.IntermediateValue
 import Veriphy
 import VeriphyCheck
 import Mathlib.LinearAlgebra.Matrix.Cartan.Basic
@@ -733,3 +737,39 @@ example : True := by
 example (a : ℕ → ℤ) (h0 : a 0 = 0) (h1 : a 1 = 1) (hrec : ∀ n, a (n + 2) = 5 * a (n + 1) - 6 * a n) (n : ℕ) :
     a n = 3 ^ n - 2 ^ n := by
   sage_run file "fibonacci_like.sage"
+
+/-! ## Certified numerics -/
+
+example : Real.exp 1 < 2.7183 := by
+  sage_run file "prompts/recipes/templates/certified_bound.sage"
+example : 3.14159 < Real.pi := by
+  sage_run file "prompts/recipes/templates/certified_bound.sage"
+example : Real.exp (1 / 2) < 1.6488 := by
+  sage_run file "prompts/recipes/templates/certified_bound.sage"
+example : Real.log (3 / 2) < 0.4055 := by
+  sage_run file "prompts/recipes/templates/certified_bound.sage"
+
+-- Gamma has no remainder bound in mathlib: refused, not emitted unchecked
+/--
+error: sage daemon error: run: CertificateError: no remainder bound is available for gamma in mathlib; supported: exp, log, sin, cos, pi
+-/
+#guard_msgs in
+example : Real.Gamma (1 / 3) < 3 := by
+  sage_run file "prompts/recipes/templates/certified_bound.sage"
+
+/--
+error: sage daemon error: run: AssertionError: fill in POLYNOMIAL and POLYNOMIAL_LEAN in a copy
+-/
+#guard_msgs in
+example : True := by
+  sage_run file "prompts/recipes/templates/root_isolation.sage"
+
+example : ∃! x : ℝ, (3 / 2 < x ∧ x < 3) ∧ x ^ 3 - 2 * x - 1 = 0 := by
+  sage_run file "golden_root.sage"
+
+-- the largest eigenvalue of a symmetric 3 by 3 matrix lies in (3, 4)
+example : ∃ x : ℝ, (3 < x ∧ x < 4) ∧
+    (x • (1 : Matrix (Fin 3) (Fin 3) ℝ) - !![2, -1, 0; -1, 2, -1; 0, -1, 2]).det = 0 := by
+  sage_run "
+m = matrix(QQ, [[2, -1, 0], [-1, 2, -1], [0, -1, 2]])
+proof = eigenvalue_proof(m, '!![2, -1, 0; -1, 2, -1; 0, -1, 2]', 3, 4)"
