@@ -119,6 +119,14 @@ example (x y : ℚ) (h1 : x + y = 1) (h2 : x - y = 0) (h3 : 2 * x = 3) : False :
 
 /-! ## Symbolic recipes -/
 
+-- sums over intervals
+example (n : ℕ) : ∑ k ∈ Finset.Icc 1 n, (k : ℚ) = n * (n + 1) / 2 := by
+  sage_run file "prompts/recipes/templates/sum_induction.sage"
+example (n : ℕ) : ∑ k ∈ Finset.Ico 1 n, (2 * k : ℚ) = n * (n - 1) := by
+  sage_run file "prompts/recipes/templates/sum_induction.sage"
+example (n : ℕ) : ∑ k ∈ Finset.Ico 0 n, (k : ℚ) ^ 3 = (n * (n - 1) / 2) ^ 2 := by
+  sage_run file "prompts/recipes/templates/sum_induction.sage"
+
 -- derivative
 example : deriv (fun x : ℝ => x ^ 2 * Real.exp x) 1 = 3 * Real.exp 1 := by
   sage_run file "prompts/recipes/templates/derivative.sage"
