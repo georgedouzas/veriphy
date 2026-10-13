@@ -105,10 +105,10 @@
 
 ## 15. Coordinate geometry (coordinate-geometry-bridge)
 
-- [ ] 15.1 Write the mathlib-only asset `CoordinateGeometry.lean`: Christoffel symbols, Riemann, Ricci, scalar curvature, Killing equation, forms (d, wedge, Hodge star) and contraction, with sanity theorems (flat metric, `d ∘ d = 0` on polynomial forms). Verify that it builds in a mathlib-only scratch project.
-- [ ] 15.2 Add `_geometry` adapters to SageManifolds, with componentwise emission. Verify on the 2-sphere (`Γ^θ_φφ`), Minkowski (all zero), and the Killing vector `∂_φ`.
-- [ ] 15.3 Add forms and contraction emission. Verify on an exact 1-form on ℝ³ with its primitive, and on `F_{μν} F^{μν}`.
-- [ ] 15.4 Write `coordinate_geometry`. Verify its worked examples in the Lean suite.
+- [x] 15.1 Write the mathlib-only asset `CoordinateGeometry.lean`: Christoffel symbols, Riemann, Ricci, scalar curvature, Killing equation, forms (d, wedge, Hodge star) and contraction, with sanity theorems (flat metric, `d ∘ d = 0` on polynomial forms). Verify that it builds in a mathlib-only scratch project.
+- [x] 15.2 Add `_geometry` adapters to SageManifolds, with componentwise emission. Verify on the 2-sphere (`Γ^θ_φφ`), Minkowski (all zero), and the Killing vector `∂_φ`.
+- [x] 15.3 Add forms and contraction emission. Verify on an exact 1-form on ℝ³ with its primitive, and on `F_{μν} F^{μν}`.
+- [x] 15.4 Write `coordinate_geometry`. Verify its worked examples in the Lean suite.
 
 ## 16. Summation (summation-certificates)
 

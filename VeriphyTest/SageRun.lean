@@ -22,6 +22,7 @@ import Mathlib.Analysis.Normed.Algebra.MatrixExponential
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 import Mathlib.Analysis.Calculus.FDeriv.Symmetric
 import Mathlib.NumberTheory.Zsqrtd.GaussianInt
+import VeriphyAssets.CoordinateGeometry
 import Veriphy
 import VeriphyCheck
 import Mathlib.LinearAlgebra.Matrix.Cartan.Basic
@@ -650,3 +651,55 @@ example : True := by
 
 example (ψ : ℝ → ℝ) (hψ : ContDiff ℝ 1 ψ) (x : ℝ) : deriv (fun y => y * ψ y) x - x * deriv ψ x = ψ x := by
   sage_run file "canonical_commutator.sage"
+
+/-! ## Coordinate geometry against the `CoordinateGeometry` asset -/
+
+namespace GeometryTest
+
+noncomputable def sphere : Fin 2 → Fin 2 → (Fin 2 → ℝ) → ℝ :=
+  ![![fun _ => 1, fun _ => 0], ![fun _ => 0, fun x => Real.sin (x 0) ^ 2]]
+def minkowski : Fin 4 → Fin 4 → (Fin 4 → ℝ) → ℝ := fun i j _ => if i = j then (if i = 0 then 1 else -1) else 0
+
+end GeometryTest
+
+/--
+error: sage daemon error: run: AssertionError: fill in METRIC and NAME, or FORM, in a copy
+-/
+#guard_msgs in
+example : True := by
+  sage_run file "prompts/recipes/templates/coordinate_geometry.sage"
+
+-- Γ^θ_φφ = -sin θ cos θ on the 2-sphere, where sin θ ≠ 0
+example (x : Fin 2 → ℝ) (h : Real.sin (x 0) ≠ 0) :
+    CoordinateGeometry.christoffel GeometryTest.sphere 0 1 1 x = -(Real.sin (x 0) * Real.cos (x 0)) := by
+  sage_run file "sphere_christoffel.sage"
+
+-- every Christoffel symbol of Minkowski space vanishes
+example (k i j : Fin 4) (x : Fin 4 → ℝ) : CoordinateGeometry.christoffel GeometryTest.minkowski k i j x = 0 := by
+  sage_run "proof = christoffel_proof(diagonal_matrix(SR, [1, -1, -1, -1]), metric='GeometryTest.minkowski',
+    unfold=['GeometryTest.minkowski'])"
+
+-- ∂_φ is a Killing vector of the 2-sphere
+example : CoordinateGeometry.IsKilling GeometryTest.sphere ![fun _ => 0, fun _ => 1] := by
+  sage_run "proof = killing_proof(unfold=['GeometryTest.sphere'])"
+
+-- an exact 1-form on ℝ³, with the primitive Sage finds
+example : ∀ (i : Fin 3) (x : Fin 3 → ℝ),
+    CoordinateGeometry.extDeriv (fun (_ : Fin 0 → Fin 3) x => x 0 ^ 2 * x 1 + x 2 ^ 2) ![i] x =
+      ![fun x => 2 * x 0 * x 1, fun x => x 0 ^ 2, fun x => 2 * x 2] i x := by
+  sage_run "
+x0, x1, x2 = coordinates(3)
+f = primitive([2 * x0 * x1, x0**2, 2 * x2])
+assert f == x0**2 * x1 + x2**2, f
+proof = exact_form_proof(f, 3)"
+
+-- the electromagnetic invariant F_μν F^μν = 2 (B² - E²) in signature (+, -, -, -)
+example (E₁ E₂ E₃ B₁ B₂ B₃ : ℝ) :
+    let F : Fin 4 → Fin 4 → ℝ := ![![0, -E₁, -E₂, -E₃], ![E₁, 0, -B₃, B₂], ![E₂, B₃, 0, -B₁], ![E₃, -B₂, B₁, 0]]
+    let η : Fin 4 → Fin 4 → ℝ := ![![1, 0, 0, 0], ![0, -1, 0, 0], ![0, 0, -1, 0], ![0, 0, 0, -1]]
+    ∑ μ, ∑ ν, ∑ α, ∑ β, η μ α * η ν β * F μ ν * F α β = 2 * (B₁ ^ 2 + B₂ ^ 2 + B₃ ^ 2 - (E₁ ^ 2 + E₂ ^ 2 + E₃ ^ 2)) := by
+  sage_run "
+E1, E2, E3, B1, B2, B3 = var('E1 E2 E3 B1 B2 B3')
+F = matrix(SR, [[0, -E1, -E2, -E3], [E1, 0, -B3, B2], [E2, B3, 0, -B1], [E3, -B2, B1, 0]])
+assert field_invariant(F, diagonal_matrix(SR, [1, -1, -1, -1])) == (2 * (B1**2 + B2**2 + B3**2 - E1**2 - E2**2 - E3**2)).expand()
+proof = contraction_proof(['F', 'η'])"
