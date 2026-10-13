@@ -48,7 +48,7 @@
 - [x] 6.1 Create the `VeriphyCheck` library, mathlib-only, as its own `lean_lib` (D9). Verify that `lake build VeriphyCheck` succeeds, and that a grep finds no import outside mathlib.
 - [x] 6.2 Add the matrix checker (product, commutator and bracket, trace, equality, and list-carrying certificates with packed rows) with soundness theorems. Verify with tests proving a 32×32 product identity by `decide +kernel`, within a recorded time budget, and with the axiom guard accepting the proof.
 - [x] 6.3 Measure a kernel-evaluated polynomial checker against mathlib's `ring`, and ship it only if it is faster. Verify by recording both timings on the same identity in design D9.
-- [ ] 6.4 Add the structure-constant checker (bracket, Jacobi) with soundness into a Lie ring on `Fin n → ℚ`. Verify on 𝔰𝔩₃'s table, and on a corrupted table that fails.
+- [x] 6.4 Add the structure-constant checker (bracket, Jacobi) with soundness into a Lie ring on `Fin n → ℚ`. Verify on 𝔰𝔩₃'s table, and on a corrupted table that fails.
 - [ ] 6.5 Add the Pratt checker with soundness to `Nat.Prime`. Verify with `Nat.Prime 1000000007` and a 40-digit prime.
 - [ ] 6.6 Add `_reflect` emitters with the size threshold and the bridge from `!![…]` literals (D9). Verify that a 2×2 identity emits the entrywise form, that a 16×16 identity emits the reflective form, and that both build without Sage.
 - [ ] 6.7 Add `scripts/bundle_check.py`, producing one copyable `VeriphyCheck.lean`. Verify that the bundled file builds in a scratch project that has only mathlib.
