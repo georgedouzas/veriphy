@@ -446,25 +446,58 @@ def refute(kappa: object, *, strict: bool, weighted: Sequence[tuple[object, Lean
     )
 
 
-def sum_by_induction(variable: str) -> Lean:
-    """Prove `∑ k ∈ Finset.range n, f k = F n` by induction on `n`, each case by `push_cast` and `ring1`.
+def sum_by_induction(variable: str, index_set: str = 'range', lower: int = 0) -> Lean:
+    """Prove `∑ k ∈ s n, f k = F n` by induction on `n`, each case by `push_cast` and `ring1`.
+
+    The index set `s n` is `Finset.range n`, `Finset.Icc lower n` or `Finset.Ico lower n`, with `lower` 0 or 1 (a
+    sum from elsewhere is first rewritten to start there, for example with `Finset.sum_Ico_eq_sum_range`).
 
     Args:
         variable: The name of the natural-number variable `n`.
+        index_set: `range`, `Icc` or `Ico`.
+        lower: The lower bound of an `Icc` or `Ico` sum, 0 or 1.
 
     Returns:
         The tactic block.
+
+    Raises:
+        VeriphyError: If the index set or lower bound is not supported.
 
     Examples:
         >>> print(sum_by_induction('n'))
         induction n with
         | zero => rw [Finset.sum_range_zero]; (try push_cast); ring1
         | succ n ih => rw [Finset.sum_range_succ, ih]; (try push_cast); ring1
+        >>> print(sum_by_induction('n', 'Icc', 1))
+        induction n with
+        | zero => simp
+        | succ n ih => rw [Finset.sum_Icc_succ_top (by omega), ih]; (try push_cast); ring1
     """
+    if index_set == 'range':
+        return tactic(
+            f'induction {variable} with\n'
+            '| zero => rw [Finset.sum_range_zero]; (try push_cast); ring1\n'
+            f'| succ {variable} ih => rw [Finset.sum_range_succ, ih]; (try push_cast); ring1',
+        )
+    if index_set not in ('Icc', 'Ico') or lower not in (0, 1):
+        message = (
+            f'sum_by_induction handles range, and Icc or Ico from 0 or 1, not {index_set} from {lower}; '
+            'rewrite the sum with Finset.sum_Ico_eq_sum_range first'
+        )
+        raise VeriphyError(message)
+    if index_set == 'Icc' or lower == 0:
+        return tactic(
+            f'induction {variable} with\n'
+            '| zero => simp\n'
+            f'| succ {variable} ih => rw [Finset.sum_{index_set}_succ_top (by omega), ih]; (try push_cast); ring1',
+        )
     return tactic(
         f'induction {variable} with\n'
-        '| zero => rw [Finset.sum_range_zero]; (try push_cast); ring1\n'
-        f'| succ {variable} ih => rw [Finset.sum_range_succ, ih]; (try push_cast); ring1',
+        '| zero => simp\n'
+        f'| succ {variable} ih =>\n'
+        f'  rcases Nat.eq_zero_or_pos {variable} with h | h\n'
+        '  · subst h; simp\n'
+        '  · rw [Finset.sum_Ico_succ_top h, ih]; (try push_cast); ring1',
     )
 
 
