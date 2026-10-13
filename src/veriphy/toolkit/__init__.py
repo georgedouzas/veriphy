@@ -32,6 +32,7 @@ from veriphy.toolkit._lean import Lean, parenthesize, polynomial, rational, tact
 from veriphy.toolkit._lp import solve_exact_lp
 from veriphy.toolkit._problem import (
     Condition,
+    Derivative,
     Hyp,
     Problem,
     Side,
@@ -61,6 +62,7 @@ from veriphy.toolkit._table import SHIPPED_PACKS, Table, load_core_table, load_p
 __all__ = [
     'SHIPPED_PACKS',
     'Condition',
+    'Derivative',
     'Hyp',
     'Lean',
     'Problem',

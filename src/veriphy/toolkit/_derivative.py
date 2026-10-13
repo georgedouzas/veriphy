@@ -216,6 +216,8 @@ def has_deriv_at_proof(
     *,
     proofs: Mapping[str, str] | None = None,
     name: str = 'hd',
+    function: str | None = None,
+    at: str | None = None,
 ) -> Lean:
     """Build `have name : HasDerivAt (fun var => expr) value point`, proved from the composed term.
 
@@ -230,6 +232,8 @@ def has_deriv_at_proof(
         problem: The problem whose atoms name the variables.
         proofs: Tactics proving side conditions no hypothesis states, by their Lean text.
         name: The name of the fact.
+        function: The function's Lean text, stated instead of the rendered body (so it matches a goal's `deriv`).
+        at: The point's Lean text, stated instead of the rendered point.
 
     Returns:
         The tactic block.
@@ -247,10 +251,11 @@ def has_deriv_at_proof(
     """
     builder = _Builder(var, SR(point), problem, proofs or {})
     built = builder.build(SR(expr))
-    body = symbolic(SR(expr), problem, lean_type='ℝ')
+    stated_function = function or f'fun {str(var).rstrip("_")} => {symbolic(SR(expr), problem, lean_type="ℝ")}'
+    stated_point = f'({at})' if at else builder.point_text
     stated_value = symbolic(SR(value), problem, lean_type='ℝ')
     lines = [
-        f'have {name} : HasDerivAt (fun {str(var).rstrip("_")} => {body}) ({stated_value}) {builder.point_text} := by',
+        f'have {name} : HasDerivAt ({stated_function}) ({stated_value}) {stated_point} := by',
         f'  convert {built} using 1',
     ]
     if builder.pi_lemmas:

@@ -69,6 +69,7 @@ score, or committing to the target repo beyond what the caller asked for.
       | `lhs ≤ rhs` with divisions (rational functions) | `rational_inequality` |
       | identity of `exp`, `log`, `sqrt`, `sin`, `cos` by named lemmas | `transcendental_rewrite` |
       | `!![…]` identity, `det` or `trace` written in the goal | `matrix_from_goal` |
+      | `deriv (fun x => f x) a = v` with an explicit `f` | `derivative` |
 
       Recipes are in `prompts/recipes/<name>.md`. Read only the one you use.
 

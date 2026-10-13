@@ -111,6 +111,8 @@ structure SymState where
   coordinateUses : Array (Nat × Expr) := #[]
   /-- The Lean constants whose table entries the translation used. -/
   usedEntries : Array String := #[]
+  /-- Each derivative translated: variable, body and point (Sage), and the Lean text of the function and point. -/
+  derivatives : Array (String × SymExpr × SymExpr × String × String) := #[]
 
 abbrev SymM := StateRefT SymState MetaM
 
@@ -413,6 +415,9 @@ partial def derivAt (e fn point : Expr) : SymM SymExpr := do
     let viewed ← numericView point
     -- a coerced point is kept whole as the atom (`t.val`), so the rendering names a number
     let point' ← if viewed == point then exprToSym point else symAtom viewed
+    let fnText := toString (← ppExpr fn)
+    let pointText := toString (← ppExpr point)
+    modify fun st => { st with derivatives := st.derivatives.push (kName, body', point', fnText, pointText) }
     return .deriv kName body' point'
 
 /-- A partial derivative along coordinate `μ` of `f` at `point`, for a library operator applied as
