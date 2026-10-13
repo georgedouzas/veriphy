@@ -77,7 +77,7 @@ score, or committing to the target repo beyond what the caller asked for.
       | `Nat.Prime p` for a large explicit `p` | `primality` |
       | Smith or Jordan form, diagonalization of an explicit matrix | `matrix_normal_form` |
       | `NormedSpace.exp` of an explicit matrix (nilpotent, diagonalizable) | `matrix_exponential` |
-      | graded brackets, super-Jacobi (`sl(m|n)`, `osp`, `D(2,1;α)`, `G(3)`, `F(4)`) | `lie_superalgebra` |
+      | graded brackets, super-Jacobi (`sl(m\|n)`, `osp`, `D(2,1;α)`, `G(3)`, `F(4)`) | `lie_superalgebra` |
 
       Recipes are in `prompts/recipes/<name>.md`. Read only the one you use.
 
