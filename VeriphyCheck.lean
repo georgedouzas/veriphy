@@ -4,3 +4,4 @@ It imports mathlib only, so a proof that uses it builds without Sage and without
 -/
 import VeriphyCheck.Matrix
 import VeriphyCheck.StructureConstants
+import VeriphyCheck.Pratt
