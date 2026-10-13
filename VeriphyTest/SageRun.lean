@@ -432,3 +432,66 @@ example : True := by
 -- a copy for two spin-½: projectors onto spin 1 and spin 0
 example : True := by
   sage_run file "rep_two_spins.sage"
+
+/-! ## Lie superalgebras -/
+
+namespace SuperTest
+
+-- osp(1|2) on (1|2): the even coordinate first
+def h : Matrix (Fin 3) (Fin 3) ℚ := !![0, 0, 0; 0, 1, 0; 0, 0, -1]
+def e : Matrix (Fin 3) (Fin 3) ℚ := !![0, 0, 0; 0, 0, 1; 0, 0, 0]
+def f : Matrix (Fin 3) (Fin 3) ℚ := !![0, 0, 0; 0, 0, 0; 0, 1, 0]
+def qp : Matrix (Fin 3) (Fin 3) ℚ := !![0, 0, 1; 1, 0, 0; 0, 0, 0]
+def qm : Matrix (Fin 3) (Fin 3) ℚ := !![0, -1, 0; 0, 0, 0; 1, 0, 0]
+
+-- the graded brackets of osp(1|2): anticommutators of the odd generators, commutators otherwise
+example : qp * qm + qm * qp = -h ∧ qp * qp + qp * qp = 2 • e ∧ e * qm - qm * e = qp := by
+  sage_run "
+def unit(i, j):
+    m = matrix(QQ, 3, 3); m[i, j] = 1; return m
+basis = [unit(1, 1) - unit(2, 2), unit(1, 2), unit(2, 1), unit(1, 0) + unit(0, 2), unit(2, 0) - unit(0, 1)]
+parities = [parity_of(m, 1) for m in basis]
+names = ['SuperTest.h', 'SuperTest.e', 'SuperTest.f', 'SuperTest.qp', 'SuperTest.qm']
+proof = steps(super_relations(basis, parities, names), tactic('exact ⟨hs_3_4, hs_3_3, by simpa using hs_1_4⟩'))"
+
+end SuperTest
+
+-- D(2,1;α): the super-Jacobi identity for every real α, from kernel checks at α = 0, 1 and -1
+set_option maxRecDepth 100000 in
+set_option maxHeartbeats 0 in
+example : True := by
+  sage_run "
+t0, parities = d21_alpha(QQ(0))
+t1p, _ = d21_alpha(QQ(1))
+t1 = [[[t1p[i][j][k] - t0[i][j][k] for k in range(17)] for j in range(17)] for i in range(17)]
+proof = steps(super_jacobi_family_certificate(t0, t1, parities), tactic('trivial'))"
+
+-- G(3) = G₂ ⊕ 𝔰𝔩₂ on 7 ⊗ 2, with integral constants after rescaling the basis
+set_option maxRecDepth 100000 in
+set_option maxHeartbeats 0 in
+example : True := by
+  sage_run "
+table, parities = g3()
+table, scales = integral_rescaling(table, parities)
+proof = steps(super_jacobi_certificate(table, parities), tactic('trivial'))"
+
+/-! ## The `lie_superalgebra` recipe -/
+
+-- the template unedited asks what to prove
+/--
+error: sage daemon error: run: AssertionError: fill in SUPERMATRICES (with EVEN_DIM and NAMES) or ALGEBRA in a copy
+-/
+#guard_msgs in
+example : True := by
+  sage_run file "prompts/recipes/templates/lie_superalgebra.sage"
+
+-- a copy for osp(1|2) by name
+example : SuperTest.qp * SuperTest.qm + SuperTest.qm * SuperTest.qp = -SuperTest.h ∧
+    SuperTest.qp * SuperTest.qp + SuperTest.qp * SuperTest.qp = 2 • SuperTest.e := by
+  sage_run file "osp12.sage"
+
+-- a copy for D(2,1;α)
+set_option maxRecDepth 100000 in
+set_option maxHeartbeats 0 in
+example : True := by
+  sage_run file "lie_superalgebra_d21.sage"

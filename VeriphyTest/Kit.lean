@@ -136,6 +136,28 @@ example : (1 : ℚ) ≤ 2 := by
                             exact absurd h (by norm_num))
   norm_num
 
+-- a nested `by` postponed until its type is known fails the tactic with its own error, even when the rest of the
+-- proof's error mentions the `sorry` it left (which Lean would not show)
+/--
+error: veriphy: the certificate check failed:
+unsolved goals
+x : ℝ
+h hk : x ^ 2 = 0
+⊢ ¬?m.44 = 0
+Application type mismatch: The argument
+  hk
+has type
+  x ^ 2 = 0
+but is expected to have type
+  (x - 0) ^ ?m.44 = 0
+in the application
+  (pow_eq_zero_iff (id sorry)).mp hk
+-/
+#guard_msgs (error) in
+example (x : ℝ) (h : x ^ 2 = 0) : x = 0 := by
+  kit_emit (have hk : x ^ 2 = 0 := h
+            exact sub_eq_zero.mp ((pow_eq_zero_iff (by norm_num)).mp hk))
+
 /-! ## Symbolic translation -/
 
 -- one rendering per constructor
