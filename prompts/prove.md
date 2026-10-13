@@ -83,6 +83,7 @@ score, or committing to the target repo beyond what the caller asked for.
       | library | goal shape | recipe |
       |---|---|---|
       | Physlib | an explicit matrix `∈ lorentzAlgebra` | `physlib/lorentz_algebra` |
+
       Save a script that closed its goal into the project's `.veriphy/certificates/`,
       with its header, so the next similar goal reuses it.
    d. oracle: when stuck on *what the proof even is* — solving an equation
