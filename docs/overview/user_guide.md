@@ -145,6 +145,56 @@ example term. A rewrite entry names a lemma, the functions it applies to, its di
 It translates each function's example, renders it back, proves the two equal, and closes each rewrite's example
 with its lemma, reporting each entry as passed or failed.
 
+### Types, casts and integer functions
+
+Sage computes over one symbolic ring; Lean does not. The translation records each subterm's Lean type, so a script's
+result renders back at the right type: `symbolic(e, problem, lean_type='ℕ')` writes casts where the goal has them,
+`typed(e, 'ℕ')` marks a natural-number subterm, and natural subtraction and division carry their side conditions
+(`b ≤ a` for `a - b`, a positive divisor for `/` and `%`). `Nat.factorial`, `Nat.choose`, `Nat.gcd`, `Int.floor` and
+`Int.ceil` translate to Sage's `factorial`, `binomial`, `gcd`, `floor` and `ceil`.
+
+## Unknown functions and differential equations
+
+A local function `x : ℝ → ℝ` (or of a type that views as `ℝ`, `ℂ` or `ℚ`, such as Physlib's `Time`) translates to a
+Sage symbolic function `F_x`, and `deriv x t`, `deriv (deriv x) t` and a pack's derivative notations (`∂ₜ x t`) to
+its derivatives. A script sees:
+
+- `problem.functions`, the unknown functions;
+- `problem.definitions`, hypotheses `hx : x = fun s => …` that define one explicitly;
+- `problem.exists_function`, a goal `∃ x, (∀ t, ODE) ∧ x t₀ = y₀ ∧ …`, split into its conjuncts.
+
+The `ode_solution` recipe proves that an explicit function solves the equation, by differentiation rather than by
+trusting Sage. `desolve` proposes the solution; the proof states each derivative of it as a fact, proved by
+mathlib's derivative lemmas, rewrites the equation with them and closes it by `ring` or `field_simp`:
+
+```lean
+example (ω x₀ v₀ : ℝ) (hω : ω ≠ 0) :
+    ∃ x : ℝ → ℝ, (∀ t, deriv (deriv x) t + ω ^ 2 * x t = 0) ∧ x 0 = x₀ ∧ deriv x 0 = v₀ := by
+  sage_run file "ode_solution.sage"
+```
+
+A wrong solution fails with the equation Lean could not close, such as `Real.exp (t * 3) * 9 = Real.exp (t * 3) * 6`.
+
+## Large checks: `VeriphyCheck`
+
+Entrywise proofs (`ext i j; fin_cases …; simp`) stop scaling at a few dozen entries. `VeriphyCheck` is a small
+library of checkers that run in the kernel by `decide +kernel` (never `native_decide`), each with a soundness
+theorem that turns a `true` result into the mathlib statement:
+
+| Checker | Proves |
+|---|---|
+| `mul_eq_of_check`, `ofLists_mul` | `A * B = C` for explicit matrices (32×32 integer products in about 5 s) |
+| `bracket_eq_of_check`, `commute_of_check` | `⁅A, B⁆ = C`, `A * B = B * A` |
+| `trace_eq_of_check`, `eq_of_check` | `trace A = c`, `A = B` |
+| `jacobi_of_check`, `bracket_self_of_check` | the Jacobi identity and antisymmetry of a structure-constant table |
+| `prime_of_pratt` | `Nat.Prime p`, from a Pratt certificate |
+
+The toolkit emits these proofs (`matrix_goal_proof`, `packed_product_certificate`, `prime_certificate`,
+`structure_constants_term`), choosing entrywise proofs for small goals and checkers for large ones. `VeriphyCheck`
+imports only mathlib. A project that must not depend on Veriphy, such as a mathlib or Physlib contribution, copies
+the bundle `python3 scripts/bundle_check.py` writes into `.veriphy/lean/`. Polynomial identities stay with mathlib's
+`ring` and `linear_combination`, which are faster than a kernel normalizer.
+
 ## Building proofs with `sage_run`
 
 ```lean
@@ -180,6 +230,11 @@ The steps are:
 | long manipulation through intermediate forms | `calc_derivation` |
 | easy on each side of a condition | `case_split` |
 | identity between explicit matrices | `matrix_identity` |
+| `lhs ≤ rhs` with divisions (rational functions) | `rational_inequality` |
+| identity of `exp`, `log`, `sqrt`, `sin`, `cos`, `cosh`, … by named lemmas | `transcendental_rewrite` |
+| `!![…]` identity, `det` or `trace` written in the goal | `matrix_from_goal` |
+| `deriv (fun x => f x) a = v` with an explicit `f` | `derivative` |
+| ODE in `deriv x`, `x` given by `hx : x = fun s => …` or asked for by `∃ x` | `ode_solution` |
 
 ## Product decision: a pure tool
 
