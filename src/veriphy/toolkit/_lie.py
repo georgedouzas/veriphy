@@ -9,12 +9,13 @@ from collections.abc import Sequence
 from sage.all import QQ, ZZ, CartanMatrix, RootSystem, WeylGroup, matrix, vector
 from sage.all import Sequence as SageSequence
 from sage.matrix.matrix0 import Matrix
+from sage.structure.element import RingElement
 
 from veriphy.core import CertificateError
 from veriphy.toolkit._lean import Lean, tactic
 from veriphy.toolkit._reflect import DECIDABLE_CARRIERS, structure_constants_term
 
-Table = list[list[list[object]]]
+Table = list[list[list[RingElement]]]
 
 
 def _coordinates(basis: Sequence[Matrix]) -> Matrix:
@@ -337,13 +338,10 @@ def cartan_matrix(cartan_type: str) -> Matrix:
     """Return the Cartan matrix of a type in mathlib's convention (`CartanMatrix.E 8`, `CartanMatrix.F₄`, …).
 
     Args:
-        cartan_type: The type, as `'E8'`, `'F4'` or `'B3'`.
+        cartan_type: The type, as `'E8'`, `'F4'` or `'B3'` (anything else is refused with a `CertificateError`).
 
     Returns:
         The integer matrix.
-
-    Raises:
-        CertificateError: If the type is not a letter A to G with a rank.
 
     Examples:
         >>> cartan_matrix('F4')

@@ -6,20 +6,40 @@ certificate states, by `linear_combination` (which accepts inequality facts with
 
 import itertools
 from collections.abc import Sequence
+from dataclasses import dataclass
 
 from sage.all import QQ
 from sage.rings.polynomial.multi_polynomial import MPolynomial
+from sage.rings.polynomial.multi_polynomial_ring_base import MPolynomialRing_base
 
 from veriphy.core import CertificateError
 from veriphy.toolkit._emit import hyp, linear_combination, refute
 from veriphy.toolkit._lean import Lean, polynomial, tactic, term
 from veriphy.toolkit._lp import solve_exact_lp
-from veriphy.toolkit._problem import Hyp, Problem
+from veriphy.toolkit._problem import Problem
 
 
-def _equalities(problem: Problem) -> list[Hyp]:
+@dataclass(frozen=True)
+class _Fact:
+    """A named hypothesis with a polynomial form `poly rel 0`."""
+
+    name: str
+    poly: MPolynomial
+    rel: str
+
+
+def _facts(problem: Problem, relations: Sequence[str]) -> list[_Fact]:
+    """Return the named hypotheses with a polynomial form and one of the relations."""
+    return [
+        _Fact(h.name, h.poly, h.rel)
+        for h in problem.hyps
+        if h.rel in relations and h.poly is not None and h.name and h.rel is not None
+    ]
+
+
+def _equalities(problem: Problem) -> list[_Fact]:
     """Return the hypotheses that are polynomial equalities."""
-    return [h for h in problem.hyps if h.rel == 'eq' and h.poly is not None and h.name]
+    return _facts(problem, ('eq',))
 
 
 def nullstellensatz_proof(problem: Problem) -> Lean:
@@ -92,7 +112,7 @@ def radical_proof(problem: Problem, max_power: int = 8) -> Lean:
     raise CertificateError(message)
 
 
-def _linear_forms(ring: object) -> list[MPolynomial]:
+def _linear_forms(ring: MPolynomialRing_base) -> list[MPolynomial]:
     """Return candidate square roots: each variable, and sums and differences of two variables."""
     gens = list(ring.gens())
     forms = list(gens)
@@ -124,12 +144,12 @@ def positivstellensatz_proof(
         CertificateError: If no certificate of this degree exists.
     """
     ring = problem.ring
-    ineqs = [h for h in problem.hyps if h.rel in ('le', 'lt') and h.poly is not None and h.name]
+    ineqs = _facts(problem, ('le', 'lt'))
     eqs = _equalities(problem)
     # each fact: (polynomial P with P ≤ 0 or P < 0, strict, proof term)
     facts: list[tuple[MPolynomial, bool, Lean]] = [(h.poly, h.rel == 'lt', hyp(problem, h.name)) for h in ineqs]
 
-    def nonneg(h: Hyp) -> str:
+    def nonneg(h: _Fact) -> str:
         return f'(sub_nonneg.mpr {h.name}.le)' if h.rel == 'lt' else f'(sub_nonneg.mpr {h.name})'
 
     for a, b in itertools.combinations_with_replacement(ineqs, 2):
@@ -168,7 +188,7 @@ def positivstellensatz_proof(
     return refute(QQ(kappa), strict=uses_strict, weighted=weighted, problem=problem)
 
 
-def _monomials(ring: object, degree: int) -> list[MPolynomial]:
+def _monomials(ring: MPolynomialRing_base, degree: int) -> list[MPolynomial]:
     """Return the monomials of a given total degree."""
     gens = list(ring.gens())
     return [ring.prod(c) if c else ring(1) for c in itertools.combinations_with_replacement(gens, degree)]

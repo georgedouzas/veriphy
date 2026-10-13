@@ -257,8 +257,8 @@ def _complex(c: object) -> str:
     value = QuadraticField(-1, 'i')(c)
     a, b = QQ(value[0]), QQ(value[1])
 
-    def rat(q: object) -> str:
-        q = QQ(q)
+    def rat(x: object) -> str:
+        q = QQ(x)
         return str(q) if q.denominator() == 1 else f'({q.numerator()} / {q.denominator()})'
 
     if b == 0:
