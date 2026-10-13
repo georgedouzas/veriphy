@@ -13,6 +13,9 @@ script in the project's `.veriphy/certificates/`.
 
 Hard rules:
 - Scripts belong to the project being proved (`.veriphy/certificates/`), never to Veriphy.
+- A function Veriphy does not translate gets an entry in the project's
+  `.veriphy/translations/`, checked with `#veriphy_check_translations`; never
+  edit Veriphy's own tables.
 - Commit only the emitted `Try this:` block; never a `sage_run` call.
 - If the toolkit cannot express the certificate, report
   `blocked-missing-building-block` naming the missing primitive or emitter.

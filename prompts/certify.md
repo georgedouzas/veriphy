@@ -20,6 +20,18 @@ them, and Lean checks the proof you emit. Sage is never trusted.
    - `lhs` and `rhs` are the goal's sides.
    - A hypothesis with no polynomial form has `poly = None`, and keeps its
      `text`.
+
+   `#veriphy_translate <term>` shows the same translation without Sage: the
+   Sage form, the atoms it needed and the domain conditions.
+   **An unknown function.** When an atom is a function Sage knows but Veriphy
+   does not translate (say `Real.arcosh x` stays an atom), add an entry for it
+   to the project's `.veriphy/translations/<name>.json` (format in the user
+   guide), with its domain conditions and an `example`. Check it with
+   `#veriphy_check_translations` in a Lean file of the project, which
+   translates the example, renders it back and proves the two equal. Rerun the
+   inspection: the atom is now a Sage function. Never edit Veriphy's own tables
+   for this; `sage -python -m veriphy.translations list` shows what the project
+   adds.
 2. **Reuse before writing.** Run `sage -python -m veriphy.certificates list` in
    the project. Each line starts with the script's path, which is what
    `sage_run file` takes. `show <name>` prints a script, so you can read its
@@ -71,11 +83,16 @@ write Veriphy artifacts anywhere else, and never move the committed proofs into 
   - `nlinarith`, `positivity`, `field_simp`, `norm_num`, `decide`;
   - `rewrite_by`, `calc_chain`, `by_cases`, `rcases`, `witness`;
   - `negate_goal`, `refute`, `sum_by_induction`, `steps`;
-  - symbolic: `symbolic` (a Sage expression as a Lean term, functions
-    dispatched on the atoms' types), `matrix_term` (`!![…]`),
+  - symbolic: `symbolic` (a Sage expression as a Lean term at a type, with the
+    casts integer operations need), `matrix_term` (`!![…]`),
     `field_simp_clearing` (passes every denominator fact),
-    `lemma_rewrite` (a named lemma with its side conditions), and
-    `require_domain` (discharge domain conditions, or fail naming them).
+    `lemma_rewrite` (a named lemma with its side conditions),
+    `rewrite_candidates` (the rewrites the translation tables offer for the
+    goal, side conditions filled in), and `require_domain` (discharge domain
+    conditions, or fail naming them);
+  - calculus: `has_deriv_at` (a `HasDerivAt` proof term composed from
+    mathlib's derivative lemmas) and `has_deriv_at_proof` (the `have` step
+    stating Sage's derivative).
 - **Solvers:** `solve_exact_lp` (exact rational LP) and `sos_decomposition`
   (exact SOS from a numeric SDP).
 - **Sage itself:** everything in `sage.all` (`factor`, `lift`, `solve`,
