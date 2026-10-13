@@ -72,6 +72,7 @@ score, or committing to the target repo beyond what the caller asked for.
       | `deriv (fun x => f x) a = v` with an explicit `f` | `derivative` |
       | ODE in `deriv x`, `x` given by `hx : x = fun s => …` or asked for by `∃ x` | `ode_solution` |
       | bracket relations, Casimirs, Cartan-matrix facts of explicit matrices | `lie_structure` |
+      | representations, decompositions, branching, Clebsch-Gordan | `representation` |
 
       Recipes are in `prompts/recipes/<name>.md`. Read only the one you use.
 

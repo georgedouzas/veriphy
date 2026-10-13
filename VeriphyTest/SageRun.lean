@@ -374,3 +374,61 @@ example (α : ℝ) (hα : α ≠ 0) : !![α, 1; 0, 1 / α] * !![1 / α, -1; 0, �
 F = FractionField(QQ['a']); a = F.gen()
 check_matrix_identity(matrix(F, [[a, 1], [0, 1/a]]) * matrix(F, [[1/a, -1], [0, a]]), identity_matrix(F, 2))
 proof = field_matrix_identity(parameter_context('α'))"
+
+/-! ## Representations, decompositions and intertwiners -/
+
+-- the adjoint representation of 𝔰𝔩₃: eight 8×8 matrices satisfying every bracket relation of the algebra
+set_option maxRecDepth 10000 in
+example : True := by
+  sage_run "
+L = LieAlgebra(QQ, cartan_type=['A', 2], representation='matrix')
+basis = [matrix(QQ, b.value) for b in L.basis()]
+table = structure_constants(basis)
+proof = steps(representation_relations(adjoint_matrices(table), table), tactic('trivial'))"
+
+-- two spin-½: projectors onto spin 1 and spin 0, from the Casimir, commuting with the generators
+example : True := by
+  sage_run "
+rho = tensor_representation(spin_representation(1), spin_representation(1))
+e, f, h = rho
+projectors = [p for _, p in eigen_projectors(e*f + f*e + h*h/2)]
+assert sorted(p.rank() for p in projectors) == [1, 3]
+proof = steps(projector_facts(projectors, rho), tactic('trivial'))"
+
+-- the Clebsch–Gordan matrix of 1 ⊗ ½ intertwines the product with spin 3/2 ⊕ spin 1/2
+example : True := by
+  sage_run "
+t, spins = clebsch_gordan(2, 1)
+product = tensor_representation(spin_representation(2), spin_representation(1))
+blocks = [block_diagonal_matrix([spin_representation(s)[k] for s in spins]) for k in range(3)]
+proof = steps(intertwining_facts(t, product, blocks), tactic('trivial'))"
+
+-- the 10 of SU(5) branches to (3̄,1) ⊕ (3,2) ⊕ (1,1) under SU(3)×SU(2)×U(1) embedded by blocks
+set_option maxRecDepth 10000 in
+example : True := by
+  sage_run "
+rho, labels = defining_representation('A4')
+index = {label: i for i, label in enumerate(labels)}
+subgroup = [rho[index[g]] for g in ['e1', 'e2', 'f1', 'f2', 'h1', 'h2', 'e4', 'f4', 'h4']]
+subgroup.append(diagonal_matrix(QQ, [-2, -2, -2, 3, 3]))
+wedge, pairs = exterior_square(subgroup)
+def span(keep):
+    return matrix(QQ, [[1 if k == pairs.index(q) else 0 for k in range(10)] for q in pairs if keep(q)]).transpose()
+summands = [span(lambda q: q[1] < 3), span(lambda q: q[0] < 3 <= q[1]), span(lambda q: q[0] >= 3)]
+assert [s.ncols() for s in summands] == [3, 6, 1]
+p, blocks = decomposition(wedge, summands)
+proof = steps(change_of_basis_facts(p, wedge, blocks), tactic('trivial'))"
+
+/-! ## The `representation` recipe -/
+
+-- the template unedited asks for the matrices
+/--
+error: sage daemon error: run: AssertionError: fill in REPRESENTATION (and TABLE, CASIMIR, SUMMANDS or TARGET) in a copy
+-/
+#guard_msgs in
+example : True := by
+  sage_run file "prompts/recipes/templates/representation.sage"
+
+-- a copy for two spin-½: projectors onto spin 1 and spin 0
+example : True := by
+  sage_run file "rep_two_spins.sage"

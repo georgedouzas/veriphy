@@ -77,10 +77,10 @@
 ## 10. Representations (representation-bridge)
 
 - [x] 10.1 Add exact number-field support (D10): `ℚ(√d)`, cyclotomic quotients and `ℚ(α)`, with rendering and bridge facts. Verify with pytest and Lean examples for one identity in each field.
-- [ ] 10.2 Add `_representation`: explicit representations from a Cartan type and highest weight, or from matrices, with bracket-relation proofs. Verify on the adjoint of 𝔰𝔩₃.
-- [ ] 10.3 Certify decompositions by intertwiners and projectors, including branching through embedding matrices. Verify on two spin-½ representations, and on 10 of SU(5) to SU(3)×SU(2)×U(1).
-- [ ] 10.4 Add Clebsch–Gordan coefficients with intertwining proofs. Verify on 1 ⊗ ½.
-- [ ] 10.5 Write the `representation` recipe. Verify its worked examples in the Lean suite.
+- [x] 10.2 Add `_representation`: explicit representations from a Cartan type and highest weight, or from matrices, with bracket-relation proofs. Verify on the adjoint of 𝔰𝔩₃.
+- [x] 10.3 Certify decompositions by intertwiners and projectors, including branching through embedding matrices. Verify on two spin-½ representations, and on 10 of SU(5) to SU(3)×SU(2)×U(1).
+- [x] 10.4 Add Clebsch–Gordan coefficients with intertwining proofs. Verify on 1 ⊗ ½.
+- [x] 10.5 Write the `representation` recipe. Verify its worked examples in the Lean suite.
 
 ## 11. Lie superalgebras (representation-bridge)
 
