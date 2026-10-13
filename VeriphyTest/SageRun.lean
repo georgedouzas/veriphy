@@ -21,6 +21,7 @@ import Mathlib.Analysis.SpecialFunctions.Arsinh
 import Mathlib.Analysis.Normed.Algebra.MatrixExponential
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 import Mathlib.Analysis.Calculus.FDeriv.Symmetric
+import Mathlib.NumberTheory.Zsqrtd.GaussianInt
 import Veriphy
 import VeriphyCheck
 import Mathlib.LinearAlgebra.Matrix.Cartan.Basic
@@ -621,3 +622,19 @@ statement = (real_matrix_term(a) + ' * ' + real_matrix_term(ad) + ' - ' + real_m
              real_matrix_term(a) + ' = ' + real_matrix_term(rhs))
 proof = steps(tactic('have hladder : ' + statement + ' := by\\n' +
                      '\\n'.join('  ' + l for l in matrix_identity_proof().text.splitlines())), tactic('trivial'))"
+
+/-! ## Clifford algebras over ℤ[i] -/
+
+-- the Dirac representation: the Clifford relation, every trace of four gamma matrices, and two contractions,
+-- each one kernel evaluation over all indices
+example : True := by
+  sage_run "
+gammas, eta = gamma_matrices('dirac')
+proof = steps(clifford_facts(gammas, eta), tactic('trivial'))"
+
+-- the Fierz rearrangement in the chiral representation, mostly-plus signature: the 5×5 coefficients, every index
+example : True := by
+  sage_run "
+gammas, eta = gamma_matrices('weyl', 'mostly_plus')
+coefficients, fact = fierz_fact(gammas, eta)
+proof = steps(fact, tactic('trivial'))"

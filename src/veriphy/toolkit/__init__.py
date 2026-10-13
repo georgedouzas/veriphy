@@ -5,6 +5,16 @@ writes the proof with its Lean emitters. Importing this package imports SageMath
 """
 
 from veriphy.toolkit._algebraic import nullstellensatz_proof, positivstellensatz_proof, radical_proof
+from veriphy.toolkit._clifford import (
+    clifford_facts,
+    clifford_violations,
+    fierz_basis,
+    fierz_coefficients,
+    fierz_fact,
+    gamma5,
+    gamma_matrices,
+    gaussian_matrix_term,
+)
 from veriphy.toolkit._derivative import has_deriv_at, has_deriv_at_proof
 from veriphy.toolkit._emit import (
     by_cases,
@@ -172,6 +182,8 @@ __all__ = [
     'change_of_basis_facts',
     'check_matrix_identity',
     'clebsch_gordan',
+    'clifford_facts',
+    'clifford_violations',
     'combination',
     'commutation_facts',
     'commutator',
@@ -197,8 +209,14 @@ __all__ = [
     'field_reduce',
     'field_simp',
     'field_simp_clearing',
+    'fierz_basis',
+    'fierz_coefficients',
+    'fierz_fact',
     'fresh_name',
     'g3',
+    'gamma5',
+    'gamma_matrices',
+    'gaussian_matrix_term',
     'graded_commutator',
     'has_deriv_at',
     'has_deriv_at_proof',
