@@ -24,17 +24,16 @@ CLOSE = (
 
 
 class _Builder:
-    """Compose a derivative proof term for expressions in one variable at one point."""
+    """Compose a derivative proof term for expressions in one variable at one point.
+
+    Args:
+        var: The variable of differentiation.
+        point: The point, an expression over the problem's atoms.
+        problem: The problem whose atoms name the variables.
+        proofs: Tactics proving side conditions no hypothesis states, by their Lean text.
+    """
 
     def __init__(self, var: Expression, point: Expression, problem: Problem, proofs: Mapping[str, str]) -> None:
-        """Store the variable, the point, the problem and the supplied proofs of side conditions.
-
-        Args:
-            var: The variable of differentiation.
-            point: The point, an expression over the problem's atoms.
-            problem: The problem whose atoms name the variables.
-            proofs: Tactics proving side conditions no hypothesis states, by their Lean text.
-        """
         self.var = var
         self.point = point
         self.problem = problem
@@ -199,11 +198,11 @@ def has_deriv_at(
         problem: The problem whose atoms name the variables.
         proofs: Tactics proving side conditions no hypothesis states, by their Lean text.
 
+    A side condition neither stated nor supplied, or a function with no derivative lemma, raises `CertificateError`
+    naming it.
+
     Returns:
         The proof term.
-
-    Raises:
-        CertificateError: If a side condition is neither stated nor supplied, or a function has no derivative lemma.
 
     Examples:
         >>> from sage.all import exp, log

@@ -78,6 +78,7 @@ def test_main_show_missing(project: Path, capsys: pytest.CaptureFixture[str]) ->
 
 def test_main_list_without_scripts(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """List nothing, and create nothing, for a project without scripts."""
+    (tmp_path / 'lakefile.toml').write_text('')
     main(['list', '--root', str(tmp_path)])
     assert capsys.readouterr().out == ''
     assert not (tmp_path / '.veriphy').exists()

@@ -85,6 +85,7 @@ def test_read_problem_binds_symbolic_forms() -> None:
     assert bound.hyps[1].poly is None
     assert bound.hyps[1].rel == 'le'
     assert bound.hyps[1].expr == exp(x2) - 1
+    assert bound.goal is not None
     assert bound.goal.expr == x2 / x1 - sqrt(x2)
     assert bound.goal.rel == 'le'
 
@@ -146,6 +147,7 @@ def test_read_problem_records_typed_sub_expressions() -> None:
     x2 = bound.symbols['x2']
     mod = function('mod', nargs=2)
     assert bound.typed == [(mod(x2, 7), 'ℕ')]
+    assert bound.goal is not None
     assert bound.goal.expr == mod(x2, 7)
 
 
