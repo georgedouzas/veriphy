@@ -212,15 +212,19 @@ This section instantiates the body above for this repository.
   Lean bridge in `Veriphy/Bridge.lean` is its only client, and method names, parameters, and result shapes MUST NOT
   change incompatibly.
 - Language: Python >=3.11, <3.15 for `src/` and `tests/`. Lean 4 at the toolchain pinned in `lean-toolchain` for
-  `Veriphy/` and `VeriphyTest/`.
+  `Veriphy/`, `VeriphyCheck/`, `VeriphyTest/`, `assets/` and the coverage runner in `coverage/`.
 - Scope of the Python rules: the Python rules of this constitution bind `src/`, `tests/`, `scripts/`, and
-  `noxfile.py`. The Lean code follows mathlib's conventions and is gated by `lake build` and `lake build VeriphyTest`.
+  `noxfile.py`. The Lean code follows mathlib's conventions and is gated by `lake build`, `lake build VeriphyCheck`,
+  `lake build VeriphyAssets` and `lake build VeriphyTest`. `VeriphyCheck` (kernel checkers with soundness theorems)
+  and `VeriphyAssets` (recipe assets) MUST import mathlib only.
 - Runtime: SageMath is an optional runtime, not a declared dependency. The package is installed into an existing Sage
-  with `sage -pip install veriphy`. `veriphy` and `veriphy.core` MUST NOT import Sage. `veriphy.oracle` imports it,
-  and `veriphy.sage_server` reaches it through the one allowed lazy import.
+  with `sage -pip install veriphy`. `veriphy` and `veriphy.core` MUST NOT import Sage. `veriphy.oracle` and
+  `veriphy.toolkit` import it, and `veriphy.sage_server` reaches it through the one allowed lazy import. Modules that
+  ship with Sage (`sympy`, `cvxopt`) are part of that runtime and MUST NOT be declared as dependencies.
 - Surface packages: `veriphy.sage_server` serves the runner (`python -m veriphy.sage_server` and the
   `veriphy-sage-server` script) and re-exports `main` alone. `veriphy.oracle` is the importable surface of the daemon
-  methods and their building blocks.
+  methods and their building blocks. `veriphy.toolkit` is the surface proof scripts see: every name in its `__all__`
+  is in a script's namespace.
 - Build and tooling: uv with SCM-derived versioning and a `src` layout. The `nox` sessions are `formatting`, `checks`,
   `tests`, `docs`, `changelog`, and `release`. The gate covers `ruff`, `mypy`, `bandit`, `pip-audit`, `deptry`,
   `pydoclint`, and `interrogate`, with `pytest` under branch coverage and randomized ordering. The `tests` session runs
@@ -231,4 +235,4 @@ This section instantiates the body above for this repository.
 - Trust boundary: the daemon is an untrusted oracle. Executing caller-supplied Sage scripts in `run_script` and
   `certify` is deliberate, and soundness rests on the Lean kernel alone.
 
-**Version**: 1.0.0 | **Ratified**: 2026-01-01 | **Last Amended**: 2026-01-01
+**Version**: 1.0.0 | **Ratified**: 2026-01-01 | **Last Amended**: 2026-10-13
