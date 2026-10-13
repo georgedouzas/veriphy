@@ -242,6 +242,7 @@ The steps are:
 | `Nat.Prime p` for a large explicit `p` | `primality` |
 | Smith or Jordan form, diagonalization of an explicit matrix | `matrix_normal_form` |
 | `NormedSpace.exp` of an explicit matrix (nilpotent, diagonalizable) | `matrix_exponential` |
+| commutators of explicit or differential operators; gamma-matrix identities | `operator_identity` |
 | graded brackets, super-Jacobi (`sl(m\|n)`, `osp`, `D(2,1;α)`, `G(3)`, `F(4)`) | `lie_superalgebra` |
 | (Physlib) an explicit matrix `∈ lorentzAlgebra` | `physlib/lorentz_algebra` |
 
