@@ -392,8 +392,20 @@ def positive_roots(cartan_type: str) -> list[list[int]]:
     return [[int(root[i]) for i in lattice.index_set()] for root in lattice.positive_roots()]
 
 
-def _literal(m: Matrix, carrier: str) -> str:
-    """Return a typed `!![…]` literal of a rational matrix."""
+def rational_matrix_term(m: Matrix, carrier: str = 'ℚ') -> str:
+    """Return a typed `!![…]` literal of a rational matrix.
+
+    Args:
+        m: A matrix with rational entries.
+        carrier: The Lean type of the entries.
+
+    Returns:
+        The Lean text.
+
+    Examples:
+        >>> rational_matrix_term(matrix(QQ, [[1, 1/2], [0, -1]]))
+        '(!![1, 1 / 2; 0, -1] : Matrix (Fin 2) (Fin 2) ℚ)'
+    """
 
     def entry(x: object) -> str:
         q = QQ(x)
@@ -434,8 +446,8 @@ def det_certificate(m: Matrix) -> Lean:
         raise CertificateError(message)
     checks = ' '.join(['(by decide +kernel)'] * 4)
     return Lean(
-        f'VeriphyCheck.det_eq_of_lu_int (d := {m.det()}) (L := {_literal(lower, "ℚ")}) '
-        f'(U := {_literal(upper, "ℚ")}) {checks}',
+        f'VeriphyCheck.det_eq_of_lu_int (d := {m.det()}) (L := {rational_matrix_term(lower)}) '
+        f'(U := {rational_matrix_term(upper)}) {checks}',
         'term',
     )
 

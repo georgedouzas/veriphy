@@ -78,6 +78,23 @@ theorem mul_eq_of_check {A B C : Matrix (Fin n) (Fin n) R} (h : mulCheck A B C =
   rw [beq_iff_eq, rowLists_getD, colLists_getD, dotList_toList] at this
   rw [Matrix.mul_apply, ← this, dot_eq]
 
+/-- Every entry of `A * B` equals that of `C * D`: an intertwining `T * ρ x = σ x * T`, or a change of basis
+`ρ x * P = P * B`, at `2n³` ring operations. -/
+def mulMulCheck (A B C D : Matrix (Fin n) (Fin n) R) : Bool :=
+  let rowsA := rowLists A
+  let colsB := colLists B
+  let rowsC := rowLists C
+  let colsD := colLists D
+  allEntries (n := n) fun i j =>
+    dotList (rowsA.getD i []) (colsB.getD j []) == dotList (rowsC.getD i []) (colsD.getD j [])
+
+theorem mul_eq_mul_of_check {A B C D : Matrix (Fin n) (Fin n) R} (h : mulMulCheck A B C D = true) :
+    A * B = C * D := by
+  ext i j
+  have := of_allEntries h i j
+  rw [beq_iff_eq, rowLists_getD, colLists_getD, dotList_toList, rowLists_getD, colLists_getD, dotList_toList] at this
+  rw [Matrix.mul_apply, Matrix.mul_apply, ← dot_eq, ← dot_eq, this]
+
 /-- Every entry of `A * B - B * A` equals that of `C`, at `2n³` ring operations. -/
 def bracketCheck (A B C : Matrix (Fin n) (Fin n) R) : Bool :=
   let rowsA := rowLists A
