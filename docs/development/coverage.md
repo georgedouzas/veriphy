@@ -5,7 +5,8 @@ The command opens the binders of every theorem in the corpus, translates each re
 in its hypotheses and conclusion, and classifies every atom the translation needed:
 
 - **local:** a variable, a numeral, or a structure projection of a variable (`x.val`, `p.1`);
-- **uninterpreted:** an application of a function held in a variable, such as `f x` or a bundled map `f x`;
+- **uninterpreted:** a bundled map held in a variable, applied through its coercion (a plain local function `f x`
+  translates as a Sage symbolic function since this release);
 - **opaque:** a term headed by a global constant the translation does not know.
 
 A statement is **fully covered** when every atom is local, and **covered up to uninterpreted functions** when no atom

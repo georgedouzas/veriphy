@@ -7,8 +7,8 @@ Coverage of the symbolic translation on a corpus of statements (Sage-free).
 
 * local: a bound variable, a numeral left untranslated, or a structure projection of a bound variable (`x.val`,
   `p.1`), which is a variable in all but name;
-* uninterpreted: an application whose function is a bound variable, such as `f x`, including bundled maps applied
-  through their coercion (`DFunLike.coe f x` with `f` a variable);
+* uninterpreted: a bundled map held in a variable applied through its coercion (`DFunLike.coe f x`); a plain local
+  function `f x` translates, as a Sage symbolic function, and needs no class of its own;
 * opaque: a term whose head is a global constant the translation does not know, such as `Real.Gamma x`.
 
 A statement is fully covered when every atom is local. The report gives the shares, the most frequent opaque heads
