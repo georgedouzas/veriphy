@@ -12,12 +12,19 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from sage.all import QQ, CyclotomicField, FusionRing, PolynomialRing, QuadraticField, prod
+from sage.structure.element import FieldElement
+from sage.structure.parent import Parent
 
 from veriphy.core import CertificateError
 from veriphy.toolkit._lean import Lean, tactic
 
 SQRT5 = QuadraticField(5, 's')
 ZETA16 = CyclotomicField(16, 'z')
+
+Key = tuple[int, ...]
+Triple = tuple[int, int, int]
+# a gauge: the scalar on each admissible triple's splitting space
+Gauge = dict[Triple, FieldElement]
 
 
 @dataclass
@@ -36,8 +43,8 @@ class Fusion:
     labels: list[str]
     dual: list[int]
     rules: dict[tuple[int, int], list[int]]
-    f_values: dict[tuple[int, ...], object] = field(default_factory=dict)
-    r_values: dict[tuple[int, int, int], object] = field(default_factory=dict)
+    f_values: dict[Key, FieldElement] = field(default_factory=dict)
+    r_values: dict[Triple, FieldElement] = field(default_factory=dict)
     field: str = 'rational'
 
     @property
@@ -49,14 +56,14 @@ class Fusion:
         """Return the multiplicity of `c` in `a ⊗ b`."""
         return 1 if c in self.rules.get((a, b), []) else 0
 
-    def f(self, *labels: int) -> object:
+    def f(self, *labels: int) -> FieldElement:
         """Return `(F^{abc}_d)_{ef}` for the labels `a, b, c, d, e, f`, zero when inadmissible."""
         a, b, c, d, e, f = labels
         if not (self.n(a, b, e) and self.n(e, c, d) and self.n(b, c, f) and self.n(a, f, d)):
             return QQ(0)
         return self.f_values.get((a, b, c, d, e, f), QQ(1))
 
-    def r(self, a: int, b: int, c: int) -> object:
+    def r(self, a: int, b: int, c: int) -> FieldElement:
         """Return `R^{ab}_c`, zero when inadmissible."""
         return self.r_values.get((a, b, c), QQ(1)) if self.n(a, b, c) else QQ(0)
 
@@ -104,6 +111,9 @@ def fibonacci() -> Fusion:
 
     Returns:
         The data.
+
+    Raises:
+        CertificateError: If the pentagon equations have no solution in `ℚ(√5)` in this gauge.
     """
     data = Fusion(['1', 'τ'], [0, 1], {(0, 0): [0], (0, 1): [1], (1, 0): [1], (1, 1): [0, 1]}, field='sqrt5')
     ring = PolynomialRing(SQRT5, 'p, q, r')
@@ -144,7 +154,7 @@ def ising() -> Fusion:
     z = ZETA16.gen()
     root2 = z**2 + z**-2  # √2 = ζ₈ + ζ₈⁻¹
     sigma, psi = 1, 2
-    f_values = {
+    f_values: dict[Key, FieldElement] = {
         (sigma, sigma, sigma, sigma, 0, 0): 1 / root2,
         (sigma, sigma, sigma, sigma, 0, psi): 1 / root2,
         (sigma, sigma, sigma, sigma, psi, 0): 1 / root2,
@@ -162,7 +172,7 @@ def ising() -> Fusion:
     return Fusion(['1', 'σ', 'ψ'], rules.dual, rules.rules, f_values, r_values, field='zeta16')
 
 
-def _pentagon_sides(data: Fusion) -> list[tuple[object, object]]:
+def _pentagon_sides(data: Fusion) -> list[tuple[FieldElement, FieldElement]]:
     """Return both sides of every pentagon equation."""
     sides = []
     labels = range(data.size)
@@ -214,7 +224,7 @@ def hexagon_violations(data: Fusion) -> int:
     """
     labels = range(data.size)
 
-    def inv(x: object) -> object:
+    def inv(x: FieldElement) -> FieldElement:
         return QQ(0) if x == 0 else QQ(1) / x
 
     failures = 0
@@ -227,13 +237,13 @@ def hexagon_violations(data: Fusion) -> int:
     return failures
 
 
-def _rational(q: object) -> str:
+def _rational(q: FieldElement | int) -> str:
     """Return a rational as Lean text."""
     q = QQ(q)
     return str(q) if q.denominator() == 1 else f'({q.numerator()} / {q.denominator()})'
 
 
-def coefficients(x: object, which: str) -> list[object]:
+def coefficients(x: FieldElement | int, which: str) -> list[FieldElement]:
     """Return a value's rational coefficients on the power basis `1, ζ, …` of its field, trailing zeros dropped.
 
     Args:
@@ -260,12 +270,12 @@ def coefficients(x: object, which: str) -> list[object]:
     return values
 
 
-def _coefficients_lean(x: object, which: str) -> str:
+def _coefficients_lean(x: FieldElement | int, which: str) -> str:
     """Return a value's coefficient list as Lean text."""
     return '[' + ', '.join(_rational(q) for q in coefficients(x, which)) + ']'
 
 
-def _lookup(values: dict[tuple[int, ...], object], which: str, n: int) -> str:
+def _lookup(values: dict[Key, FieldElement] | Gauge, which: str, n: int) -> str:
     """Return a Lean association list from label tuples to coefficient lists."""
     entries = ', '.join(
         '((' + ', '.join(f'({i} : Fin {n})' for i in key) + f'), {_coefficients_lean(v, which)})'
@@ -303,7 +313,7 @@ def fusion_data_term(data: Fusion) -> str:
         f'(a, b, c, d, e, f)).getD (if {admissible_f} then [1] else [])'
     )
 
-    def braiding(values: dict[tuple[int, ...], object]) -> str:
+    def braiding(values: Gauge) -> str:
         listed = _lookup(values, data.field, n)
         return (
             f'fun a b c => (({listed} : List ((Fin {n} × Fin {n} × Fin {n}) × List ℚ)).lookup (a, b, c)).getD '
@@ -351,18 +361,16 @@ def root_fact(which: str) -> Lean:
     return tactic(f'have hζ : {zeta} ^ {m} = algebraMap ℚ _ ({r}) := by\n  {proof}')
 
 
-def _check(data: Fusion, *, braided: bool) -> None:
-    """Check associativity, the pentagon and (when braided) the hexagons in Sage, naming what fails."""
+def _failure(data: Fusion, *, braided: bool) -> str | None:
+    """Return what fails among associativity, the pentagon and (when braided) the hexagons in Sage, if anything."""
     if associativity_violations(data):
-        message = f'the fusion rules are not associative at {associativity_violations(data)[0]}'
-        raise CertificateError(message)
+        return f'the fusion rules are not associative at {associativity_violations(data)[0]}'
     failures = pentagon_violations(data)
     if failures:
-        message = f'{failures} pentagon equations fail'
-        raise CertificateError(message)
+        return f'{failures} pentagon equations fail'
     if braided and hexagon_violations(data):
-        message = f'{hexagon_violations(data)} hexagon equations fail'
-        raise CertificateError(message)
+        return f'{hexagon_violations(data)} hexagon equations fail'
+    return None
 
 
 def fusion_proof(data: Fusion, *, braided: bool, root: bool = True) -> Lean:
@@ -383,7 +391,9 @@ def fusion_proof(data: Fusion, *, braided: bool, root: bool = True) -> Lean:
     Raises:
         CertificateError: If associativity, the pentagon or (when braided) the hexagons fail.
     """
-    _check(data, braided=braided)
+    failure = _failure(data, braided=braided)
+    if failure is not None:
+        raise CertificateError(failure)
     m, r, _ = FIELDS[data.field]
     check = 'isBraidedFusion' if braided else 'isFusion'
     lines = [str(root_fact(data.field))] if root else []
@@ -394,7 +404,7 @@ def fusion_proof(data: Fusion, *, braided: bool, root: bool = True) -> Lean:
     return tactic('\n'.join(lines))
 
 
-def gauge_proof(reference: Fusion, target: Fusion, u: dict[tuple[int, int, int], object], *, root: bool = True) -> Lean:
+def gauge_proof(reference: Fusion, target: Fusion, u: Gauge, *, root: bool = True) -> Lean:
     """Return a proof of a goal `FusionData.GaugeRelated (E.toData ζ) (E'.toData ζ) (eval U) (eval Uinv)`.
 
     The goal's gauge functions are `fun a b c => FusionData.Coeffs.eval ζ (U a b c)` with `U` the lookup that
@@ -412,7 +422,9 @@ def gauge_proof(reference: Fusion, target: Fusion, u: dict[tuple[int, int, int],
     Raises:
         CertificateError: If `u` does not relate the data.
     """
-    _require_gauge(reference, target, u)
+    failure = _gauge_failure(reference, target, u)
+    if failure is not None:
+        raise CertificateError(failure)
     m, r, _ = FIELDS[reference.field]
     lines = [str(root_fact(reference.field))] if root else []
     lines.append(
@@ -422,7 +434,7 @@ def gauge_proof(reference: Fusion, target: Fusion, u: dict[tuple[int, int, int],
     return tactic('\n'.join(lines))
 
 
-def gauge_term(u: dict[tuple[int, int, int], object], data: Fusion, *, inverse: bool = False) -> str:
+def gauge_term(u: Gauge, data: Fusion, *, inverse: bool = False) -> str:
     """Return a gauge (or its inverse) as a Lean `Fin n → Fin n → Fin n → List ℚ`, 1 where unlisted.
 
     Args:
@@ -444,15 +456,14 @@ def gauge_term(u: dict[tuple[int, int, int], object], data: Fusion, *, inverse: 
     return f'fun a b c => (({listed} : List ((Fin {n} × Fin {n} × Fin {n}) × List ℚ)).lookup (a, b, c)).getD [1]'
 
 
-def _require_gauge(reference: Fusion, target: Fusion, u: dict[tuple[int, int, int], object]) -> None:
-    """Check in Sage that the gauge takes the reference data to the target's."""
+def _gauge_failure(reference: Fusion, target: Fusion, u: Gauge) -> str | None:
+    """Return why the gauge does not take the reference data to the target's in Sage, if it does not."""
     moved = gauge_transform(reference, u)
     if any(moved.f(*key) != target.f(*key) for key in itertools.product(range(reference.size), repeat=6)):
-        message = 'the gauge does not take the reference F-symbols to the target ones'
-        raise CertificateError(message)
+        return 'the gauge does not take the reference F-symbols to the target ones'
     if any(moved.r(*key) != target.r(*key) for key in _admissible_triples(reference)):
-        message = 'the gauge does not take the reference R-symbols to the target ones'
-        raise CertificateError(message)
+        return 'the gauge does not take the reference R-symbols to the target ones'
+    return None
 
 
 def fusion_facts(data: Fusion, *, braided: bool, symbols: bool = True) -> Lean:
@@ -474,9 +485,10 @@ def fusion_facts(data: Fusion, *, braided: bool, symbols: bool = True) -> Lean:
     Raises:
         CertificateError: If associativity, the pentagon or (when braided) the hexagons fail in Sage.
     """
-    if symbols:
-        _check(data, braided=braided)
-    elif associativity_violations(data):
+    failure = _failure(data, braided=braided) if symbols else None
+    if failure is not None:
+        raise CertificateError(failure)
+    if associativity_violations(data):
         message = f'the fusion rules are not associative at {associativity_violations(data)[0]}'
         raise CertificateError(message)
     term = fusion_data_term(data)
@@ -494,17 +506,17 @@ def fusion_facts(data: Fusion, *, braided: bool, symbols: bool = True) -> Lean:
     )
 
 
-def _field(data: Fusion) -> object:
+def _field(data: Fusion) -> Parent:
     """Return the Sage field the data's values live in."""
     return {'rational': QQ, 'sqrt5': SQRT5, 'zeta16': ZETA16}[data.field]
 
 
-def _admissible_triples(data: Fusion) -> list[tuple[int, int, int]]:
+def _admissible_triples(data: Fusion) -> list[Triple]:
     """Return the triples `(a, b, c)` with `c` in `a ⊗ b`."""
-    return [t for t in itertools.product(range(data.size), repeat=3) if data.n(*t)]
+    return [(a, b, c) for a, b, c in itertools.product(range(data.size), repeat=3) if data.n(a, b, c)]
 
 
-def gauge_transform(data: Fusion, u: dict[tuple[int, int, int], object]) -> Fusion:
+def gauge_transform(data: Fusion, u: Gauge) -> Fusion:
     """Return the data in another gauge.
 
     `(F'^{abc}_d)_{ef} = u^{ab}_e u^{ec}_d / (u^{bc}_f u^{af}_d) (F^{abc}_d)_{ef}` and
@@ -525,7 +537,7 @@ def gauge_transform(data: Fusion, u: dict[tuple[int, int, int], object]) -> Fusi
     """
     field = _field(data)
 
-    def g(a: int, b: int, c: int) -> object:
+    def g(a: int, b: int, c: int) -> FieldElement:
         return field(u.get((a, b, c), 1))
 
     f_values = {}
@@ -545,7 +557,7 @@ def gauge_transform(data: Fusion, u: dict[tuple[int, int, int], object]) -> Fusi
     return Fusion(data.labels, data.dual, data.rules, f_values, r_values, data.field)
 
 
-def find_gauge(reference: Fusion, target: Fusion) -> dict[tuple[int, int, int], object] | None:
+def find_gauge(reference: Fusion, target: Fusion) -> Gauge | None:
     """Return a gauge taking the reference data to the target's, or `None` when they are not gauge equivalent.
 
     The unknowns `u^{ab}_c` (one per admissible triple, nonzero) satisfy polynomial equations; gauge freedom left over
@@ -595,7 +607,7 @@ def find_gauge(reference: Fusion, target: Fusion) -> dict[tuple[int, int, int], 
     return {key: solution[v] for key, v in var.items() if solution[v] != 1}
 
 
-def _gauge_equations(reference: Fusion, target: Fusion, var: dict[tuple[int, int, int], object]) -> list | None:
+def _gauge_equations(reference: Fusion, target: Fusion, var: dict[Triple, FieldElement]) -> list[FieldElement] | None:
     """Return the polynomial equations on the gauge unknowns, or `None` if the target is nonzero where inadmissible."""
     equations = []
     for key in itertools.product(range(reference.size), repeat=6):
@@ -644,7 +656,7 @@ def gauge_mismatch(reference: Fusion, target: Fusion) -> str:
     return '\n'.join(lines)
 
 
-def gauge_facts(reference: Fusion, target: Fusion, u: dict[tuple[int, int, int], object]) -> Lean:
+def gauge_facts(reference: Fusion, target: Fusion, u: Gauge) -> Lean:
     """Return the fact that the target is the reference in the gauge `u`, checked in Sage, then by the kernel.
 
     Args:
@@ -658,7 +670,9 @@ def gauge_facts(reference: Fusion, target: Fusion, u: dict[tuple[int, int, int],
     Raises:
         CertificateError: If `u` does not relate the data.
     """
-    _require_gauge(reference, target, u)
+    failure = _gauge_failure(reference, target, u)
+    if failure is not None:
+        raise CertificateError(failure)
     m, r, _ = FIELDS[reference.field]
     gauge = gauge_term(u, reference)
     inverse = gauge_term(u, reference, inverse=True)

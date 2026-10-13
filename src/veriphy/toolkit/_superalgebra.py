@@ -18,6 +18,7 @@ from collections.abc import Sequence
 
 from sage.all import QQ, ZZ, LieAlgebra, factor, identity_matrix, matrix, vector
 from sage.matrix.matrix0 import Matrix
+from sage.structure.element import RingElement
 
 from veriphy.core import CertificateError
 from veriphy.toolkit._lean import Lean, tactic
@@ -190,7 +191,7 @@ def super_jacobi_violations(table: Table, parities: Sequence[int]) -> list[tuple
     n = len(table)
     support = [[[(ell, x) for ell, x in enumerate(table[i][j]) if x != 0] for j in range(n)] for i in range(n)]
 
-    def nested(a: int, b: int, c: int) -> list[object]:
+    def nested(a: int, b: int, c: int) -> list[RingElement]:
         result = [0] * n
         for ell, x in support[b][c]:
             for m, y in support[a][ell]:
@@ -235,7 +236,11 @@ def invariant_forms(ops: Sequence[Matrix], *, symmetric: bool) -> list[Matrix]:
     return [matrix(QQ, d, d, list(b)) for b in system.right_kernel().basis()]
 
 
-def _moment_maps(even_ops: Sequence[Matrix], factors: Sequence[int], omega: Matrix) -> list[list[list[list[object]]]]:
+def _moment_maps(
+    even_ops: Sequence[Matrix],
+    factors: Sequence[int],
+    omega: Matrix,
+) -> list[list[list[list[RingElement]]]]:
     """Return, per simple factor, the moment map `μₛ(vᵢ, vⱼ)` as coefficients on the even basis."""
     d = omega.nrows()
     result = []
@@ -253,7 +258,7 @@ def _moment_maps(even_ops: Sequence[Matrix], factors: Sequence[int], omega: Matr
     return result
 
 
-def _assemble(even_ops: Sequence[Matrix], moments: Sequence[object], coefficients: Sequence[object]) -> Table:
+def _assemble(even_ops: Sequence[Matrix], moments: Sequence[Table], coefficients: Sequence[RingElement]) -> Table:
     """Return the structure constants of `g₀ ⊕ V` for given coefficients of the moment maps."""
     even_table = structure_constants(even_ops)
     n0, d = len(even_ops), even_ops[0].nrows()
@@ -274,7 +279,7 @@ def _assemble(even_ops: Sequence[Matrix], moments: Sequence[object], coefficient
     return table
 
 
-def moment_coefficients(even_ops: Sequence[Matrix], factors: Sequence[int], omega: Matrix) -> list[list[object]]:
+def moment_coefficients(even_ops: Sequence[Matrix], factors: Sequence[int], omega: Matrix) -> list[list[RingElement]]:
     """Return a basis of the coefficients `kₛ` for which the moment-map bracket satisfies super-Jacobi on `V`.
 
     Args:
@@ -305,7 +310,7 @@ def contragredient_superalgebra(
     even_ops: Sequence[Matrix],
     factors: Sequence[int],
     omega: Matrix,
-    coefficients: Sequence[object] | None = None,
+    coefficients: Sequence[RingElement] | None = None,
 ) -> tuple[Table, list[int]]:
     """Return the structure constants and parities of `g₀ ⊕ V` with the moment-map odd bracket.
 
@@ -339,7 +344,7 @@ def _kron(*ms: Matrix) -> Matrix:
     return result
 
 
-def d21_alpha(alpha: object) -> tuple[Table, list[int]]:
+def d21_alpha(alpha: RingElement) -> tuple[Table, list[int]]:
     """Return `D(2,1;α)`: `sl2³` on `2 ⊗ 2 ⊗ 2`, with moment-map coefficients `(1, α, -1 - α)`.
 
     Args:

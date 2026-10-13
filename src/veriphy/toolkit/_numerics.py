@@ -13,6 +13,8 @@ from collections.abc import Sequence
 from sage.all import AA, QQ, PolynomialRing, RealIntervalField, factorial, matrix
 from sage.matrix.matrix0 import Matrix
 from sage.rings.polynomial.polynomial_element import Polynomial
+from sage.rings.rational import Rational
+from sage.rings.real_mpfi import RealIntervalFieldElement
 
 from veriphy.core import CertificateError
 from veriphy.toolkit._lean import Lean, tactic
@@ -40,7 +42,7 @@ MAX_ORDER = 60
 LOG_RADIUS = 2
 
 
-def _value(function: str, point: QQ) -> object:
+def _value(function: str, point: QQ) -> RealIntervalFieldElement:
     """Return an interval enclosing `function(point)`."""
     x = RIF(point)
     return {'exp': x.exp(), 'log': x.log(), 'sin': x.sin(), 'cos': x.cos(), 'pi': RIF.pi()}[function]
@@ -82,7 +84,7 @@ def _series_order(function: str, point: QQ, bound: QQ, *, upper: bool) -> int:
     raise CertificateError(message)
 
 
-def bound_proof(function: str, point: object, bound: object, *, upper: bool = True) -> Lean:
+def bound_proof(function: str, point: Rational | int, bound: Rational | int, *, upper: bool = True) -> Lean:
     """Return a proof of `f(point) < bound` (or `bound < f(point)` with `upper=False`).
 
     Args:

@@ -295,22 +295,30 @@ def projector_facts(projectors: Sequence[Matrix], rho: Rep) -> Lean:
     terms = [rational_matrix_term(p) for p in projectors]
     lines = []
     for k, p in enumerate(projectors):
-        _require(p * p == p, f'P{k} is not idempotent')
+        if p * p != p:
+            message = f'P{k} is not idempotent'
+            raise CertificateError(message)
         lines.append(
             f'have hp_{k} : {terms[k]} * {terms[k]} = {terms[k]} := {PRODUCT}',
         )
         for ell in range(k + 1, len(projectors)):
-            _require(p * projectors[ell] == 0, f'P{k} and P{ell} are not orthogonal')
+            if p * projectors[ell] != 0:
+                message = f'P{k} and P{ell} are not orthogonal'
+                raise CertificateError(message)
             lines.append(
                 f'have ho_{k}_{ell} : {terms[k]} * {terms[ell]} = 0 := {PRODUCT}',
             )
         for i, x in enumerate(rho):
-            _require(p * x == x * p, f'P{k} does not commute with matrix {i}')
+            if p * x != x * p:
+                message = f'P{k} does not commute with matrix {i}'
+                raise CertificateError(message)
             lines.append(
                 f'have hc_{k}_{i} : {terms[k]} * {rational_matrix_term(x)} = {rational_matrix_term(x)} * {terms[k]} := '
                 f'{COMMUTE}',
             )
-    _require(sum(projectors, 0 * one) == one, 'the projectors do not sum to the identity')
+    if sum(projectors, 0 * one) != one:
+        message = 'the projectors do not sum to the identity'
+        raise CertificateError(message)
     lines.append(f'have hsum : {" + ".join(terms)} = 1 := {EQUAL}')
     return tactic('\n'.join(lines))
 
@@ -333,7 +341,9 @@ def intertwining_facts(t: Matrix, rho: Rep, sigma: Rep, name: str | None = None)
     term = _term(t, name)
     lines = []
     for k, (a, b) in enumerate(zip(rho, sigma, strict=True)):
-        _require(t * a == b * t, f'T does not intertwine on matrix {k}')
+        if t * a != b * t:
+            message = f'T does not intertwine on matrix {k}'
+            raise CertificateError(message)
         lines.append(
             f'have hi_{k} : {term} * {rational_matrix_term(a)} = {rational_matrix_term(b)} * {term} := {PRODUCTS}',
         )
@@ -387,7 +397,9 @@ def naturality_proof(
         · decide +kernel
     """
     for k, (a, b) in enumerate(zip(rho_generators, sigma_generators, strict=True)):
-        _require(t * a == b * t, f'the naturality square fails at generator {k}: T ρ(g{k}) ≠ σ(g{k}) T')
+        if t * a != b * t:
+            message = f'the naturality square fails at generator {k}: T ρ(g{k}) ≠ σ(g{k}) T'
+            raise CertificateError(message)
     count = len(rho_generators)
     pattern = 'rfl' if count == 1 else '(' + ' | '.join(['rfl'] * count) + ')'
     lines = [
@@ -413,7 +425,9 @@ def natural_iso_facts(t: Matrix, name: str | None = None) -> Lean:
     Raises:
         CertificateError: If `T` is not invertible.
     """
-    _require(t.is_square() and t.det() != 0, 'the transformation is not invertible: no natural isomorphism')
+    if not (t.is_square() and t.det() != 0):
+        message = 'the transformation is not invertible: no natural isomorphism'
+        raise CertificateError(message)
     term = _term(t, name)
     inverse = rational_matrix_term(t.inverse())
     return tactic(
@@ -440,7 +454,9 @@ def decomposition(rho: Rep, summands: Sequence[Matrix]) -> tuple[Matrix, Rep]:
         raise CertificateError(message)
     blocks = [block_diagonal_matrix([restrict([x], s)[0] for s in summands]) for x in rho]
     for x, b in zip(rho, blocks, strict=True):
-        _require(x * p == p * b, 'the change of basis does not block-diagonalize the representation')
+        if x * p != p * b:
+            message = 'the change of basis does not block-diagonalize the representation'
+            raise CertificateError(message)
     return p, blocks
 
 
@@ -488,6 +504,9 @@ def clebsch_gordan(two_j1: int, two_j2: int) -> tuple[Matrix, list[int]]:
     Returns:
         `T` and the doubled spins of the blocks, in order.
 
+    Raises:
+        CertificateError: If the matrix built does not intertwine (a defect in its construction, checked in Sage).
+
     Examples:
         >>> t, spins = clebsch_gordan(2, 1)
         >>> spins, t.dimensions()
@@ -509,11 +528,7 @@ def clebsch_gordan(two_j1: int, two_j2: int) -> tuple[Matrix, list[int]]:
     inverse = matrix(QQ, columns).transpose()
     t = inverse.inverse()
     for a, b in zip(product, target, strict=True):
-        _require(t * a == b * t, 'the Clebsch-Gordan matrix does not intertwine')
+        if t * a != b * t:
+            message = 'the Clebsch-Gordan matrix does not intertwine'
+            raise CertificateError(message)
     return t, spins
-
-
-def _require(condition: bool, message: str) -> None:
-    """Raise `CertificateError` with the message unless the condition holds."""
-    if not condition:
-        raise CertificateError(message)
