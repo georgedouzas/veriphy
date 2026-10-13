@@ -123,7 +123,7 @@ one file.
 
 Representations with square roots (Clebsch–Gordan coefficients), cyclotomic entries (fusion categories) and symbolic parameters (`D(2,1;α)`) need exact non-rational arithmetic. Sage computes in the number field or function field. Certificates come to Lean in one of three ways:
 - **Over `ℚ(√d)`:** as pairs over ℚ, with an emitted `Real.sqrt d` rendering and `Real.sq_sqrt` facts.
-- **Cyclotomic:** in `ℚ[x]/Φₙ`, with polynomial-reduction certificates checked by the polynomial checker, and the bridge to `CyclotomicField` through `IsPrimitiveRoot` facts.
+- **Cyclotomic and other simple extensions `ℚ(ζ)` with `ζ ^ m = r`:** as rational coefficients on `1, ζ, …`, multiplied and reduced by the kernel; an evaluation map respecting sums and products carries a checked identity to every `ζ` with the same relation in every `ℚ`-algebra (`exp (2πi/16)` in `ℂ`, a primitive root in `CyclotomicField`, or a Galois conjugate).
 - **Over `ℚ(α)`:** by clearing denominators into polynomial identities in `α`.
 
 ### D11. Component modules
@@ -147,22 +147,6 @@ Each returns certificate objects with an `emit(problem)` method that produces Le
 
 Sign conventions (metric signature, `[Lᵢ, Lⱼ] = ±iεL`, Fierz basis normalization, gamma representation) are parameters of the component functions, never globals. The Physlib pack sets them to Physlib's conventions, and the templates expose them as `EDIT` lines.
 
-### D14. `.veriphy/` as the project root of artifacts
-
-A single Lean helper, `Veriphy.projectDir`, finds the workspace root (the nearest ancestor with a root lakefile, starting from the current directory). It returns `<root>/.veriphy`, and all readers and writers go through it: `sage_run file`, the translation loader, coverage output. Its Python mirror, `veriphy.core.project_dir(root=None)`, serves the catalogs. Directories are created on first write, never on read. Copied Lean assets go to `.veriphy/lean/`, which the project builds with:
-
-```toml
-[[lean_lib]]
-name = "VeriphyAssets"
-srcDir = ".veriphy/lean"
-```
-
-The recipes print this stanza.
-
-**Alternatives considered:**
-- Separate top-level directories (`certificates/`, `translations/`). That is the 0.1.0 state, and it scatters artifacts across the project root.
-- A hidden directory outside the project (`~/.veriphy`). Artifacts must be committed with the proofs they serve.
-
 ### D13. One release, ordered work
 
 Everything ships as 0.2.0. The task order still builds foundations first (layout, tables, coverage, checkers), because every component depends on them. A checkpoint after the foundations runs the full integration gate, so later components build on a green base.
@@ -182,16 +166,6 @@ The recipes print this stanza.
 **Alternatives considered:**
 - Separate top-level directories (`certificates/`, `translations/`). That is the 0.1.0 state, and it scatters artifacts across the project root.
 - A hidden directory outside the project (`~/.veriphy`). Artifacts must be committed with the proofs they serve.
-
-### D13. Milestones
-
-The tasks are ordered so that each milestone releases on its own:
-- **0.2.0:** foundations (core coverage, namespaces and extensions, `VeriphyCheck`, coverage) and ODEs;
-- **0.3.0:** Lie, representations, superalgebras, algebraic certificates;
-- **0.4.0:** operators and Clifford, geometry, summation, numerics;
-- **0.5.0:** fusion categories.
-
-The change is archived once all milestones land. Each milestone runs the full integration gate and updates the coverage report.
 
 ## Risks / Trade-offs
 

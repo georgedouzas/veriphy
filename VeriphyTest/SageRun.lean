@@ -32,6 +32,10 @@ import Veriphy
 import VeriphyCheck
 import Mathlib.LinearAlgebra.Matrix.Cartan.Basic
 import Mathlib.RingTheory.Polynomial.Cyclotomic.Roots
+import VeriphyAssets.FusionData
+import Mathlib.GroupTheory.Perm.Cycle.Concrete
+import Mathlib.GroupTheory.Perm.Fin
+import Mathlib.LinearAlgebra.Matrix.Permutation
 
 set_option veriphy.checkReplay true
 
@@ -389,6 +393,7 @@ proof = field_matrix_identity(parameter_context('α'))"
 
 -- the adjoint representation of 𝔰𝔩₃: eight 8×8 matrices satisfying every bracket relation of the algebra
 set_option maxRecDepth 10000 in
+set_option maxHeartbeats 1000000 in
 example : True := by
   sage_run "
 L = LieAlgebra(QQ, cartan_type=['A', 2], representation='matrix')
@@ -773,3 +778,137 @@ example : ∃ x : ℝ, (3 < x ∧ x < 4) ∧
   sage_run "
 m = matrix(QQ, [[2, -1, 0], [-1, 2, -1], [0, -1, 2]])
 proof = eigenvalue_proof(m, '!![2, -1, 0; -1, 2, -1; 0, -1, 2]', 3, 4)"
+
+/-! ## Fusion categories and naturality -/
+
+namespace FusionTest
+
+/-- The Ising category's data (labels `1, σ, ψ`), values on the power basis of `ζ₁₆` (from `fusion_data_term`). -/
+def ising : FusionData.RepData 3 :=
+  (let N : Fin 3 → Fin 3 → Fin 3 → ℕ := ![![![1, 0, 0], ![0, 1, 0], ![0, 0, 1]], ![![0, 1, 0], ![1, 0, 1], ![0, 1, 0]], ![![0, 0, 1], ![0, 1, 0], ![1, 0, 0]]]; (⟨0, ![0, 1, 2], N, fun a b c d e f => (([(((1 : Fin 3), (1 : Fin 3), (1 : Fin 3), (1 : Fin 3), (0 : Fin 3), (0 : Fin 3)), [0, 0, (1 / 2), 0, 0, 0, (-1 / 2)]), (((1 : Fin 3), (1 : Fin 3), (1 : Fin 3), (1 : Fin 3), (0 : Fin 3), (2 : Fin 3)), [0, 0, (1 / 2), 0, 0, 0, (-1 / 2)]), (((1 : Fin 3), (1 : Fin 3), (1 : Fin 3), (1 : Fin 3), (2 : Fin 3), (0 : Fin 3)), [0, 0, (1 / 2), 0, 0, 0, (-1 / 2)]), (((1 : Fin 3), (1 : Fin 3), (1 : Fin 3), (1 : Fin 3), (2 : Fin 3), (2 : Fin 3)), [0, 0, (-1 / 2), 0, 0, 0, (1 / 2)]), (((1 : Fin 3), (2 : Fin 3), (1 : Fin 3), (2 : Fin 3), (1 : Fin 3), (1 : Fin 3)), [-1]), (((2 : Fin 3), (1 : Fin 3), (2 : Fin 3), (1 : Fin 3), (1 : Fin 3), (1 : Fin 3)), [-1])] : List ((Fin 3 × Fin 3 × Fin 3 × Fin 3 × Fin 3 × Fin 3) × List ℚ)).lookup (a, b, c, d, e, f)).getD (if N a b e ≠ 0 ∧ N e c d ≠ 0 ∧ N b c f ≠ 0 ∧ N a f d ≠ 0 then [1] else []), fun a b c => (([(((1 : Fin 3), (1 : Fin 3), (0 : Fin 3)), [0, 0, 0, 0, 0, 0, 0, -1]), (((1 : Fin 3), (1 : Fin 3), (2 : Fin 3)), [0, 0, 0, 1]), (((1 : Fin 3), (2 : Fin 3), (1 : Fin 3)), [0, 0, 0, 0, -1]), (((2 : Fin 3), (1 : Fin 3), (1 : Fin 3)), [0, 0, 0, 0, -1]), (((2 : Fin 3), (2 : Fin 3), (0 : Fin 3)), [-1])] : List ((Fin 3 × Fin 3 × Fin 3) × List ℚ)).lookup (a, b, c)).getD (if N a b c ≠ 0 then [1] else []), fun a b c => (([(((1 : Fin 3), (1 : Fin 3), (0 : Fin 3)), [0, 1]), (((1 : Fin 3), (1 : Fin 3), (2 : Fin 3)), [0, 0, 0, 0, 0, -1]), (((1 : Fin 3), (2 : Fin 3), (1 : Fin 3)), [0, 0, 0, 0, 1]), (((2 : Fin 3), (1 : Fin 3), (1 : Fin 3)), [0, 0, 0, 0, 1]), (((2 : Fin 3), (2 : Fin 3), (0 : Fin 3)), [-1])] : List ((Fin 3 × Fin 3 × Fin 3) × List ℚ)).lookup (a, b, c)).getD (if N a b c ≠ 0 then [1] else [])⟩ : FusionData.RepData 3))
+
+/-- The Fibonacci category's data, values on the power basis of `√5`. -/
+def fib : FusionData.RepData 2 :=
+  (let N : Fin 2 → Fin 2 → Fin 2 → ℕ := ![![![1, 0], ![0, 1]], ![![0, 1], ![1, 1]]]; (⟨0, ![0, 1], N, fun a b c d e f => (([(((1 : Fin 2), (1 : Fin 2), (1 : Fin 2), (1 : Fin 2), (0 : Fin 2), (0 : Fin 2)), [(-1 / 2), (-1 / 2)]), (((1 : Fin 2), (1 : Fin 2), (1 : Fin 2), (1 : Fin 2), (1 : Fin 2), (0 : Fin 2)), [(-1 / 2), (-1 / 2)]), (((1 : Fin 2), (1 : Fin 2), (1 : Fin 2), (1 : Fin 2), (1 : Fin 2), (1 : Fin 2)), [(1 / 2), (1 / 2)])] : List ((Fin 2 × Fin 2 × Fin 2 × Fin 2 × Fin 2 × Fin 2) × List ℚ)).lookup (a, b, c, d, e, f)).getD (if N a b e ≠ 0 ∧ N e c d ≠ 0 ∧ N b c f ≠ 0 ∧ N a f d ≠ 0 then [1] else []), fun a b c => (([] : List ((Fin 2 × Fin 2 × Fin 2) × List ℚ)).lookup (a, b, c)).getD (if N a b c ≠ 0 then [1] else []), fun a b c => (([] : List ((Fin 2 × Fin 2 × Fin 2) × List ℚ)).lookup (a, b, c)).getD (if N a b c ≠ 0 then [1] else [])⟩ : FusionData.RepData 2))
+
+/-- The Fibonacci data in the gauge `u^{ττ}_τ = 2`. -/
+def fib₂ : FusionData.RepData 2 :=
+  (let N : Fin 2 → Fin 2 → Fin 2 → ℕ := ![![![1, 0], ![0, 1]], ![![0, 1], ![1, 1]]]; (⟨0, ![0, 1], N, fun a b c d e f => (([(((1 : Fin 2), (1 : Fin 2), (1 : Fin 2), (1 : Fin 2), (0 : Fin 2), (0 : Fin 2)), [(-1 / 2), (-1 / 2)]), (((1 : Fin 2), (1 : Fin 2), (1 : Fin 2), (1 : Fin 2), (0 : Fin 2), (1 : Fin 2)), [(1 / 4)]), (((1 : Fin 2), (1 : Fin 2), (1 : Fin 2), (1 : Fin 2), (1 : Fin 2), (0 : Fin 2)), [-2, -2]), (((1 : Fin 2), (1 : Fin 2), (1 : Fin 2), (1 : Fin 2), (1 : Fin 2), (1 : Fin 2)), [(1 / 2), (1 / 2)])] : List ((Fin 2 × Fin 2 × Fin 2 × Fin 2 × Fin 2 × Fin 2) × List ℚ)).lookup (a, b, c, d, e, f)).getD (if N a b e ≠ 0 ∧ N e c d ≠ 0 ∧ N b c f ≠ 0 ∧ N a f d ≠ 0 then [1] else []), fun a b c => (([] : List ((Fin 2 × Fin 2 × Fin 2) × List ℚ)).lookup (a, b, c)).getD (if N a b c ≠ 0 then [1] else []), fun a b c => (([] : List ((Fin 2 × Fin 2 × Fin 2) × List ℚ)).lookup (a, b, c)).getD (if N a b c ≠ 0 then [1] else [])⟩ : FusionData.RepData 2))
+
+/-- The gauge relating them, and its inverse. -/
+def gauge : Fin 2 → Fin 2 → Fin 2 → List ℚ :=
+  fun a b c => (([(((1 : Fin 2), (1 : Fin 2), (1 : Fin 2)), [2])] : List ((Fin 2 × Fin 2 × Fin 2) × List ℚ)).lookup (a, b, c)).getD [1]
+
+def gaugeInv : Fin 2 → Fin 2 → Fin 2 → List ℚ :=
+  fun a b c => (([(((1 : Fin 2), (1 : Fin 2), (1 : Fin 2)), [(1 / 2)])] : List ((Fin 2 × Fin 2 × Fin 2) × List ℚ)).lookup (a, b, c)).getD [1]
+
+end FusionTest
+
+-- the fusion rules of SU(2) at level 2, from Sage's FusionRing: associative, unital, with duals
+example : True := by
+  sage_run "proof = steps(fusion_facts(fusion_rules('A1', 2), braided=False, symbols=False), tactic('trivial'))"
+
+-- every pentagon equation of the Fibonacci category, over ℝ at √5
+example : FusionData.IsFusion (FusionData.RepData.toData FusionTest.fib (Real.sqrt 5)) := by
+  sage_run "proof = fusion_proof(fibonacci(), braided=False)"
+
+-- the Ising category is braided fusion over ℂ at ζ₁₆ = exp(2πi/16): pentagons and both hexagons
+example : FusionData.IsBraidedFusion
+    (FusionData.RepData.toData FusionTest.ising (Complex.exp (2 * Real.pi * Complex.I / 16))) := by
+  sage_run file "ising_braided.sage"
+
+-- and at every root of x⁸ + 1 in every ℚ-algebra (the Galois conjugates are braided fusion too)
+example {K : Type} [CommRing K] [Algebra ℚ K] (ζ : K) (hζ : ζ ^ 8 = algebraMap ℚ K (-1)) :
+    FusionData.IsBraidedFusion (FusionData.RepData.toData FusionTest.ising ζ) := by
+  sage_run "proof = fusion_proof(ising(), braided=True, root=False)"
+
+-- a fact for later steps, without a goal to unify with
+example : True := by
+  sage_run "proof = steps(fusion_facts(fibonacci(), braided=False), tactic('trivial'))"
+
+-- the goal's F-symbols are in another gauge: Sage finds it, the kernel certifies the relation
+example : FusionData.GaugeRelated (FusionData.RepData.toData FusionTest.fib (Real.sqrt 5))
+    (FusionData.RepData.toData FusionTest.fib₂ (Real.sqrt 5))
+    (fun a b c => FusionData.Coeffs.eval (Real.sqrt 5) (FusionTest.gauge a b c))
+    (fun a b c => FusionData.Coeffs.eval (Real.sqrt 5) (FusionTest.gaugeInv a b c)) := by
+  sage_run file "fibonacci_gauge.sage"
+
+/--
+error: sage daemon error: run: AssertionError: fill in REFERENCE in a copy
+-/
+#guard_msgs in
+example : True := by
+  sage_run file "prompts/recipes/templates/fusion_category.sage"
+
+-- SU(3) at level 3 has a fusion multiplicity 2: outside the multiplicity-free asset, refused
+/--
+error: sage daemon error: run: CertificateError: A23(1,1) ⊗ A23(1,1) has a fusion multiplicity above 1: A2 at level 3 is not multiplicity free, outside the FusionData asset (F-symbols would be matrices on multiplicity spaces)
+-/
+#guard_msgs in
+example : True := by
+  sage_run "proof = steps(fusion_facts(fusion_rules('A2', 3), braided=False, symbols=False), tactic('trivial'))"
+
+-- F-symbols all 1 on the Fibonacci rules fail the pentagon: refused in Sage with the count
+/--
+error: sage daemon error: run: CertificateError: 8 pentagon equations fail
+-/
+#guard_msgs in
+example : True := by
+  sage_run "
+fib = fibonacci()
+proof = steps(fusion_facts(Fusion(fib.labels, fib.dual, fib.rules, field='sqrt5'), braided=False), tactic('trivial'))"
+
+namespace NaturalityTest
+
+open Equiv
+
+/-- The permutation representation of `S₃` on `ℚ³`. -/
+def perm : Perm (Fin 3) →* Matrix (Fin 3) (Fin 3) ℚ where
+  toFun g := (g⁻¹).permMatrix ℚ
+  map_one' := by simp
+  map_mul' g h := by simp [mul_inv_rev, Matrix.permMatrix_mul]
+
+/-- The trivial representation. -/
+def triv : Perm (Fin 3) →* Matrix (Fin 1) (Fin 1) ℚ := 1
+
+theorem generators : Subgroup.closure {finRotate 3, swap 0 (finRotate 3 0)} = ⊤ :=
+  Perm.closure_cycle_adjacent_swap (isCycle_finRotate_of_le (by norm_num)) (support_finRotate_of_le (by norm_num)) 0
+
+-- summing coordinates is natural from the permutation representation to the trivial one: two squares, for the
+-- generators, then every element by the closure
+example : ∀ g, (!![1, 1, 1] : Matrix (Fin 1) (Fin 3) ℚ) * perm g = triv g * (!![1, 1, 1] : Matrix (Fin 1) (Fin 3) ℚ) := by
+  sage_run "
+cycle = matrix(QQ, [[0, 0, 1], [1, 0, 0], [0, 1, 0]])
+swap = matrix(QQ, [[0, 1, 0], [1, 0, 0], [0, 0, 1]])
+one = identity_matrix(QQ, 1)
+proof = naturality_proof(matrix(QQ, [[1, 1, 1]]), [cycle, swap], [one, one], rho='perm', sigma='triv',
+    closure='generators')"
+
+-- as a morphism of representations, a natural transformation between the functors from `S₃`'s one-object category
+noncomputable example : Rep.of (VeriphyCheck.matrixRep perm) ⟶ Rep.of (VeriphyCheck.matrixRep triv) :=
+  VeriphyCheck.repHom perm triv (!![1, 1, 1] : Matrix (Fin 1) (Fin 3) ℚ) (by
+    sage_run "
+cycle = matrix(QQ, [[0, 0, 1], [1, 0, 0], [0, 1, 0]])
+swap = matrix(QQ, [[0, 1, 0], [1, 0, 0], [0, 0, 1]])
+one = identity_matrix(QQ, 1)
+proof = naturality_proof(matrix(QQ, [[1, 1, 1]]), [cycle, swap], [one, one], rho='perm', sigma='triv',
+    closure='generators')")
+
+-- a square that fails is named
+/--
+error: sage daemon error: run: CertificateError: the naturality square fails at generator 0: T ρ(g0) ≠ σ(g0) T
+-/
+#guard_msgs in
+example : ∀ g, (!![1, 0, 0] : Matrix (Fin 1) (Fin 3) ℚ) * perm g = triv g * (!![1, 0, 0] : Matrix (Fin 1) (Fin 3) ℚ) := by
+  sage_run "
+cycle = matrix(QQ, [[0, 0, 1], [1, 0, 0], [0, 1, 0]])
+swap = matrix(QQ, [[0, 1, 0], [1, 0, 0], [0, 0, 1]])
+one = identity_matrix(QQ, 1)
+proof = naturality_proof(matrix(QQ, [[1, 0, 0]]), [cycle, swap], [one, one], rho='perm', sigma='triv',
+    closure='generators')"
+
+-- an invertible natural transformation: its inverse, checked both ways
+example : True := by
+  sage_run "proof = steps(natural_iso_facts(matrix(QQ, [[1, 1], [0, 1]])), tactic('trivial'))"
+
+end NaturalityTest

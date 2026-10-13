@@ -127,7 +127,7 @@ def christoffel_proof(g: Matrix, *, metric: str, unfold: Sequence[str] = ()) -> 
     lines = [
         f'have hinv : CoordinateGeometry.invMetric {metric} x = {inverse_text} := by',
         '  refine Matrix.inv_eq_right_inv ?_',
-        f'  ext a b; fin_cases a <;> fin_cases b <;> simp [{names}] <;> field_simp',
+        f'  ext a b\n  fin_cases a <;> fin_cases b <;> simp [{names}] <;> field_simp',
         'rw [CoordinateGeometry.christoffel, hinv]',
         f'simp (disch := fun_prop) [CoordinateGeometry.pd, {", ".join([*unfold, DERIVATIVE_SIMP])}]',
         'all_goals first | ring1 | (field_simp; ring1) | (field_simp; done)',

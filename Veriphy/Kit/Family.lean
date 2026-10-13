@@ -122,8 +122,9 @@ def closeAndEmit (proof : TSyntax `tactic) : TacticM Unit := do
       -- both in one error
       match ex with
       | .error _ msg =>
-        if texts.isEmpty then throw ex
         let main ← msg.toString
+        -- already combined above, from the errors the proof logged
+        if texts.isEmpty || main.startsWith "veriphy: the certificate check failed:" then throw ex
         let all := (texts.filter (· != main)) ++ [main]
         throwError "veriphy: the certificate check failed:\n{"\n".intercalate all}"
       | .internal id _ =>

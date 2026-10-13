@@ -104,6 +104,14 @@ name = "VeriphyAssets"
 srcDir = ".veriphy/lean"
 ```
 
+Veriphy ships these assets in its repository's `assets/VeriphyAssets/` (mathlib only); copy the ones a recipe asks for
+into `.veriphy/lean/VeriphyAssets/`:
+
+| Asset | States | Recipe |
+|---|---|---|
+| `CoordinateGeometry.lean` | Christoffel symbols, curvature, Killing vectors and forms in a chart | `coordinate_geometry` |
+| `FusionData.lean` | multiplicity-free fusion data, pentagon and hexagon equations, gauge transformations | `fusion_category` |
+
 Projects created with Veriphy 0.1.0 keep scripts in a top-level `certificates/`. The catalog still lists them, warns,
 and prints the command that moves them: `mkdir -p .veriphy && git mv certificates .veriphy/certificates`.
 
@@ -248,6 +256,7 @@ The steps are:
 | closed forms of linear recurrences | `recurrence` |
 | rational bounds on `exp`, `log`, `sin`, `cos`, `π` at explicit points | `certified_bound` |
 | a real root or eigenvalue in an explicit interval | `root_isolation` |
+| fusion or braided fusion data (pentagons, hexagons, gauges), naturality of an intertwiner | `fusion_category` |
 | graded brackets, super-Jacobi (`sl(m\|n)`, `osp`, `D(2,1;α)`, `G(3)`, `F(4)`) | `lie_superalgebra` |
 | (Physlib) an explicit matrix `∈ lorentzAlgebra` | `physlib/lorentz_algebra` |
 
