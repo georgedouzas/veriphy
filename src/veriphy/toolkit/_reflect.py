@@ -153,7 +153,7 @@ def prime_certificate(p: object) -> Lean:
 
 
 def structure_constants_term(table: Sequence[Sequence[Sequence[object]]]) -> Lean:
-    """Return a structure-constant table as a Lean term `Fin n → Fin n → Fin n → ℚ`.
+    """Return a structure-constant table as a Lean term `Fin n → Fin n → Fin n → ℤ` (or `ℚ` when not integral).
 
     `VeriphyCheck.jacobi_of_check (by decide +kernel)` and `bracket_self_of_check` then prove the Lie axioms for it.
 
@@ -165,13 +165,16 @@ def structure_constants_term(table: Sequence[Sequence[Sequence[object]]]) -> Lea
 
     Examples:
         >>> print(structure_constants_term([[[0, 0], [0, 1]], [[0, -1], [0, 0]]]))
-        (![![![0, 0], ![0, 1]], ![![0, -1], ![0, 0]]] : Fin 2 → Fin 2 → Fin 2 → ℚ)
+        (![![![0, 0], ![0, 1]], ![![0, -1], ![0, 0]]] : Fin 2 → Fin 2 → Fin 2 → ℤ)
+        >>> print(structure_constants_term([[[0, 0], [0, 1/2]], [[0, -1/2], [0, 0]]]))
+        (![![![0, 0], ![0, (1 / 2)]], ![![0, (-1 / 2)], ![0, 0]]] : Fin 2 → Fin 2 → Fin 2 → ℚ)
     """
     n = len(table)
+    ring = 'ℤ' if all(QQ(x).denominator() == 1 for plane in table for row in plane for x in row) else 'ℚ'
 
     def rat(x: object) -> str:
         q = QQ(x)
         return str(q) if q.denominator() == 1 else f'({q.numerator()} / {q.denominator()})'
 
     rows = ', '.join('![' + ', '.join('![' + ', '.join(rat(x) for x in r) + ']' for r in m) + ']' for m in table)
-    return term(f'(![{rows}] : Fin {n} → Fin {n} → Fin {n} → ℚ)')
+    return term(f'(![{rows}] : Fin {n} → Fin {n} → Fin {n} → {ring})')

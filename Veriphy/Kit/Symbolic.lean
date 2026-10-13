@@ -400,12 +400,13 @@ partial def exprToSym (e : Expr) : SymM SymExpr := do
   match f, args with
   | ``HAdd.hAdd, #[_, _, _, _, a, b] => return .add (← exprToSym a) (← exprToSym b)
   | ``HSub.hSub, #[α, _, _, _, a, b] =>
-    -- ℕ subtraction truncates at zero: it means `a - b` only when `b ≤ a`
+    -- ℕ subtraction truncates at zero: it is `a - b` when `b ≤ a` is known, and `max(a - b, 0)` otherwise
     if (← whnfR α).isConstOf ``Nat then
       let numerals := match natLit? a, natLit? b with | some m, some n => decide (n ≤ m) | _, _ => false
       unless numerals do
         let c : Condition := { term := b, kind := .le, bound := some a }
-        if (← c.dischargedBy fun d => !d.isImplementationDetail).isNone then return ← symAtom e
+        if (← c.dischargedBy fun d => !d.isImplementationDetail).isNone then
+          return .call "max" [.sub (← exprToSym a) (← exprToSym b), .num 0 1]
         note b .le a
     return .sub (← exprToSym a) (← exprToSym b)
   | ``HMul.hMul, #[ty, _, _, _, a, b] =>

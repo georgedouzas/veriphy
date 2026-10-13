@@ -107,6 +107,9 @@ def coreTable : Table where
     { lean := "Int.gcd", sage := "gcd", arity := 2, types := ["ℤ"], result := "ℕ", «example» := "Int.gcd a b" },
     { lean := "Int.floor", sage := "floor", arity := 1, types := ["ℝ", "ℚ"], result := "ℤ", «example» := "⌊x⌋" },
     { lean := "Int.ceil", sage := "ceil", arity := 1, types := ["ℝ", "ℚ"], result := "ℤ", «example» := "⌈x⌉" },
+    -- a linear order's `max` and `min`; Sage's `max_symbolic` and `min_symbolic`, bound to these names
+    { lean := "Max.max", sage := "max", arity := 2, «example» := "max x y" },
+    { lean := "Min.min", sage := "min", arity := 2, «example» := "min x y" },
     unary "Complex.exp" "exp" "ℂ", unary "Complex.log" "log" "ℂ",
     unary "Complex.sin" "sin" "ℂ", unary "Complex.cos" "cos" "ℂ", unary "Complex.tan" "tan" "ℂ"]
   constants := [
