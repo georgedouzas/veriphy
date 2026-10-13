@@ -101,18 +101,35 @@ def closeAndEmit (proof : TSyntax `tactic) : TacticM Unit := do
   let errors := fun (log : MessageLog) =>
     log.reportedPlusUnreported.toList.filter (·.severity == .error)
   let before := (errors (← Core.getMessageLog)).length
-  try
-    -- no error recovery: a checker failing inside a nested `by` must fail the tactic, not be logged
-    Term.withoutErrToSorry <| withoutRecover <| evalTactic proof
-    let logged := (errors (← Core.getMessageLog)).drop before
-    unless logged.isEmpty do
-      -- the restore below drops these from the log, so they travel in this error instead
-      let texts ← logged.mapM fun m => m.data.toString
-      throwError "veriphy: the certificate check failed:\n{"\n".intercalate texts}"
-    checkAxioms goal
-  catch ex =>
-    s₀.restore
-    throw ex
+  -- a non-backtracking catch: the handler must read the errors the failed run logged before restoring them away
+  Tactic.tryCatch
+    (do
+      -- no error recovery: a checker failing inside a nested `by` must fail the tactic, not be logged
+      -- postponed elaboration problems (a `by` block whose type still has metavariables) are solved here, so their
+      -- failures count against this proof instead of surfacing after it was accepted
+      Term.withoutErrToSorry <| withoutRecover <| do
+        evalTactic proof
+        Term.synthesizeSyntheticMVarsNoPostponing
+      let logged := (errors (← Core.getMessageLog)).drop before
+      unless logged.isEmpty do
+        let texts ← logged.mapM fun m => m.data.toString
+        throwError "veriphy: the certificate check failed:\n{"\n".intercalate texts}"
+      checkAxioms goal)
+    fun ex => do
+      let texts ← ((errors (← Core.getMessageLog)).drop before).mapM fun m => m.data.toString
+      s₀.restore
+      -- the restore drops the logged errors, and an error mentioning a sorry they left is not shown at all: carry
+      -- both in one error
+      match ex with
+      | .error _ msg =>
+        if texts.isEmpty then throw ex
+        let main ← msg.toString
+        let all := (texts.filter (· != main)) ++ [main]
+        throwError "veriphy: the certificate check failed:\n{"\n".intercalate all}"
+      | .internal id _ =>
+        if !isAbortExceptionId id then throw ex
+        let reason := if texts.isEmpty then ["the proof was aborted"] else texts
+        throwError "veriphy: the certificate check failed:\n{"\n".intercalate reason}"
   -- emit what ran: a `first | …` becomes the alternative that closed its goal (the replay checks the result)
   let proof : TSyntax `tactic := ⟨← keepRunAlternatives s₀ proof⟩
   if veriphy.checkReplay.get (← getOptions) then

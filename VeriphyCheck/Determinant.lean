@@ -50,8 +50,8 @@ theorem lowerTriangular_of_check {L : Matrix (Fin n) (Fin n) R} (h : lowerCheck 
 /-- `det A = ∏ L i i * ∏ U i i` for an LU factorization the kernel checks. -/
 theorem det_eq_of_lu {A L U : Matrix (Fin n) (Fin n) R} (hmul : mulCheck L U A = true) (hl : lowerCheck L = true)
     (hu : upperCheck U = true) : A.det = diagProd L * diagProd U := by
-  rw [← mul_eq_of_check hmul, det_mul, det_of_lowerTriangular L (lowerTriangular_of_check hl),
-    det_of_upperTriangular (upperTriangular_of_check hu), diagProd_eq, diagProd_eq]
+  rw [← mul_eq_of_check hmul, det_mul, det_of_isLowerTriangular L (lowerTriangular_of_check hl),
+    det_of_isUpperTriangular (upperTriangular_of_check hu), diagProd_eq, diagProd_eq]
 
 /-- The determinant of an integer matrix from an LU factorization over ℚ, with the value checked too:
 `(by decide +kernel)` for each hypothesis. -/

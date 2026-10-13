@@ -335,11 +335,11 @@ def intertwining_facts(t: Matrix, rho: Rep, sigma: Rep, name: str | None = None)
     for k, (a, b) in enumerate(zip(rho, sigma, strict=True)):
         _require(t * a == b * t, f'T does not intertwine on matrix {k}')
         lines.append(
-            f'have hi_{k} : {term} * {rational_matrix_term(a)} = {rational_matrix_term(b)} * {term} := ' f'{PRODUCTS}',
+            f'have hi_{k} : {term} * {rational_matrix_term(a)} = {rational_matrix_term(b)} * {term} := {PRODUCTS}',
         )
     if t.is_square() and t.det() != 0:
         lines.append(
-            f'have hinv : {term} * {rational_matrix_term(t.inverse())} = 1 := ' f'{PRODUCT}',
+            f'have hinv : {term} * {rational_matrix_term(t.inverse())} = 1 := {PRODUCT}',
         )
     return tactic('\n'.join(lines))
 
@@ -388,7 +388,7 @@ def change_of_basis_facts(p: Matrix, rho: Rep, blocks: Rep) -> Lean:
     """
     term = rational_matrix_term(p)
     lines = [
-        f'have hb_{k} : {rational_matrix_term(x)} * {term} = {term} * {rational_matrix_term(b)} := ' f'{PRODUCTS}'
+        f'have hb_{k} : {rational_matrix_term(x)} * {term} = {term} * {rational_matrix_term(b)} := {PRODUCTS}'
         for k, (x, b) in enumerate(zip(rho, blocks, strict=True))
     ]
     lines.append(

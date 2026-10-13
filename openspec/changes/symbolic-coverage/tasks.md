@@ -84,9 +84,9 @@
 
 ## 11. Lie superalgebras (representation-bridge)
 
-- [ ] 11.1 Add `_superalgebra`: grading, graded bracket, supertrace, super-Jacobi, invariant form and Casimir for explicit supermatrices. Verify on `sl(1|1)` and `osp(1|2)`.
+- [x] 11.1 Add `_superalgebra`: grading, graded bracket, supertrace, super-Jacobi, invariant form and Casimir for explicit supermatrices. Verify on `sl(1|1)` and `osp(1|2)`.
 - [ ] 11.2 Build the exceptional families `D(2,1;α)` (symbolic α), `G(3)` and `F(4)` in defining representations. Verify super-Jacobi for `D(2,1;α)` over `ℚ(α)`, and for `F(4)` through the reflective checker.
-- [ ] 11.3 Write the `lie_superalgebra` recipe. Verify its worked example in the Lean suite.
+- [x] 11.3 Write the `lie_superalgebra` recipe. Verify its worked example in the Lean suite.
 
 ## 12. Algebraic certificates (algebraic-certificates)
 

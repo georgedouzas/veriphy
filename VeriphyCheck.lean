@@ -6,3 +6,4 @@ import VeriphyCheck.Matrix
 import VeriphyCheck.StructureConstants
 import VeriphyCheck.Pratt
 import VeriphyCheck.Determinant
+import VeriphyCheck.SuperStructureConstants
