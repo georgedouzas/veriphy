@@ -238,6 +238,11 @@ The steps are:
 | ODE in `deriv x`, `x` given by `hx : x = fun s => …` or asked for by `∃ x` | `ode_solution` |
 | bracket relations, Casimirs, Cartan-matrix facts of explicit matrices | `lie_structure` |
 | representations, decompositions, branching, Clebsch-Gordan | `representation` |
+| `False` from nonlinear polynomial hypotheses; `p = 0` from `pᵏ` in the ideal | `infeasibility` |
+| `Nat.Prime p` for a large explicit `p` | `primality` |
+| Smith or Jordan form, diagonalization of an explicit matrix | `matrix_normal_form` |
+| `NormedSpace.exp` of an explicit matrix (nilpotent, diagonalizable) | `matrix_exponential` |
+| graded brackets, super-Jacobi (`sl(m|n)`, `osp`, `D(2,1;α)`, `G(3)`, `F(4)`) | `lie_superalgebra` |
 | (Physlib) an explicit matrix `∈ lorentzAlgebra` | `physlib/lorentz_algebra` |
 
 ## Product decision: a pure tool

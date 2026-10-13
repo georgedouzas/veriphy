@@ -90,11 +90,11 @@
 
 ## 12. Algebraic certificates (algebraic-certificates)
 
-- [ ] 12.1 Add Positivstellensatz search (SOS multipliers) and Nullstellensatz and radical certificates (Gröbner). Verify on the spec's scenarios.
-- [ ] 12.2 Add Smith and Jordan normal forms and diagonalizations with inverse certificates. Verify on an integer matrix and on a matrix with a nontrivial Jordan block.
-- [ ] 12.3 Add matrix exponentials against mathlib's `exp` (nilpotent, diagonalizable, ODE characterization). Verify on a Lorentz boost and on a nilpotent 3×3 matrix.
-- [ ] 12.4 Add Pratt certificate search wired to the checker. Verify on a 40-digit prime.
-- [ ] 12.5 Write `infeasibility`, `matrix_normal_form`, `matrix_exponential` and `primality`. Verify their worked examples in the Lean suite.
+- [x] 12.1 Add Positivstellensatz search (SOS multipliers) and Nullstellensatz and radical certificates (Gröbner). Verify on the spec's scenarios.
+- [x] 12.2 Add Smith and Jordan normal forms and diagonalizations with inverse certificates. Verify on an integer matrix and on a matrix with a nontrivial Jordan block.
+- [x] 12.3 Add matrix exponentials against mathlib's `exp` (nilpotent, diagonalizable, ODE characterization). Verify on a Lorentz boost and on a nilpotent 3×3 matrix.
+- [x] 12.4 Add Pratt certificate search wired to the checker. Verify on a 40-digit prime.
+- [x] 12.5 Write `infeasibility`, `matrix_normal_form`, `matrix_exponential` and `primality`. Verify their worked examples in the Lean suite.
 
 ## 14. Operators and Clifford algebras (operator-bridge)
 

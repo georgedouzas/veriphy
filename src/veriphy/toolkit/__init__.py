@@ -29,6 +29,7 @@ from veriphy.toolkit._emit import (
     sum_by_induction,
     witness,
 )
+from veriphy.toolkit._exponential import diagonalizable_exponential, nilpotency_index, nilpotent_exponential
 from veriphy.toolkit._lean import Lean, parenthesize, polynomial, rational, tactic, term
 from veriphy.toolkit._lie import (
     adjoint_matrices,
@@ -171,6 +172,7 @@ __all__ = [
     'derivative_chain',
     'derivative_order',
     'det_certificate',
+    'diagonalizable_exponential',
     'eigen_projectors',
     'exterior_square',
     'f4',
@@ -205,6 +207,8 @@ __all__ = [
     'mul_nonneg',
     'mul_pos',
     'negate_goal',
+    'nilpotency_index',
+    'nilpotent_exponential',
     'nlinarith',
     'norm_num',
     'nullstellensatz_proof',

@@ -18,6 +18,8 @@ import Mathlib.Algebra.Order.Floor.Ring
 import Mathlib.Data.Nat.Choose.Basic
 import Mathlib.Analysis.SpecialFunctions.Gamma.Basic
 import Mathlib.Analysis.SpecialFunctions.Arsinh
+import Mathlib.Analysis.Normed.Algebra.MatrixExponential
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 import Veriphy
 import VeriphyCheck
 import Mathlib.LinearAlgebra.Matrix.Cartan.Basic
@@ -520,3 +522,46 @@ example : True := by
 j, p, facts = jordan_certificate(matrix(QQ, [[5, 4, 2, 1], [0, 1, -1, -1], [-1, -1, 3, 0], [1, 1, -1, 2]]))
 assert any(j[i, i + 1] != 0 for i in range(3)), j
 proof = steps(facts, tactic('trivial'))"
+
+/-! ## Matrix exponentials against mathlib's `exp` -/
+
+-- a nilpotent matrix: the series stops
+example : NormedSpace.exp (!![(0 : ℝ), 1, 2; 0, 0, 3; 0, 0, 0]) = !![1, 1, 7 / 2; 0, 1, 3; 0, 0, 1] := by
+  sage_run "proof = nilpotent_exponential(matrix(QQ, [[0, 1, 2], [0, 0, 3], [0, 0, 0]]))[1]"
+
+-- the Lorentz boost along x: exp of rapidity times the generator, through its diagonalization
+example (φ : ℝ) : NormedSpace.exp (φ • !![(0 : ℝ), 1, 0, 0; 1, 0, 0, 0; 0, 0, 0, 0; 0, 0, 0, 0]) =
+    !![Real.cosh φ, Real.sinh φ, 0, 0; Real.sinh φ, Real.cosh φ, 0, 0; 0, 0, 1, 0; 0, 0, 0, 1] := by
+  sage_run "proof = diagonalizable_exponential(matrix(QQ, [[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]), 'φ')[1]"
+
+/-! ## Algebraic recipes -/
+
+example (x y : ℝ) (h1 : x ^ 2 + y ^ 2 < 1) (h2 : x + y ≥ 2) : False := by
+  sage_run file "prompts/recipes/templates/infeasibility.sage"
+example (x y : ℚ) (hxy : x * y = 1) (hx : x = 0) : False := by
+  sage_run file "prompts/recipes/templates/infeasibility.sage"
+example (x : ℝ) (h : x ^ 2 = 0) : x = 0 := by
+  sage_run file "prompts/recipes/templates/infeasibility.sage"
+
+-- a 40-digit prime
+example : Nat.Prime 1000000000000000000000000000000000012397 := by
+  sage_run file "prompts/recipes/templates/primality.sage"
+
+/--
+error: sage daemon error: run: AssertionError: fill in MATRIX (and FORM) in a copy
+-/
+#guard_msgs in
+example : True := by
+  sage_run file "prompts/recipes/templates/matrix_normal_form.sage"
+example : True := by
+  sage_run file "smith_example.sage"
+
+/--
+error: sage daemon error: run: AssertionError: fill in MATRIX (and PARAMETER) in a copy
+-/
+#guard_msgs in
+example : True := by
+  sage_run file "prompts/recipes/templates/matrix_exponential.sage"
+example (φ : ℝ) : NormedSpace.exp (φ • !![(0 : ℝ), 1, 0, 0; 1, 0, 0, 0; 0, 0, 0, 0; 0, 0, 0, 0]) =
+    !![Real.cosh φ, Real.sinh φ, 0, 0; Real.sinh φ, Real.cosh φ, 0, 0; 0, 0, 1, 0; 0, 0, 0, 1] := by
+  sage_run file "boost.sage"
