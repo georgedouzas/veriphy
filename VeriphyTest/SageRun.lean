@@ -21,6 +21,7 @@ import Mathlib.Analysis.SpecialFunctions.Arsinh
 import Veriphy
 import VeriphyCheck
 import Mathlib.LinearAlgebra.Matrix.Cartan.Basic
+import Mathlib.RingTheory.Polynomial.Cyclotomic.Roots
 
 set_option veriphy.checkReplay true
 
@@ -341,3 +342,35 @@ example : ⁅LieTest.h, LieTest.e⁆ = 2 • LieTest.e ∧ ⁅LieTest.e, LieTest
 set_option maxRecDepth 10000 in
 example : (CartanMatrix.E 8).det = 1 := by
   sage_run file "cartan_e8.sage"
+
+/-! ## Exact number fields -/
+
+-- ℚ(√2): a scalar identity, by reducing powers of `Real.sqrt 2` with `Real.sqrt 2 ^ 2 = 2`
+example : (1 + Real.sqrt 2) ^ 3 = 7 + 5 * Real.sqrt 2 := by
+  sage_run "
+K = QuadraticField(2, 's'); s = K.gen()
+assert (1 + s)**3 == 7 + 5*s
+proof = field_identity(quadratic_context(2), max_power=3)"
+
+-- ℚ(√2): the rotation by 45° is orthogonal, entry by entry
+example : !![Real.sqrt 2 / 2, -(Real.sqrt 2 / 2); Real.sqrt 2 / 2, Real.sqrt 2 / 2] *
+    !![Real.sqrt 2 / 2, Real.sqrt 2 / 2; -(Real.sqrt 2 / 2), Real.sqrt 2 / 2] = 1 := by
+  sage_run "
+K = QuadraticField(2, 's'); s = K.gen()
+R = matrix(K, [[s/2, -s/2], [s/2, s/2]])
+check_matrix_identity(R * R.transpose(), identity_matrix(K, 2))
+proof = field_matrix_identity(quadratic_context(2))"
+
+-- ℚ(ζ₅): ζ + ζ⁴ is a root of x² + x - 1, from Φ₅(ζ) = 0, which IsPrimitiveRoot gives
+example (ζ : ℂ) (hζ : IsPrimitiveRoot ζ 5) : (ζ + ζ ^ 4) ^ 2 + (ζ + ζ ^ 4) - 1 = 0 := by
+  sage_run "
+K = CyclotomicField(5, 'z'); z = K.gen()
+assert (z + z**4)**2 + (z + z**4) - 1 == 0
+proof = field_identity(cyclotomic_context(5), max_power=8)"
+
+-- ℚ(α): an identity of rational functions in a parameter, with α ≠ 0
+example (α : ℝ) (hα : α ≠ 0) : !![α, 1; 0, 1 / α] * !![1 / α, -1; 0, α] = 1 := by
+  sage_run "
+F = FractionField(QQ['a']); a = F.gen()
+check_matrix_identity(matrix(F, [[a, 1], [0, 1/a]]) * matrix(F, [[1/a, -1], [0, a]]), identity_matrix(F, 2))
+proof = field_matrix_identity(parameter_context('α'))"
