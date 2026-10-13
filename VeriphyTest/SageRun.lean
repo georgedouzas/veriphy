@@ -15,6 +15,8 @@ import Mathlib.Analysis.SpecialFunctions.Log.Base
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Mathlib.Algebra.Order.Floor.Ring
 import Mathlib.Data.Nat.Choose.Basic
+import Mathlib.Analysis.SpecialFunctions.Gamma.Basic
+import Mathlib.Analysis.SpecialFunctions.Arsinh
 import Veriphy
 
 set_option veriphy.checkReplay true
@@ -180,3 +182,13 @@ example (b x : ℝ) (h : Real.logb b x - 1 = 0) : True := by
   sage_run "
 h = hyps[0]
 proof = steps(tactic(f'have _r : {symbolic(h.expr, problem)} = 0 := by\\n  simp only [Real.logb] at {h.name}\\n  linear_combination {h.name}'), tactic('trivial'))"
+
+/-! ## Checking project translation entries -/
+
+/--
+error: passed: Real.Gamma ↔ gamma
+passed: rw [Real.Gamma_add_one]
+failed: Real.arsinh ↔ asinhh: sage daemon error: run: AssertionError: Sage could not read the translation: check the sage name
+-/
+#guard_msgs in
+#veriphy_check_translations "VeriphyTest/fixtures/check"

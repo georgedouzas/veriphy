@@ -176,7 +176,7 @@ def Problem.enrich (p : Problem) : MetaM Problem := do
         | .other e => pure (Goal.other e, ← relSym e)
         | .falsum => pure (Goal.falsum, none)
       pure (hyps, factExprs, goal, goalExpr)
-  let (project, loadProblems) ← projectTables
+  let (project, loadProblems) ← projectTables (veriphy.translationsDir.get (← getOptions))
   let (tables, resolveProblems) ← activeTables project
   let tableProblems := loadProblems ++ resolveProblems
   let ((hyps, factExprs, goal, goalExpr), st) ← symPass.run { atoms := p.atoms, tables }

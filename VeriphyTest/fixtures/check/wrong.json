@@ -1,0 +1,5 @@
+{
+  "functions": [
+    {"lean": "Real.arsinh", "sage": "asinhh", "arity": 1, "types": ["ℝ"], "result": "ℝ", "example": "Real.arsinh x"}
+  ]
+}
