@@ -20,6 +20,7 @@ import Mathlib.Analysis.SpecialFunctions.Gamma.Basic
 import Mathlib.Analysis.SpecialFunctions.Arsinh
 import Mathlib.Analysis.Normed.Algebra.MatrixExponential
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
+import Mathlib.Analysis.Calculus.FDeriv.Symmetric
 import Veriphy
 import VeriphyCheck
 import Mathlib.LinearAlgebra.Matrix.Cartan.Basic
@@ -565,3 +566,58 @@ example : True := by
 example (φ : ℝ) : NormedSpace.exp (φ • !![(0 : ℝ), 1, 0, 0; 1, 0, 0, 0; 0, 0, 0, 0; 0, 0, 0, 0]) =
     !![Real.cosh φ, Real.sinh φ, 0, 0; Real.sinh φ, Real.cosh φ, 0, 0; 0, 0, 1, 0; 0, 0, 0, 1] := by
   sage_run file "boost.sage"
+
+/-! ## Differential operators on a test function -/
+
+-- [d/dx, x] = 1
+example (ψ : ℝ → ℝ) (hψ : ContDiff ℝ 1 ψ) (x : ℝ) : deriv (fun y => y * ψ y) x - x * deriv ψ x = ψ x := by
+  sage_run "
+c = Coordinates(1)
+d, xm = c.partial(0), c.multiplication(c.symbols[0])
+proof = steps(operator_identity(commutator(d, xm), c.scalar(1), c), tactic('simpa using hop'))"
+
+-- the ladder operators: [x + d/dx, x - d/dx] = 2
+example (ψ : ℝ → ℝ) (hψ : ContDiff ℝ 2 ψ) (x : ℝ) : True := by
+  sage_run "
+c = Coordinates(1)
+d, xm = c.partial(0), c.multiplication(c.symbols[0])
+proof = steps(operator_identity(commutator(xm + d, xm - d), c.scalar(2), c), tactic('trivial'))"
+
+-- angular momentum: [L₁, L₂] = -L₃ with Lᵢ = xⱼ ∂ₖ - xₖ ∂ⱼ, under ContDiff ℝ 2 (mixed partials commute)
+example (ψ : (Fin 3 → ℝ) → ℝ) (hψ : ContDiff ℝ 2 ψ) (x : Fin 3 → ℝ) : True := by
+  sage_run "
+c = Coordinates(3)
+def L(j, k):
+    return c.multiplication(c.symbols[j]) * c.partial(k) - c.multiplication(c.symbols[k]) * c.partial(j)
+proof = steps(operator_identity(commutator(L(1, 2), L(2, 0)), c.scalar(-1) * L(0, 1), c), tactic('trivial'))"
+
+/-! ## Matrix operators -/
+
+namespace OperatorTest
+
+def σ₁ : Matrix (Fin 2) (Fin 2) ℂ := !![0, 1; 1, 0]
+def σ₂ : Matrix (Fin 2) (Fin 2) ℂ := !![0, -Complex.I; Complex.I, 0]
+def σ₃ : Matrix (Fin 2) (Fin 2) ℂ := !![1, 0; 0, -1]
+
+-- the Pauli commutators [σᵢ, σⱼ] = 2i εᵢⱼₖ σₖ, from Sage's coefficients, proved entrywise over ℂ
+example : σ₁ * σ₂ - σ₂ * σ₁ = (2 * Complex.I) • σ₃ ∧ σ₂ * σ₃ - σ₃ * σ₂ = (2 * Complex.I) • σ₁ ∧
+    σ₃ * σ₁ - σ₁ * σ₃ = (2 * Complex.I) • σ₂ := by
+  sage_run "
+i = QuadraticField(-1, 'i').gen()
+pauli = [matrix([[0, 1], [1, 0]]), matrix([[0, -i], [i, 0]]), matrix([[1, 0], [0, -1]])]
+names = ['OperatorTest.σ₁', 'OperatorTest.σ₂', 'OperatorTest.σ₃']
+proof = steps(operator_relations(pauli, names, pairs=[(0, 1), (1, 2), (2, 0)]),
+              tactic('exact ⟨hcomm_0_1, hcomm_1_2, hcomm_2_0⟩'))"
+
+end OperatorTest
+
+-- truncated ladder operators on three levels: [a, a†] = 1 - 3 |2⟩⟨2|
+example : True := by
+  sage_run "
+a, ad = ladder_matrices(3)
+lhs, rhs = a * ad - ad * a, matrix(SR, [[1, 0, 0], [0, 1, 0], [0, 0, -2]])
+assert lhs == rhs
+statement = (real_matrix_term(a) + ' * ' + real_matrix_term(ad) + ' - ' + real_matrix_term(ad) + ' * ' +
+             real_matrix_term(a) + ' = ' + real_matrix_term(rhs))
+proof = steps(tactic('have hladder : ' + statement + ' := by\\n' +
+                     '\\n'.join('  ' + l for l in matrix_identity_proof().text.splitlines())), tactic('trivial'))"

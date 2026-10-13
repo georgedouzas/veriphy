@@ -98,8 +98,8 @@
 
 ## 14. Operators and Clifford algebras (operator-bridge)
 
-- [ ] 14.1 Add `_operators`: operators from multiplications and partial derivatives applied to a symbolic test function, with commutators and test-function proofs. Verify on `[d/dx, x]` and on `[L₁, L₂]` under `ContDiff ℝ 2 ψ`.
-- [ ] 14.2 Add matrix-operator normal ordering and commutators. Verify on the Pauli matrices and on truncated ladder operators.
+- [x] 14.1 Add `_operators`: operators from multiplications and partial derivatives applied to a symbolic test function, with commutators and test-function proofs. Verify on `[d/dx, x]` and on `[L₁, L₂]` under `ContDiff ℝ 2 ψ`.
+- [x] 14.2 Add matrix-operator normal ordering and commutators. Verify on the Pauli matrices and on truncated ladder operators.
 - [ ] 14.3 Add `_clifford`: gamma matrices by representation and signature, the Clifford relation, traces with `γ⁵`, contraction identities and Fierz coefficients. Verify the four-gamma trace for all index combinations through the reflective checker, and the Fierz matrix.
 - [ ] 14.4 Write `operator_identity` and the Physlib ladder-operator recipe. Verify their worked examples, the Physlib one in the coverage runner.
 
