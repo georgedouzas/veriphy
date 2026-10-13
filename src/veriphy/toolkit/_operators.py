@@ -451,9 +451,9 @@ def ladder_combination(coefficients: dict[str, object], xi: object = None, hbar:
         message = f'unknown operators {sorted(unknown)}: combine a, a†, x and p'
         raise CertificateError(message)
     lowering, raising = ladder_operators(xi, hbar)
-    parts = {'a': lowering, 'a†': raising, 'x': {'x': 1}, 'p': {'p': 1}}
+    parts: dict[str, dict[str, object]] = {'a': lowering, 'a†': raising, 'x': {'x': 1}, 'p': {'p': 1}}
     return {
-        axis: sum(SR(c) * SR(parts[name].get(axis, 0)) for name, c in coefficients.items()).simplify_full()
+        axis: sum((SR(c) * SR(parts[name].get(axis, 0)) for name, c in coefficients.items()), SR(0)).simplify_full()
         for axis in ('x', 'p')
     }
 
@@ -481,9 +481,7 @@ def ladder_commutator_proof(index: str = 'i', oscillator: str = 'Q') -> Lean:
         f'(QuantumMechanics.positionCLM {index}), smul_zero, zero_add, add_zero, sub_zero, zero_sub, smul_neg, '
         'neg_neg, smul_smul, KroneckerDelta.eq_one_of_same, one_smul'
     )
-    apply = (
-        'smul_apply, neg_apply, add_apply, sub_apply, ContinuousLinearMap.id_apply, zero_apply, smul_eq_mul'
-    )
+    apply = 'smul_apply, neg_apply, add_apply, sub_apply, ContinuousLinearMap.id_apply, zero_apply, smul_eq_mul'
     close = f'Complex.I_sq, inv_pow, {h}.sqrt_two_sq_ofReal'
     return tactic(
         f'simp only [{unfold}]\n'
