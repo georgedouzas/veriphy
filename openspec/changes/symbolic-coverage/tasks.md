@@ -59,7 +59,7 @@
 - [x] 7.2 Extend `sum_induction` to `Icc`/`Ico` sums. Verify with `∑ k ∈ Finset.Icc 1 n, (k : ℚ) = n * (n + 1) / 2` in the Lean suite.
 - [x] 7.3 Add ODE recognition in extraction (unknown function, variable, equation, initial conditions), including `∂ₜ` through the Physlib pack. Verify with kit tests on a second-order equation and on a Physlib-style `∂ₜ` statement.
 - [x] 7.4 Add the ODE substitution emitter and the `ode_solution` recipe. Verify on the harmonic oscillator with initial conditions, on `x' = 2x` with `x 0 = 3` as an existential, and on a solution that fails with Lean's residual goal shown.
-- [ ] 7.5 Verify that `transcendental_rewrite` selects a project rewrite entry (`Real.cosh_sq` from a fixture) without edits, in a scratch project.
+- [x] 7.5 Verify that `transcendental_rewrite` selects a project rewrite entry (`Real.Gamma_add_one` from a fixture; `Real.cosh_sq` is now a core entry) without edits, in a scratch project.
 
 ## 8. Foundations checkpoint
 
