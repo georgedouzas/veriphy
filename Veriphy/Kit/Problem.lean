@@ -89,6 +89,8 @@ structure Problem where
   namespaces : List String := []
   /-- Problems found resolving the translation tables (missing constants, conflicts). -/
   tableProblems : Array String := #[]
+  /-- The project's table entries the problem uses, serialized for the daemon. -/
+  extensions : List Table := []
 
 /-- The atom-table monad: translation state shared across one tactic invocation. -/
 abbrev ProblemM := StateRefT (Array Expr) MetaM
@@ -174,7 +176,9 @@ def Problem.enrich (p : Problem) : MetaM Problem := do
         | .other e => pure (Goal.other e, ← relSym e)
         | .falsum => pure (Goal.falsum, none)
       pure (hyps, factExprs, goal, goalExpr)
-  let (tables, tableProblems) ← activeTables
+  let (project, loadProblems) ← projectTables
+  let (tables, resolveProblems) ← activeTables project
+  let tableProblems := loadProblems ++ resolveProblems
   let ((hyps, factExprs, goal, goalExpr), st) ← symPass.run { atoms := p.atoms, tables }
   let mut conditions := #[]
   let mut seen : Array Condition := #[]
@@ -186,7 +190,12 @@ def Problem.enrich (p : Problem) : MetaM Problem := do
     conditions := conditions.push (sage.toSage, kindTag c.kind, bound, ← c.prop, ← c.dischargedBy nameable)
   let atomTypes ← st.atoms.mapM atomType
   let p := { p with atoms := st.atoms, hyps, goal, factExprs, goalExpr, atomTypes, conditions }
-  return { p with namespaces := tables.map (·.«namespace»), tableProblems := tableProblems }
+  -- the project entries the translation used travel with the problem, so the daemon renders with them
+  let used := st.usedEntries
+  let extensions := (tables.filter (·.«namespace» == "project")).map fun t =>
+    { t with functions := t.functions.filter (used.contains ·.lean),
+             constants := t.constants.filter (used.contains ·.lean) }
+  return { p with namespaces := tables.map (·.«namespace»), tableProblems := tableProblems, extensions }
 
 /-- Extract the main goal and every nameable hypothesis, never rejecting a goal: anything without a
 polynomial form is kept with its text. Runs `k` in the goal's context (extended with the binders of an
@@ -277,6 +286,7 @@ def Problem.toJson (p : Problem) : MetaM Json := do
     , ("atom_types", Json.arr (p.atomTypes.map Json.str))
     , ("domain", Json.arr conditions)
     , ("namespaces", Json.arr (p.namespaces.toArray.map Json.str))
-    , ("table_problems", Json.arr (p.tableProblems.map Json.str)) ]
+    , ("table_problems", Json.arr (p.tableProblems.map Json.str))
+    , ("extensions", Json.arr (p.extensions.toArray.map (Lean.toJson ·))) ]
 
 end Veriphy

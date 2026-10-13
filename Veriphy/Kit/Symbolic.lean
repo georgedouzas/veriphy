@@ -109,6 +109,8 @@ structure SymState where
   coordinates : Option Expr := none
   /-- The coordinates used so far inside a partial derivative, with the term each came from. -/
   coordinateUses : Array (Nat × Expr) := #[]
+  /-- The Lean constants whose table entries the translation used. -/
+  usedEntries : Array String := #[]
 
 abbrev SymM := StateRefT SymState MetaM
 
@@ -284,6 +286,7 @@ partial def exprToSym (e : Expr) : SymM SymExpr := do
   let tables := (← get).tables
   if let some entry := tables.function? f then
     if entry.arity ≥ 1 && args.size ≥ entry.arity then
+      modify fun st => { st with usedEntries := st.usedEntries.push entry.lean }
       let operands := args.extract (args.size - entry.arity) args.size
       noteConditions entry operands
       match entry.role with
@@ -293,7 +296,9 @@ partial def exprToSym (e : Expr) : SymM SymExpr := do
       if entry.arity == 1 then return .fn entry.sage (← exprToSym operands[0]!)
       return .call entry.sage (← operands.toList.mapM exprToSym)
   if let some c := tables.constant? f then
-    if args.isEmpty then return .const c.sage
+    if args.isEmpty then
+      modify fun st => { st with usedEntries := st.usedEntries.push c.lean }
+      return .const c.sage
   if tables.isCoercion f && args.size ≥ 1 then
     let x := lastArg e
     let inner ← exprToSym x
