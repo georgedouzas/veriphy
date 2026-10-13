@@ -50,14 +50,17 @@ from veriphy.toolkit._symbolic_emit import (
     rewrite_candidates,
     symbolic,
 )
+from veriphy.toolkit._table import SHIPPED_PACKS, Table, load_core_table, load_pack, parse_table
 
 __all__ = [
+    'SHIPPED_PACKS',
     'Condition',
     'Hyp',
     'Lean',
     'Problem',
     'RewriteCandidate',
     'Side',
+    'Table',
     'by_cases',
     'calc_chain',
     'combination',
@@ -71,6 +74,8 @@ __all__ = [
     'hyp',
     'lemma_rewrite',
     'linear_combination',
+    'load_core_table',
+    'load_pack',
     'matrix_term',
     'mul_nonneg',
     'mul_pos',
@@ -80,6 +85,7 @@ __all__ = [
     'parenthesize',
     'parse_polynomial',
     'parse_symbolic',
+    'parse_table',
     'polynomial',
     'positivity',
     'rational',
