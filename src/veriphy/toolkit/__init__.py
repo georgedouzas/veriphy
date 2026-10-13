@@ -48,6 +48,7 @@ from veriphy.toolkit._lie import (
     weyl_group_order,
 )
 from veriphy.toolkit._lp import solve_exact_lp
+from veriphy.toolkit._normal_form import jordan_certificate, smith_certificate
 from veriphy.toolkit._number_field import (
     FieldContext,
     check_matrix_identity,
@@ -191,6 +192,7 @@ __all__ = [
     'invariant_forms',
     'inverse_certificate',
     'jacobi_certificate',
+    'jordan_certificate',
     'killing_form',
     'lemma_rewrite',
     'lift',
@@ -233,6 +235,7 @@ __all__ = [
     'restrict',
     'rewrite_by',
     'rewrite_candidates',
+    'smith_certificate',
     'smul_combination',
     'so7_spinor_gammas',
     'solve_exact_lp',

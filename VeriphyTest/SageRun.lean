@@ -475,6 +475,15 @@ table, parities = g3()
 table, scales = integral_rescaling(table, parities)
 proof = steps(super_jacobi_certificate(table, parities), tactic('trivial'))"
 
+-- F(4) = so(7) ⊕ 𝔰𝔩₂ on 8 ⊗ 2 (40-dimensional): about a minute and a half of kernel checking
+set_option maxRecDepth 100000 in
+set_option maxHeartbeats 0 in
+example : True := by
+  sage_run "
+table, parities = f4()
+table, scales = integral_rescaling(table, parities)
+proof = steps(super_jacobi_certificate(table, parities), tactic('trivial'))"
+
 /-! ## The `lie_superalgebra` recipe -/
 
 -- the template unedited asks what to prove
@@ -495,3 +504,19 @@ set_option maxRecDepth 100000 in
 set_option maxHeartbeats 0 in
 example : True := by
   sage_run file "lie_superalgebra_d21.sage"
+
+/-! ## Matrix normal forms -/
+
+-- a Smith normal form, with U and V unimodular (their integer inverses are checked too)
+example : True := by
+  sage_run "
+d, u, v, facts = smith_certificate(matrix(ZZ, [[2, 4, 4], [-6, 6, 12], [10, -4, -16]]))
+assert d.diagonal() == [2, 6, 12], d
+proof = steps(facts, tactic('trivial'))"
+
+-- a Jordan form with a nontrivial block: A * P = P * J and P invertible
+example : True := by
+  sage_run "
+j, p, facts = jordan_certificate(matrix(QQ, [[5, 4, 2, 1], [0, 1, -1, -1], [-1, -1, 3, 0], [1, 1, -1, 2]]))
+assert any(j[i, i + 1] != 0 for i in range(3)), j
+proof = steps(facts, tactic('trivial'))"
