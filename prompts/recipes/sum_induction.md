@@ -8,6 +8,9 @@
 - The goal is `∑ k ∈ Finset.range n, f k = F n`, over a field (state ℕ sums over ℚ with casts).
 - Sage finds `F`: in a script, `sum(SR('k^2'), var('k'), 0, var('n') - 1).expand()`, printed for you to state the goal.
 
+- When the closed form is not guessable by evaluation, or the summand is hypergeometric (binomials, factorials),
+  use `wz_certificate`; for sequences defined by a recurrence, use `recurrence`.
+
 ## Template
 
 Copy it to the project's `.veriphy/certificates/sum_induction.sage` (or a more specific name), adapt the lines marked `EDIT`, keep the header, and run it with `sage_run file "<name>.sage"`.

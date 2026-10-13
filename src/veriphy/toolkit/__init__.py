@@ -135,6 +135,16 @@ from veriphy.toolkit._representation import (
     tensor_representation,
 )
 from veriphy.toolkit._sos import sos_decomposition
+from veriphy.toolkit._summation import (
+    gosper_closed_form,
+    gosper_proof,
+    guess_recurrence,
+    recurrence_proof,
+    solve_recurrence,
+    term_lean,
+    wz_mate,
+    wz_proof,
+)
 from veriphy.toolkit._superalgebra import (
     contragredient_superalgebra,
     d21_alpha,
@@ -234,7 +244,10 @@ __all__ = [
     'gamma5',
     'gamma_matrices',
     'gaussian_matrix_term',
+    'gosper_closed_form',
+    'gosper_proof',
     'graded_commutator',
+    'guess_recurrence',
     'has_deriv_at',
     'has_deriv_at_proof',
     'hyp',
@@ -289,6 +302,7 @@ __all__ = [
     'rcases',
     'read_problem',
     'real_matrix_term',
+    'recurrence_proof',
     'refute',
     'render_element',
     'render_polynomial',
@@ -302,6 +316,7 @@ __all__ = [
     'so7_spinor_gammas',
     'solve_exact_lp',
     'solve_exists',
+    'solve_recurrence',
     'sos_decomposition',
     'sparse_rows_term',
     'spin_representation',
@@ -322,8 +337,11 @@ __all__ = [
     'tactic',
     'tensor_representation',
     'term',
+    'term_lean',
     'trace_form',
     'verify_definition',
     'weyl_group_order',
     'witness',
+    'wz_mate',
+    'wz_proof',
 ]
