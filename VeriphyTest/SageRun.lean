@@ -258,3 +258,45 @@ example : (!![0, -2, 0, 0, 0, 0, 0, 0, 0, -1, 0, -1, 1, 0, 0, 0; -2, 0, 0, 0, -2
 -- a Pratt certificate
 example : Nat.Prime 1000000007 := by
   sage_run "proof = tactic('exact ' + str(prime_certificate(1000000007)))"
+
+/-! ## Lie algebras of explicit matrices -/
+
+namespace LieTest
+
+def e : Matrix (Fin 2) (Fin 2) ℚ := !![0, 1; 0, 0]
+def f : Matrix (Fin 2) (Fin 2) ℚ := !![0, 0; 1, 0]
+def h : Matrix (Fin 2) (Fin 2) ℚ := !![1, 0; 0, -1]
+def C : Matrix (Fin 2) (Fin 2) ℚ := !![3 / 8, 0; 0, 3 / 8]
+
+-- the bracket table of 𝔰𝔩₂, from Sage's structure constants, each relation checked by the kernel
+example : ⁅h, e⁆ = 2 • e ∧ ⁅h, f⁆ = -2 • f ∧ ⁅e, f⁆ = h := by
+  sage_run "
+basis = [matrix(QQ, [[0, 1], [0, 0]]), matrix(QQ, [[0, 0], [1, 0]]), matrix(QQ, [[1, 0], [0, -1]])]
+proof = steps(bracket_relations(basis, ['e', 'f', 'h'], pairs=[(2, 0), (2, 1), (0, 1)]),
+              tactic('exact ⟨hb_2_0, hb_2_1, hb_0_1⟩'))"
+
+-- the same relations proved entrywise
+example : ⁅h, e⁆ = 2 • e := by
+  sage_run "
+basis = [matrix(QQ, [[0, 1], [0, 0]]), matrix(QQ, [[0, 0], [1, 0]]), matrix(QQ, [[1, 0], [0, -1]])]
+proof = steps(bracket_relations(basis, ['e', 'f', 'h'], pairs=[(2, 0)], entrywise_limit=2), tactic('exact hb_2_0'))"
+
+-- the Casimir (for the Killing form) commutes with the basis
+example : C * e = e * C ∧ C * f = f * C ∧ C * h = h * C := by
+  sage_run "
+basis = [matrix(QQ, [[0, 1], [0, 0]]), matrix(QQ, [[0, 0], [1, 0]]), matrix(QQ, [[1, 0], [0, -1]])]
+assert casimir(basis) == matrix(QQ, [[3/8, 0], [0, 3/8]]), casimir(basis)
+proof = steps(commutation_facts('C', ['e', 'f', 'h'], size=2), tactic('exact ⟨hc_0, hc_1, hc_2⟩'))"
+
+-- su(3) in a basis with rational structure constants: the Jacobi identity, through the structure-constant checker
+set_option maxRecDepth 100000 in
+example : True := by
+  sage_run "
+K = QuadraticField(-1, 'i'); i = K.gen()
+def E(a, b):
+    m = matrix(K, 3, 3); m[a, b] = 1; return m
+basis = [i*(E(0,0)-E(1,1)), i*(E(1,1)-E(2,2)), E(0,1)-E(1,0), E(0,2)-E(2,0), E(1,2)-E(2,1),
+         i*(E(0,1)+E(1,0)), i*(E(0,2)+E(2,0)), i*(E(1,2)+E(2,1))]
+proof = steps(jacobi_certificate(structure_constants(basis)), tactic('trivial'))"
+
+end LieTest

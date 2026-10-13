@@ -24,6 +24,8 @@ from sage.all import (
     function,
     log,
     matrix,
+    max_symbolic,
+    min_symbolic,
     pi,
     product,
     sage_eval,
@@ -182,6 +184,8 @@ def parse_symbolic(
         'gcd': integer_gcd,
         'matrix': matrix,
         'block_matrix': block_matrix,
+        'max': max_symbolic,
+        'min': min_symbolic,
     }
     names.update({k: SR.var(k) for k in BOUND.findall(text)})
     names.update(symbols)

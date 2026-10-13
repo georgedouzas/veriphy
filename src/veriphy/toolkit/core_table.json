@@ -289,6 +289,24 @@
       ]
     },
     {
+      "arity": 2,
+      "conditions": [],
+      "example": "max x y",
+      "lean": "Max.max",
+      "result": "",
+      "sage": "max",
+      "types": []
+    },
+    {
+      "arity": 2,
+      "conditions": [],
+      "example": "min x y",
+      "lean": "Min.min",
+      "result": "",
+      "sage": "min",
+      "types": []
+    },
+    {
       "arity": 1,
       "conditions": [],
       "example": "Complex.exp x",

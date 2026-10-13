@@ -29,6 +29,17 @@ from veriphy.toolkit._emit import (
     witness,
 )
 from veriphy.toolkit._lean import Lean, parenthesize, polynomial, rational, tactic, term
+from veriphy.toolkit._lie import (
+    adjoint_matrices,
+    bracket_relations,
+    casimir,
+    commutation_facts,
+    jacobi_certificate,
+    killing_form,
+    smul_combination,
+    structure_constants,
+    trace_form,
+)
 from veriphy.toolkit._lp import solve_exact_lp
 from veriphy.toolkit._ode import derivative_chain, derivative_order, solve_exists, verify_definition
 from veriphy.toolkit._problem import (
@@ -76,9 +87,13 @@ __all__ = [
     'RewriteCandidate',
     'Side',
     'Table',
+    'adjoint_matrices',
+    'bracket_relations',
     'by_cases',
     'calc_chain',
+    'casimir',
     'combination',
+    'commutation_facts',
     'create_ring',
     'decide',
     'derivative_chain',
@@ -89,6 +104,8 @@ __all__ = [
     'has_deriv_at',
     'has_deriv_at_proof',
     'hyp',
+    'jacobi_certificate',
+    'killing_form',
     'lemma_rewrite',
     'linear_combination',
     'load_core_table',
@@ -115,16 +132,19 @@ __all__ = [
     'require_domain',
     'rewrite_by',
     'rewrite_candidates',
+    'smul_combination',
     'solve_exact_lp',
     'solve_exists',
     'sos_decomposition',
     'sq_nonneg',
     'steps',
+    'structure_constants',
     'structure_constants_term',
     'sum_by_induction',
     'symbolic',
     'tactic',
     'term',
+    'trace_form',
     'verify_definition',
     'witness',
 ]

@@ -149,9 +149,10 @@ with its lemma, reporting each entry as passed or failed.
 
 Sage computes over one symbolic ring; Lean does not. The translation records each subterm's Lean type, so a script's
 result renders back at the right type: `symbolic(e, problem, lean_type='ℕ')` writes casts where the goal has them,
-`typed(e, 'ℕ')` marks a natural-number subterm, and natural subtraction and division carry their side conditions
-(`b ≤ a` for `a - b`, a positive divisor for `/` and `%`). `Nat.factorial`, `Nat.choose`, `Nat.gcd`, `Int.floor` and
-`Int.ceil` translate to Sage's `factorial`, `binomial`, `gcd`, `floor` and `ceil`.
+`typed(e, 'ℕ')` marks a natural-number subterm, and natural subtraction and division keep Lean's meaning: `a - b` is
+plain subtraction when a hypothesis gives `b ≤ a` and `max(a - b, 0)` otherwise, and `/` and `%` need a positive
+divisor. `Nat.factorial`, `Nat.choose`, `Nat.gcd`, `Int.floor`, `Int.ceil`, `max` and `min` translate to Sage's
+`factorial`, `binomial`, `gcd`, `floor`, `ceil`, `max_symbolic` and `min_symbolic`.
 
 ## Unknown functions and differential equations
 
