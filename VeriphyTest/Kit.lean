@@ -19,6 +19,7 @@ import Mathlib.Data.Nat.Choose.Basic
 import Mathlib.Algebra.Lie.Matrix
 import Mathlib.Data.Matrix.Block
 import Mathlib.Algebra.Polynomial.Derivative
+import Mathlib.LinearAlgebra.Matrix.Trace
 import Veriphy.Kit
 
 open Lean Elab Tactic Meta Veriphy
@@ -787,3 +788,62 @@ info: 'Veriphy.Linear.finrank_inf_of_bounds' depends on axioms: [propext, Classi
 -/
 #guard_msgs in
 #print axioms Veriphy.Linear.finrank_inf_of_bounds
+
+
+/-! ## Claims as problems (`sage_test`), and verification levels -/
+
+/-- Test command: print the problem `sage_test` builds for a claim. -/
+elab "#kit_claim " c:ident : command => Command.liftTermElabM do
+  let (j, n) ← Veriphy.claimProblem (← realizeGlobalConstNoOverloadWithInfo c)
+  logInfo m!"{n} binders: {j.compress}"
+
+namespace KitClaim
+
+theorem traceDouble (n : ℕ) (A : Matrix (Fin n) (Fin n) ℚ) : Matrix.trace (A + A) = 2 * Matrix.trace A := by
+  rw [Matrix.trace_add]; ring
+
+def addZero : Prop := ∀ n : ℕ, n + 0 = n
+
+end KitClaim
+
+namespace KitLevels
+
+-- a recipe's replacement, a tested claim's replacement (replayed with Sage absent), and a plain proof
+theorem certifiedOne : (1 : ℚ) + 1 = 2 := by
+  veriphy_certified (norm_num)
+
+theorem testedOne (x : ℚ) : 0 ≤ x ^ 2 := sq_nonneg x
+
+example : veriphy_instance% testedOne (0) := by
+  norm_num
+
+example : veriphy_instance% testedOne (3) := by
+  norm_num
+
+attribute [veriphy_tested kernel_test 2 0] testedOne
+
+theorem plainOne : (2 : ℚ) * 2 = 4 := by norm_num
+
+end KitLevels
+
+-- a statement over `n : ℕ` and `A : Matrix (Fin n) (Fin n) ℚ`: the binders are locals and listed
+/--
+info: 2 binders: {"atom_types":["ℚ","ℚ","matrix"],"atoms":["(A + A).trace","A.trace","A"],"carrier":"ℚ","definitions":[],"derivatives":[],"domain":[],"exists_function":null,"extensions":[],"functions":[],"goal":{"expr":"(((x2 + x2)).trace()) - ((2 * (x2).trace()))","kind":"rel","lhs":"(A + A).trace","lhs_poly":"x0","poly":"(x0) - ((2 * x1))","rel":"eq","rhs":"2 * A.trace","rhs_poly":"(2 * x1)","text":"(A + A).trace = 2 * A.trace"},"hyps":[],"integrals":[],"matrix_indices":[],"namespaces":["mathlib"],"table_problems":[],"universal":[{"name":"n","type":"ℕ"},{"name":"A","type":"Matrix (Fin n) (Fin n) ℚ"}],"vars":["x0","x1","x2"]}
+-/
+#guard_msgs in
+#kit_claim KitClaim.traceDouble
+
+-- a definition of type `Prop`
+/--
+info: 1 binders: {"atom_types":["ℕ"],"atoms":["n"],"carrier":"ℕ","definitions":[],"derivatives":[],"domain":[],"exists_function":null,"extensions":[],"functions":[],"goal":{"expr":"((x0 + 0)) - (x0)","kind":"rel","lhs":"n + 0","lhs_poly":"(x0 + 0)","poly":"((x0 + 0)) - (x0)","rel":"eq","rhs":"n","rhs_poly":"x0","text":"n + 0 = n"},"hyps":[],"integrals":[],"matrix_indices":[],"namespaces":["mathlib"],"table_problems":[],"universal":[{"name":"n","type":"ℕ"}],"vars":["x0"]}
+-/
+#guard_msgs in
+#kit_claim KitClaim.addZero
+
+/--
+info: KitLevels.certifiedOne: certificate
+KitLevels.plainOne: none
+KitLevels.testedOne: kernel-test
+-/
+#guard_msgs in
+#veriphy_levels KitLevels

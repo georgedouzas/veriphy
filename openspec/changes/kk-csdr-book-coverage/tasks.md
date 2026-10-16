@@ -8,12 +8,12 @@ Every `lake build` and `lake env lean` runs under the build lock (D10), one Lean
 
 ## 2. Test fallback (test-fallback)
 
-- [ ] 2.1 Serialize a proposition's universal binders and body as a problem, reusing the existential-goal serialization (D2). Verify with Sage-free kit tests for a statement over `n : ℕ` and `A : Matrix (Fin n) (Fin n) ℚ`, and for a `def … : Prop`.
-- [ ] 2.2 Add the `sage_test` command (file and inline forms): instantiate the body at each instance, run its block, accept it under the axiom check and the independence check (D2). Verify with Lean tests: accepted instances, a circular instance rejected with the target named, a non-closing block rejected.
-- [ ] 2.3 Enforce three accepted instances with one edge case (D3), and emit the replacement: the examples and `veriphy_tested` with level and counts. Verify with tests for too few instances and for a replay with Sage absent.
-- [ ] 2.4 Write the test record `.veriphy/tests/<target>.json`, and add `python -m veriphy.certificates tests` with `--rerun` (D4). Verify with pytest on a recorded run: the listing, a rerun, and a rejected floating-point comparison.
-- [ ] 2.5 Add `#veriphy_levels` (D1). Verify with a Lean test on a module with a certified, a tested and a plain theorem.
-- [ ] 2.6 Add the `test_fallback` recipe document and template with the seeded sampler and edge cases (D3), and update `prompts/certify.md`, `prompts/prove.md` and the skills so that recipe selection runs first and the fallback names its level. Verify with `tests/recipes/test_templates.py` and the template's run in the Lean tests.
+- [x] 2.1 Serialize a proposition's universal binders and body as a problem, reusing the existential-goal serialization (D2). Verify with Sage-free kit tests for a statement over `n : ℕ` and `A : Matrix (Fin n) (Fin n) ℚ`, and for a `def … : Prop`.
+- [x] 2.2 Add the `sage_test` command (file and inline forms): instantiate the body at each instance, run its block, accept it under the axiom check and the independence check (D2). Verify with Lean tests: accepted instances, a circular instance rejected with the target named, a non-closing block rejected.
+- [x] 2.3 Enforce three accepted instances with one edge case (D3), and emit the replacement: the examples and `veriphy_tested` with level and counts. Verify with tests for too few instances and for a replay with Sage absent.
+- [x] 2.4 Write the test record `.veriphy/tests/<target>.json`, and add `python -m veriphy.certificates tests` with `--rerun` (D4). Verify with pytest on a recorded run: the listing, a rerun, and a rejected floating-point comparison.
+- [x] 2.5 Add `#veriphy_levels` (D1). Verify with a Lean test on a module with a certified, a tested and a plain theorem.
+- [x] 2.6 Add the `test_fallback` recipe document and template with the seeded sampler and edge cases (D3), and update `prompts/certify.md`, `prompts/prove.md` and the skills so that recipe selection runs first and the fallback names its level. Verify with `tests/recipes/test_templates.py` and the template's run in the Lean tests.
 
 ## 3. Translation (symbolic-translation)
 

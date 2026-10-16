@@ -169,4 +169,11 @@ def run (problem : Json) (script : String) (cfg : Config := {}) : IO (String × 
     let leaves := (r.getObjValAs? Bool "leaves_goals").toOption.getD false
     return (← field r "lean" (·.getStr?), ← field r "stdout" (·.getStr?), leaves)
 
+/-- Run a test script against a claim's serialized problem; returns its instances (as the daemon encodes them), its
+output, the seed it used and Sage's version. -/
+def test (problem : Json) (script : String) (cfg : Config := {}) : IO (Array Json × String × Nat × String) :=
+  call "test" (Json.mkObj [("problem", problem), ("script", Json.str script)]) (cfg := cfg) fun r => do
+    return (← field r "instances" (·.getArr?), ← field r "stdout" (·.getStr?), ← field r "seed" (·.getNat?),
+      ← field r "sage_version" (·.getStr?))
+
 end Veriphy.Bridge

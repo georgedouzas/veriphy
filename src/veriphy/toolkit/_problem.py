@@ -363,6 +363,7 @@ class Problem:
         typed: The sub-expressions Lean computes at another type (`ℕ`, `ℤ`) than their context, with that type.
         derivatives: The derivatives the translation met, in the order it met them.
         integrals: The interval integrals the translation met, in the order it met them.
+        universal: For a tested claim (`sage_test`), its universal binders: name and Lean type, in order.
         functions: The unknown functions, by Sage name: their Lean name and arity.
         definitions: Explicit definitions of unknown functions from the hypotheses.
         exists_function: The goal's existential over an unknown function, when it is one.
@@ -386,6 +387,7 @@ class Problem:
     typed: list[tuple[Expression, str]] = field(default_factory=list)
     derivatives: list[Derivative] = field(default_factory=list)
     integrals: list[Integral] = field(default_factory=list)
+    universal: list[tuple[str, str]] = field(default_factory=list)
     functions: dict[str, tuple[str, int]] = field(default_factory=dict)
     definitions: list[Definition] = field(default_factory=list)
     exists_function: ExistsFunction | None = None
@@ -431,6 +433,7 @@ class Problem:
             'goal_kind': self.goal_kind,
             'binders': self.binders,
             'body': self.body,
+            'universal': self.universal,
             'atoms': self.atoms,
             'lhs': self.lhs,
             'rhs': self.rhs,
@@ -538,6 +541,16 @@ def _read_integrals(items: object, symbols: dict[str, Expression]) -> list[Integ
     return integrals
 
 
+def _read_universal(items: object) -> list[tuple[str, str]]:
+    """Return a tested claim's universal binders, as name and Lean type."""
+    binders = []
+    for item in items if isinstance(items, list) else []:
+        if not isinstance(item, dict) or not isinstance(item.get('name'), str):
+            raise ParamError(param='problem', reason=f'bad binder {item!r}')
+        binders.append((str(item['name']), str(item.get('type', ''))))
+    return binders
+
+
 def _read_functions(items: object) -> dict[str, tuple[str, int]]:
     """Return the unknown functions by Sage name: Lean name and arity."""
     functions = {}
@@ -643,6 +656,7 @@ def read_problem(problem: object) -> Problem:
         typed=typed,
         derivatives=_read_derivatives(problem.get('derivatives', []), symbols),
         integrals=_read_integrals(problem.get('integrals', []), symbols),
+        universal=_read_universal(problem.get('universal', [])),
         functions=functions,
         definitions=_read_definitions(problem.get('definitions', []), symbols),
         exists_function=_read_exists_function(problem.get('exists_function'), symbols),

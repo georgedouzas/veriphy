@@ -262,6 +262,7 @@ The steps are:
 | `Module.finrank K V = n` for spans, intersections, kernels, product spaces | `dimension` |
 | `¬ ∃ f : V →ₗ[K] W, …`: a map that is not linear or bilinear | `nonlinearity` |
 | the signature of an explicit symmetric matrix (`Veriphy.Linear.HasSignature`) | `signature` |
+| no certificate is feasible: test the claim at instances (`sage_test`) | `test_fallback` |
 | fusion or braided fusion data (pentagons, hexagons, gauges), naturality of an intertwiner | `fusion_category` |
 | graded brackets, super-Jacobi (`sl(m\|n)`, `osp`, `D(2,1;α)`, `G(3)`, `F(4)`) | `lie_superalgebra` |
 | (Physlib) an explicit matrix `∈ lorentzAlgebra` | `physlib/lorentz_algebra` |

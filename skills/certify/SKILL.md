@@ -19,3 +19,5 @@ Hard rules:
 - Commit only the emitted `Try this:` block; never a `sage_run` call.
 - If the toolkit cannot express the certificate, report
   `blocked-missing-building-block` naming the missing primitive or emitter.
+- When no certificate is feasible, test the claim with `sage_test` (the `test_fallback` recipe) and name
+  its level (`kernel-test` or `oracle-test`); a test is never a certificate.
