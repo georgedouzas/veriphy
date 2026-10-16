@@ -23,6 +23,7 @@ from sage.all import (
     factorial,
     floor,
     function,
+    integrate,
     log,
     matrix,
     max_symbolic,
@@ -188,6 +189,7 @@ def parse_symbolic(
         'matrix': matrix,
         'block_matrix': block_matrix,
         'max': max_symbolic,
+        'definite_integral': integrate,
         'min': min_symbolic,
     }
     names.update(functions or {})
@@ -277,6 +279,29 @@ class Derivative:
 
 
 @dataclass(frozen=True)
+class Integral:
+    """Hold an interval integral the translation met, `∫ x in a..b, f x`.
+
+    Args:
+        var: The variable of integration, a Sage symbol.
+        body: The integrand, in `var` and the problem's variables.
+        lower: The lower bound.
+        upper: The upper bound.
+        function: The Lean text of the integrand, as a function.
+        lower_text: The Lean text of the lower bound.
+        upper_text: The Lean text of the upper bound.
+    """
+
+    var: Expression
+    body: Expression | None
+    lower: Expression | None
+    upper: Expression | None
+    function: str
+    lower_text: str
+    upper_text: str
+
+
+@dataclass(frozen=True)
 class Condition:
     """Hold a domain condition a symbolic expression of the problem needs.
 
@@ -337,6 +362,7 @@ class Problem:
         tables: The translation tables in force, core first.
         typed: The sub-expressions Lean computes at another type (`ℕ`, `ℤ`) than their context, with that type.
         derivatives: The derivatives the translation met, in the order it met them.
+        integrals: The interval integrals the translation met, in the order it met them.
         functions: The unknown functions, by Sage name: their Lean name and arity.
         definitions: Explicit definitions of unknown functions from the hypotheses.
         exists_function: The goal's existential over an unknown function, when it is one.
@@ -359,6 +385,7 @@ class Problem:
     tables: tuple[Table, ...] = field(default_factory=lambda: (load_core_table(),))
     typed: list[tuple[Expression, str]] = field(default_factory=list)
     derivatives: list[Derivative] = field(default_factory=list)
+    integrals: list[Integral] = field(default_factory=list)
     functions: dict[str, tuple[str, int]] = field(default_factory=dict)
     definitions: list[Definition] = field(default_factory=list)
     exists_function: ExistsFunction | None = None
@@ -490,6 +517,27 @@ def _read_derivatives(items: object, symbols: dict[str, Expression]) -> list[Der
     return derivatives
 
 
+def _read_integrals(items: object, symbols: dict[str, Expression]) -> list[Integral]:
+    """Return the serialized interval integrals, each integrand parsed with its own variable."""
+    integrals = []
+    for item in items if isinstance(items, list) else []:
+        if not isinstance(item, dict) or not isinstance(item.get('var'), str):
+            raise ParamError(param='problem', reason=f'bad integral {item!r}')
+        var = SR.var(str(item['var']))
+        integrals.append(
+            Integral(
+                var,
+                parse_symbolic(item.get('body'), {**symbols, str(var): var}),
+                parse_symbolic(item.get('lower'), symbols),
+                parse_symbolic(item.get('upper'), symbols),
+                str(item.get('function', '')),
+                str(item.get('lower_text', '')),
+                str(item.get('upper_text', '')),
+            ),
+        )
+    return integrals
+
+
 def _read_functions(items: object) -> dict[str, tuple[str, int]]:
     """Return the unknown functions by Sage name: Lean name and arity."""
     functions = {}
@@ -594,6 +642,7 @@ def read_problem(problem: object) -> Problem:
         tables=_read_tables(problem),
         typed=typed,
         derivatives=_read_derivatives(problem.get('derivatives', []), symbols),
+        integrals=_read_integrals(problem.get('integrals', []), symbols),
         functions=functions,
         definitions=_read_definitions(problem.get('definitions', []), symbols),
         exists_function=_read_exists_function(problem.get('exists_function'), symbols),

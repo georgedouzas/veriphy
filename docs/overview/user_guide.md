@@ -256,6 +256,7 @@ The steps are:
 | closed forms of linear recurrences | `recurrence` |
 | rational bounds on `exp`, `log`, `sin`, `cos`, `π` at explicit points | `certified_bound` |
 | a real root or eigenvalue in an explicit interval | `root_isolation` |
+| `∫ x in a..b, f x = v` with an elementary antiderivative | `definite_integral` |
 | fusion or braided fusion data (pentagons, hexagons, gauges), naturality of an intertwiner | `fusion_category` |
 | graded brackets, super-Jacobi (`sl(m\|n)`, `osp`, `D(2,1;α)`, `G(3)`, `F(4)`) | `lie_superalgebra` |
 | (Physlib) an explicit matrix `∈ lorentzAlgebra` | `physlib/lorentz_algebra` |

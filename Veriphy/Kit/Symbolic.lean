@@ -128,6 +128,9 @@ structure SymState where
   derivatives : Array (String × SymExpr × SymExpr × String × String) := #[]
   /-- The block sizes of each matrix indexed by sums of `Fin` types (rows, columns), with its Lean type. -/
   matrixIndices : Array (List Nat × List Nat × String) := #[]
+  /-- Each interval integral translated: variable, body, lower and upper bounds (Sage), and the Lean text of the
+  integrand and the bounds. -/
+  integrals : Array (String × SymExpr × SymExpr × SymExpr × String × String × String) := #[]
 
 abbrev SymM := StateRefT SymState MetaM
 
@@ -529,6 +532,9 @@ partial def exprToSym (e : Expr) : SymM SymExpr := do
   | `Matrix.vecMulVec, args =>
     return .method "__mul__" (← exprToSym args[args.size - 2]!) [.method "transpose" (← exprToSym (lastArg e)) []]
   | `Matrix.diagonal, _ => return .call "diagonal_matrix" [.method "list" (← exprToSym (lastArg e)) []]
+  | `intervalIntegral, args =>
+    if args.size < 4 then return ← symAtom e
+    integralOn e args[args.size - 4]! args[args.size - 3]! args[args.size - 2]!
   | `Matrix.det, _ => return .method "det" (← exprToSym (lastArg e)) []
   | `Matrix.trace, _ => return .method "trace" (← exprToSym (lastArg e)) []
   | `Matrix.transpose, _ => return .method "transpose" (← exprToSym (lastArg e)) []
@@ -577,6 +583,34 @@ partial def derivAt (e fn point : Expr) : SymM SymExpr := do
     let pointText := toString (← ppExpr point)
     modify fun st => { st with derivatives := st.derivatives.push (kName, body', point', fnText, pointText) }
     return .deriv kName body' point'
+
+/-- `∫ x in a..b, body`: Sage's definite integral of the body. The body must translate without an opaque atom
+depending on the variable; otherwise the whole term is an atom. The integral is recorded, with the Lean text of the
+integrand and of the bounds, so a script can prove it from an antiderivative. -/
+partial def integralOn (e fn lower upper : Expr) : SymM SymExpr := do
+  let saved ← get
+  let kName := s!"i{saved.bound.size}_"
+  let ty ← inferType lower
+  let result? ← withLocalDeclD `t ty fun x => do
+    let body := (mkApp fn x).headBeta
+    let before ← get
+    modify fun st => { st with bound := st.bound.push (x, kName) }
+    let body' ← exprToSym body
+    let st ← get
+    set { st with bound := st.bound.pop }
+    if (st.atoms.extract before.atoms.size st.atoms.size).any (·.containsFVar x.fvarId!) then return none
+    -- the integrand's own domain conditions hold on the interval, which the script's proof establishes
+    let kept := (st.conditions.extract before.conditions.size st.conditions.size).filter fun c =>
+      !c.term.containsFVar x.fvarId! && !(c.bound.any (·.containsFVar x.fvarId!))
+    modify fun st' => { st' with conditions := before.conditions ++ kept }
+    return some body'
+  match result? with
+  | none => set saved; symAtom e
+  | some body' =>
+    let (a', b') := (← exprToSym lower, ← exprToSym upper)
+    let texts := (toString (← ppExpr fn), toString (← ppExpr lower), toString (← ppExpr upper))
+    modify fun st => { st with integrals := st.integrals.push (kName, body', a', b', texts.1, texts.2.1, texts.2.2) }
+    return .call "definite_integral" [body', .bvar kName, a', b']
 
 /-- A partial derivative along coordinate `μ` of `f` at `point`, for a library operator applied as
 `(μ, f, point)`: each coordinate `y j` of the fresh point becomes a Sage variable, Sage differentiates in the
