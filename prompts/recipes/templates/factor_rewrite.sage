@@ -8,4 +8,4 @@ parts = [f'({polynomial(f, problem)})' + (f' ^ {m}' if m > 1 else '') for f, m i
 factored = ' * '.join(parts) or str(rational(unit))
 if parts and unit != 1:
     factored = f'{rational(unit)} * ({factored})' if unit != -1 else f'-({factored})'
-proof = tactic(f'refine Eq.trans (show {lhs.text} = {factored} by ring1) ?_')
+proof = leaving_goals(tactic(f'refine Eq.trans (show {lhs.text} = {factored} by ring1) ?_'))

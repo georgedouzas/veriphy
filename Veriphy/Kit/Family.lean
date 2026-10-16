@@ -95,7 +95,7 @@ def keepRunAlternatives (s₀ : Tactic.SavedState) (proof : Syntax) : TacticM Sy
 /-- Run `proof` on the main goal, replay it if `veriphy.checkReplay` is set, and emit what ran as the single
 `Sage-free replacement:` for the whole current tactic (`getRef`, so applying it also replaces the
 tactic's arguments). On failure the state is restored and nothing is emitted. -/
-def closeAndEmit (proof : TSyntax `tactic) : TacticM Unit := do
+def closeAndEmit (proof : TSyntax `tactic) (leavesGoals : Bool := false) : TacticM Unit := do
   let s₀ ← saveState
   let goal ← getMainGoal
   let errors := fun (log : MessageLog) =>
@@ -111,9 +111,10 @@ def closeAndEmit (proof : TSyntax `tactic) : TacticM Unit := do
       Term.withoutErrToSorry <| withoutRecover <| do
         evalTactic proof
         Term.synthesizeSyntheticMVarsNoPostponing
-      -- a block that makes progress but leaves goals open is not a proof: refuse it before anything is reported
+      -- a block that leaves goals open is not a proof, unless it declared them for the next tactic (a rewrite
+      -- step): refuse it before anything is reported
       let unsolved := (← getUnsolvedGoals).filter (!others.contains ·)
-      unless unsolved.isEmpty do
+      unless unsolved.isEmpty || leavesGoals do
         throwError "unsolved goals\n{goalsToMessageData unsolved}"
       let logged := (errors (← Core.getMessageLog)).drop before
       unless logged.isEmpty do

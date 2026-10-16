@@ -86,8 +86,8 @@ def _toolkit_names() -> dict[str, object]:
     return {name: getattr(veriphy.toolkit, name) for name in veriphy.toolkit.__all__}
 
 
-def _read_proof(namespace: dict[str, object], out: str) -> str:
-    """Return the Lean tactic block a script assigned to `proof`."""
+def _read_proof(namespace: dict[str, object], out: str) -> tuple[str, bool]:
+    """Return the Lean tactic block a script assigned to `proof`, and whether it leaves goals open on purpose."""
     if namespace.get('proof') is None:
         message = 'the script did not assign `proof` (a Lean tactic block, as text or a toolkit `Lean` value)'
         raise ScriptError(message, out)
@@ -96,9 +96,9 @@ def _read_proof(namespace: dict[str, object], out: str) -> str:
         if proof.kind != 'tactic':
             message = f'`proof` must be a Lean tactic, got a {proof.kind}: {proof.text}'
             raise ScriptError(message, out)
-        return proof.text
+        return proof.text, proof.leaves_goals
     if isinstance(proof, str):
-        return proof
+        return proof, False
     message = f'`proof` must be Lean text or a toolkit `Lean` value, got {type(proof).__name__}'
     raise ScriptError(message, out)
 
@@ -114,4 +114,5 @@ def _run_proof_script(problem: object, script: str, timeout_s: int) -> dict[str,
     """Return the Lean tactic block a proof script builds, with the problem and the toolkit pre-bound."""
     namespace = {**_toolkit_names(), **read_problem(problem).to_namespace(), 'proof': None}
     out = _run_sage(script, namespace, timeout_s)
-    return {'lean': _read_proof(namespace, out), 'stdout': out}
+    lean, leaves_goals = _read_proof(namespace, out)
+    return {'lean': lean, 'stdout': out, 'leaves_goals': leaves_goals}
