@@ -30,12 +30,12 @@ Every `lake build` and `lake env lean` runs under the build lock (D10), one Lean
 
 ## 5. Linear-algebra certificates (linear-algebra-certificates)
 
-- [ ] 5.1 `Veriphy/Kit/Linear.lean` packaging lemmas and the toolkit module `_linear.py` (D5). Verify with doctests, pytest, and an axiom audit of the lemmas.
-- [ ] 5.2 `independence` recipe. Verify with Lean tests for an independent family, a dependent one and a span equal to a kernel.
-- [ ] 5.3 `matrix_rank` recipe. Verify with Lean tests for rank one, full rank and a diagonal matrix.
-- [ ] 5.4 `dimension` recipe. Verify with Lean tests for a span, the kernel of the trace, an intersection and a tensor product.
-- [ ] 5.5 `nonlinearity` recipe. Verify with Lean tests for `x ^ 2` and a shifted bilinear form.
-- [ ] 5.6 `signature` recipe. Verify with Lean tests for a positive definite form and the Minkowski metric.
+- [x] 5.1 `Veriphy/Kit/Linear.lean` packaging lemmas and the toolkit module `_linear.py` (D5). Verify with doctests, pytest, and an axiom audit of the lemmas.
+- [x] 5.2 `independence` recipe. Verify with Lean tests for an independent family, a dependent one and a span equal to a kernel.
+- [x] 5.3 `matrix_rank` recipe. Verify with Lean tests for rank one, full rank and a diagonal matrix.
+- [x] 5.4 `dimension` recipe. Verify with Lean tests for a span, the kernel of the trace, an intersection and a tensor product.
+- [x] 5.5 `nonlinearity` recipe. Verify with Lean tests for `x ^ 2` and a shifted bilinear form.
+- [x] 5.6 `signature` recipe. Verify with Lean tests for a positive definite form and the Minkowski metric.
 
 ## 6. Release gate
 

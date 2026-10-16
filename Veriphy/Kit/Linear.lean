@@ -9,7 +9,6 @@ import Mathlib.LinearAlgebra.Matrix.Rank
 import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 import Mathlib.LinearAlgebra.Dimension.Constructions
 import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
-import Mathlib.LinearAlgebra.TensorProduct.Finite
 
 namespace Veriphy.Linear
 
@@ -55,5 +54,24 @@ theorem finrank_ker_add_one {V : Type*} [AddCommGroup V] [Module K V] [FiniteDim
   have := LinearMap.finrank_range_add_finrank_ker f
   rw [hsurj, finrank_top, finrank_self] at this
   omega
+
+/-- The dimension of an intersection from two bounds: a subspace `X ≤ U ⊓ W` of dimension `d`, and a subspace
+`Y ≤ U ⊔ W` of dimension `s` with `finrank U + finrank W = s + d`. -/
+theorem finrank_inf_of_bounds {V : Type*} [AddCommGroup V] [Module K V] [FiniteDimensional K V]
+    (U W X Y : Submodule K V) {a b s d : ℕ} (hU : finrank K U = a) (hW : finrank K W = b)
+    (hX : X ≤ U ⊓ W) (hXd : finrank K X = d) (hY : Y ≤ U ⊔ W) (hYs : finrank K Y = s) (h : a + b = s + d) :
+    finrank K ↥(U ⊓ W) = d := by
+  have hsum := Submodule.finrank_sup_add_finrank_inf_eq U W
+  have hlo := Submodule.finrank_mono hX
+  have hsup := Submodule.finrank_mono hY
+  omega
+
+/-- `S` has signature `(p, q, z)`: an invertible `P` makes `Pᵀ * S * P` the diagonal matrix of `d`, with `p`
+positive, `q` negative and `z` zero entries. Sylvester's law of inertia makes the counts independent of `P`; this
+statement does not assert it. -/
+def HasSignature {R : Type*} [Field R] [LinearOrder R] {n : ℕ} (S : Matrix (Fin n) (Fin n) R) (p q z : ℕ) : Prop :=
+  ∃ (P : Matrix (Fin n) (Fin n) R) (d : Fin n → R), P.det ≠ 0 ∧ P.transpose * S * P = Matrix.diagonal d ∧
+    (Finset.univ.filter fun i => 0 < d i).card = p ∧ (Finset.univ.filter fun i => d i < 0).card = q ∧
+    (Finset.univ.filter fun i => d i = 0).card = z
 
 end Veriphy.Linear

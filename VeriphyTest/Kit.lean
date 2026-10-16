@@ -749,3 +749,41 @@ info: {"atom_types":["other","other"],"atoms":["Polynomial.derivative (Polynomia
 #guard_msgs (info, error, drop warning) in
 open Matrix in
 example : Polynomial.derivative (Polynomial.X ^ 3 : Polynomial ℚ) = 3 * Polynomial.X ^ 2 := by kit_lenient
+
+/-! ## The linear-algebra packaging lemmas use the standard axioms only -/
+
+/--
+info: 'Veriphy.Linear.linearIndependent_of_minor' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs in
+#print axioms Veriphy.Linear.linearIndependent_of_minor
+
+/--
+info: 'Veriphy.Linear.rank_le_of_factor' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs in
+#print axioms Veriphy.Linear.rank_le_of_factor
+
+/--
+info: 'Veriphy.Linear.le_rank_of_minor' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs in
+#print axioms Veriphy.Linear.le_rank_of_minor
+
+/--
+info: 'Veriphy.Linear.finrank_span_of_minor' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs in
+#print axioms Veriphy.Linear.finrank_span_of_minor
+
+/--
+info: 'Veriphy.Linear.finrank_ker_add_one' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs in
+#print axioms Veriphy.Linear.finrank_ker_add_one
+
+/--
+info: 'Veriphy.Linear.finrank_inf_of_bounds' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs in
+#print axioms Veriphy.Linear.finrank_inf_of_bounds
