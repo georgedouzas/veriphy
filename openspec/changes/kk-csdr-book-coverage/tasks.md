@@ -23,8 +23,8 @@ Every `lake build` and `lake env lean` runs under the build lock (D10), one Lean
 
 ## 4. matrix_from_goal and tables (procedures)
 
-- [ ] 4.1 `4 × 4` determinants, transposes, symbolic entries and traces in the template (D7). Verify with one Lean test per shape.
-- [ ] 4.2 The `relations` option (D7). Verify with the boost and square-root eigenvector tests, and a rotation `R(θ)ᵀ R(θ) = 1`.
+- [x] 4.1 `4 × 4` determinants, transposes, symbolic entries and traces in the template (D7). Verify with one Lean test per shape.
+- [x] 4.2 The `relations` option (D7). Verify with the boost and square-root eigenvector tests, and a rotation `R(θ)ᵀ R(θ) = 1`.
 - [ ] 4.3 Trigonometric entries in the core table, mirrored in `core_table.json`. Verify with the table-agreement test and `transcendental_rewrite` tests for power reduction, triple angle and the Pythagorean identity.
 - [ ] 4.4 The `definite_integral` recipe (D8). Verify with Lean tests for `cos²` over `[0, 2π]`, `sin 2φ` over `[0, 2π]` and a polynomial over `[0, 1]`.
 

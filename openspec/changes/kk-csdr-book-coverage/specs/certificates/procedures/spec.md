@@ -12,7 +12,8 @@ identities with symbolic entries, and traces of products. It does so by Laplace 
 - **THEN** the template closes it
 
 #### Scenario: Trace of a product
-- **WHEN** the goal is `Matrix.trace (F * Fᵀ) = 2 * (B ^ 2 - E ^ 2)` for a `4 × 4` field-strength matrix `F`
+- **WHEN** the goal is `Matrix.trace (Fᵀ * η * F * η) = 2 * (B ^ 2 - E ^ 2)` for a `4 × 4` field-strength matrix `F` and
+  the Minkowski metric `η` (the invariant `F_μν F^μν`; `Matrix.trace (F * Fᵀ)` is the sum of squares `2 * (B ^ 2 + E ^ 2)`)
 - **THEN** the template closes it
 
 ### Requirement: Identities modulo side relations

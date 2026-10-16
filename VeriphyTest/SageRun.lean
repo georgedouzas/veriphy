@@ -941,3 +941,55 @@ example : Polynomial.derivative (X ^ 3 + 2 * X : ℚ[X]) = 3 * X ^ 2 + 2 := by
   sage_run "
 assert goal.expr.expand() == 0, goal.expr
 proof = tactic('simp [Polynomial.derivative_X_pow]; norm_num [map_ofNat]')"
+
+/-! ## `matrix_from_goal`: larger determinants, transposes, symbolic entries, traces, side relations -/
+
+-- a 4 × 4 determinant, by Laplace expansion
+example : Matrix.det !![(1 : ℚ), 0, 0, 0; 0, -1, 0, 0; 0, 0, -1, 0; 0, 0, 0, -1] = -1 := by
+  sage_run file "prompts/recipes/templates/matrix_from_goal.sage"
+example : Matrix.det !![(1 : ℚ), 2, 0, 1; 0, 1, 3, 0; 2, 0, 1, 1; 0, 1, 0, 2] = 23 := by
+  sage_run file "prompts/recipes/templates/matrix_from_goal.sage"
+
+-- a product with a transpose, symbolic entries
+open Matrix in
+example (a b : ℝ) : !![a, b; 0, 1] * (!![a, b; 0, 1])ᵀ = !![a ^ 2 + b ^ 2, b; b, 1] := by
+  sage_run file "prompts/recipes/templates/matrix_from_goal.sage"
+
+-- the field-strength invariant F_μν F^μν = trace (Fᵀ η F η)
+open Matrix in
+example (E B : ℝ) : Matrix.trace ((!![0, -E, 0, 0; E, 0, -B, 0; 0, B, 0, 0; 0, 0, 0, 0] : Matrix (Fin 4) (Fin 4) ℝ)ᵀ *
+    !![(1 : ℝ), 0, 0, 0; 0, -1, 0, 0; 0, 0, -1, 0; 0, 0, 0, -1] * !![0, -E, 0, 0; E, 0, -B, 0; 0, B, 0, 0; 0, 0, 0, 0] *
+    !![(1 : ℝ), 0, 0, 0; 0, -1, 0, 0; 0, 0, -1, 0; 0, 0, 0, -1]) = 2 * (B ^ 2 - E ^ 2) := by
+  sage_run file "prompts/recipes/templates/matrix_from_goal.sage"
+
+-- a Lorentz boost preserves the metric, modulo cosh² - sinh² = 1
+open Matrix in
+example (u : ℝ) : (!![Real.cosh u, Real.sinh u; Real.sinh u, Real.cosh u])ᵀ * !![(1 : ℝ), 0; 0, -1] *
+    !![Real.cosh u, Real.sinh u; Real.sinh u, Real.cosh u] = !![1, 0; 0, -1] := by
+  sage_run file "boost_metric.sage"
+
+-- a rotation is orthogonal, modulo cos² + sin² = 1
+open Matrix in
+example (θ : ℝ) : (!![Real.cos θ, -Real.sin θ; Real.sin θ, Real.cos θ])ᵀ *
+    !![Real.cos θ, -Real.sin θ; Real.sin θ, Real.cos θ] = 1 := by
+  sage_run "proof = matrix_from_goal_proof(goal, problem, relations=['Real.cos_sq_add_sin_sq'])"
+
+-- an eigenvector with a square root, modulo (√2)² = 2 (the condition 0 ≤ 2 discharged)
+example : !![(2 : ℝ), 1, 0; 1, 2, 1; 0, 1, 2] * !![1; Real.sqrt 2; 1] = (2 + Real.sqrt 2) • !![1; Real.sqrt 2; 1] := by
+  sage_run "proof = matrix_from_goal_proof(goal, problem, relations=['Real.sq_sqrt'])"
+
+-- the same as a vector identity
+open Matrix in
+example : !![(2 : ℝ), 1, 0; 1, 2, 1; 0, 1, 2] *ᵥ ![1, Real.sqrt 2, 1] = (2 + Real.sqrt 2) • ![1, Real.sqrt 2, 1] := by
+  sage_run "proof = matrix_from_goal_proof(goal, problem, relations=['Real.sq_sqrt'])"
+
+-- an identity that fails modulo the relations is refused
+/--
+error: sage daemon error: run: CertificateError: the identity is false: lhs - rhs = [       2*sinh(x2)^2 2*cosh(x2)*sinh(x2)]
+[2*cosh(x2)*sinh(x2)        2*sinh(x2)^2]
+-/
+#guard_msgs in
+open Matrix in
+example (u : ℝ) : (!![Real.cosh u, Real.sinh u; Real.sinh u, Real.cosh u])ᵀ *
+    !![Real.cosh u, Real.sinh u; Real.sinh u, Real.cosh u] = 1 := by
+  sage_run "proof = matrix_from_goal_proof(goal, problem, relations=['Real.cosh_sq_sub_sinh_sq'])"

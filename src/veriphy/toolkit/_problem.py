@@ -1,6 +1,7 @@
 """Bind a serialized Lean problem to Sage objects."""
 
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 
 from sage.all import (
@@ -122,6 +123,7 @@ def parse_symbolic(
     text: object,
     symbols: dict[str, Expression],
     typed: list[tuple[Expression, str]] | None = None,
+    functions: Mapping[str, object] | None = None,
 ) -> Expression | Matrix | None:
     """Parse a symbolic expression serialized by Lean's symbolic translation, or return `None` when it does not parse.
 
@@ -132,6 +134,7 @@ def parse_symbolic(
         text: The expression in Sage syntax, over the variables in `symbols`.
         symbols: The symbolic variables by name.
         typed: Where to record the marked sub-expressions with their Lean type.
+        functions: Replacements for the named functions (opaque symbolic functions, to keep `sqrt(2)^2` unsimplified).
 
     Returns:
         The expression in Sage's symbolic ring (a matrix over it for a matrix-valued expression), or `None`.
@@ -187,6 +190,7 @@ def parse_symbolic(
         'max': max_symbolic,
         'min': min_symbolic,
     }
+    names.update(functions or {})
     names.update({k: SR.var(k) for k in BOUND.findall(text)})
     names.update(symbols)
     try:
@@ -301,6 +305,7 @@ class Hyp:
         rel: The relation tag, one of `eq`, `le`, `lt`, `ne`, or `None` without a polynomial form.
         text: The Lean text of the proposition.
         expr: The symbolic form `e` of `e rel 0` (or of the proposition's sides' difference), or `None`.
+        source: The symbolic form as serialized, in Sage syntax, to parse again with other functions.
     """
 
     name: str | None
@@ -308,6 +313,7 @@ class Hyp:
     rel: str | None
     text: str = ''
     expr: Expression | Matrix | None = None
+    source: str | None = None
 
 
 @dataclass
@@ -423,11 +429,13 @@ def _read_constraint(
     rel = item.get('rel')
     if rel is not None and rel not in RELATIONS:
         raise ParamError(param='problem', reason=f'{where}: bad relation {rel!r}')
+    source = item.get('expr') if isinstance(item.get('expr'), str) else None
     if item.get('poly') is None:
-        return Hyp(item.get('name'), None, str(rel) if rel and expr is not None else None, text, expr)
+        return Hyp(item.get('name'), None, str(rel) if rel and expr is not None else None, text, expr, source)
     if rel is None:
         raise ParamError(param='problem', reason=f'{where}: bad relation {rel!r}')
-    return Hyp(item.get('name'), parse_polynomial(ring, item.get('poly'), param='problem'), str(rel), text, expr)
+    poly = parse_polynomial(ring, item.get('poly'), param='problem')
+    return Hyp(item.get('name'), poly, str(rel), text, expr, source)
 
 
 def _read_constraints(
