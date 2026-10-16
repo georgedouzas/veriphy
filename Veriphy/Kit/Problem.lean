@@ -93,6 +93,9 @@ structure Problem where
   extensions : List Table := []
   /-- The derivatives the translation met: variable, body and point in Sage syntax, function and point in Lean. -/
   derivatives : Array (String × String × String × String × String) := #[]
+  /-- The interval integrals the translation met: variable, body and bounds in Sage syntax, integrand and bounds in
+  Lean. -/
+  integrals : Array (String × String × String × String × String × String × String) := #[]
   /-- The unknown functions met: Sage name, Lean name, arity. -/
   functions : Array (String × String × Nat) := #[]
   /-- Explicit definitions of unknown functions from hypotheses `x = fun t => body`: Sage name, variable, body,
@@ -208,6 +211,7 @@ def Problem.enrich (p : Problem) : MetaM Problem := do
     { t with functions := t.functions.filter (used.contains ·.lean),
              constants := t.constants.filter (used.contains ·.lean) }
   let derivatives := st.derivatives.map fun (k, b, pt, f, at_) => (k, b.toSage, pt.toSage, f, at_)
+  let integrals := st.integrals.map fun (k, b, lo, hi, f, l, u) => (k, b.toSage, lo.toSage, hi.toSage, f, l, u)
   -- hypotheses `x = fun t => body` define unknown functions explicitly
   let mut definitions := #[]
   let mut st := st
@@ -258,7 +262,7 @@ def Problem.enrich (p : Problem) : MetaM Problem := do
     let arity := (← forallTelescopeReducing (← inferType f) fun xs _ => pure xs.size)
     return (sageName, toString (← f.fvarId!.getUserName), arity)
   let p : Problem := { p with namespaces := tables.map (·.«namespace»), tableProblems := tableProblems }
-  let p : Problem := { p with extensions := extensions, derivatives := derivatives }
+  let p : Problem := { p with extensions := extensions, derivatives := derivatives, integrals := integrals }
   let functions := match existsArity with
     | some fn => functions.push fn
     | none => functions
@@ -362,6 +366,9 @@ def Problem.toJson (p : Problem) : MetaM Json := do
     , ("derivatives", Json.arr (p.derivatives.map fun (k, b, pt, f, at_) =>
         Json.mkObj [("var", Json.str k), ("body", Json.str b), ("point", Json.str pt), ("function", Json.str f),
           ("at", Json.str at_)]))
+    , ("integrals", Json.arr (p.integrals.map fun (k, b, lo, hi, f, l, u) =>
+        Json.mkObj [("var", Json.str k), ("body", Json.str b), ("lower", Json.str lo), ("upper", Json.str hi),
+          ("function", Json.str f), ("lower_text", Json.str l), ("upper_text", Json.str u)]))
     , ("functions", Json.arr (p.functions.map fun (s, l, a) =>
         Json.mkObj [("sage", Json.str s), ("lean", Json.str l), ("arity", Json.num a)]))
     , ("definitions", Json.arr (p.definitions.map fun (s, v, b, h, t) =>

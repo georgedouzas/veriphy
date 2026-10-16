@@ -72,6 +72,7 @@ from veriphy.toolkit._geometry import (
     metric_term,
     primitive,
 )
+from veriphy.toolkit._integral import definite_integral_proof
 from veriphy.toolkit._lean import Lean, parenthesize, polynomial, rational, tactic, term
 from veriphy.toolkit._lie import (
     adjoint_matrices,
@@ -136,6 +137,7 @@ from veriphy.toolkit._problem import (
     Derivative,
     ExistsFunction,
     Hyp,
+    Integral,
     MatrixIndex,
     Problem,
     Side,
@@ -213,6 +215,8 @@ from veriphy.toolkit._symbolic_emit import (
 from veriphy.toolkit._table import SHIPPED_PACKS, Table, load_core_table, load_pack, parse_table
 
 __all__ = [
+    'SHIPPED_PACKS',
+    'SIDE_RELATIONS',
     'Condition',
     'Coordinates',
     'Definition',
@@ -221,13 +225,12 @@ __all__ = [
     'FieldContext',
     'Fusion',
     'Hyp',
+    'Integral',
     'Lean',
     'MatrixIndex',
     'Operator',
     'Problem',
     'RewriteCandidate',
-    'SHIPPED_PACKS',
-    'SIDE_RELATIONS',
     'Side',
     'Table',
     'adjoint_matrices',
@@ -263,6 +266,7 @@ __all__ = [
     'decide',
     'decomposition',
     'defining_representation',
+    'definite_integral_proof',
     'derivative_chain',
     'derivative_order',
     'det_certificate',

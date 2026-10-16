@@ -525,7 +525,7 @@ def steps(*blocks: Lean) -> Lean:
 
 
 def first_of(*alternatives: Lean) -> Lean:
-    """Return a tactic trying each alternative in order until one closes the goal.
+    r"""Return a tactic trying each alternative in order until one closes the goal.
 
     Veriphy prints the alternative that closed it as the replacement.
 
@@ -539,7 +539,7 @@ def first_of(*alternatives: Lean) -> Lean:
         CertificateError: If no alternative is given.
 
     Examples:
-        >>> print(first_of(tactic('ring1'), tactic('rw [h]\\nring')))
+        >>> print(first_of(tactic('ring1'), tactic('rw [h]\nring')))
         first
         | ring1
         | rw [h]
@@ -550,4 +550,3 @@ def first_of(*alternatives: Lean) -> Lean:
         raise CertificateError(message)
     blocks = [_expect(a, 'tactic', 'every alternative of first_of').text for a in alternatives]
     return tactic('first\n' + '\n'.join('| ' + b.replace('\n', '\n  ') for b in blocks))
-

@@ -37,6 +37,7 @@ import Mathlib.GroupTheory.Perm.Cycle.Concrete
 import Mathlib.GroupTheory.Perm.Fin
 import Mathlib.LinearAlgebra.Matrix.Permutation
 import Mathlib.Algebra.Polynomial.Derivative
+import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 
 set_option veriphy.checkReplay true
 
@@ -1011,3 +1012,22 @@ example (x : ℝ) : Real.sin (2 * x) = 2 * Real.sin x * Real.cos x := by
 -- the Pythagorean identity
 example (x : ℝ) : Real.cos x ^ 2 + Real.sin x ^ 2 = 1 := by
   sage_run file "prompts/recipes/templates/transcendental_rewrite.sage"
+
+/-! ## Definite integrals -/
+
+-- the mean of the squared cosine over a period
+example : ∫ φ in (0 : ℝ)..(2 * Real.pi), Real.cos φ ^ 2 = Real.pi := by
+  sage_run file "prompts/recipes/templates/definite_integral.sage"
+-- a full period of sin 2φ
+example : ∫ φ in (0 : ℝ)..(2 * Real.pi), Real.sin (2 * φ) = 0 := by
+  sage_run file "prompts/recipes/templates/definite_integral.sage"
+-- a polynomial over [0, 1]
+example : ∫ x in (0 : ℝ)..1, (x ^ 2 + 2 * x) = 4 / 3 := by
+  sage_run file "prompts/recipes/templates/definite_integral.sage"
+-- a wrong value is refused with the integral Sage computes
+/--
+error: sage daemon error: run: CertificateError: the integral is 4/3, not the goal's value
+-/
+#guard_msgs in
+example : ∫ x in (0 : ℝ)..1, (x ^ 2 + 2 * x) = 1 := by
+  sage_run file "prompts/recipes/templates/definite_integral.sage"
