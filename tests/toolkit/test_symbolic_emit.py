@@ -106,6 +106,15 @@ def test_unknown_symbol_is_rejected() -> None:
         symbolic(SR.var('w'), PROBLEM)
 
 
+def test_polynomial_generator_renders_at_the_ring() -> None:
+    """Render Sage's `X` as the generator of the goal's polynomial ring, and nowhere else."""
+    problem = read_problem({'vars': [], 'atoms': [], 'atom_types': [], 'carrier': 'ℚ[X]', 'goal': {'kind': 'false'}})
+    x = SR.var('X')
+    assert str(symbolic(x**2 + 1, problem)) == '((Polynomial.X : ℚ[X]) ^ 2 + 1 : ℚ[X])'
+    with pytest.raises(CertificateError, match="symbol 'X'"):
+        symbolic(x, PROBLEM)
+
+
 def test_require_domain_names_missing_conditions() -> None:
     """Fail naming every undischarged condition, and pass supplied proofs as facts."""
     with pytest.raises(CertificateError, match=r'x \^ 2 \+ 1 ≠ 0; 0 < x - 1'):

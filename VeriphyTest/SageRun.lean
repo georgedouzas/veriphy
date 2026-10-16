@@ -36,6 +36,7 @@ import VeriphyAssets.FusionData
 import Mathlib.GroupTheory.Perm.Cycle.Concrete
 import Mathlib.GroupTheory.Perm.Fin
 import Mathlib.LinearAlgebra.Matrix.Permutation
+import Mathlib.Algebra.Polynomial.Derivative
 
 set_option veriphy.checkReplay true
 
@@ -76,6 +77,13 @@ example (x y : ℚ) (h1 : x + y ≤ 1) (h2 : x - y = 3) (h3 : 0 ≤ y) : False :
   sage_run file "prompts/recipes/templates/farkas.sage"
 
 /-! ## Failures carry the script output, the Lean text and the error -/
+
+-- a block that makes progress but leaves goals open is refused: the error, and no replacement
+#guard_msgs (drop error) in
+open Matrix in
+example : !![(1 : ℚ), 2, 3; 4, 5, 6; 7, 8, 9] * (!![(1 : ℚ), 0, 0; 0, 1, 0; 0, 0, 2])ᵀ =
+    !![1, 2, 6; 4, 5, 12; 7, 8, 18] := by
+  sage_run "proof = tactic('ext i j\\nfin_cases i <;> fin_cases j <;> simp [Matrix.mul_apply]')"
 
 /--
 error: sage_run: the script's proof does not parse: <sage_run>:1:23: unexpected end of input; expected ')'
@@ -912,3 +920,24 @@ example : True := by
   sage_run "proof = steps(natural_iso_facts(matrix(QQ, [[1, 1], [0, 1]])), tactic('trivial'))"
 
 end NaturalityTest
+
+/-! ## Polynomials -/
+
+-- a polynomial identity in one generator: Sage checks it, `ring` proves it
+open Polynomial in
+example : ((X + 1) ^ 2 : ℚ[X]) = 1 + 2 * X + X ^ 2 := by
+  sage_run "
+assert goal.expr.expand() == 0, goal.expr
+proof = tactic('ring')"
+
+-- the generator renders back as `Polynomial.X` at the goal's ring
+open Polynomial in
+example (h : ((X + 1) ^ 2 : ℚ[X]) - (1 + 2 * X + X ^ 2) = 0) : True := by
+  sage_run file "round_trip.sage"
+
+-- `Polynomial.derivative` is Sage's derivative in `X`
+open Polynomial in
+example : Polynomial.derivative (X ^ 3 + 2 * X : ℚ[X]) = 3 * X ^ 2 + 2 := by
+  sage_run "
+assert goal.expr.expand() == 0, goal.expr
+proof = tactic('simp [Polynomial.derivative_X_pow]; norm_num [map_ofNat]')"

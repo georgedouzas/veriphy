@@ -172,6 +172,19 @@ private def symAtom (e : Expr) : SymM SymExpr := do
 
 private def lastArg (e : Expr) : Expr := e.getAppArgs.back!
 
+/-- The literal a named matrix unfolds to: a constant (possibly applied) of a `Matrix` type whose definition is a
+`!![…]`, `![…]`, `Matrix.diagonal` or `Matrix.fromBlocks` term. -/
+def namedMatrix? (e : Expr) : MetaM (Option Expr) := do
+  let .const name _ := e.getAppFn | return none
+  if name.isImplementationDetail || !(← getEnv).contains name then return none
+  unless (← whnfR (← inferType e)).isAppOf `Matrix do return none
+  let some value ← unfoldDefinition? e | return none
+  let value := value.headBeta
+  let literal := (value.isAppOf ``DFunLike.coe && value.getAppArgs.size ≥ 5
+      && (value.getArg! 4).isAppOf `Matrix.of)
+    || value.isAppOf `Matrix.vecCons || value.isAppOf `Matrix.diagonal || value.isAppOf `Matrix.fromBlocks
+  return if literal then some value else none
+
 /-- The rows of a `Matrix.of ![![…], …]` literal, as nested `vecCons` lists. -/
 private partial def vecList (e : Expr) : Option (List Expr) :=
   match e.getAppFnArgs with
@@ -494,7 +507,25 @@ partial def exprToSym (e : Expr) : SymM SymExpr := do
       let some rows := rows.mapM vecList | return ← symAtom e
       return .matrix (← rows.mapM (·.mapM exprToSym))
     if F.isAppOf `Polynomial.C then return ← exprToSym arg
+    if F.isAppOf `Polynomial.derivative then return .method "derivative" (← exprToSym arg) [.bvar "X"]
     symAtom e
+  -- a vector `![a, b, …]` is a column; a vector of vectors is the matrix of its rows
+  | `Matrix.vecCons, #[_, _, _, _] =>
+    let some xs := vecList e | return ← symAtom e
+    if let some rows := xs.mapM vecList then
+      if rows.all (·.length == (rows.headD []).length) && !rows.isEmpty && !(rows.headD []).isEmpty then
+        return .matrix (← rows.mapM (·.mapM exprToSym))
+    return .matrix (← xs.mapM fun x => return [← exprToSym x])
+  | `Matrix.mulVec, args => return .method "__mul__" (← exprToSym args[args.size - 2]!) [← exprToSym (lastArg e)]
+  | `Matrix.vecMul, args =>
+    return .method "__mul__" (.method "transpose" (← exprToSym (lastArg e)) []) [← exprToSym args[args.size - 2]!]
+  | `dotProduct, args =>
+    -- `v ⬝ᵥ w` is the single entry of `vᵀ w`
+    let v ← exprToSym args[args.size - 2]!
+    return .method "trace" (.method "__mul__" (.method "transpose" v []) [← exprToSym (lastArg e)]) []
+  | `Matrix.vecMulVec, args =>
+    return .method "__mul__" (← exprToSym args[args.size - 2]!) [.method "transpose" (← exprToSym (lastArg e)) []]
+  | `Matrix.diagonal, _ => return .call "diagonal_matrix" [.method "list" (← exprToSym (lastArg e)) []]
   | `Matrix.det, _ => return .method "det" (← exprToSym (lastArg e)) []
   | `Matrix.trace, _ => return .method "trace" (← exprToSym (lastArg e)) []
   | `Matrix.transpose, _ => return .method "transpose" (← exprToSym (lastArg e)) []
@@ -508,7 +539,10 @@ partial def exprToSym (e : Expr) : SymM SymExpr := do
       if let some name ← unknownFunction? f then
         return .fnDiff name k (← exprToSym (← numericView point))
     derivAt e fn point
-  | _, _ => symAtom e
+  | _, _ => do
+    -- a named matrix is read through the literal its definition unfolds to
+    if let some lit ← namedMatrix? e then return ← exprToSym lit
+    symAtom e
 
 
 /-- `deriv (fun t => body) point`, or a library derivative applied as `(f, point)`: Sage's derivative of the body

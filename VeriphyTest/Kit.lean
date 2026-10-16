@@ -18,6 +18,7 @@ import Mathlib.Algebra.Order.Floor.Ring
 import Mathlib.Data.Nat.Choose.Basic
 import Mathlib.Algebra.Lie.Matrix
 import Mathlib.Data.Matrix.Block
+import Mathlib.Algebra.Polynomial.Derivative
 import Veriphy.Kit
 
 open Lean Elab Tactic Meta Veriphy
@@ -675,3 +676,76 @@ info: {"atom_types":["ℝ","ℝ","ℝ"],"atoms":["deriv x t","x t","t"],"carrier
 -/
 #guard_msgs (info, error, drop warning) in
 example (x : ℝ → ℝ) (t : ℝ) : deriv x t = 2 * x t := by kit_lenient
+
+/-! ## Vectors, named matrices and polynomials -/
+
+namespace KitTest
+
+/-- The Minkowski metric, a named `4 × 4` literal. -/
+def eta : Matrix (Fin 4) (Fin 4) ℚ := !![1, 0, 0, 0; 0, -1, 0, 0; 0, 0, -1, 0; 0, 0, 0, -1]
+
+end KitTest
+
+-- matrix times vector, as a product of explicit matrices
+/--
+info: {"atom_types":["other","other"],"atoms":["!![1, 2, 3; 2, 4, 6] *ᵥ ![1, 1, -1]","![0, 0]"],"carrier":"Fin 2 → ℚ","definitions":[],"derivatives":[],"domain":[],"exists_function":null,"extensions":[],"functions":[],"goal":{"expr":"((matrix(SR, [[1, 2, 3], [2, 4, 6]])).__mul__(matrix(SR, [[1], [1], [(-1)]]))) - (matrix(SR, [[0], [0]]))","kind":"rel","lhs":"!![1, 2, 3; 2, 4, 6] *ᵥ ![1, 1, -1]","lhs_poly":"x0","poly":"(x0) - (x1)","rel":"eq","rhs":"![0, 0]","rhs_poly":"x1","text":"!![1, 2, 3; 2, 4, 6] *ᵥ ![1, 1, -1] = ![0, 0]"},"hyps":[],"matrix_indices":[],"namespaces":["mathlib"],"table_problems":[],"vars":["x0","x1"]}
+-/
+#guard_msgs (info, error, drop warning) in
+open Matrix in
+example : !![(1 : ℚ), 2, 3; 2, 4, 6] *ᵥ ![1, 1, -1] = ![0, 0] := by kit_lenient
+
+-- vector times matrix
+/--
+info: {"atom_types":["other","other"],"atoms":["![1, 2] ᵥ* !![1, 2; 3, 4]","![7, 10]"],"carrier":"Fin 2 → ℚ","definitions":[],"derivatives":[],"domain":[],"exists_function":null,"extensions":[],"functions":[],"goal":{"expr":"(((matrix(SR, [[1, 2], [3, 4]])).transpose()).__mul__(matrix(SR, [[1], [2]]))) - (matrix(SR, [[7], [10]]))","kind":"rel","lhs":"![1, 2] ᵥ* !![1, 2; 3, 4]","lhs_poly":"x0","poly":"(x0) - (x1)","rel":"eq","rhs":"![7, 10]","rhs_poly":"x1","text":"![1, 2] ᵥ* !![1, 2; 3, 4] = ![7, 10]"},"hyps":[],"matrix_indices":[],"namespaces":["mathlib"],"table_problems":[],"vars":["x0","x1"]}
+-/
+#guard_msgs (info, error, drop warning) in
+open Matrix in
+example : ![(1 : ℚ), 2] ᵥ* !![1, 2; 3, 4] = ![7, 10] := by kit_lenient
+
+-- dot product, the entry of a 1 by 1 product
+/--
+info: {"atom_types":["ℚ"],"atoms":["![1, 2] ⬝ᵥ ![3, 4]"],"carrier":"ℚ","definitions":[],"derivatives":[],"domain":[],"exists_function":null,"extensions":[],"functions":[],"goal":{"expr":"((((matrix(SR, [[1], [2]])).transpose()).__mul__(matrix(SR, [[3], [4]]))).trace()) - (11)","kind":"rel","lhs":"![1, 2] ⬝ᵥ ![3, 4]","lhs_poly":"x0","poly":"(x0) - (11)","rel":"eq","rhs":"11","rhs_poly":"11","text":"![1, 2] ⬝ᵥ ![3, 4] = 11"},"hyps":[],"matrix_indices":[],"namespaces":["mathlib"],"table_problems":[],"vars":["x0"]}
+-/
+#guard_msgs (info, error, drop warning) in
+open Matrix in
+example : ![(1 : ℚ), 2] ⬝ᵥ ![3, 4] = 11 := by kit_lenient
+
+-- outer product
+/--
+info: {"atom_types":["matrix","matrix"],"atoms":["vecMulVec ![1, 2] ![3, 4]","!![3, 4; 6, 8]"],"carrier":"Matrix (Fin (Nat.succ 0).succ) (Fin (Nat.succ 0).succ) ℚ","definitions":[],"derivatives":[],"domain":[],"exists_function":null,"extensions":[],"functions":[],"goal":{"expr":"((matrix(SR, [[1], [2]])).__mul__((matrix(SR, [[3], [4]])).transpose())) - (matrix(SR, [[3, 4], [6, 8]]))","kind":"rel","lhs":"vecMulVec ![1, 2] ![3, 4]","lhs_poly":"x0","poly":"(x0) - (x1)","rel":"eq","rhs":"!![3, 4; 6, 8]","rhs_poly":"x1","text":"vecMulVec ![1, 2] ![3, 4] = !![3, 4; 6, 8]"},"hyps":[],"matrix_indices":[],"namespaces":["mathlib"],"table_problems":[],"vars":["x0","x1"]}
+-/
+#guard_msgs (info, error, drop warning) in
+open Matrix in
+example : Matrix.vecMulVec ![(1 : ℚ), 2] ![3, 4] = !![3, 4; 6, 8] := by kit_lenient
+
+-- diagonal matrix of a vector
+/--
+info: {"atom_types":["matrix","matrix"],"atoms":["diagonal ![1, 2]","!![1, 0; 0, 2]"],"carrier":"Matrix (Fin (Nat.succ 0).succ) (Fin (Nat.succ 0).succ) ℚ","definitions":[],"derivatives":[],"domain":[],"exists_function":null,"extensions":[],"functions":[],"goal":{"expr":"(diagonal_matrix((matrix(SR, [[1], [2]])).list())) - (matrix(SR, [[1, 0], [0, 2]]))","kind":"rel","lhs":"diagonal ![1, 2]","lhs_poly":"x0","poly":"(x0) - (x1)","rel":"eq","rhs":"!![1, 0; 0, 2]","rhs_poly":"x1","text":"diagonal ![1, 2] = !![1, 0; 0, 2]"},"hyps":[],"matrix_indices":[],"namespaces":["mathlib"],"table_problems":[],"vars":["x0","x1"]}
+-/
+#guard_msgs (info, error, drop warning) in
+open Matrix in
+example : Matrix.diagonal ![(1 : ℚ), 2] = !![1, 0; 0, 2] := by kit_lenient
+
+-- a named matrix, read through its literal
+/--
+info: {"atom_types":["matrix"],"atoms":["KitTest.eta"],"carrier":"Matrix (Fin 4) (Fin 4) ℚ","definitions":[],"derivatives":[],"domain":[],"exists_function":null,"extensions":[],"functions":[],"goal":{"expr":"((matrix(SR, [[1, 0, 0, 0], [0, (-1), 0, 0], [0, 0, (-1), 0], [0, 0, 0, (-1)]])).__mul__(matrix(SR, [[1, 0, 0, 0], [0, (-1), 0, 0], [0, 0, (-1), 0], [0, 0, 0, (-1)]]))) - (1)","kind":"rel","lhs":"KitTest.eta * KitTest.eta","lhs_poly":"(x0 * x0)","poly":"((x0 * x0)) - (1)","rel":"eq","rhs":"1","rhs_poly":"1","text":"KitTest.eta * KitTest.eta = 1"},"hyps":[],"matrix_indices":[],"namespaces":["mathlib"],"table_problems":[],"vars":["x0"]}
+-/
+#guard_msgs (info, error, drop warning) in
+open Matrix in
+example : KitTest.eta * KitTest.eta = 1 := by kit_lenient
+
+-- polynomials: one generator
+/--
+info: {"atom_types":["other"],"atoms":["Polynomial.X"],"carrier":"Polynomial ℚ","definitions":[],"derivatives":[],"domain":[],"exists_function":null,"extensions":[],"functions":[],"goal":{"expr":"(((X + 1))^(2)) - (((1 + (2 * X)) + (X)^(2)))","kind":"rel","lhs":"(Polynomial.X + 1) ^ 2","lhs_poly":"((x0 + 1))^2","poly":"(((x0 + 1))^2) - (((1 + (2 * x0)) + (x0)^2))","rel":"eq","rhs":"1 + 2 * Polynomial.X + Polynomial.X ^ 2","rhs_poly":"((1 + (2 * x0)) + (x0)^2)","text":"(Polynomial.X + 1) ^ 2 = 1 + 2 * Polynomial.X + Polynomial.X ^ 2"},"hyps":[],"matrix_indices":[],"namespaces":["mathlib"],"table_problems":[],"vars":["x0"]}
+-/
+#guard_msgs (info, error, drop warning) in
+open Matrix in
+example : ((Polynomial.X + 1) ^ 2 : Polynomial ℚ) = 1 + 2 * Polynomial.X + Polynomial.X ^ 2 := by kit_lenient
+
+-- polynomial derivative
+/--
+info: {"atom_types":["other","other"],"atoms":["Polynomial.derivative (Polynomial.X ^ 3)","Polynomial.X"],"carrier":"Polynomial ℚ","definitions":[],"derivatives":[],"domain":[],"exists_function":null,"extensions":[],"functions":[],"goal":{"expr":"(((X)^(3)).derivative(X)) - ((3 * (X)^(2)))","kind":"rel","lhs":"Polynomial.derivative (Polynomial.X ^ 3)","lhs_poly":"x0","poly":"(x0) - ((3 * (x1)^2))","rel":"eq","rhs":"3 * Polynomial.X ^ 2","rhs_poly":"(3 * (x1)^2)","text":"Polynomial.derivative (Polynomial.X ^ 3) = 3 * Polynomial.X ^ 2"},"hyps":[],"matrix_indices":[],"namespaces":["mathlib"],"table_problems":[],"vars":["x0","x1"]}
+-/
+#guard_msgs (info, error, drop warning) in
+open Matrix in
+example : Polynomial.derivative (Polynomial.X ^ 3 : Polynomial ℚ) = 3 * Polynomial.X ^ 2 := by kit_lenient
