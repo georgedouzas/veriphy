@@ -993,3 +993,21 @@ open Matrix in
 example (u : ℝ) : (!![Real.cosh u, Real.sinh u; Real.sinh u, Real.cosh u])ᵀ *
     !![Real.cosh u, Real.sinh u; Real.sinh u, Real.cosh u] = 1 := by
   sage_run "proof = matrix_from_goal_proof(goal, problem, relations=['Real.cosh_sq_sub_sinh_sq'])"
+
+/-! ## Trigonometric rewrites from the core table -/
+
+-- power reduction
+example (x : ℝ) : Real.cos x ^ 2 = 1 / 2 + 1 / 2 * Real.cos (2 * x) := by
+  sage_run file "prompts/recipes/templates/transcendental_rewrite.sage"
+example (x : ℝ) : Real.sin x ^ 2 = 1 / 2 - Real.cos (2 * x) / 2 := by
+  sage_run file "prompts/recipes/templates/transcendental_rewrite.sage"
+-- triple and double angles
+example (x : ℝ) : Real.sin (3 * x) = 3 * Real.sin x - 4 * Real.sin x ^ 3 := by
+  sage_run file "prompts/recipes/templates/transcendental_rewrite.sage"
+example (x : ℝ) : Real.cos (3 * x) + 3 * Real.cos x = 4 * Real.cos x ^ 3 := by
+  sage_run file "prompts/recipes/templates/transcendental_rewrite.sage"
+example (x : ℝ) : Real.sin (2 * x) = 2 * Real.sin x * Real.cos x := by
+  sage_run file "prompts/recipes/templates/transcendental_rewrite.sage"
+-- the Pythagorean identity
+example (x : ℝ) : Real.cos x ^ 2 + Real.sin x ^ 2 = 1 := by
+  sage_run file "prompts/recipes/templates/transcendental_rewrite.sage"

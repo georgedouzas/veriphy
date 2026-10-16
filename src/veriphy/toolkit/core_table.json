@@ -384,6 +384,76 @@
       "side": []
     },
     {
+      "example": "Real.cos x ^ 2 + Real.sin x ^ 2 = 1",
+      "functions": [
+        "Real.cos",
+        "Real.sin"
+      ],
+      "lemma": "Real.cos_sq_add_sin_sq",
+      "reverse": false,
+      "side": []
+    },
+    {
+      "example": "Real.cos x ^ 2 = 1 / 2 + Real.cos (2 * x) / 2",
+      "functions": [
+        "Real.cos"
+      ],
+      "lemma": "Real.cos_sq",
+      "pattern": "cos(w0)^2",
+      "reverse": false,
+      "side": []
+    },
+    {
+      "example": "Real.sin x ^ 2 = 1 / 2 - Real.cos (2 * x) / 2",
+      "functions": [
+        "Real.sin"
+      ],
+      "lemma": "Real.sin_sq_eq_half_sub",
+      "pattern": "sin(w0)^2",
+      "reverse": false,
+      "side": []
+    },
+    {
+      "example": "Real.sin (2 * x) = 2 * Real.sin x * Real.cos x",
+      "functions": [
+        "Real.sin"
+      ],
+      "lemma": "Real.sin_two_mul",
+      "pattern": "sin(2*w0)",
+      "reverse": false,
+      "side": []
+    },
+    {
+      "example": "Real.cos (2 * x) = 2 * Real.cos x ^ 2 - 1",
+      "functions": [
+        "Real.cos"
+      ],
+      "lemma": "Real.cos_two_mul",
+      "pattern": "cos(2*w0)",
+      "reverse": false,
+      "side": []
+    },
+    {
+      "example": "Real.sin (3 * x) = 3 * Real.sin x - 4 * Real.sin x ^ 3",
+      "functions": [
+        "Real.sin"
+      ],
+      "lemma": "Real.sin_three_mul",
+      "pattern": "sin(3*w0)",
+      "reverse": false,
+      "side": []
+    },
+    {
+      "example": "Real.cos (3 * x) = 4 * Real.cos x ^ 3 - 3 * Real.cos x",
+      "functions": [
+        "Real.cos"
+      ],
+      "lemma": "Real.cos_three_mul",
+      "pattern": "cos(3*w0)",
+      "reverse": false,
+      "side": []
+    },
+    {
       "example": "Real.cosh x ^ 2 = Real.sinh x ^ 2 + 1",
       "functions": [
         "Real.cosh",

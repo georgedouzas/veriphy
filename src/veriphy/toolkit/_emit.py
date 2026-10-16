@@ -522,3 +522,32 @@ def steps(*blocks: Lean) -> Lean:
         message = 'steps needs at least one tactic'
         raise VeriphyError(message)
     return tactic('\n'.join(_expect(b, 'tactic', 'a step').text for b in blocks))
+
+
+def first_of(*alternatives: Lean) -> Lean:
+    """Return a tactic trying each alternative in order until one closes the goal.
+
+    Veriphy prints the alternative that closed it as the replacement.
+
+    Args:
+        *alternatives: The tactics, tried in order.
+
+    Returns:
+        The tactic `first | … | …`.
+
+    Raises:
+        CertificateError: If no alternative is given.
+
+    Examples:
+        >>> print(first_of(tactic('ring1'), tactic('rw [h]\\nring')))
+        first
+        | ring1
+        | rw [h]
+          ring
+    """
+    if not alternatives:
+        message = 'first_of needs at least one alternative'
+        raise CertificateError(message)
+    blocks = [_expect(a, 'tactic', 'every alternative of first_of').text for a in alternatives]
+    return tactic('first\n' + '\n'.join('| ' + b.replace('\n', '\n  ') for b in blocks))
+
