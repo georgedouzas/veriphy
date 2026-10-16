@@ -24,7 +24,7 @@ private def combined (what : MessageData) (stdout lean : String) : MessageData :
 
 /-- Run `script` on the main goal: build the problem, ask Sage for the proof block, then check and emit it. -/
 def sageRunCore (script : String) : TacticM Unit := do
-  let (lean, stdout) ← withLenientProblem fun p => do
+  let (lean, stdout, leavesGoals) ← withLenientProblem fun p => do
     let problem ← p.toJson
     Kit.run "run" (Bridge.run problem script)
   -- one tactic sequence: `(t₁ ⏎ t₂ …)`, every line shifted one column to sit inside the parentheses
@@ -33,7 +33,7 @@ def sageRunCore (script : String) : TacticM Unit := do
     | .ok stx => pure stx
     | .error e => throwError combined m!"the script's proof does not parse: {e}" stdout lean
   try
-    closeAndEmit ⟨stx⟩
+    closeAndEmit ⟨stx⟩ (leavesGoals := leavesGoals)
   catch ex =>
     throwError combined m!"the script's proof does not close the goal:\n{ex.toMessageData}" stdout lean
 

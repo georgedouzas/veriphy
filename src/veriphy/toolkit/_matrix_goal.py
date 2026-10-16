@@ -12,6 +12,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 
 from sage.all import QQ, SR, PolynomialRing, cos, cosh, function, sin, sinh, sqrt
+from sage.matrix.matrix0 import Matrix
 from sage.symbolic.expression import Expression
 from sage.symbolic.operators import add_vararg, mul_vararg
 
@@ -124,7 +125,7 @@ def _instances(kernels: set[Expression], names: Sequence[str]) -> list[tuple[str
     return instances
 
 
-def _entries(e: Expression | object) -> list[Expression]:
+def _entries(e: Expression | Matrix) -> list[Expression]:
     """Return the entries of a matrix difference, or the scalar difference as one entry."""
     return [SR(x) for x in e.list()] if hasattr(e, 'nrows') else [SR(e)]
 

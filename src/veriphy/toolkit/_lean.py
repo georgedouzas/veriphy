@@ -1,5 +1,6 @@
 """Represent Lean text and render Sage values as Lean terms over a problem's atoms."""
 
+import dataclasses
 import re
 from dataclasses import dataclass
 
@@ -20,14 +21,16 @@ class Lean:
     Args:
         text: The Lean source.
         kind: `term` or `tactic`.
+        leaves_goals: Whether the tactic deliberately leaves goals open for the next tactic (a rewrite step).
 
     Examples:
         >>> Lean('ring1', 'tactic')
-        Lean(text='ring1', kind='tactic')
+        Lean(text='ring1', kind='tactic', leaves_goals=False)
     """
 
     text: str
     kind: str
+    leaves_goals: bool = False
 
     def __post_init__(self) -> None:
         """Reject an unknown syntactic category."""
@@ -70,6 +73,24 @@ def tactic(text: str) -> Lean:
         'tactic'
     """
     return Lean(text, 'tactic')
+
+
+def leaving_goals(block: Lean) -> Lean:
+    """Mark a tactic as leaving goals open on purpose, for the user's next tactic.
+
+    `sage_run` refuses a block that leaves goals unless it is marked; a marked block's open goals stay.
+
+    Args:
+        block: The tactic.
+
+    Returns:
+        The same tactic, marked.
+
+    Examples:
+        >>> leaving_goals(tactic('rw [h]')).leaves_goals
+        True
+    """
+    return dataclasses.replace(block, leaves_goals=True)
 
 
 def parenthesize(text: str) -> str:

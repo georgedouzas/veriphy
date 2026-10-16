@@ -16,7 +16,7 @@ from sage.symbolic.operators import FDerivativeOperator, add_vararg, mul_vararg
 
 from veriphy.core import CertificateError
 from veriphy.toolkit._emit import field_simp, fresh_name, steps
-from veriphy.toolkit._lean import Lean, parenthesize, rational, tactic, term
+from veriphy.toolkit._lean import Lean, leaving_goals, parenthesize, rational, tactic, term
 from veriphy.toolkit._problem import DOMAIN_KINDS, Condition, MatrixIndex, Problem, parse_symbolic
 
 STRUCTURAL = ('abs', 'mod')
@@ -478,7 +478,7 @@ def lemma_rewrite(
             message = f"side condition '{condition}' of {lemma} is not stated; pass its proof"
             raise CertificateError(message)
     rule = ' '.join([f'{"← " if reverse else ""}{lemma}', *args])
-    return tactic(f'rw [{rule}]' + (f' at {at}' if at else ''))
+    return leaving_goals(tactic(f'rw [{rule}]' + (f' at {at}' if at else '')))
 
 
 @dataclass(frozen=True)
@@ -527,7 +527,7 @@ class RewriteCandidate:
                 message = f"side condition '{condition}' of {self.lemma} is not stated; pass its proof"
                 raise CertificateError(message)
         rule = ' '.join([f'{"← " if self.reverse else ""}{self.lemma}', *args])
-        return tactic(f'rw [{rule}]' + (f' at {at}' if at else ''))
+        return leaving_goals(tactic(f'rw [{rule}]' + (f' at {at}' if at else '')))
 
 
 def _mentions(function: str, text: str) -> bool:

@@ -162,9 +162,11 @@ def field {α : Type} (j : Json) (k : String) (f : Json → Except String α) : 
 
 /-! ## Proof scripts -/
 
-/-- Run a proof script against a serialized problem; returns the Lean tactic block it built and its output. -/
-def run (problem : Json) (script : String) (cfg : Config := {}) : IO (String × String) :=
+/-- Run a proof script against a serialized problem; returns the Lean tactic block it built, its output, and whether
+the block declared that it leaves goals open for the next tactic. -/
+def run (problem : Json) (script : String) (cfg : Config := {}) : IO (String × String × Bool) :=
   call "run" (Json.mkObj [("problem", problem), ("script", Json.str script)]) (cfg := cfg) fun r => do
-    return (← field r "lean" (·.getStr?), ← field r "stdout" (·.getStr?))
+    let leaves := (r.getObjValAs? Bool "leaves_goals").toOption.getD false
+    return (← field r "lean" (·.getStr?), ← field r "stdout" (·.getStr?), leaves)
 
 end Veriphy.Bridge

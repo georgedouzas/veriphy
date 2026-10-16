@@ -6,7 +6,7 @@ from collections.abc import Sequence
 from sage.all import QQ
 
 from veriphy.core import CertificateError, VeriphyError
-from veriphy.toolkit._lean import Lean, parenthesize, polynomial, rational, tactic, term
+from veriphy.toolkit._lean import Lean, leaving_goals, parenthesize, polynomial, rational, tactic, term
 from veriphy.toolkit._problem import Problem
 
 RELATIONS_TEXT = {'eq': '=', 'le': '≤', 'lt': '<'}
@@ -288,7 +288,7 @@ def rewrite_by(lhs: object, rhs: object, justification: Lean, problem: Problem) 
         'rw [show x ^ 2 - 1 = (x - 1) * (x + 1) by ring1]'
     """
     proof = _expect(justification, 'tactic', 'a rewrite justification')
-    return tactic(f'rw [show {_as_term(lhs, problem)} = {_as_term(rhs, problem)} by {proof}]')
+    return leaving_goals(tactic(f'rw [show {_as_term(lhs, problem)} = {_as_term(rhs, problem)} by {proof}]'))
 
 
 def calc_chain(start: object, steps: Sequence[tuple[str, object, Lean]], problem: Problem) -> Lean:
@@ -521,7 +521,8 @@ def steps(*blocks: Lean) -> Lean:
     if not blocks:
         message = 'steps needs at least one tactic'
         raise VeriphyError(message)
-    return tactic('\n'.join(_expect(b, 'tactic', 'a step').text for b in blocks))
+    text = '\n'.join(_expect(b, 'tactic', 'a step').text for b in blocks)
+    return Lean(text, 'tactic', leaves_goals=blocks[-1].leaves_goals)
 
 
 def first_of(*alternatives: Lean) -> Lean:

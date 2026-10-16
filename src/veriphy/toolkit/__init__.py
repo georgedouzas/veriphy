@@ -73,7 +73,7 @@ from veriphy.toolkit._geometry import (
     primitive,
 )
 from veriphy.toolkit._integral import definite_integral_proof
-from veriphy.toolkit._lean import Lean, parenthesize, polynomial, rational, tactic, term
+from veriphy.toolkit._lean import Lean, leaving_goals, parenthesize, polynomial, rational, tactic, term
 from veriphy.toolkit._lie import (
     adjoint_matrices,
     bracket_relations,
@@ -326,6 +326,7 @@ __all__ = [
     'ladder_commutator_proof',
     'ladder_matrices',
     'ladder_operators',
+    'leaving_goals',
     'lemma_rewrite',
     'lift',
     'linear_combination',
