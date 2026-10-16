@@ -21,10 +21,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Bug Fixes
 
+- Endpoint values at zero by simp; the pilot's remaining goal shapes as tests; task 6.1 states Veriphy's part ([137a9fa](https://github.com/georgedouzas/veriphy/commit/137a9faba40d9ad0885e67d29240f870529aa963) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Wrap the parsed block in veriphy_certified, keeping parse errors at the script's own columns ([00e94c7](https://github.com/georgedouzas/veriphy/commit/00e94c7ffc58ef363ecdca320147a9d836587770) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Align multi-line certified blocks; order-robust doctests; numpy as a Sage-provided module; coverage after book coverage ([bb0047e](https://github.com/georgedouzas/veriphy/commit/bb0047ea14444845da8eff071d903d3dd77343eb) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 - Blocks declare the goals they leave open (rewrite steps); probes see integrals; typing ([15bbf0e](https://github.com/georgedouzas/veriphy/commit/15bbf0e02e681ad1ce62ad33a1e5b1adc5446992) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 
 ### Docs
 
+- Archive kk-csdr-book-coverage with its specs synced; README pins 0.3.0 ([8b5a456](https://github.com/georgedouzas/veriphy/commit/8b5a456593c83adfe33b00fbdaf37734f16b910c) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Test fallback and verification levels, linear algebra, matrix goals and integrals in the guide and the components page; changelog ([f477542](https://github.com/georgedouzas/veriphy/commit/f4775424cda112595f0b21cfdd923f9ba0f8c099) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 - Propose the book coverage change (recipes the KK/CSDR book needs) ([c84510d](https://github.com/georgedouzas/veriphy/commit/c84510d2369be800209ec09d48b7ee2f10f5fccc) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 
 ## [0.2.0](https://github.com/georgedouzas/veriphy/releases/tag/0.2.0) - 2026-10-13
