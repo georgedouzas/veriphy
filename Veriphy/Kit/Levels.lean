@@ -20,18 +20,18 @@ open Lean Elab Meta Term Tactic Command
 /-- Marks a proof built by a Veriphy recipe: the identity on proofs, kept in the proof term. -/
 theorem certified {p : Prop} (h : p) : p := h
 
-/-- `veriphy_certified tacs` runs `tacs` under the marker `Veriphy.certified`, recording that a recipe built the
-proof. -/
-syntax (name := veriphyCertified) "veriphy_certified " tacticSeq : tactic
+/-- `veriphy_certified tac` runs `tac` (a tactic, or a parenthesized sequence) under the marker `Veriphy.certified`,
+recording that a recipe built the proof. -/
+syntax (name := veriphyCertified) "veriphy_certified " tactic : tactic
 
 elab_rules : tactic
-  | `(tactic| veriphy_certified $tacs) => withMainContext do
+  | `(tactic| veriphy_certified $tac) => withMainContext do
     let g ← getMainGoal
     let ty ← g.getType
     let h ← mkFreshExprSyntheticOpaqueMVar ty (← g.getTag)
     g.assign (mkApp2 (mkConst ``Veriphy.certified) ty h)
     replaceMainGoal [h.mvarId!]
-    evalTactic tacs
+    evalTactic tac
 
 /-- A claim's level and instance counts, recorded by `sage_test`. -/
 structure Tested where
