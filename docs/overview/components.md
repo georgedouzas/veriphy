@@ -20,6 +20,8 @@ The [user guide](user_guide.md#building-proofs-with-sage_run) indexes the recipe
 | Algebraic certificates (`_algebraic`) | Nullstellensatz and radical lifts (Gröbner), Positivstellensatz weights (exact LP) | `linear_combination`, `pow_eq_zero_iff` | `infeasibility` |
 | Primality (`_reflect`) | Pratt certificates | the kernel (`VeriphyCheck.Pratt`) | `primality` |
 | Normal forms and exponentials (`_normal_form`, `_exponential`) | Smith and Jordan forms with transformations; nilpotent and diagonalizable exponentials | the transformations as matrix identities; `NormedSpace.exp` through the series or the diagonalization | `matrix_normal_form`, `matrix_exponential` |
+| Linear algebra (`_linear`) | ranks, echelon forms, non-singular minors, rank factorisations, kernel bases, dependence relations, intersections of spans, symmetric congruences | independence from a minor, rank bounds from a minor and a factorisation, dimensions of spans, kernels, intersections and products, non-linearity at failing points, signatures by an explicit congruence (`Veriphy.Kit.Linear`) | `independence`, `matrix_rank`, `dimension`, `nonlinearity`, `signature` |
+| Matrix goals (`_matrix_goal`) | `lhs - rhs` read from the goal (matrices, vectors, named matrices, transposes, `det`, `trace`), reduced modulo `cosh² - sinh² = 1`, `cos² + sin² = 1`, `(√a)² = a` | entrywise, by Laplace expansion, or by `linear_combination` of the relations with Gröbner cofactors | `matrix_from_goal` |
 
 ## Analysis and physics
 
@@ -30,6 +32,7 @@ The [user guide](user_guide.md#building-proofs-with-sage_run) indexes the recipe
 | Coordinate geometry (`_geometry`) | Christoffel symbols and curvature with SageManifolds; primitives of closed forms; field-strength contractions | the components from the `CoordinateGeometry` asset's definitions | `coordinate_geometry` |
 | Summation (`_summation`) | WZ mates and Gosper antidifferences (sympy), closed forms of recurrences, guessed recurrences (`ore_algebra`) | the summand identity, telescoping by `Finset.sum_range_sub`, induction | `wz_certificate`, `recurrence` |
 | Certified numerics (`_numerics`) | interval enclosures of `exp`, `log`, `sin`, `cos`, `π`; isolating intervals of real roots; characteristic polynomials | mathlib's series remainder bounds and decimal bounds; roots by the intermediate value theorem and monotonicity | `certified_bound`, `root_isolation` |
+| Definite integrals (`_integral`) | antiderivatives of elementary integrands, checked by differentiation, and the value | `HasDerivAt` of the antiderivative, `intervalIntegral.integral_eq_sub_of_hasDerivAt`, endpoint values at multiples of `π` | `definite_integral` |
 
 ## Categories
 
@@ -40,6 +43,12 @@ finite data.
 |---|---|---|---|
 | Fusion categories (`_fusion`) | fusion rules from `FusionRing` (refusing multiplicities above 1); Fibonacci F-symbols in `ℚ(√5)` by a Gröbner solve; Ising F- and R-symbols in `ℚ(ζ₁₆)`; pentagon and hexagon violations; gauges relating two data | the `FusionData` asset: the kernel checks the pentagons and hexagons on admissible labels, with values as coefficient lists on the power basis of `ζ`, and the asset's theorems give them at every `ζ` with the same minimal relation in every `ℚ`-algebra (over `ℂ` at `exp (2πi/16)`, and at the Galois conjugates); gauge relations likewise | `fusion_category` |
 | Natural transformations (`_representation`) | intertwiners between representations of a finite group | the naturality square per generator by the kernel; `VeriphyCheck.intertwines_of_closure` extends it to the group; `repHom` and `repIso` package it as a morphism or isomorphism of `Rep` | `fusion_category` |
+
+## When no certificate exists
+
+| Component | Sage computes | Lean checks | Recipes |
+|---|---|---|---|
+| Test fallback (`_testing`) | seeded instances with edge cases; exact or interval evaluations of instances Lean cannot state | each kernel instance, stated from the claim's statement and independent of its proof (`sage_test`, `veriphy_instance%`); the level attribute `veriphy_tested` | `test_fallback` |
 
 ## Checkers and assets
 
