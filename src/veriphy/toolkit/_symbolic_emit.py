@@ -105,6 +105,11 @@ def _check_integral(e: Expression, ctx: _Context) -> None:
         raise CertificateError(message)
 
 
+def _is_polynomial_type(lean_type: str | None) -> bool:
+    """Return whether a Lean type is a polynomial ring (`ℚ[X]` or `Polynomial ℚ`)."""
+    return lean_type is not None and (lean_type.endswith('[X]') or lean_type.startswith('Polynomial '))
+
+
 def _render_leaf(e: Expression, ctx: _Context) -> str:
     """Return the Lean text of a symbol, number or constant."""
     if e.is_symbol():
@@ -113,6 +118,10 @@ def _render_leaf(e: Expression, ctx: _Context) -> str:
             return parenthesize(ctx.problem.atoms[name])
         if name.endswith('_'):
             return name[:-1]
+        ring = ctx.lean_type or ctx.problem.carrier
+        if name == 'X' and _is_polynomial_type(ring):
+            # the generator of the goal's polynomial ring
+            return f'(Polynomial.X : {ring})'
         message = f"symbol '{name}' is not an atom of the problem"
         raise CertificateError(message)
     if e.is_numeric() and e in QQ:

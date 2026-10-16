@@ -107,9 +107,14 @@ def closeAndEmit (proof : TSyntax `tactic) : TacticM Unit := do
       -- no error recovery: a checker failing inside a nested `by` must fail the tactic, not be logged
       -- postponed elaboration problems (a `by` block whose type still has metavariables) are solved here, so their
       -- failures count against this proof instead of surfacing after it was accepted
+      let others := (← getGoals).filter (· != goal)
       Term.withoutErrToSorry <| withoutRecover <| do
         evalTactic proof
         Term.synthesizeSyntheticMVarsNoPostponing
+      -- a block that makes progress but leaves goals open is not a proof: refuse it before anything is reported
+      let unsolved := (← getUnsolvedGoals).filter (!others.contains ·)
+      unless unsolved.isEmpty do
+        throwError "unsolved goals\n{goalsToMessageData unsolved}"
       let logged := (errors (← Core.getMessageLog)).drop before
       unless logged.isEmpty do
         let texts ← logged.mapM fun m => m.data.toString
