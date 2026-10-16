@@ -268,6 +268,38 @@ The steps are:
 | (Physlib) an explicit matrix `∈ lorentzAlgebra` | `physlib/lorentz_algebra` |
 | (Physlib) a commutator of ladder operators, positions and momenta | `physlib/ladder_operators` |
 
+## When no certificate exists: `sage_test` and verification levels
+
+Some claims have no certificate: rank-nullity for every matrix, a statement in every dimension, a property of every
+function. Their proofs are mathlib proofs, and Veriphy checks them differently, by testing:
+
+```lean
+theorem traceDouble (n : ℕ) (A : Matrix (Fin n) (Fin n) ℚ) : Matrix.trace (A + A) = 2 * Matrix.trace A := by
+  rw [Matrix.trace_add]; ring
+
+sage_test traceDouble file "trace_double_test.sage"
+```
+
+`sage_test` opens the claim's universal binders, and the script chooses instances: values for every binder, each
+with a tactic block the kernel checks by computation, or an exact (or interval) evaluation by Sage when Lean cannot
+state the instance. Each kernel instance is stated from the claim's statement, never its proof
+(`veriphy_instance% traceDouble (0) (…)`), and a proof that depends on the claim is rejected. A run needs three
+accepted instances, one an edge case. Its replacement is the accepted instances as `example`s and the attribute
+`veriphy_tested`; the run also writes `.veriphy/tests/<claim>.json`, which
+`sage -python -m veriphy.certificates tests` lists and `tests --rerun <claim>` reruns.
+
+Every claim then has one of four levels, in this order:
+
+| Level | What was checked | Builds without Sage |
+|---|---|---|
+| `certificate` | a recipe built the proof, which the kernel checked | yes |
+| `kernel-test` | the kernel checked the claim at instances, each by computation | yes |
+| `oracle-test` | Sage evaluated the claim at some instances, exactly or by intervals of at least 53 bits | the record is kept |
+| `none` | Veriphy neither built nor tested the proof | |
+
+`#veriphy_levels MyProject` lists the level of every theorem under a prefix. A claim gets the highest level that is
+feasible: the fallback applies only after recipe selection failed, and a test is never reported as a proof.
+
 ## Product decision: a pure tool
 
 Veriphy is a tool, not a campaign:
