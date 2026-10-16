@@ -68,3 +68,17 @@ A block MAY leave goals open, for example after a rewrite step. Those goals SHAL
 #### Scenario: Rewrite step leaves a goal
 - **WHEN** the block rewrites `lhs` to a factored form by `ring` and leaves `factored = rhs`
 - **THEN** the goal `factored = rhs` remains after `sage_run`, as it does after the replacement
+
+### Requirement: Replacement reported only after acceptance
+`sage_run` SHALL report its `Sage-free replacement` only after the block closed the goal and passed the axiom check. When
+the block does not parse or does not close the goal, the tactic SHALL report the combined error and no replacement. A
+block that leaves goals open on purpose (a rewrite step, as the existing requirement allows) SHALL declare it
+(`leaving_goals`); its open goals then remain for the next tactic, and only undeclared leftovers are refused.
+
+#### Scenario: Failing block
+- **WHEN** a script's block for a `3 × 3` product with a transpose fails to close the goal
+- **THEN** the messages contain the combined error and no `Sage-free replacement`
+
+#### Scenario: Declared rewrite step
+- **WHEN** the `factor_rewrite` template's block, marked as leaving goals, rewrites `lhs` to its factored form
+- **THEN** `factored = rhs` remains for the user's next tactic, and the replacement is reported
