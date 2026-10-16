@@ -89,6 +89,7 @@ score, or committing to the target repo beyond what the caller asked for.
       | `Module.finrank K V = n` for spans, intersections, kernels, product spaces | `dimension` |
       | `¬ ∃ f : V →ₗ[K] W, …`: a map that is not linear or bilinear | `nonlinearity` |
       | the signature of an explicit symmetric matrix (`Veriphy.Linear.HasSignature`) | `signature` |
+      | no certificate is feasible: test the claim at instances (`sage_test`) | `test_fallback` |
       | fusion or braided fusion data (pentagons, hexagons, gauges), naturality of an intertwiner | `fusion_category` |
       | graded brackets, super-Jacobi (`sl(m\|n)`, `osp`, `D(2,1;α)`, `G(3)`, `F(4)`) | `lie_superalgebra` |
 
@@ -134,6 +135,10 @@ score, or committing to the target repo beyond what the caller asked for.
      produce;
    - `statement-suspect`: the numeric test contradicted the claim (give the
      counterexample).
+   - `tested`: no certificate is feasible (recipe selection failed, or the claim is
+     in every dimension, space or function), the proof is a mathlib proof (or none, for a stated
+     proposition), and `sage_test` checked the claim at instances: give the level, `kernel-test` or
+     `oracle-test`, and the instance counts. Never report a test as `proved` by Veriphy.
 
    What to do with the result — commit, PR, record-keeping — is the caller's
    decision, not this playbook's.

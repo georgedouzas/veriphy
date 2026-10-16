@@ -10,14 +10,14 @@ import sage.all as sage_all
 from sage.repl.preparse import preparse_file
 
 import veriphy.toolkit
-from veriphy.core import Method, ScriptError
+from veriphy.core import CertificateError, Method, ScriptError
 from veriphy.oracle._registry import (
     _coerce_int,
     _coerce_json,
     _coerce_str,
     _register_method,
 )
-from veriphy.toolkit import Lean, read_problem
+from veriphy.toolkit import Lean, check_instances, read_problem
 
 SCRIPT_METHODS: dict[str, Method] = {}
 STDOUT_LIMIT = 20000
@@ -116,3 +116,52 @@ def _run_proof_script(problem: object, script: str, timeout_s: int) -> dict[str,
     out = _run_sage(script, namespace, timeout_s)
     lean, leaves_goals = _read_proof(namespace, out)
     return {'lean': lean, 'stdout': out, 'leaves_goals': leaves_goals}
+
+
+def run_test_script(problem: object, script: str, timeout_s: int) -> dict[str, object]:
+    """Return the instances a test script chooses for a claim's universal binders, with its seed and Sage's version.
+
+    This is the daemon's `test` method; the test catalog calls it to rerun a record's oracle instances.
+
+    Args:
+        problem: The serialized problem of the claim.
+        script: The test script.
+        timeout_s: The script's time limit.
+
+    Returns:
+        The instances, the script's output, its seed and Sage's version.
+
+    Raises:
+        ScriptError: If the script fails, assigns no `instances`, or an instance is malformed.
+    """
+    read = read_problem(problem)
+    namespace = {**_toolkit_names(), **read.to_namespace(), 'instances': None, 'SEED': 0}
+    out = _run_sage(script, namespace, timeout_s)
+    if namespace.get('instances') is None:
+        message = 'the script did not assign `instances` (a list of kernel_instance and oracle_instance values)'
+        raise ScriptError(message, out)
+    chosen = namespace['instances']
+    if not isinstance(chosen, list | tuple):
+        message = '`instances` must be a list'
+        raise ScriptError(message, out)
+    try:
+        checked = check_instances(chosen, len(read.universal))
+    except CertificateError as exc:
+        raise ScriptError(str(exc), out) from exc
+    seed = namespace.get('SEED', 0)
+    return {
+        'instances': [i.to_json() for i in checked],
+        'stdout': out,
+        'seed': int(seed) if isinstance(seed, int) else 0,
+        'sage_version': str(sage_all.version()),
+    }
+
+
+# the daemon method wraps the plain function, which the test catalog also calls
+_register_method(
+    SCRIPT_METHODS,
+    'test',
+    problem=_coerce_json,
+    script=_coerce_str,
+    timeout_s=_coerce_int(DEFAULT_TIMEOUT_S),
+)(run_test_script)

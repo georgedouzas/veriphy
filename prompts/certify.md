@@ -105,3 +105,7 @@ write Veriphy artifacts anywhere else, and never move the committed proofs into 
 - Never commit a `sage_run` call: commit the emitted replacement.
 - If no primitive or emitter can express the certificate, report
   `blocked-missing-building-block` and name what is missing.
+- When no certificate is feasible (every matching recipe failed, or the claim quantifies over a
+  dimension, a space or a function), test the claim with `sage_test` (`prompts/recipes/test_fallback.md`)
+  and name the level it reached, `kernel-test` or `oracle-test`. A test never replaces a certificate, and
+  is never reported as a proof.

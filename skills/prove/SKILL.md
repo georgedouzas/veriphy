@@ -30,3 +30,5 @@ Hard rules:
 - Certificate scripts go in the project's `.veriphy/certificates/`, never in Veriphy.
 - A failure is a report (`blocked-library-gap` / `blocked-missing-building-block` /
   `statement-suspect`), stated precisely, not a silent stop.
+- Recipe selection runs first. Only when no certificate is feasible does `sage_test` check the claim,
+  and the report names its level (`tested`, with `kernel-test` or `oracle-test`), never `proved`.
