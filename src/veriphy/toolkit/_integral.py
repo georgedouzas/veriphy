@@ -66,7 +66,11 @@ def _endpoint_facts(
                 continue
             term = _at(_lean(argument, problem), text)
             rewrite = f'rw [show ({term} : ℝ) = (({k} : ℕ) : ℝ) * Real.pi by push_cast; ring'
-            if name == 'sin':
+            if k == 0:
+                # at zero the value is `simp`'s; rewriting `0` would also rewrite the fact's right side
+                value = 0 if name == 'sin' else 1
+                facts.append(f'Real.{name} ({term}) = {value} := by simp')
+            elif name == 'sin':
                 facts.append(f'Real.sin ({term}) = 0 := by\n  {rewrite}]; exact Real.sin_nat_mul_pi {k}')
             else:
                 facts.append(f'Real.cos ({term}) = {(-1) ** int(k)} := by\n  {rewrite}, Real.cos_nat_mul_pi]; norm_num')

@@ -1126,3 +1126,17 @@ error: sage daemon error: run: AssertionError: fill in MATRIX in a copy
 #guard_msgs in
 example : Veriphy.Linear.HasSignature !![(1 : ℚ), 0; 0, 1] 2 0 0 := by
   sage_run file "prompts/recipes/templates/signature.sage"
+
+/-! ## Pilot shapes (the book's missing building blocks) -/
+
+-- power reduction of sin³ through the triple angle
+example (x : ℝ) : Real.sin x ^ 3 = 3 / 4 * Real.sin x - 1 / 4 * Real.sin (3 * x) := by
+  sage_run file "prompts/recipes/templates/transcendental_rewrite.sage"
+-- a bilinear form shifted by a constant is not bilinear
+example : ¬ ∃ B : LinearMap.BilinForm ℝ (Fin 2 → ℝ), ∀ v w, B v w = v ⬝ᵥ w + 1 := by
+  sage_run "proof = tactic(nonlinearity_proof(lambda v, w: 1, 2))"
+-- integrals of affine combinations
+example : ∫ φ in (0 : ℝ)..(2 * Real.pi), (3 + 2 * Real.cos φ) = 6 * Real.pi := by
+  sage_run file "prompts/recipes/templates/definite_integral.sage"
+example : ∫ φ in (0 : ℝ)..(2 * Real.pi), (1 - Real.sin (2 * φ)) = 2 * Real.pi := by
+  sage_run file "prompts/recipes/templates/definite_integral.sage"

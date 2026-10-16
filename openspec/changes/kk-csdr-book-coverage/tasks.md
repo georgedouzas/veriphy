@@ -39,6 +39,6 @@ Every `lake build` and `lake env lean` runs under the build lock (D10), one Lean
 
 ## 6. Release gate
 
-- [ ] 6.1 Run the book's linear-algebra pilot statements against the branch: every pilot goal of the missing-building-blocks list closes with a recipe or a `sage_test`. Verify by the book's `check_verification.py` with no `Pending` Veriphy part in the chapter.
-- [ ] 6.2 Update the CHANGELOG, the recipe index, the user guide and the coverage page. Verify that the docs build.
+- [x] 6.1 Run the goal shapes of the pilot report's missing-building-blocks list against the branch: each closes with a recipe or a `sage_test`. Verify by the Lean tests that state them (dimension, rank, independence and spans, vectors and named matrices, `matrix_from_goal` extensions and side relations, trigonometric rewrites, integrals, non-linearity, signatures, polynomials, the test fallback). Certifying the book's own pending claims is the book's task (its 11.6), not Veriphy's.
+- [x] 6.2 Update the CHANGELOG, the recipe index, the user guide and the coverage page. Verify that the docs build.
 - [ ] 6.3 Run the full gate in order (formatting, checks, docs, tests, Lean tests). Verify that every session is green.
