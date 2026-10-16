@@ -440,6 +440,9 @@ partial def exprToSym (e : Expr) : SymM SymExpr := do
   -- a scalar multiple of a matrix
   | ``HSMul.hSMul, #[_, β, _, _, c, a] =>
     if (← matrixCarrier? β) == some false then return .mul (← exprToSym c) (← exprToSym a)
+    -- a scalar multiple of a vector `Fin n → α`, a column
+    if let .forallE _ dom _ _ := ← whnfR β then
+      if dom.isAppOf ``Fin then return .mul (← exprToSym c) (← exprToSym a)
     symAtom e
   -- the Lie bracket of matrices, or of elements of a matrix Lie subalgebra through their matrices, is a commutator
   | ``Bracket.bracket, #[ty, _, _, a, b] =>

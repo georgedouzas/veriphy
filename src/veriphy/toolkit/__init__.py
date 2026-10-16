@@ -90,6 +90,7 @@ from veriphy.toolkit._lie import (
     weyl_group_order,
 )
 from veriphy.toolkit._lp import solve_exact_lp
+from veriphy.toolkit._matrix_goal import SIDE_RELATIONS, matrix_from_goal_proof
 from veriphy.toolkit._normal_form import jordan_certificate, smith_certificate
 from veriphy.toolkit._number_field import (
     FieldContext,
@@ -212,6 +213,7 @@ from veriphy.toolkit._table import SHIPPED_PACKS, Table, load_core_table, load_p
 
 __all__ = [
     'SHIPPED_PACKS',
+    'SIDE_RELATIONS',
     'Condition',
     'Coordinates',
     'Definition',
@@ -323,6 +325,7 @@ __all__ = [
     'linear_combination',
     'load_core_table',
     'load_pack',
+    'matrix_from_goal_proof',
     'matrix_goal_proof',
     'matrix_identity_proof',
     'matrix_term',
