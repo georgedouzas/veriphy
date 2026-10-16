@@ -29,7 +29,10 @@ def sageRunCore (script : String) : TacticM Unit := do
     Kit.run "run" (Bridge.run problem script)
   -- one tactic sequence: `(t₁ ⏎ t₂ …)`, every line shifted one column to sit inside the parentheses
   -- inside `veriphy_certified`, so the proof term records that a recipe built it (`#veriphy_levels`)
-  let block := "veriphy_certified (" ++ "\n ".intercalate (lean.splitOn "\n") ++ ")"
+  let opening := "veriphy_certified ("
+  let pad := "".pushn ' ' opening.length
+  -- continuation lines align with the first tactic, which sits just inside the parenthesis
+  let block := opening ++ ("\n" ++ pad).intercalate (lean.splitOn "\n") ++ ")"
   let stx ← match Parser.runParserCategory (← getEnv) `tactic block "<sage_run>" with
     | .ok stx => pure stx
     | .error e => throwError combined m!"the script's proof does not parse: {e}" stdout lean

@@ -137,6 +137,8 @@ check-class-attributes = false
 # SageMath (with its bundled cvxopt, sympy and numpy) is the runtime the package is installed into (`sage -pip install veriphy`),
 # never a declared dependency.
 DEP001 = ["sage", "cvxopt", "sympy", "numpy"]
+# numpy also reaches the development environment through other tools
+DEP003 = ["numpy"]
 
 [tool.bandit]
 # Runs Lean on emitted text: the one place the tests start a process.

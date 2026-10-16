@@ -390,9 +390,10 @@ def ladder_operators(xi: object = None, hbar: object = None) -> tuple[dict[str, 
         The coefficients of `'x'` and `'p'` in `a` and in `a†`.
 
     Examples:
+        >>> from sage.all import I, sqrt
         >>> lowering, raising = ladder_operators()
-        >>> lowering['p']
-        1/2*I*sqrt(2)*xi/hbar
+        >>> bool(lowering['p'] == I * sqrt(2) * var('xi') / (2 * var('hbar')))
+        True
     """
     xi = var('xi') if xi is None else xi
     hbar = var('hbar') if hbar is None else hbar
@@ -419,8 +420,9 @@ def canonical_commutator(left: dict[str, object], right: dict[str, object], hbar
         >>> lowering, raising = ladder_operators()
         >>> canonical_commutator(lowering, raising)
         1
-        >>> canonical_commutator(lowering, {'x': 1})
-        1/2*sqrt(2)*xi
+        >>> from sage.all import sqrt
+        >>> bool(canonical_commutator(lowering, {'x': 1}) == sqrt(2) * var('xi') / 2)
+        True
     """
     hbar = var('hbar') if hbar is None else hbar
     alpha_x, alpha_p = SR(left.get('x', 0)), SR(left.get('p', 0))
