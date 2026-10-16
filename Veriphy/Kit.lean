@@ -8,6 +8,7 @@ The kit `sage_run` is built from.
   Kit.Packs    the library packs Veriphy ships and `#veriphy_tables`
   Kit.Coverage `#veriphy_coverage`: how much of a corpus the symbolic translation covers
   Kit.Inspect  `#veriphy_translate`: the symbolic translation of a term, without Sage
+  Kit.Linear   packaging lemmas for linear-algebra certificates (minors, factorisations, kernels, signatures)
 -/
 import Veriphy.Kit.Problem
 import Veriphy.Kit.Packs
@@ -16,3 +17,4 @@ import Veriphy.Kit.Replay
 import Veriphy.Kit.Project
 import Veriphy.Kit.Coverage
 import Veriphy.Kit.Inspect
+import Veriphy.Kit.Linear

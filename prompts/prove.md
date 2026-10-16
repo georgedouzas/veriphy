@@ -84,6 +84,11 @@ score, or committing to the target repo beyond what the caller asked for.
       | rational bounds on `exp`, `log`, `sin`, `cos`, `π` at explicit points | `certified_bound` |
       | a real root or eigenvalue in an explicit interval | `root_isolation` |
       | `∫ x in a..b, f x = v` with an elementary antiderivative | `definite_integral` |
+      | `LinearIndependent K v`, its negation, spans equal to spans or kernels | `independence` |
+      | `Matrix.rank A = r` and its bounds, for an explicit matrix | `matrix_rank` |
+      | `Module.finrank K V = n` for spans, intersections, kernels, product spaces | `dimension` |
+      | `¬ ∃ f : V →ₗ[K] W, …`: a map that is not linear or bilinear | `nonlinearity` |
+      | the signature of an explicit symmetric matrix (`Veriphy.Linear.HasSignature`) | `signature` |
       | fusion or braided fusion data (pentagons, hexagons, gauges), naturality of an intertwiner | `fusion_category` |
       | graded brackets, super-Jacobi (`sl(m\|n)`, `osp`, `D(2,1;α)`, `G(3)`, `F(4)`) | `lie_superalgebra` |
 

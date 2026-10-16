@@ -38,6 +38,8 @@ import Mathlib.GroupTheory.Perm.Fin
 import Mathlib.LinearAlgebra.Matrix.Permutation
 import Mathlib.Algebra.Polynomial.Derivative
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
+import Mathlib.LinearAlgebra.Matrix.Trace
+import Mathlib.LinearAlgebra.TensorProduct.Finiteness
 
 set_option veriphy.checkReplay true
 
@@ -1031,3 +1033,96 @@ error: sage daemon error: run: CertificateError: the integral is 4/3, not the go
 #guard_msgs in
 example : ∫ x in (0 : ℝ)..1, (x ^ 2 + 2 * x) = 1 := by
   sage_run file "prompts/recipes/templates/definite_integral.sage"
+
+/-! ## Linear algebra: independence, rank, dimension, non-linearity, signature -/
+
+-- independence from a non-singular minor
+example : LinearIndependent ℚ ![![(1 : ℚ), 2, 0], ![0, 1, 1]] := by
+  sage_run "proof = tactic(independence_proof([[1, 2, 0], [0, 1, 1]]))"
+
+-- dependence: Sage finds the relation 2 v₀ - v₁ = 0
+example : ¬ LinearIndependent ℚ ![![(1 : ℚ), 2], ![2, 4]] := by
+  sage_run "proof = tactic(independence_proof([[1, 2], [2, 4]], negated=True))"
+
+-- a span equal to a kernel
+example : Submodule.span ℚ (Set.range ![![(-1 : ℚ), 1, 0], ![-1, 0, 1]]) =
+    LinearMap.ker (Matrix.mulVecLin !![(1 : ℚ), 1, 1]) := by
+  sage_run "proof = tactic(span_proof([[-1, 1, 0], [-1, 0, 1]], kernel_of=matrix(QQ, [[1, 1, 1]])))"
+
+-- rank one, with the minor 1 and the factorisation [1; 2] [1, 2, 3]
+example : Matrix.rank !![(1 : ℚ), 2, 3; 2, 4, 6] = 1 := by
+  sage_run "proof = tactic(rank_proof(matrix(QQ, [[1, 2, 3], [2, 4, 6]])))"
+
+-- full rank
+example : Matrix.rank !![(1 : ℚ), 2; 3, 4] = 2 := by
+  sage_run "proof = tactic(rank_proof(matrix(QQ, [[1, 2], [3, 4]])))"
+
+-- a diagonal matrix with a zero, as a literal
+example : Matrix.rank !![(2 : ℚ), 0, 0; 0, 0, 0; 0, 0, 5] = 2 := by
+  sage_run "proof = tactic(rank_proof(matrix(QQ, [[2, 0, 0], [0, 0, 0], [0, 0, 5]])))"
+
+-- the dimension of a span, and of a span with a redundant generator
+example : Module.finrank ℚ ↥(Submodule.span ℚ (Set.range ![![(1 : ℚ), 2, 0], ![0, 1, 1]])) = 2 := by
+  sage_run "proof = tactic(span_dimension_proof([[1, 2, 0], [0, 1, 1]]))"
+example : Module.finrank ℚ ↥(Submodule.span ℚ (Set.range ![![(1 : ℚ), 2, 0], ![0, 1, 1], ![1, 3, 1]])) = 2 := by
+  sage_run "proof = tactic(span_dimension_proof([[1, 2, 0], [0, 1, 1], [1, 3, 1]]))"
+
+-- the kernel of the trace, through rank-nullity with a matrix of trace one
+example : Module.finrank ℝ ↥(LinearMap.ker (Matrix.traceLinearMap (Fin 3) ℝ ℝ)) = 8 := by
+  sage_run file "trace_kernel.sage"
+
+-- the intersection of two planes in ℚ³
+example : Module.finrank ℚ ↥(Submodule.span ℚ (Set.range ![![(1 : ℚ), 0, 0], ![0, 1, 0]]) ⊓
+    Submodule.span ℚ (Set.range ![![(0 : ℚ), 1, 0], ![0, 0, 1]])) = 1 := by
+  sage_run "proof = tactic(intersection_dimension_proof([[1, 0, 0], [0, 1, 0]], [[0, 1, 0], [0, 0, 1]]))"
+
+-- a tensor product, by the product formula (KIND = 'product')
+open TensorProduct in
+example : Module.finrank ℝ ((Fin 2 → ℝ) ⊗[ℝ] (Fin 3 → ℝ)) = 6 := by
+  sage_run "proof = tactic('simp [Module.finrank_tensorProduct, Module.finrank_matrix, Module.finrank_fin_fun]')"
+
+-- the square is not linear: map_smul at 2 and 1
+example : ¬ ∃ f : ℝ →ₗ[ℝ] ℝ, ∀ x, f x = x ^ 2 := by
+  sage_run "proof = tactic(nonlinearity_proof(lambda x: x ** 2))"
+
+-- a shifted bilinear form is not bilinear: f 0 0 = 0
+example : ¬ ∃ f : (Fin 2 → ℝ) →ₗ[ℝ] (Fin 2 → ℝ) →ₗ[ℝ] ℝ, ∀ x y, f x y = x 0 * y 0 + 1 := by
+  sage_run "proof = tactic(nonlinearity_proof(lambda x, y: 1, 2))"
+
+-- signatures: a positive definite form, and the Minkowski metric
+example : Veriphy.Linear.HasSignature !![(2 : ℚ), 1, 0; 1, 2, 1; 0, 1, 2] 3 0 0 := by
+  sage_run "proof = tactic(signature_proof(matrix(QQ, [[2, 1, 0], [1, 2, 1], [0, 1, 2]])))"
+example : Veriphy.Linear.HasSignature !![(1 : ℚ), 0, 0, 0; 0, -1, 0, 0; 0, 0, -1, 0; 0, 0, 0, -1] 1 3 0 := by
+  sage_run "proof = tactic(signature_proof(matrix(QQ, [[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, -1]])))"
+
+-- the templates, unedited, ask for their data
+/--
+error: sage daemon error: run: AssertionError: fill in VECTORS (and OTHER or KERNEL for a span equality) in a copy
+-/
+#guard_msgs in
+example : LinearIndependent ℚ ![![(1 : ℚ), 0], ![0, 1]] := by
+  sage_run file "prompts/recipes/templates/independence.sage"
+/--
+error: sage daemon error: run: AssertionError: fill in MATRIX in a copy
+-/
+#guard_msgs in
+example : Matrix.rank !![(1 : ℚ), 0; 0, 1] = 2 := by
+  sage_run file "prompts/recipes/templates/matrix_rank.sage"
+/--
+error: sage daemon error: run: AssertionError: fill in VECTORS in a copy
+-/
+#guard_msgs in
+example : Module.finrank ℚ ↥(Submodule.span ℚ (Set.range ![![(1 : ℚ), 0]])) = 1 := by
+  sage_run file "prompts/recipes/templates/dimension.sage"
+/--
+error: sage daemon error: run: AssertionError: fill in MAP in a copy
+-/
+#guard_msgs in
+example : ¬ ∃ f : ℝ →ₗ[ℝ] ℝ, ∀ x, f x = x ^ 2 := by
+  sage_run file "prompts/recipes/templates/nonlinearity.sage"
+/--
+error: sage daemon error: run: AssertionError: fill in MATRIX in a copy
+-/
+#guard_msgs in
+example : Veriphy.Linear.HasSignature !![(1 : ℚ), 0; 0, 1] 2 0 0 := by
+  sage_run file "prompts/recipes/templates/signature.sage"
