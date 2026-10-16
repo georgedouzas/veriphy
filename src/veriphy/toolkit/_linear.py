@@ -56,6 +56,9 @@ def rank_factorization(m: Matrix) -> tuple[Matrix, Matrix]:
     Returns:
         `B` (`rows × rank`) and `C` (`rank × columns`).
 
+    Raises:
+        CertificateError: If the factors fail to reproduce the matrix (an invariant of the echelon form).
+
     Examples:
         >>> b, c = rank_factorization(matrix(QQ, [[1, 2, 3], [2, 4, 6]]))
         >>> b.list(), c.list()

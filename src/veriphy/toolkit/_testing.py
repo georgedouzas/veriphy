@@ -182,7 +182,6 @@ class Sampler:
     """
 
     def __init__(self, seed: int = 0) -> None:
-        """Initialize the generator."""
         self.seed = int(seed)
         self._random = np.random.default_rng(self.seed)
 

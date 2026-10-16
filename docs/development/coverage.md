@@ -28,7 +28,20 @@ lake build Coverage
 
 Each corpus writes its JSON report to `coverage/.veriphy/coverage/<prefix>.json`.
 
-## After this release (2026-10-13)
+## After the book-coverage release (2026-10-16)
+
+Measured with the same pins after vectors, named matrices, polynomial derivatives and interval integrals entered the
+translation. The previous release's fully covered share is in parentheses.
+
+| Corpus | Theorems | With a relation | Fully covered | Up to uninterpreted | Failed |
+|---|---|---|---|---|---|
+| Physlib `master` at `0b252e14` | 7938 | 6051 | 7.0% (6.9%) | 8.1% | 0 |
+| mathlib `Archive` (v4.34.1, `d13f23b7`) | 972 | 748 | 29.5% (29.1%) | 37.7% | 0 |
+| mathlib `Mathlib.Analysis.ODE` | 119 | 69 | 33.3% (33.3%) | 37.7% | 0 |
+| mathlib `Mathlib.Algebra.Lie` | 1625 | 1148 | 4.2% (4.1%) | 7.7% | 0 |
+| mathlib `Mathlib.Geometry.Manifold` | 3033 | 1100 | 18.1% (18.1%) | 27.6% | 0 |
+
+## After the 0.2.0 release (2026-10-13)
 
 Measured at Veriphy commit `9c5ed6e`, with the same pins as the baseline. The baseline's fully covered share is in
 parentheses; every corpus is at or above it.
