@@ -393,7 +393,7 @@ def absentPack : Veriphy.Pack where
   table := { «namespace» := "absent", functions := [{ lean := "Real.sinh", sage := "sinh", arity := 1 }] }
 
 /--
-info: mathlib: 26 functions, 2 constants, 5 coercions, 9 rewrites
+info: mathlib: 26 functions, 2 constants, 5 coercions, 16 rewrites
 fixture: 2 functions, 0 constants, 0 coercions, 0 rewrites
 problem: fixture: constants not found (library version mismatch?): Fixture.missing
 problem: fixture: entry for Real.exp conflicts with the mathlib entry for Real.exp; the mathlib entry stays
@@ -417,7 +417,7 @@ example (x : ℝ) : Real.Gamma x + Real.exp x = 0 := by kit_sym_fixture
 
 -- the core alone has no shipped packs active here
 /--
-info: mathlib: 26 functions, 2 constants, 5 coercions, 9 rewrites
+info: mathlib: 26 functions, 2 constants, 5 coercions, 16 rewrites
 -/
 #guard_msgs in
 #veriphy_tables
@@ -632,7 +632,7 @@ example (x : ℚ) (h : x = 1) : x + 1 = 2 ∧ True := by
 info: translations/broken.json: not valid JSON: offset 15: unexpected end of input
 translations/incomplete.json: missing field 'sage'
 loaded: 2 tables
-mathlib: 26 functions, 2 constants, 5 coercions, 9 rewrites
+mathlib: 26 functions, 2 constants, 5 coercions, 16 rewrites
 project: 1 functions, 0 constants, 0 coercions, 1 rewrites
 project: 0 functions, 0 constants, 0 coercions, 0 rewrites
 problem: project: entry for Real.exp conflicts with the mathlib entry for Real.exp; the mathlib entry stays

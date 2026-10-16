@@ -22,6 +22,7 @@ from veriphy.toolkit._emit import (
     combination,
     decide,
     field_simp,
+    first_of,
     fresh_name,
     hyp,
     linear_combination,
@@ -212,8 +213,6 @@ from veriphy.toolkit._symbolic_emit import (
 from veriphy.toolkit._table import SHIPPED_PACKS, Table, load_core_table, load_pack, parse_table
 
 __all__ = [
-    'SHIPPED_PACKS',
-    'SIDE_RELATIONS',
     'Condition',
     'Coordinates',
     'Definition',
@@ -227,6 +226,8 @@ __all__ = [
     'Operator',
     'Problem',
     'RewriteCandidate',
+    'SHIPPED_PACKS',
+    'SIDE_RELATIONS',
     'Side',
     'Table',
     'adjoint_matrices',
@@ -283,6 +284,7 @@ __all__ = [
     'fierz_coefficients',
     'fierz_fact',
     'find_gauge',
+    'first_of',
     'fresh_name',
     'fusion_data_term',
     'fusion_facts',
