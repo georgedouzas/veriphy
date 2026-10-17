@@ -384,12 +384,12 @@ def require_domain(
     for c in problem.domain:
         if c.kind not in kinds:
             continue
-        if c.discharged_by:
-            names.append(c.discharged_by)
-        elif c.text in proofs:
+        if c.text in proofs:
             name = fresh_name(problem, 'hd', names)
             names.append(name)
             haves.append(tactic(f'have {name} : {c.text} := by {proofs[c.text]}'))
+        elif c.discharged_by:
+            names.append(c.discharged_by)
         else:
             missing.append(c)
     if missing:
@@ -470,10 +470,10 @@ def lemma_rewrite(
     stated.update({c.text: c.discharged_by for c in problem.domain if c.discharged_by})
     args = []
     for condition in side:
-        if condition in stated:
-            args.append(str(stated[condition]))
-        elif condition in proofs:
+        if condition in proofs:
             args.append(f'(by {proofs[condition]})')
+        elif condition in stated:
+            args.append(str(stated[condition]))
         else:
             message = f"side condition '{condition}' of {lemma} is not stated; pass its proof"
             raise CertificateError(message)

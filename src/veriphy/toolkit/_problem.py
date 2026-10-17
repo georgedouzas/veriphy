@@ -309,7 +309,8 @@ class Condition:
         text: The Lean text of the condition, such as `y ≠ 0`.
         expr: The constrained expression, in Sage's symbolic ring, or `None` when it does not parse.
         kind: `ne` (`e ≠ 0`), `nonneg` (`0 ≤ e`), `pos` (`0 < e`) or `le` (`e ≤ bound`).
-        discharged_by: The hypothesis that states it, or `None`.
+        discharged_by: A proof of it from a hypothesis, as Lean text (the hypothesis's name, or a projection such as
+            `(hx).ne'` when the hypothesis states a stronger form), or `None`.
         bound: The upper bound of an `le` condition, in Sage's symbolic ring.
     """
 

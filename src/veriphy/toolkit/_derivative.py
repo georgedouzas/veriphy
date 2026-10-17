@@ -51,10 +51,10 @@ class _Builder:
         condition = f'{symbolic(e.subs({self.var: self.point}), self.problem, lean_type="")} ≠ 0'
         stated = {h.text: h.name for h in self.problem.hyps if h.name}
         stated.update({c.text: c.discharged_by for c in self.problem.domain if c.discharged_by})
-        if condition in stated:
-            return str(stated[condition])
         if condition in self.proofs:
             return f'(by {self.proofs[condition]})'
+        if condition in stated:
+            return str(stated[condition])
         message = f"the derivative needs '{condition}', which no hypothesis states; pass its proof"
         raise CertificateError(message)
 

@@ -1,7 +1,7 @@
 """Test the instances of `sage_test`: kernel and oracle instances, the sampler and the default cases."""
 
 import pytest
-from sage.all import QQ, RDF, RealIntervalField
+from sage.all import AA, QQ, RDF, I, QQbar, RealIntervalField, pi
 
 from veriphy.core import CertificateError
 from veriphy.toolkit import Sampler, check_instances, default_cases, kernel_instance, oracle_instance
@@ -25,6 +25,18 @@ def test_oracle_refusals() -> None:
         oracle_instance('1', lhs=RealIntervalField(20)(1), rhs=RealIntervalField(20)(1))
     with pytest.raises(CertificateError, match='unknown relation'):
         oracle_instance('1', lhs=QQ(1), rhs=QQ(1), relation='≈')
+
+
+def test_oracle_instance_accepts_exact_algebraic_reals() -> None:
+    """Exact algebraic numbers (AA, QQbar) compare exactly; they are not floating-point."""
+    assert oracle_instance('3', lhs=abs(QQbar(3 + 4 * I)), rhs=AA(5)).verdict
+    assert oracle_instance('2', lhs=AA(2).sqrt() ** 2, rhs=QQ(2)).verdict
+
+
+def test_instance_edge_flag_is_a_bool() -> None:
+    """A symbolic truth value passed as `edge` is stored as a Python bool, so the instance encodes."""
+    assert kernel_instance('0', proof='norm_num', edge=(pi / 4 == 0)).edge is False
+    assert oracle_instance('0', lhs=QQ(0), rhs=QQ(0), edge=(pi / 2 == pi - pi / 2)).edge is True
 
 
 def test_sampler_is_seeded() -> None:

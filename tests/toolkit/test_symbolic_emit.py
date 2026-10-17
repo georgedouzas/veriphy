@@ -144,6 +144,15 @@ def test_lemma_rewrite_passes_side_conditions() -> None:
     assert str(rewrite) == 'rw [Real.log_div hx (by positivity)]'
 
 
+def test_supplied_proofs_override_stated_conditions() -> None:
+    """A proof the script supplies is used even when a hypothesis also discharges the condition."""
+    rewrite = lemma_rewrite('Real.log_div', PROBLEM, side=['x ≠ 0'], proofs={'x ≠ 0': 'exact hx.symm.symm'})
+    assert str(rewrite) == 'rw [Real.log_div (by exact hx.symm.symm)]'
+    names, haves = require_domain(PROBLEM, ('ne',), {'x ≠ 0': 'exact hx', 'x ^ 2 + 1 ≠ 0': 'positivity'})
+    assert names == ['hd', 'hd_1']
+    assert str(haves[0]) == 'have hd : x ≠ 0 := by exact hx'
+
+
 def test_matrix_term_renders_literal() -> None:
     """Render a symbolic matrix as a `!![…]` literal."""
     assert str(matrix_term(matrix(SR, [[x, 1], [0, exp(x)]]), PROBLEM)) == '!![x, 1; 0, Real.exp x]'

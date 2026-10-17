@@ -74,7 +74,7 @@ def kernel_instance(*values: object, proof: Lean | str, edge: bool = False) -> I
         {'values': ['0'], 'kind': 'kernel', 'edge': True, 'proof': 'norm_num'}
     """
     text = proof.text if isinstance(proof, Lean) else proof
-    return Instance(tuple(str(v) for v in values), proof=text, edge=edge)
+    return Instance(tuple(str(v) for v in values), proof=text, edge=bool(edge))
 
 
 def _floating(x: object) -> bool:
@@ -90,7 +90,7 @@ def _floating(x: object) -> bool:
     if p in rings or (base is not None and base() in rings):
         return True
     name = type(p).__name__
-    return 'RealField' in name and 'Interval' not in name
+    return 'RealField' in name and 'Interval' not in name and 'Algebraic' not in name
 
 
 def _interval_precision(x: object) -> int | None:
@@ -166,7 +166,7 @@ def oracle_instance(
                 relation
             ]
         evaluation = f'{lhs} {relation} {rhs} (exact)'
-    return Instance(tuple(str(v) for v in values), verdict=verdict, evaluation=evaluation, edge=edge)
+    return Instance(tuple(str(v) for v in values), verdict=verdict, evaluation=evaluation, edge=bool(edge))
 
 
 class Sampler:
