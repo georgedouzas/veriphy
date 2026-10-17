@@ -71,6 +71,11 @@ initialize session : Std.Mutex (Option Session) ← Std.Mutex.new none
 def requestTimeout : IO Nat := do
   return ((← IO.getEnv "VERIPHY_SAGE_TIMEOUT").bind String.toNat?).getD 150
 
+/-- The time limit a script gets inside the daemon: the request limit less 30 seconds for the round trip, at least
+one second, so `VERIPHY_SAGE_TIMEOUT` bounds the script itself and not only the wait for it. -/
+def scriptTimeout : IO Nat := do
+  return max 1 ((← requestTimeout) - 30)
+
 /-- Start the daemon. -/
 private def start (cfg : Config) : IO Session := do
   let (exe, args) ← cfg.resolve
@@ -164,15 +169,19 @@ def field {α : Type} (j : Json) (k : String) (f : Json → Except String α) : 
 
 /-- Run a proof script against a serialized problem; returns the Lean tactic block it built, its output, and whether
 the block declared that it leaves goals open for the next tactic. -/
-def run (problem : Json) (script : String) (cfg : Config := {}) : IO (String × String × Bool) :=
-  call "run" (Json.mkObj [("problem", problem), ("script", Json.str script)]) (cfg := cfg) fun r => do
+def run (problem : Json) (script : String) (cfg : Config := {}) : IO (String × String × Bool) := do
+  let params := Json.mkObj [("problem", problem), ("script", Json.str script),
+    ("timeout_s", Json.num (← scriptTimeout))]
+  call "run" params (cfg := cfg) fun r => do
     let leaves := (r.getObjValAs? Bool "leaves_goals").toOption.getD false
     return (← field r "lean" (·.getStr?), ← field r "stdout" (·.getStr?), leaves)
 
 /-- Run a test script against a claim's serialized problem; returns its instances (as the daemon encodes them), its
 output, the seed it used and Sage's version. -/
-def test (problem : Json) (script : String) (cfg : Config := {}) : IO (Array Json × String × Nat × String) :=
-  call "test" (Json.mkObj [("problem", problem), ("script", Json.str script)]) (cfg := cfg) fun r => do
+def test (problem : Json) (script : String) (cfg : Config := {}) : IO (Array Json × String × Nat × String) := do
+  let params := Json.mkObj [("problem", problem), ("script", Json.str script),
+    ("timeout_s", Json.num (← scriptTimeout))]
+  call "test" params (cfg := cfg) fun r => do
     return (← field r "instances" (·.getArr?), ← field r "stdout" (·.getStr?), ← field r "seed" (·.getNat?),
       ← field r "sage_version" (·.getStr?))
 

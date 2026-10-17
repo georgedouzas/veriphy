@@ -351,7 +351,7 @@ elab "kit_le " a:term:max b:term:max : tactic => Lean.Elab.Tactic.withMainContex
 #guard_msgs (info, drop warning) in
 example (k n : ℕ) (hk : k ≤ n) : True := by kit_le k n
 
-/-- info: k ≤ n by some (hk) -/
+/-- info: k ≤ n by some ((hk).le) -/
 #guard_msgs (info, drop warning) in
 example (k n : ℕ) (hk : k < n) : True := by kit_le k n
 
@@ -444,7 +444,7 @@ info: {"atom_types":["ℝ","ℝ","ℝ","ℝ"],"atoms":["Real.arcsin x","Real.arc
 example (x : ℝ) (hx : -1 ≤ x) : Real.arcsin x + Real.arccos x ≤ Real.arctan x + 2 := by kit_lenient
 
 /--
-info: {"atom_types":["ℝ","ℝ","ℝ"],"atoms":["Real.logb b x","x","b"],"carrier":"ℝ","definitions":[],"derivatives":[],"domain":[{"expr":"x2","kind":"pos","text":"0 < b"},{"bound":"1","discharged_by":"hb","expr":"x2","kind":"ne","text":"b ≠ 1"},{"discharged_by":"hx","expr":"x1","kind":"pos","text":"0 < x"}],"exists_function":null,"extensions":[],"functions":[],"goal":{"expr":"(logb(x2, x1)) - (x1)","kind":"rel","lhs":"Real.logb b x","lhs_poly":"x0","poly":"(x0) - (x1)","rel":"le","rhs":"x","rhs_poly":"x1","text":"Real.logb b x ≤ x"},"hyps":[{"expr":"(1) - (x2)","name":"hb","poly":"(1) - (x2)","rel":"lt","text":"1 < b"},{"expr":"(0) - (x1)","name":"hx","poly":"(0) - (x1)","rel":"lt","text":"0 < x"}],"integrals":[],"matrix_indices":[],"namespaces":["mathlib"],"table_problems":[],"vars":["x0","x1","x2"]}
+info: {"atom_types":["ℝ","ℝ","ℝ"],"atoms":["Real.logb b x","x","b"],"carrier":"ℝ","definitions":[],"derivatives":[],"domain":[{"expr":"x2","kind":"pos","text":"0 < b"},{"bound":"1","discharged_by":"(hb).ne'","expr":"x2","kind":"ne","text":"b ≠ 1"},{"discharged_by":"hx","expr":"x1","kind":"pos","text":"0 < x"}],"exists_function":null,"extensions":[],"functions":[],"goal":{"expr":"(logb(x2, x1)) - (x1)","kind":"rel","lhs":"Real.logb b x","lhs_poly":"x0","poly":"(x0) - (x1)","rel":"le","rhs":"x","rhs_poly":"x1","text":"Real.logb b x ≤ x"},"hyps":[{"expr":"(1) - (x2)","name":"hb","poly":"(1) - (x2)","rel":"lt","text":"1 < b"},{"expr":"(0) - (x1)","name":"hx","poly":"(0) - (x1)","rel":"lt","text":"0 < x"}],"integrals":[],"matrix_indices":[],"namespaces":["mathlib"],"table_problems":[],"vars":["x0","x1","x2"]}
 -/
 #guard_msgs (info, error, drop warning) in
 example (b x : ℝ) (hb : 1 < b) (hx : 0 < x) : Real.logb b x ≤ x := by kit_lenient
@@ -847,3 +847,33 @@ KitLevels.testedOne: kernel-test
 -/
 #guard_msgs in
 #veriphy_levels KitLevels
+
+-- a stronger hypothesis discharges a condition through its projection: `0 < x` gives `x ≠ 0` as `(hx).ne'`
+/--
+info: {"atom_types":["ℝ","ℝ"],"atoms":["1 / x","x"],"carrier":"ℝ","definitions":[],"derivatives":[],"domain":[{"discharged_by":"(hx).ne'","expr":"x1","kind":"ne","text":"x ≠ 0"}],"exists_function":null,"extensions":[],"functions":[],"goal":{"expr":"((1 / x1)) - (2)","kind":"rel","lhs":"1 / x","lhs_poly":"x0","poly":"(x0) - (2)","rel":"le","rhs":"2","rhs_poly":"2","text":"1 / x ≤ 2"},"hyps":[{"expr":"(0) - (x1)","name":"hx","poly":"(0) - (x1)","rel":"lt","text":"0 < x"}],"integrals":[],"matrix_indices":[],"namespaces":["mathlib"],"table_problems":[],"vars":["x0","x1"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (x : ℝ) (hx : 0 < x) : 1 / x ≤ 2 := by kit_lenient
+
+-- a division in ℂ with a hypothesis in context: ℂ has no `<`, so only `w ≠ 0` itself discharges the condition
+/--
+info: {"atom_types":["ℂ","ℂ","ℂ","ℂ"],"atoms":["z / w","z","w⁻¹","w"],"carrier":"ℂ","definitions":[],"derivatives":[],"domain":[{"discharged_by":"hw","expr":"x3","kind":"ne","text":"w ≠ 0"}],"exists_function":null,"extensions":[],"functions":[],"goal":{"expr":"((x1 / x3)) - ((x1 * (1 / x3)))","kind":"rel","lhs":"z / w","lhs_poly":"x0","poly":"(x0) - ((x1 * x2))","rel":"eq","rhs":"z * w⁻¹","rhs_poly":"(x1 * x2)","text":"z / w = z * w⁻¹"},"hyps":[{"expr":"(x3) - (0)","name":"hw","poly":"(x3) - (0)","rel":"ne","text":"w ≠ 0"}],"integrals":[],"matrix_indices":[],"namespaces":["mathlib"],"table_problems":[],"vars":["x0","x1","x2","x3"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (z w : ℂ) (hw : w ≠ 0) : z / w = z * w⁻¹ := by kit_lenient
+
+-- a condition on a summand mentions the index, which is not in scope outside the sum: it is not listed
+/--
+info: {"atom_types":["ℝ","ℕ"],"atoms":["∑ k ∈ Finset.range n, 1 / (2 * ↑k + 1)","n"],"carrier":"ℝ","definitions":[],"derivatives":[],"domain":[],"exists_function":null,"extensions":[],"functions":[],"goal":{"expr":"(0) - (sum((1 / ((2 * k_) + 1)), k_, 0, x1 - 1))","kind":"rel","lhs":"0","lhs_poly":"0","poly":"(0) - (x0)","rel":"le","rhs":"∑ k ∈ Finset.range n, 1 / (2 * ↑k + 1)","rhs_poly":"x0","text":"∑ k ∈ Finset.range n, 1 / (2 * ↑k + 1) ≥ 0"},"hyps":[],"integrals":[],"matrix_indices":[],"namespaces":["mathlib"],"table_problems":[],"vars":["x0","x1"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (n : ℕ) : ∑ k ∈ Finset.range n, (1 : ℝ) / (2 * k + 1) ≥ 0 := by kit_lenient
+
+-- a goal right after `have` carries an annotation; it is still read as a relation
+/--
+info: {"atom_types":["ℚ","ℚ"],"atoms":["x","y"],"carrier":"ℚ","definitions":[],"derivatives":[],"domain":[],"exists_function":null,"extensions":[],"functions":[],"goal":{"expr":"((x0 + 1)) - ((x1 + 1))","kind":"rel","lhs":"x + 1","lhs_poly":"(x0 + 1)","poly":"((x0 + 1)) - ((x1 + 1))","rel":"eq","rhs":"y + 1","rhs_poly":"(x1 + 1)","text":"x + 1 = y + 1"},"hyps":[{"expr":"(x0) - (x1)","name":"h","poly":"(x0) - (x1)","rel":"eq","text":"x = y"},{"expr":"(0) - (0)","name":"_hz","poly":"(0) - (0)","rel":"eq","text":"0 = 0"}],"integrals":[],"matrix_indices":[],"namespaces":["mathlib"],"table_problems":[],"vars":["x0","x1"]}
+-/
+#guard_msgs (info, error, drop warning) in
+example (x y : ℚ) (h : x = y) : x + 1 = y + 1 := by
+  have _hz : (0 : ℚ) = 0 := rfl
+  kit_lenient

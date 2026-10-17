@@ -82,9 +82,9 @@ structure Problem where
   goalExpr : Option (String × String) := none
   /-- The Lean type of each atom: `ℕ`, `ℤ`, `ℚ`, `ℝ`, `ℂ`, `matrix` or `other`. -/
   atomTypes : Array String := #[]
-  /-- Domain conditions: the Sage term, the kind (`ne`, `nonneg`, `pos`), its Lean text, and the hypothesis
-  that discharges it. -/
-  conditions : Array (String × String × Option String × Expr × Option Name) := #[]
+  /-- Domain conditions: the Sage term, the kind (`ne`, `nonneg`, `pos`), its Lean text, and a proof of it from a
+  hypothesis as Lean text (the name, or a projection such as `(hx).ne'` for a stronger hypothesis). -/
+  conditions : Array (String × String × Option String × Expr × Option String) := #[]
   /-- The translation namespaces in force, core first. -/
   namespaces : List String := []
   /-- Problems found resolving the translation tables (missing constants, conflicts). -/
@@ -158,7 +158,7 @@ private def collectAll (carrier : Option Expr) :
   let mut facts := #[]
   for decl in ← getLCtx do
     unless nameable decl do continue
-    let ty ← instantiateMVars decl.type
+    let ty := (← instantiateMVars decl.type).cleanupAnnotations
     unless ← isProp ty do continue
     match ← translateHyp carrier decl ty with
     | some (α, c) =>
@@ -276,7 +276,8 @@ def Problem.enrich (p : Problem) : MetaM Problem := do
 polynomial form is kept with its text. Runs `k` in the goal's context (extended with the binders of an
 `∃` goal whose body translates). -/
 def withLenientProblem {α : Type} (k : Problem → TermElabM α) : TacticM α := withMainContext do
-  let tgt ← instantiateMVars (← (← getMainGoal).getType)
+  -- annotations (`mdata`) that `refine ?_`, `have` or `generalize` leave around the goal would hide its relation
+  let tgt := (← instantiateMVars (← (← getMainGoal).getType)).cleanupAnnotations
   let finish (carrier : Option Expr) (goal : ProblemM Goal) (seed : Array Expr) : TermElabM α := do
     let ((goal, (carrier, hyps, facts)), atoms) ← (do
         let goal ← goal
@@ -348,7 +349,7 @@ def Problem.toJson (p : Problem) : MetaM Json := do
       | some (r, x) => [("expr", Json.str x), ("rel", Json.str r)] | none => []
     return Json.mkObj ([("name", Json.str n.toString), ("text", ← text e)] ++ exprField)
   let conditions ← p.conditions.mapM fun (sage, kind, bound, prop, discharge) => do
-    let byField : List (String × Json) := match discharge with | some n => [("discharged_by", Json.str n.toString)] | none => []
+    let byField : List (String × Json) := match discharge with | some n => [("discharged_by", Json.str n)] | none => []
     let boundField : List (String × Json) := match bound with | some b => [("bound", Json.str b)] | none => []
     return Json.mkObj ([("expr", Json.str sage), ("kind", Json.str kind), ("text", ← text prop)] ++ boundField ++ byField)
   let carrier ← match p.carrier with | some c => text c | none => pure (Json.str "")

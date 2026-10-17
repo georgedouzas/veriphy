@@ -221,16 +221,22 @@ def Condition.prop (c : Condition) : MetaM Expr := do
   | .le, some b => mkAppM ``LE.le #[c.term, b]
   | .le, none => throwError "veriphy: an `le` condition needs a bound"
 
-/-- Forms of a hypothesis stronger than the condition that still discharge it. -/
-private def strongerForms (c : Condition) : MetaM (List Expr) := do
+/-- `a < b`, or nothing when the type has no `<` (as `ℂ`). -/
+private def ltForm? (a b : Expr) : MetaM (Option Expr) := do
+  try return some (← mkAppM ``LT.lt #[a, b]) catch _ => return none
+
+/-- Forms of a hypothesis stronger than the condition that still discharge it, each with the projection that turns
+such a hypothesis `h` into the condition (`h.ne'` for `0 < e` against `e ≠ 0`); none that the type cannot state. -/
+private def strongerForms (c : Condition) : MetaM (List (Expr × String)) := do
+  let with_ (s : String) (e? : Option Expr) := e?.map (·, s)
   match c.kind, c.bound with
   | .ne, b => do
     let z ← match b with
       | some b => pure b
       | none => zeroOf c.term
-    pure [← mkAppM ``LT.lt #[z, c.term], ← mkAppM ``LT.lt #[c.term, z]]
-  | .nonneg, _ => pure [← mkAppM ``LT.lt #[← zeroOf c.term, c.term]]
-  | .le, some b => pure [← mkAppM ``LT.lt #[c.term, b]]
+    return [with_ ".ne'" (← ltForm? z c.term), with_ ".ne" (← ltForm? c.term z)].filterMap id
+  | .nonneg, _ => return [with_ ".le" (← ltForm? (← zeroOf c.term) c.term)].filterMap id
+  | .le, some b => return [with_ ".le" (← ltForm? c.term b)].filterMap id
   | _, _ => pure []
 
 /-- Do two conditions ask for the same thing? -/
@@ -242,15 +248,17 @@ def Condition.same (c d : Condition) : MetaM Bool := do
   | none, none => return true
   | _, _ => return false
 
-/-- The nameable hypothesis that states a condition (or a stronger form of it), if any. -/
-def Condition.dischargedBy (c : Condition) (nameable : LocalDecl → Bool) : MetaM (Option Name) := do
+/-- A proof of a condition from a nameable hypothesis, as Lean text, if any: the hypothesis itself when it states the
+condition, or its projection (`(h).ne'`, `(h).le`) when it states a stronger form. -/
+def Condition.dischargedBy (c : Condition) (nameable : LocalDecl → Bool) : MetaM (Option String) := do
   let wanted ← c.prop
   let stronger ← strongerForms c
   for decl in ← getLCtx do
     unless nameable decl do continue
     let ty ← instantiateMVars decl.type
-    for target in wanted :: stronger do
-      if ← withReducible (isDefEq ty target) then return some decl.userName
+    if ← withReducible (isDefEq ty wanted) then return some decl.userName.toString
+    for (target, proj) in stronger do
+      if ← withReducible (isDefEq ty target) then return some s!"({decl.userName}){proj}"
   return none
 
 /-- Is `e` the variable `y`, possibly seen through structure projections such as `Space.val`? -/
@@ -502,6 +510,11 @@ partial def exprToSym (e : Expr) : SymM SymExpr := do
       modify fun st => { st with bound := st.bound.pop }
       let st ← get
       if (st.atoms.extract before.atoms.size st.atoms.size).any (·.containsFVar x.fvarId!) then return none
+      -- a condition on the summand mentions the index, which is not in scope outside the sum: it cannot be stated
+      -- as a hypothesis, so it is dropped (as for an integrand); the kernel still checks the emitted proof
+      let kept := (st.conditions.extract before.conditions.size st.conditions.size).filter fun c =>
+        !c.term.containsFVar x.fvarId! && !(c.bound.any (·.containsFVar x.fvarId!))
+      modify fun st' => { st' with conditions := before.conditions ++ kept }
       return some body'
     let some body' := body'? | set saved; symAtom e
     match b'? with

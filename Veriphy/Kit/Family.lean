@@ -92,6 +92,17 @@ def keepRunAlternatives (s₀ : Tactic.SavedState) (proof : Syntax) : TacticM Sy
   s₁.restore
   return current
 
+/-- The text of a tactic as the replacement prints it: wrapped at 120 columns when the wrapped text parses back,
+and unwrapped otherwise (the pretty-printer can break a line after `;` inside a term-level `by`, where the break
+does not parse). -/
+def renderTactic (tac : TSyntax `tactic) : CoreM String := do
+  -- without source information, so comments around the original text are not printed with it
+  let fmt ← PrettyPrinter.ppTactic ⟨tac.raw.rewriteBottomUp (·.setInfo .none)⟩
+  let wrapped := fmt.pretty 120
+  match Parser.runParserCategory (← getEnv) `tactic wrapped "<replacement>" with
+  | .ok _ => return wrapped
+  | .error _ => return fmt.pretty 100000
+
 /-- Run `proof` on the main goal, replay it if `veriphy.checkReplay` is set, and emit what ran as the single
 `Sage-free replacement:` for the whole current tactic (`getRef`, so applying it also replaces the
 tactic's arguments). On failure the state is restored and nothing is emitted. -/
@@ -141,7 +152,8 @@ def closeAndEmit (proof : TSyntax `tactic) (leavesGoals : Bool := false) : Tacti
   let proof : TSyntax `tactic := ⟨← keepRunAlternatives s₀ proof⟩
   if veriphy.checkReplay.get (← getOptions) then
     replay s₀ proof (← getUnsolvedGoals)
-  Lean.Meta.Tactic.TryThis.addSuggestion (← getRef) proof (header := "Sage-free replacement: ")
+  Lean.Meta.Tactic.TryThis.addSuggestion (← getRef)
+    (.string (← renderTactic proof) : Lean.Meta.Tactic.TryThis.SuggestionText) (header := "Sage-free replacement: ")
 
 
 end Veriphy
