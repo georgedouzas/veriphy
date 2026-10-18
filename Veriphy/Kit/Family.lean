@@ -92,13 +92,18 @@ def keepRunAlternatives (s₀ : Tactic.SavedState) (proof : Syntax) : TacticM Sy
   s₁.restore
   return current
 
-/-- The text of a tactic as the replacement prints it: wrapped at 120 columns when the wrapped text parses back,
-and unwrapped otherwise (the pretty-printer can break a line after `;` inside a term-level `by`, where the break
-does not parse). -/
+/-- Texts longer than this are not re-parsed: large certificates (structure-constant tables) can make the parser
+backtrack for hours, and they contain no `;` sequences to break. -/
+def renderCheckLimit : Nat := 20000
+
+/-- The text of a tactic as the replacement prints it: wrapped at 120 columns, or unwrapped when the pretty-printer
+broke a line after `;` (inside a term-level `by`) and the wrapped text does not parse back. -/
 def renderTactic (tac : TSyntax `tactic) : CoreM String := do
   -- without source information, so comments around the original text are not printed with it
   let fmt ← PrettyPrinter.ppTactic ⟨tac.raw.rewriteBottomUp (·.setInfo .none)⟩
   let wrapped := fmt.pretty 120
+  let breaksAfterSemicolon := (wrapped.splitOn "\n").any (·.trimRight.endsWith ";")
+  unless breaksAfterSemicolon && wrapped.length ≤ renderCheckLimit do return wrapped
   match Parser.runParserCategory (← getEnv) `tactic wrapped "<replacement>" with
   | .ok _ => return wrapped
   | .error _ => return fmt.pretty 100000
