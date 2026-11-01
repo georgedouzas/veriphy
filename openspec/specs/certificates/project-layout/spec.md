@@ -6,11 +6,7 @@ Keeps everything Veriphy creates or reads in a downstream project under one dire
 ## Requirements
 
 ### Requirement: One root for Veriphy artifacts
-Every Veriphy artifact in a downstream project SHALL live under `.veriphy/` at the root of the Lean workspace. Veriphy SHALL NOT create or read Veriphy artifacts anywhere else in the project. The layout is:
-- `.veriphy/certificates/`: certificate scripts (`.sage`);
-- `.veriphy/translations/`: project translation and rewrite entries (`.json`);
-- `.veriphy/lean/`: Lean sources copied from Veriphy (recipe assets, the bundled `VeriphyCheck` file);
-- `.veriphy/coverage/`: coverage reports.
+Every Veriphy artifact in a downstream project SHALL live under `.veriphy/` at the root of the Lean workspace. Veriphy SHALL NOT create or read Veriphy artifacts anywhere else in the project.
 
 #### Scenario: Fresh project
 - **WHEN** an agent saves its first script and its first translation entry in a project with no `.veriphy/`
@@ -19,6 +15,25 @@ Every Veriphy artifact in a downstream project SHALL live under `.veriphy/` at t
 #### Scenario: Removing Veriphy
 - **WHEN** a user deletes `.veriphy/` from a project whose proofs use only emitted replacements and no copied assets
 - **THEN** the project still builds
+
+#### Scenario: First graph
+- **WHEN** an agent extracts the first source of a project into the graph
+- **THEN** `.veriphy/graph/sources/` is created with the source's file, and nothing outside `.veriphy/` changes
+
+### Requirement: Directories under the project root
+The directories under `.veriphy/` SHALL be `certificates/` (certificate scripts), `translations/` (translation and rewrite entries), `lean/` (Lean sources copied from Veriphy), `coverage/` (coverage reports), `tests/` (test records of `sage_test`) and `graph/` (the research claim graph).
+
+#### Scenario: Locating an artifact
+- **WHEN** a user looks for the certificate of a reasoning run of the research graph
+- **THEN** it is under `.veriphy/graph/runs/`, and a test record is under `.veriphy/tests/`
+
+#### Scenario: The graph directory
+- **WHEN** a project has a research claim graph
+- **THEN** `.veriphy/graph/` holds `sources/` (Turtle files per source and provenance), `lean/` (the Lean export) and `runs/` (reasoning certificates)
+
+#### Scenario: Copied Lean sources and scripts
+- **WHEN** an agent copies a recipe asset and saves a certificate script
+- **THEN** the asset is under `.veriphy/lean/` and the script, a `.sage` file, is under `.veriphy/certificates/`
 
 ### Requirement: Proofs stay project code
 The project's own Lean sources and committed proofs SHALL stay where the project keeps them. Emitted replacements are project code, not Veriphy artifacts, and Veriphy SHALL never move them into `.veriphy/`.
