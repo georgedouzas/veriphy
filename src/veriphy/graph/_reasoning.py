@@ -7,8 +7,16 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
-from veriphy.core import GraphError
-from veriphy.graph._checker import BUILD_COMMAND, check_certificate, find_checker
+from veriphy.core import CheckerError, GraphError
+from veriphy.graph._checker import (
+    BUILD_COMMAND,
+    Setup,
+    check_certificate,
+    ensure_checker,
+    ensure_reasoner,
+    find_checker,
+    setup_enabled,
+)
 from veriphy.graph._engine import Triple, run_reasoner
 from veriphy.graph._store import ProjectGraph, graph_dir
 from veriphy.graph._vocabulary import generate_axioms, vp
@@ -191,65 +199,89 @@ def load_run(directory: Path) -> Run:
     )
 
 
-def _check(directory: Path, checker: Path | None) -> dict[str, object]:
-    """Return the checker's report on a certificate, or the unchecked report that says why there is none."""
-    lookup = find_checker() if checker is None else None
-    path = checker if checker is not None else (lookup.path if lookup else None)
-    if path is None:
-        searched = [str(p) for p in (lookup.searched if lookup else ())]
-        return {'status': 'unchecked_no_checker', 'searched': searched, 'build': BUILD_COMMAND}
+def _unchecked(status: str, searched: tuple[Path, ...], error: str) -> dict[str, object]:
+    """Return the report of a run no checker saw, with where Veriphy looked and how to set the checker up."""
+    return {'status': status, 'searched': [str(p) for p in searched], 'build': BUILD_COMMAND, 'error': error}
+
+
+def _check(directory: Path, checker: Path | None, setup: Setup) -> dict[str, object]:
+    """Return the checker's report on a certificate, setting the checker up on first use, or say why there is none."""
+    if checker is not None:
+        return check_certificate(directory, checker)
+    lookup = find_checker(release=setup.release)
+    if lookup.path is not None:
+        return check_certificate(directory, lookup.path)
+    if lookup.explicit or not setup_enabled():
+        reason = 'the explicit checker is missing' if lookup.explicit else 'VERIPHY_GRAPH_SETUP is off'
+        return _unchecked('unchecked_no_checker', lookup.searched, reason)
+    try:
+        path = ensure_checker(release=setup.release, notify=setup.notify)
+    except CheckerError as exc:
+        return _unchecked('unchecked_error', lookup.searched, f'setting up the checker failed: {exc}')
     return check_certificate(directory, path)
 
 
-def check_run(directory: Path, checker: Path | None = None) -> Run:
+def check_run(directory: Path, checker: Path | None = None, setup: Setup | None = None) -> Run:
     """Check a run directory with `oo-horn`, record the report, and return the run.
 
     Args:
         directory: The run directory.
-        checker: The `oo-horn` executable, found with `find_checker` when `None`.
+        checker: The `oo-horn` executable, found or set up on first use when `None`.
+        setup: Where first-use setup fetches from and reports to, the pinned release and standard error by default.
 
     Returns:
         The run, with the checker's report.
     """
-    (directory / CHECK_FILE).write_text(json.dumps(_check(directory, checker), indent=1, sort_keys=True) + '\n')
+    report = _check(directory, checker, setup or Setup())
+    (directory / CHECK_FILE).write_text(json.dumps(report, indent=1, sort_keys=True) + '\n')
     return load_run(directory)
 
 
-def reason_triples(triples: Iterable[Triple], runs: Path, checker: Path | None = None) -> Run:
+def reason_triples(
+    triples: Iterable[Triple],
+    runs: Path,
+    checker: Path | None = None,
+    setup: Setup | None = None,
+) -> Run:
     """Reason over asserted triples, write the run under `runs/<digest>/`, and have it checked.
 
     Args:
         triples: The asserted triples, whose terms are IRIs.
         runs: The directory that holds runs.
-        checker: The `oo-horn` executable, found with `find_checker` when `None`.
+        checker: The `oo-horn` executable, found or set up on first use when `None`.
+        setup: Where first-use setup fetches from and reports to, the pinned release and standard error by default.
 
     Returns:
         The checked run.
     """
+    setup = setup or Setup()
     asserted = sorted(set(triples))
     digest = _digest(asserted)
     directory = runs / digest[:DIGEST_LENGTH]
     if directory.exists():
         shutil.rmtree(directory)
     directory.mkdir(parents=True)
-    output = run_reasoner(asserted, directory)
+    output = run_reasoner(asserted, directory, ensure_reasoner(release=setup.release, notify=setup.notify))
     (directory / DIGEST_FILE).write_text(digest + '\n')
     meta = {'fixpoint': output.fixpoint, 'iterations': output.iterations, 'derived': output.derived}
     (directory / RUN_FILE).write_text(json.dumps(meta, indent=1, sort_keys=True) + '\n')
-    return check_run(directory, checker)
+    return check_run(directory, checker, setup)
 
 
-def reason(graph: ProjectGraph, checker: Path | None = None) -> Run:
+def reason(graph: ProjectGraph, checker: Path | None = None, setup: Setup | None = None) -> Run:
     """Reason over a project's graph under the built-in rules, and have the certificate checked.
+
+    The reasoner and the checker are set up on first use unless `VERIPHY_GRAPH_SETUP` is `off`.
 
     Args:
         graph: The research graph.
-        checker: The `oo-horn` executable, found with `find_checker` when `None`.
+        checker: The `oo-horn` executable, found or set up on first use when `None`.
+        setup: Where first-use setup fetches from and reports to, the pinned release and standard error by default.
 
     Returns:
         The checked run, stored under `.veriphy/graph/runs/`.
     """
-    return reason_triples(reasoning_input(graph), graph_dir(graph.root) / RUNS_DIR, checker)
+    return reason_triples(reasoning_input(graph), graph_dir(graph.root) / RUNS_DIR, checker, setup)
 
 
 def recheck(directory: Path, graph: ProjectGraph | None = None, checker: Path | None = None) -> tuple[Run, bool | None]:

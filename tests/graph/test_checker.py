@@ -1,32 +1,29 @@
-"""Test finding and building `oo-horn`, installing the reasoner, and the built-in rule table."""
+"""Test setting up `oo-horn` and the reasoner from a release, on first use and on demand, and the rule table."""
 
-import stat
+import dataclasses
+import hashlib
 from pathlib import Path
 
 import pytest
 
-from veriphy.core import CheckerError
-from veriphy.graph import build_checker, builtin_rules, cache_dir, find_checker, load_graph, reason
+from veriphy.core import CheckerError, GraphExtraMissingError
+from veriphy.graph import (
+    Release,
+    build_checker,
+    builtin_rules,
+    cache_dir,
+    ensure_checker,
+    ensure_reasoner,
+    ensure_release,
+    find_checker,
+    load_graph,
+    reason,
+)
 
-FAKE_TOOL = """#!/bin/sh
-echo "$0 $*" >> "{log}"
-case "$1" in
-  clone) /bin/mkdir -p "$8/.git" "$8/python" "$8/lean/.lake/build/bin" ;;
-  rev-parse) echo 0123abcd ;;
-esac
-"""
 
-
-def _fake_tools(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, names: tuple[str, ...]) -> Path:
-    """Put fake tools on PATH that log their arguments, and return the log."""
-    bin_dir, log = tmp_path / 'bin', tmp_path / 'calls.log'
-    bin_dir.mkdir()
-    for name in names:
-        tool = bin_dir / name
-        tool.write_text(FAKE_TOOL.format(log=log))
-        tool.chmod(tool.stat().st_mode | stat.S_IEXEC)
-    monkeypatch.setenv('PATH', str(bin_dir))
-    return log
+def _environ(tmp_path: Path, **extra: str) -> dict[str, str]:
+    """Return an environment whose cache is under the test directory."""
+    return {'XDG_CACHE_HOME': str(tmp_path / 'cache'), **extra}
 
 
 def test_cache_dir_follows_xdg() -> None:
@@ -41,52 +38,108 @@ def test_find_checker_prefers_the_explicit_path(tmp_path: Path) -> None:
     binary.chmod(0o755)
     assert find_checker({'VERIPHY_OO_HORN': str(binary), 'XDG_CACHE_HOME': str(tmp_path)}).path == binary
     missing = find_checker({'VERIPHY_OO_HORN': str(tmp_path / 'none'), 'XDG_CACHE_HOME': str(tmp_path)})
-    assert (missing.path, missing.searched) == (None, (tmp_path / 'none',))
+    assert (missing.path, missing.searched, missing.explicit) == (None, (tmp_path / 'none',), True)
 
 
-def test_build_checker_clones_builds_and_installs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Clone the pinned tag into the cache, build oo-horn there, and install the release's reasoner."""
-    log = _fake_tools(tmp_path, monkeypatch, ('git', 'lake', 'uv'))
-    report = build_checker(environ={'XDG_CACHE_HOME': str(tmp_path / 'cache')})
-    directory = tmp_path / 'cache' / 'veriphy' / 'open-ontologies' / 'v2.1.0'
-    calls = log.read_text()
-    assert '--branch v2.1.0 https://github.com/fabio-rovai/open-ontologies' in calls
-    assert 'pip install --python' in calls
-    assert str(directory / 'python') in calls
-    assert 'lake build oo-horn' in calls
-    assert (report.tag, report.commit, report.checker) == (
-        'v2.1.0',
-        '0123abcd',
-        directory / 'lean/.lake/build/bin/oo-horn',
-    )
+def test_ensure_release_fetches_once(tmp_path: Path, fake_release: Release) -> None:
+    """Fetch the release on first use, report it, and fetch nothing the second time."""
+    messages: list[str] = []
+    directory, commit = ensure_release(environ=_environ(tmp_path), release=fake_release, notify=messages.append)
+    ensure_release(environ=_environ(tmp_path), release=fake_release, notify=messages.append)
+    assert commit == fake_release.commit
+    assert (directory / 'python' / 'src' / 'open_ontologies_lite').is_dir()
+    assert len(messages) == 1
+    assert messages[0].startswith('Fetching Open Ontologies v-test')
 
 
-def test_build_checker_reasoner_only_skips_lake(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Install the reasoner without building the checker."""
-    log = _fake_tools(tmp_path, monkeypatch, ('git', 'uv'))
-    report = build_checker(reasoner_only=True, environ={'XDG_CACHE_HOME': str(tmp_path / 'cache')})
+def test_ensure_release_refuses_a_moved_tag(tmp_path: Path, fake_release: Release) -> None:
+    """Refuse a release whose tag points to another commit than the pinned one, and keep nothing."""
+    pinned = dataclasses.replace(fake_release, commit='0' * 40)
+    with pytest.raises(CheckerError, match=f'points to commit {fake_release.commit}, and Veriphy pins {"0" * 40}'):
+        ensure_release(environ=_environ(tmp_path), release=pinned, notify=lambda _: None)
+    assert not cache_dir(_environ(tmp_path), pinned).exists()
+
+
+def test_ensure_reasoner_returns_the_cached_source(tmp_path: Path, fake_release: Release) -> None:
+    """Return the release's source directory, installing nothing."""
+    source = ensure_reasoner(environ=_environ(tmp_path), release=fake_release, notify=lambda _: None)
+    assert source == cache_dir(_environ(tmp_path), fake_release) / 'python' / 'src'
+    assert (source / 'open_ontologies_lite' / 'horn').is_dir()
+
+
+def test_ensure_reasoner_with_setup_off_names_the_command(tmp_path: Path, fake_release: Release) -> None:
+    """Refuse to fetch when setup is off, and name the setup command."""
+    environ = _environ(tmp_path, VERIPHY_GRAPH_SETUP='off')
+    with pytest.raises(GraphExtraMissingError, match='checker build'):
+        ensure_reasoner(environ=environ, release=fake_release, notify=lambda _: None)
+    assert not cache_dir(environ, fake_release).exists()
+
+
+def test_ensure_checker_keeps_a_verified_prebuilt_binary(tmp_path: Path, fake_release: Release) -> None:
+    """Download the prebuilt checker, check both hashes and that it runs, and find it afterwards."""
+    messages: list[str] = []
+    path = ensure_checker(environ=_environ(tmp_path), release=fake_release, notify=messages.append, prebuilt=True)
+    assert path == cache_dir(_environ(tmp_path), fake_release) / 'bin' / 'oo-horn'
+    assert find_checker(_environ(tmp_path), fake_release).path == path
+    assert any('Downloading the prebuilt oo-horn' in m for m in messages)
+
+
+def test_ensure_checker_refuses_a_tampered_binary(tmp_path: Path, fake_release: Release) -> None:
+    """Refuse a binary whose hash is not the pinned one, naming both hashes, and keep nothing."""
+    pinned = dataclasses.replace(fake_release, prebuilt_sha256='f' * 64)
+    expected = f'while Veriphy pins {"f" * 64} and the release lists {fake_release.prebuilt_sha256}'
+    with pytest.raises(CheckerError, match=expected):
+        ensure_checker(environ=_environ(tmp_path), release=pinned, notify=lambda _: None, prebuilt=True)
+    assert not (cache_dir(_environ(tmp_path), pinned) / 'bin' / 'oo-horn').exists()
+
+
+def test_ensure_checker_builds_when_the_prebuilt_does_not_run(
+    tmp_path: Path,
+    fake_release: Release,
+    fake_lake: Path,
+) -> None:
+    """Delete a prebuilt binary that does not run here, and build the checker instead."""
+    assets = Path(fake_release.assets.removeprefix('file://'))
+    broken = assets / 'oo-horn-broken'
+    broken.write_text('#!/bin/sh\nexit 9\n')
+    broken.chmod(0o755)
+    digest = hashlib.sha256(broken.read_bytes()).hexdigest()
+    (assets / 'SHASUMS.txt').write_text(f'{digest}  oo-horn-broken\n')
+    release = dataclasses.replace(fake_release, prebuilt='oo-horn-broken', prebuilt_sha256=digest)
+    messages: list[str] = []
+    path = ensure_checker(environ=_environ(tmp_path), release=release, notify=messages.append, prebuilt=True)
+    assert path == cache_dir(_environ(tmp_path), release) / 'lean' / '.lake' / 'build' / 'bin' / 'oo-horn'
+    assert 'build oo-horn' in fake_lake.read_text()
+    assert any('does not run on this machine' in m for m in messages)
+
+
+def test_ensure_checker_with_setup_off_fetches_nothing(tmp_path: Path, fake_release: Release) -> None:
+    """Refuse to set up the checker when setup is off, and fetch nothing."""
+    environ = _environ(tmp_path, VERIPHY_GRAPH_SETUP='off')
+    with pytest.raises(CheckerError, match='VERIPHY_GRAPH_SETUP is off'):
+        ensure_checker(environ=environ, release=fake_release, notify=lambda _: None)
+    assert not cache_dir(environ, fake_release).exists()
+
+
+def test_build_checker_sets_up_whatever_the_setup_variable(
+    tmp_path: Path,
+    fake_release: Release,
+    fake_lake: Path,
+) -> None:
+    """Fetch and build on demand even when automatic setup is off, and report the commit."""
+    environ = _environ(tmp_path, VERIPHY_GRAPH_SETUP='off')
+    report = build_checker(environ=environ, release=fake_release, notify=lambda _: None, prebuilt=False)
+    assert (report.tag, report.commit) == ('v-test', fake_release.commit)
+    assert report.checker is not None
+    assert report.checker.is_file()
+    assert fake_lake.read_text().strip() == 'build oo-horn'
+
+
+def test_build_checker_reasoner_only_skips_the_checker(tmp_path: Path, fake_release: Release) -> None:
+    """Fetch the release without setting up the checker."""
+    report = build_checker(reasoner_only=True, environ=_environ(tmp_path), release=fake_release, notify=lambda _: None)
     assert report.checker is None
-    assert 'lake' not in log.read_text()
-
-
-def test_build_checker_keeps_a_built_checker(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Skip lake when the cached checker is already built."""
-    log = _fake_tools(tmp_path, monkeypatch, ('git', 'uv'))
-    cache = tmp_path / 'cache'
-    binary = cache_dir({'XDG_CACHE_HOME': str(cache)}) / 'lean' / '.lake' / 'build' / 'bin' / 'oo-horn'
-    binary.parent.mkdir(parents=True)
-    binary.write_text('')
-    (binary.parents[4] / '.git').mkdir()
-    report = build_checker(environ={'XDG_CACHE_HOME': str(cache)})
-    assert report.checker == binary
-    assert 'lake' not in log.read_text()
-
-
-def test_build_checker_names_a_missing_tool(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Name the tool that is not on PATH."""
-    _fake_tools(tmp_path, monkeypatch, ())
-    with pytest.raises(CheckerError, match='`git` is not on PATH'):
-        build_checker(environ={'XDG_CACHE_HOME': str(tmp_path / 'cache')})
+    assert report.reasoner.is_dir()
 
 
 def test_builtin_rules_match_the_reasoner(workspace: Path, checker: Path) -> None:

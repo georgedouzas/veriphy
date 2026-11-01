@@ -10,10 +10,10 @@ First resolve the **Veriphy repo root**, in this order:
    (the plugin root *is* a clone of the Veriphy repo);
 3. otherwise ask the user where they cloned Veriphy.
 
-Verify the installation once per session: `sage -python -m veriphy.graph checker path`
-prints the checker. If it does not, walk the user through the setup in the
-"The research claim graph" section of the repo's user guide
-(`<root>/docs/overview/user_guide.md`) instead of proceeding.
+Verify the installation once per session: `sage -python -m veriphy.graph --help`
+runs. If it does not, ask the user to run `sage -pip install 'veriphy[graph]'`,
+the only installation command. The first `reason` sets up the reasoner and the
+checker by itself and says so, which takes minutes where the checker is built.
 
 Then follow the playbook at `<root>/prompts/research.md` exactly as written:
 extract → validate → triage → prove with slices → export → reason and report.

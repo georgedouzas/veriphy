@@ -120,7 +120,7 @@ jobs:
         path: ~/.cache/veriphy/open-ontologies
         key: oo-horn-${{ hashFiles('src/veriphy/graph/_checker.py') }}
 
-    - name: Build the checker and install the reasoner of the pinned Open Ontologies release
+    - name: Set up the checker and the reasoner of the pinned Open Ontologies release
       run: uv run --extra graph python -m veriphy.graph checker build
 
     - name: Run the test suite on SageMath, with the checker required
@@ -146,11 +146,11 @@ jobs:
         lake exe cache get
         lake build VeriphyTest
 
-    - name: Run the research workflow on a fixture chapter, over a Lean export, with the checker
+    - name: Run the research workflow on a fixture chapter, over a Lean export, setting up on first use
       run: |
         printf 'import VeriphyTest.Graph\n#veriphy_graph GraphTest\n' > Export.lean
         lake env lean Export.lean
-        tests/graph/fixtures/workflow/run.sh "$(uv run --extra graph which python)"
+        XDG_CACHE_HOME="$(mktemp -d)" tests/graph/fixtures/workflow/run.sh "$(uv run --extra graph which python)"
 
   doc:
 

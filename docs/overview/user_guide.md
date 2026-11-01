@@ -312,18 +312,25 @@ refuses every run. Veriphy reports a graph conclusion only with the verdict the 
 
 ### Setup
 
-The graph needs no Sage. Install the extra, then build the checker and install the reasoner, both from the Open
-Ontologies release Veriphy pins:
+The graph needs no Sage, and one command installs it:
 
 ```bash
 sage -pip install 'veriphy[graph]'
-sage -python -m veriphy.graph checker build
 ```
 
-The build needs `git` and `elan`. It clones the release into `~/.cache/veriphy/open-ontologies/v2.1.0`, builds
-`oo-horn` with that release's own Lean toolchain, and installs the release's Python reasoner. The reasoner comes
-from the release and not from PyPI because its PyPI package lacks the Horn reasoner. Set `VERIPHY_OO_HORN` to use
-another `oo-horn` binary. Without a checker every result is labelled `unchecked`.
+The first graph command that needs them sets up the reasoner and the `oo-horn` checker from the Open Ontologies
+release Veriphy pins, prints what it fetches or builds, and caches it in `~/.cache/veriphy/open-ontologies/v2.1.0`:
+
+- the release is cloned with `git`, and refused unless its commit is the one Veriphy pins;
+- the reasoner is imported from the release's source, so nothing is installed into Python at run time (its PyPI
+  package lacks the Horn reasoner);
+- on Linux x86_64 the checker is the release's prebuilt binary, kept only when its SHA-256 equals the hash Veriphy
+  pins and the hash the release lists, and only when it runs;
+- elsewhere the checker is built once with the release's own Lean toolchain through `elan`, which takes minutes.
+
+`sage -python -m veriphy.graph checker build` does the same ahead of time. Set `VERIPHY_GRAPH_SETUP=off` to forbid
+automatic setup, for offline machines and CI, and `VERIPHY_OO_HORN` to use another `oo-horn` binary. Without a
+checker every result is labelled `unchecked`, with the command that sets it up.
 
 ### Sources and provenance
 

@@ -1,11 +1,27 @@
-"""Test reasoning runs: the certificate, the checker's verdict, unchecked and rejected runs, and rechecks."""
+"""Test reasoning runs: the certificate, the checker's verdict, unchecked and rejected runs, rechecks, first use."""
 
+import dataclasses
+import os
 from collections.abc import Callable
 from pathlib import Path
 
 import pytest
 
-from veriphy.graph import builtin_rules, lean_iri, load_graph, load_run, reason, reason_triples, recheck, source_iri, vp
+from veriphy.graph import (
+    Release,
+    Setup,
+    builtin_rules,
+    ensure_release,
+    find_checker,
+    lean_iri,
+    load_graph,
+    load_run,
+    reason,
+    reason_triples,
+    recheck,
+    source_iri,
+    vp,
+)
 
 CERTIFICATE_FILES = {'asserted.tsv', 'rules.tsv', 'horn.tsv', 'asserted.sha256', 'run.json', 'check.json'}
 
@@ -105,3 +121,64 @@ def test_reason_triples_reports_an_incomplete_run(tmp_path: Path, fake_checker: 
     meta.write_text(meta.read_text().replace('"fixpoint": true', '"fixpoint": false'))
     incomplete = load_run(run.directory)
     assert (incomplete.label, incomplete.checked) == ('incomplete', False)
+
+
+@pytest.fixture
+def first_use(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Return an empty cache, with no explicit checker and automatic setup on."""
+    cache = tmp_path / 'first-use-cache'
+    monkeypatch.setenv('XDG_CACHE_HOME', str(cache))
+    monkeypatch.delenv('VERIPHY_OO_HORN', raising=False)
+    monkeypatch.delenv('VERIPHY_GRAPH_SETUP', raising=False)
+    return cache
+
+
+def test_reason_sets_up_on_first_use(workspace: Path, first_use: Path, fake_release: Release, fake_lake: Path) -> None:
+    """Set up the reasoner and the checker on the first run and report the verdict, and set up nothing the second."""
+    messages: list[str] = []
+    setup = Setup(fake_release, messages.append)
+    run = reason(load_graph(workspace), setup=setup)
+    assert (run.status, run.verdict) == ('accepted', 'entailed')
+    assert any(m.startswith('Fetching Open Ontologies v-test') for m in messages)
+    assert first_use.is_dir()
+    count = len(messages)
+    reason(load_graph(workspace), setup=setup)
+    assert len(messages) == count
+    assert fake_lake.exists() or any('Downloading' in m for m in messages)
+
+
+def test_reason_with_setup_off_is_unchecked(
+    workspace: Path,
+    first_use: Path,
+    fake_release: Release,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Report the run unchecked, and set up no checker, when automatic setup is off."""
+    setup = Setup(fake_release, lambda _: None)
+    ensure_release(release=fake_release, notify=setup.notify)
+    monkeypatch.setenv('VERIPHY_GRAPH_SETUP', 'off')
+    run = reason(load_graph(workspace), setup=setup)
+    assert (run.status, run.checked) == ('unchecked_no_checker', False)
+    assert 'checker build' in str(run.report['build'])
+    assert find_checker(release=fake_release).path is None
+    assert first_use.is_dir()
+
+
+def test_reason_reports_a_failed_setup(
+    workspace: Path,
+    first_use: Path,
+    fake_release: Release,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Report the run unchecked, naming the failing step, when the checker cannot be set up."""
+    failing = tmp_path / 'failing-bin' / 'lake'
+    failing.parent.mkdir()
+    failing.write_text('#!/bin/sh\necho "toolchain missing" >&2\nexit 1\n')
+    failing.chmod(0o755)
+    monkeypatch.setenv('PATH', f'{failing.parent}{os.pathsep}{os.environ["PATH"]}')
+    broken = dataclasses.replace(fake_release, prebuilt_sha256='0' * 64)
+    run = reason(load_graph(workspace), setup=Setup(broken, lambda _: None))
+    assert (run.status, run.checked) == ('unchecked_error', False)
+    assert 'setting up the checker failed' in str(run.report['error'])
+    assert first_use.is_dir()

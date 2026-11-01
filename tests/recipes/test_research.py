@@ -14,6 +14,7 @@ DOCUMENTS = [
     ROOT / 'skills' / 'research' / 'SKILL.md',
     ROOT / '.claude' / 'skills' / 'research' / 'SKILL.md',
     ROOT / 'docs' / 'overview' / 'user_guide.md',
+    ROOT / 'README.md',
 ]
 TEMPLATES = sorted((ROOT / 'prompts' / 'research').glob('*.md'))
 

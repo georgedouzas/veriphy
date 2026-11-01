@@ -185,7 +185,7 @@ def _cmd_vocabulary(_: argparse.Namespace) -> None:
 
 
 def _cmd_checker(args: argparse.Namespace) -> None:
-    """Build the checker and install the reasoner, or print where the checker is."""
+    """Set up the checker and the reasoner ahead of first use, or print where the checker is."""
     if args.action == 'path':
         lookup = find_checker()
         _out(f'{lookup.path}\n' if lookup.path else f'not found at {", ".join(map(str, lookup.searched))}\n')
@@ -194,7 +194,7 @@ def _cmd_checker(args: argparse.Namespace) -> None:
         return
     report = build_checker(reasoner_only=args.reasoner_only)
     _out(f'Open Ontologies {report.tag} ({report.commit})\nreasoner: {report.reasoner}\n')
-    _out(f'checker: {report.checker}\n' if report.checker else 'checker: not built (--reasoner-only)\n')
+    _out(f'checker: {report.checker}\n' if report.checker else 'checker: not set up (--reasoner-only)\n')
 
 
 HANDLERS: dict[str, Callable[[argparse.Namespace], None]] = {
@@ -236,7 +236,11 @@ def _add_commands(commands: argparse._SubParsersAction) -> None:
     sub.add_argument('--output', help='the file to write, under .veriphy/graph/appendix/ by default')
     sub = commands.add_parser('checker', help=HANDLERS['checker'].__doc__)
     sub.add_argument('action', choices=('build', 'path'))
-    sub.add_argument('--reasoner-only', action='store_true', help='install the reasoner without building oo-horn')
+    sub.add_argument(
+        '--reasoner-only',
+        action='store_true',
+        help='fetch the release (the reasoner) only',
+    )
 
 
 def _parser() -> argparse.ArgumentParser:

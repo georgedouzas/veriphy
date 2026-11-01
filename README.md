@@ -43,7 +43,9 @@ Scripts usually live in your project's `.veriphy/certificates/` directory and ru
 | Translation tables | Lean terms to Sage in three namespaces: the `mathlib` core, library packs (`physlib`) active when the library is imported, and the project's own entries in `.veriphy/translations/`, each checked by `#veriphy_check_translations` |
 | `VeriphyCheck` | Mathlib-only kernel checkers (`decide +kernel`) with soundness theorems, for matrix products, brackets, traces, structure constants and primality certificates too large for entrywise proofs |
 | Coverage | `#veriphy_coverage` measures which statements of a corpus translate without opaque atoms, and ranks the heads that do not |
-| Skills | `prove` (statement to verified proof, end to end) and `certify` (build one certificate with `sage_run`) |
+| Test fallback and levels | `sage_test` checks a claim no certificate can cover at kernel-checked or Sage-evaluated instances, and every claim carries a level (`certificate`, `kernel-test`, `oracle-test`, `none`), listed by `#veriphy_levels` |
+| Research claim graph (`veriphy.graph`) | A paper's claims, conventions and dependencies as a graph: effective levels, convention impact, clashes across papers, context slices for the agent and a verification appendix, each conclusion checked by `oo-horn`, an independent Lean checker from [Open Ontologies](https://github.com/fabio-rovai/open-ontologies) |
+| Skills | `prove` (statement to verified proof, end to end), `certify` (build one certificate with `sage_run`) and `research` (verify a whole paper or chapter with the claim graph) |
 | Catalog | `sage -python -m veriphy.certificates list` lists a project's saved scripts, so they get reused |
 | Advisory oracle | `symbolic_check`, `matrix_check`, `solve`, `run_script`: Sage as guidance while formalizing, never transcribed into proofs |
 
@@ -75,6 +77,18 @@ toolchain manager [elan](https://leanprover-community.github.io/get_started.html
 
 3. Install the skills (below), if you work with an agent.
 
+4. Optionally, add the research claim graph:
+
+   ```sh
+   sage -pip install 'veriphy[graph]'
+   ```
+
+   That is the only command. The first graph command that needs them fetches the reasoner and the `oo-horn` checker
+   from the Open Ontologies release Veriphy pins, checks them against the pinned commit and hash, and caches them in
+   `~/.cache/veriphy/`. On Linux x86_64 the checker is a prebuilt binary. Elsewhere it is built once with `elan`, which
+   takes a few minutes. Run `sage -python -m veriphy.graph checker build` to do this ahead of time, and set
+   `VERIPHY_GRAPH_SETUP=off` to forbid it (offline machines, CI).
+
 The tactic starts one daemon per Lean process, as `sage -python -m veriphy.sage_server`. Set `VERIPHY_SAGE_CMD` to the
 `sage` executable if it is not on `PATH`. Set `VERIPHY_SAGE_TIMEOUT` (seconds, default 150) to bound each request.
 
@@ -102,6 +116,25 @@ goal of the same shape.
 
 The full procedure is in [`prompts/certify.md`](https://github.com/georgedouzas/veriphy/blob/main/prompts/certify.md).
 
+**Check a paper as a whole** (with the graph extra):
+
+1. Describe the paper's claims, conventions and dependencies in `.veriphy/graph/sources/<source>.agent.ttl`, or let
+   the `research` skill extract them from the draft.
+2. Export what is formalized in Lean with `#veriphy_graph <prefix>`.
+3. Run:
+
+   ```sh
+   sage -python -m veriphy.graph validate                    # files and shapes
+   sage -python -m veriphy.graph reason                      # derive, then oo-horn checks: verdict `entailed`
+   sage -python -m veriphy.graph levels --source chapter9    # own and effective levels of every claim
+   sage -python -m veriphy.graph impact chapter9 mostly-minus  # every claim a convention reaches
+   sage -python -m veriphy.graph clashes                     # claims that assume exclusive conventions
+   sage -python -m veriphy.graph appendix chapter9 --format latex
+   ```
+
+A result is reported with the checker's verdict, or as `unchecked`. The full description is in the user guide's
+[research claim graph](https://georgedouzas.github.io/veriphy/overview/user_guide/#the-research-claim-graph) section.
+
 ## Skills
 
 - **`prove`**: turns a formal Lean statement, an informal statement, or a backlog item from a repo you supply into a
@@ -110,8 +143,12 @@ The full procedure is in [`prompts/certify.md`](https://github.com/georgedouzas/
   `statement-suspect`. You own the outcome: it opens no PRs and keeps no state.
 - **`certify`**: builds one certificate for one goal with `sage_run`. It reuses the project's saved scripts, follows
   the recipes otherwise, and saves what works in `.veriphy/certificates/`.
+- **`research`**: verifies a paper or a chapter as a whole. It extracts the claims, conventions and dependencies into
+  the claim graph, triages them, proves each with its slice as context, and reports every claim's effective level,
+  the clashes and the suspect claims in a verification appendix.
 
-The skill logic is plain, agent-agnostic markdown (`prompts/prove.md`, `prompts/certify.md`, `prompts/recipes/`).
+The skill logic is plain, agent-agnostic markdown (`prompts/prove.md`, `prompts/certify.md`, `prompts/research.md`,
+`prompts/recipes/`).
 The `skills/` files are thin Claude Code adapters.
 
 **Claude Code plugin (recommended).** The repo is its own single-plugin marketplace:
@@ -121,7 +158,8 @@ claude plugin marketplace add https://github.com/georgedouzas/veriphy
 claude plugin install veriphy@veriphy
 ```
 
-Then use `/veriphy:prove <statement>` and `/veriphy:certify` from any project, or just ask "prove that …". Use the git
+Then use `/veriphy:prove <statement>`, `/veriphy:certify` and `/veriphy:research <draft>` from any project, or just
+ask "prove that …". Use the git
 URL rather than a local clone, because a clone's path also copies its built `.lake/` (about 8 GB) into the plugin
 cache.
 
@@ -129,7 +167,8 @@ cache.
 
 ```sh
 git clone https://github.com/georgedouzas/veriphy ~/veriphy
-mkdir -p ~/.claude/skills && cp -r ~/veriphy/skills/prove ~/veriphy/skills/certify ~/.claude/skills/
+mkdir -p ~/.claude/skills
+cp -r ~/veriphy/skills/prove ~/veriphy/skills/certify ~/veriphy/skills/research ~/.claude/skills/
 export VERIPHY_HOME=~/veriphy   # in your shell profile
 ```
 

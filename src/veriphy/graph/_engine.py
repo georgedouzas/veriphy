@@ -1,5 +1,6 @@
 """Reach the research graph's optional dependencies: the RDF parser, the Horn reasoner and the SHACL validator."""
 
+import sys
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -22,10 +23,19 @@ def _oxigraph() -> ModuleType:
     return pyoxigraph
 
 
-def _horn() -> ModuleType:
-    """Return the Horn reasoner of `open-ontologies-lite`, or raise the error that says how to install it."""
+def _horn(source: Path) -> ModuleType:
+    """Return the Horn reasoner of `open-ontologies-lite`, imported from a release's source directory."""
+    path = str(source)
+    if sys.path[:1] != [path]:
+        while path in sys.path:
+            sys.path.remove(path)
+        sys.path.insert(0, path)
+    loaded = sys.modules.get('open_ontologies_lite')
+    if loaded is not None and not str(getattr(loaded, '__file__', '')).startswith(path):
+        for name in [n for n in sys.modules if n == 'open_ontologies_lite' or n.startswith('open_ontologies_lite.')]:
+            del sys.modules[name]
     try:
-        from open_ontologies_lite import horn  # noqa: PLC0415 - optional dependency, from `checker build`
+        from open_ontologies_lite import horn  # noqa: PLC0415 - optional dependency, from the cached release
     except ModuleNotFoundError as exc:
         module = 'open_ontologies_lite'
         raise GraphExtraMissingError(module) from exc
@@ -108,17 +118,18 @@ class ReasonerOutput:
     derived: int
 
 
-def run_reasoner(triples: Sequence[Triple], directory: Path) -> ReasonerOutput:
+def run_reasoner(triples: Sequence[Triple], directory: Path, source: Path) -> ReasonerOutput:
     """Derive the closure of triples under the checker's built-in rules, and write the certificate into a directory.
 
     Args:
         triples: The asserted triples, whose terms are IRIs.
         directory: The certificate directory.
+        source: The release source directory the reasoner is imported from.
 
     Returns:
         What the run reached.
     """
-    ox, horn = _oxigraph(), _horn()
+    ox, horn = _oxigraph(), _horn(source)
     store = ox.Store()
     lines = ''.join(f'{s} {p} {o} .\n' for s, p, o in triples)
     store.load(lines.encode(), format=ox.RdfFormat.N_TRIPLES)
