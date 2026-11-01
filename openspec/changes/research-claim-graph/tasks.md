@@ -61,7 +61,7 @@ Every `lake build` and `lake env lean` runs one Lean process at a time.
 
 ## 10. Integration
 
-- [ ] 10.1 Add `veriphy.graph` and the `graph` extra to the Project Profile in `openspec/constitution.md`, add the components row, and add the changelog entry. Verify with `nox -s docs`.
+- [x] 10.1 Add `veriphy.graph` and the `graph` extra to the Project Profile in `openspec/constitution.md`, add the components row, and add the changelog entry. Verify with `nox -s docs`.
 - [x] 10.2 Add the CLI and API parity test for `veriphy.graph`. Verify with pytest.
 - [ ] 10.3 Run the full gate in order (formatting, checks, docs, tests, Lean tests) and the integration job. Verify that every session is green.
 

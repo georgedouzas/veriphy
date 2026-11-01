@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 <!-- insertion marker -->
+## [0.4.0](https://github.com/georgedouzas/veriphy/releases/tag/0.4.0) - 2026-11-01
+
+<small>[Compare with 0.3.1](https://github.com/georgedouzas/veriphy/compare/0.3.1...0.4.0)</small>
+
+### Features
+
+- Lean export #veriphy_graph, the research skill and playbook, the graph in CI, and the research graph documented ([201a840](https://github.com/georgedouzas/veriphy/commit/201a840560c62c7e26a75ed814b7e5020b341129) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Research claim graph: vocabulary, project graph with provenance, certified reasoning checked by oo-horn, levels, impact, plans, clashes, slices and appendix ([42c2cd4](https://github.com/georgedouzas/veriphy/commit/42c2cd4b87653198a6fe2c4141de4eac76e7a6d2) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+### Docs
+
+- Plan research-claim-graph: a certified research claim graph with Open Ontologies ([d1e58d6](https://github.com/georgedouzas/veriphy/commit/d1e58d6db0329122e785a5ddb07f84290222edbb) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
 ## [0.3.1](https://github.com/georgedouzas/veriphy/releases/tag/0.3.1) - 2026-10-18
 
 <small>[Compare with 0.3.0](https://github.com/georgedouzas/veriphy/compare/0.3.0...0.3.1)</small>
@@ -15,6 +28,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Re-parse a replacement only when a line ends in ';' and the text is small ([da8bc16](https://github.com/georgedouzas/veriphy/commit/da8bc16c5c56a32ab5c3e517c48987aef6137cd1) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 - Exact algebraic values in oracle instances, boolean edge flags, supplied proofs override stated conditions ([1267025](https://github.com/georgedouzas/veriphy/commit/12670258b9ea8c98713c15275fd202d3db6326d0) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 - Translation and emission bugs found by the book's certification ([d9e241f](https://github.com/georgedouzas/veriphy/commit/d9e241f8d12300ee40fda5bda6aa8f9778cf5186) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+### Chore
+
+- Release 0.3.1 ([90e84fb](https://github.com/georgedouzas/veriphy/commit/90e84fb0a132f8dc6ca70b17cde343f3413b6db9) by georgedouzas).
 
 ## [0.3.0](https://github.com/georgedouzas/veriphy/releases/tag/0.3.0) - 2026-10-16
 
