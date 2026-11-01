@@ -18,16 +18,16 @@ Every `lake build` and `lake env lean` runs one Lean process at a time.
 ## 3. Lean export (lean-claim-export)
 
 - [x] 3.1 Add `Veriphy/Kit/Graph.lean` with `#veriphy_graph p₁ … pₙ`: claims and definitions with levels from `levelOf`, `uses` from the used constants of type and value filtered to the exported set, and statements, written to `.veriphy/graph/lean/<prefixes>.nt` (D5). Import it from `Veriphy/Kit.lean`. Verify with `VeriphyTest` tests on a module with a certified, a tested, a plain theorem and a definition: the written triples, the counts message, and the error for an unknown prefix.
-- [ ] 3.2 Load the export in `veriphy.graph` with provenance `lean`. Verify with pytest on a recorded `export.nt`, and in the integration job by exporting `VeriphyTest` and loading it.
+- [x] 3.2 Load the export in `veriphy.graph` with provenance `lean`. Verify with pytest on a recorded `export.nt`, and in the integration job by exporting `VeriphyTest` and loading it.
 - [x] 3.3 Document `#veriphy_graph` in the user guide. Verify with `nox -s docs`.
 
 ## 4. Certified reasoning (certified-graph-reasoning)
 
 - [x] 4.1 Generate the vocabulary axioms for the conventions and levels of a graph: hasValue and someValuesFrom classes for `uses`, `owl:sameAs`, `formalizedBy`, `realizedBy`, the level order, and `hasLevel none` for claims with no level (D2). Add the `axioms` CLI command. Verify with pytest that the generated triples use only IRIs under `urn:veriphy:axiom:` and that their number is linear in conventions and levels.
-- [ ] 4.2 Find and build `oo-horn`, and install the reasoner from the same clone: `VERIPHY_OO_HORN`, then the cache, and `checker build` at the pinned tag (D7). Verify with pytest using a fake `git`, `lake` and `pip` on `PATH` for the commands run and the cache path, and in the integration job by a real build.
-- [ ] 4.3 Run reasoning: `run_horn` with the built-in table, the run directory under `.veriphy/graph/runs/<run>/` with the digest, the `check_horn` call, and a typed result with status, verdict and theorem copied from the checker. Unchecked, incomplete and rejected runs are labelled so (D1). Add the `reason` and `recheck` commands. Verify with pytest using a fake checker for each status, and with the real checker in the integration job on: a transitive `assumes`, `realizedBy`, `owl:sameAs`, `formalizedBy`, a level chain, and a forged derivation line that is rejected.
-- [ ] 4.4 Add the drift test that compares the built-in table bytes of `open-ontologies-lite` with `oo-horn rules`, failing rather than skipping when the checker is present. Verify that it runs in the integration job.
-- [ ] 4.5 Run the integration job with the checker: cache the built `oo-horn` per tag and set `VERIPHY_OO_HORN` for the graph tests. Verify with a green CI run.
+- [x] 4.2 Find and build `oo-horn`, and install the reasoner from the same clone: `VERIPHY_OO_HORN`, then the cache, and `checker build` at the pinned tag (D7). Verify with pytest using a fake `git`, `lake` and `pip` on `PATH` for the commands run and the cache path, and in the integration job by a real build.
+- [x] 4.3 Run reasoning: `run_horn` with the built-in table, the run directory under `.veriphy/graph/runs/<run>/` with the digest, the `check_horn` call, and a typed result with status, verdict and theorem copied from the checker. Unchecked, incomplete and rejected runs are labelled so (D1). Add the `reason` and `recheck` commands. Verify with pytest using a fake checker for each status, and with the real checker in the integration job on: a transitive `assumes`, `realizedBy`, `owl:sameAs`, `formalizedBy`, a level chain, and a forged derivation line that is rejected.
+- [x] 4.4 Add the drift test that compares the built-in table bytes of `open-ontologies-lite` with `oo-horn rules`, failing rather than skipping when the checker is present. Verify that it runs in the integration job.
+- [x] 4.5 Run the integration job with the checker: cache the built `oo-horn` per tag and set `VERIPHY_OO_HORN` for the graph tests. Verify with a green CI run.
 - [x] 4.6 Document the reasoning, the verdict words, and the checker build in the user guide and the components page. Verify with `nox -s docs`.
 
 ## 5. Effective levels (effective-levels)
@@ -57,13 +57,13 @@ Every `lake build` and `lake env lean` runs one Lean process at a time.
 
 - [x] 9.1 Add the `appendix` command, writing Markdown and LaTeX with the level columns, provenance counts, verdict and recheck commands, and the unchecked wording. Verify with pytest snapshots of both formats for a checked and an unchecked run, and that the LaTeX compiles with `pdflatex` where it is available in CI.
 - [x] 9.2 Write `prompts/research.md`, the `research` skill in `skills/research/` and `.claude/skills/research/`, and recipes for claim extraction and triage. Add the optional slice step to `prompts/prove.md` and the `prove` skill (D10). Verify by the documented commands running in `tests/recipes/` and by the skill listing in the plugin manifest.
-- [ ] 9.3 Run the workflow end to end on a fixture chapter (a small LaTeX file with a convention, a lemma formalized in `VeriphyTest`, and a theorem that depends on it): extract, validate, export, reason, levels, impact, slice, appendix. Verify in the integration job that every step succeeds and that the appendix holds the verdict `entailed`.
+- [x] 9.3 Run the workflow end to end on a fixture chapter (a small LaTeX file with a convention, a lemma formalized in `VeriphyTest`, and a theorem that depends on it): extract, validate, export, reason, levels, impact, slice, appendix. Verify in the integration job that every step succeeds and that the appendix holds the verdict `entailed`.
 
 ## 10. Integration
 
 - [x] 10.1 Add `veriphy.graph` and the `graph` extra to the Project Profile in `openspec/constitution.md`, add the components row, and add the changelog entry. Verify with `nox -s docs`.
 - [x] 10.2 Add the CLI and API parity test for `veriphy.graph`. Verify with pytest.
-- [ ] 10.3 Run the full gate in order (formatting, checks, docs, tests, Lean tests) and the integration job. Verify that every session is green.
+- [x] 10.3 Run the full gate in order (formatting, checks, docs, tests, Lean tests) and the integration job. Verify that every session is green.
 
 ## Workflow follow-up
 
