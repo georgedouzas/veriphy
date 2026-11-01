@@ -179,7 +179,17 @@ def tests(session: nox.Session) -> None:
     )
     Path(str(purelib).strip(), 'sage.pth').write_text(str(sage_paths))
     env = {'VIRTUAL_ENV': str(venv)}
-    session.run('uv', 'sync', '--active', env=env, external=True)
+    session.run('uv', 'sync', '--active', '--extra', 'graph', env=env, external=True)
+    session.run(
+        str(venv / 'bin' / 'python'),
+        '-m',
+        'veriphy.graph',
+        'checker',
+        'build',
+        '--reasoner-only',
+        env=env,
+        external=True,
+    )
     selection = ['-k', *session.posargs] if session.posargs else []
     commands = [
         [str(venv / 'bin' / 'pytest'), '-n', 'auto', *selection, 'tests', 'src'],

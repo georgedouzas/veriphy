@@ -1,0 +1,48 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix vp: <urn:veriphy:vocabulary#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix vs: <urn:veriphy:shapes#> .
+
+# The shapes a research graph conforms to.
+
+vs:ClaimShape a sh:NodeShape ;
+    sh:targetClass vp:Claim ;
+    sh:property [
+        sh:path vp:statement ;
+        sh:minCount 1 ;
+        sh:message "a claim needs a statement" ;
+    ] .
+
+vs:ClaimSourceShape a sh:NodeShape ;
+    sh:targetClass vp:Claim ;
+    sh:or (
+        [ sh:path vp:statedIn ; sh:minCount 1 ]
+        [ sh:path vp:leanName ; sh:minCount 1 ]
+    ) ;
+    sh:message "a claim needs `statedIn` naming its source, or a `leanName` from the export" .
+
+vs:ConventionShape a sh:NodeShape ;
+    sh:targetClass vp:Convention ;
+    sh:property [
+        sh:path vp:conventionFor ;
+        sh:minCount 1 ;
+        sh:message "a convention needs `conventionFor` naming the aspect it fixes" ;
+    ] .
+
+vs:FormalizedByShape a sh:NodeShape ;
+    sh:targetSubjectsOf vp:formalizedBy ;
+    sh:property [
+        sh:path vp:formalizedBy ;
+        sh:class vp:Claim ;
+        sh:pattern "^urn:veriphy:lean:" ;
+        sh:message "`formalizedBy` must name a Lean claim the export holds" ;
+    ] .
+
+vs:RealizedByShape a sh:NodeShape ;
+    sh:targetSubjectsOf vp:realizedBy ;
+    sh:property [
+        sh:path vp:realizedBy ;
+        sh:class vp:Definition ;
+        sh:pattern "^urn:veriphy:lean:" ;
+        sh:message "`realizedBy` must name a Lean definition the export holds" ;
+    ] .

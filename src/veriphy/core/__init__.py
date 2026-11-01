@@ -2,7 +2,10 @@
 
 from veriphy.core._errors import (
     CertificateError,
+    CheckerError,
     EncodingError,
+    GraphError,
+    GraphExtraMissingError,
     MethodError,
     ParamError,
     ScriptError,
@@ -16,8 +19,11 @@ __all__ = [
     'PROJECT_DIR_NAME',
     'RELATIONS',
     'CertificateError',
+    'CheckerError',
     'Coercer',
     'EncodingError',
+    'GraphError',
+    'GraphExtraMissingError',
     'JsonObject',
     'JsonValue',
     'Method',

@@ -29,6 +29,11 @@ classifiers = [
 ]
 dependencies = []
 
+[project.optional-dependencies]
+# The research claim graph. The Horn reasoner of open-ontologies-lite is installed from the pinned Open Ontologies
+# release by `python -m veriphy.graph checker build`, because its PyPI release lacks it. These are its dependencies.
+graph = ["pyoxigraph>=0.5,<0.6", "pyshacl>=0.26", "rdflib>=7"]
+
 [project.scripts]
 veriphy-sage-server = "veriphy.sage_server:main"
 
@@ -111,8 +116,9 @@ select = ["C", "E", "F", "W", "B", "I", "D", "N", "UP", "YTT", "ANN", "S",
 "docs/examples/*" = ["ANN", "D", "B018"]
 "docs/generated/*" = ["ANN", "D"]
 "test_*" = ["ANN", "PLR2004"]
-# Runs Lean on emitted text: the one place the tests start a process.
+# The places the tests start a process: Lean on emitted text, and git for graph plans.
 "tests/toolkit/conftest.py" = ["S603", "S404"]
+"tests/graph/conftest.py" = ["S603", "S404"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -135,14 +141,15 @@ check-class-attributes = false
 
 [tool.deptry.per_rule_ignores]
 # SageMath (with its bundled cvxopt, sympy and numpy) is the runtime the package is installed into (`sage -pip install veriphy`),
-# never a declared dependency.
-DEP001 = ["sage", "cvxopt", "sympy", "numpy"]
+# never a declared dependency. open_ontologies_lite comes from the pinned Open Ontologies release through
+# `python -m veriphy.graph checker build`.
+DEP001 = ["sage", "cvxopt", "sympy", "numpy", "open_ontologies_lite"]
 # numpy also reaches the development environment through other tools
 DEP003 = ["numpy"]
 
 [tool.bandit]
-# Runs Lean on emitted text: the one place the tests start a process.
-exclude_dirs = ["tests/toolkit/conftest.py"]
+# The places the tests start a process: Lean on emitted text, and git for graph plans.
+exclude_dirs = ["tests/toolkit/conftest.py", "tests/graph/conftest.py"]
 # Read by the checks nox session, which passes `-c pyproject.toml`. B101 is the
 # bandit counterpart of the ruff S101 ignore above: asserts are how tests assert.
 skips = ["B101"]
