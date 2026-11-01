@@ -114,7 +114,7 @@ class BuildReport:
 
 
 def build_checker(*, reasoner_only: bool = False, environ: Mapping[str, str] | None = None) -> BuildReport:
-    """Fetch the pinned Open Ontologies release into the cache, build `oo-horn`, and install its reasoner.
+    """Fetch the pinned Open Ontologies release into the cache, build `oo-horn` unless built, and install its reasoner.
 
     Args:
         reasoner_only: Install the reasoner without building the checker.
@@ -130,10 +130,9 @@ def build_checker(*, reasoner_only: bool = False, environ: Mapping[str, str] | N
         _run([git, 'clone', '--quiet', '--depth', '1', '--branch', PINNED_TAG, REPOSITORY, str(directory)])
     commit = _run([_tool('git'), 'rev-parse', 'HEAD'], cwd=directory).strip()
     _install_reasoner(directory / 'python')
-    checker = None
-    if not reasoner_only:
+    checker = None if reasoner_only else directory / CHECKER_BINARY
+    if checker is not None and not checker.is_file():
         _run([_tool('lake'), 'build', 'oo-horn'], cwd=directory / 'lean')
-        checker = directory / CHECKER_BINARY
     return BuildReport(PINNED_TAG, commit, checker, directory / 'python')
 
 

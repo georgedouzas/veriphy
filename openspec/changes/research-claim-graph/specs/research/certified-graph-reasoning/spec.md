@@ -10,7 +10,8 @@ verdict.
 
 ### Requirement: Vocabulary axioms on the built-in rules
 Veriphy SHALL state the meaning of its vocabulary as OWL axioms that the checker's built-in rules evaluate: `assumes`
-follows `uses`, `owl:sameAs` and `realizedBy`, and level caps follow `uses`, `formalizedBy` and the level order. Every
+follows `uses`, `owl:sameAs`, `formalizedBy` and `realizedBy`, and level caps follow `uses`, `formalizedBy` and the
+level order. Every
 run SHALL use the built-in rule table unchanged and SHALL NOT add a rule.
 
 #### Scenario: Reading the axioms

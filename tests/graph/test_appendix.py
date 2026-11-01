@@ -38,3 +38,13 @@ def test_appendix_states_unchecked_levels(workspace: Path, fake_checker: Callabl
 def test_latex_escape_handles_specials() -> None:
     """Escape every LaTeX special character."""
     assert latex_escape('a_b & c%d #e $f') == 'a\\_b \\& c\\%d \\#e \\$f'
+
+
+def test_appendix_latex_compiles(
+    workspace: Path,
+    fake_checker: Callable[[str], Path],
+    compile_latex: Callable[[str], None],
+) -> None:
+    """Compile the LaTeX appendix in a minimal document."""
+    graph = load_graph(workspace)
+    compile_latex(appendix(graph, reason(graph, fake_checker('accepted')), 'chapter9', 'latex'))

@@ -23,7 +23,11 @@ score, or committing to the target repo beyond what the caller asked for.
 ## Loop
 
 1. **Formalize the statement** (skip if the caller gave formal Lean). Mimic
-   the target file's local conventions. Then run BOTH lie detectors:
+   the target file's local conventions. When the statement is a claim of the
+   workspace's research claim graph, first print its context with
+   `sage -python -m veriphy.graph slice <source> <label>` and state it under
+   the conventions and Lean definitions the slice names. Then run BOTH lie
+   detectors:
    - *Round-trip*: informalize your formal statement back to English; compare
      with the original. Any semantic drift → redo.
    - *Identity test*: when the claim is (or reduces to) an identity, try the

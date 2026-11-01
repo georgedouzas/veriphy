@@ -75,7 +75,7 @@ jobs:
         lint: false
 
     - name: Build the Sage-free kit tests
-      run: lake build VeriphyTest.Kit
+      run: lake build VeriphyTest.Kit VeriphyTest.Graph
 
   integration:
 
@@ -109,8 +109,24 @@ jobs:
     - name: Install dependencies
       run: uv sync --only-dev
 
-    - name: Run the test suite on SageMath
+    - name: Install elan
+      run: |
+        curl -sSf https://elan.lean-lang.org/elan-init.sh | sh -s -- -y --default-toolchain none
+        echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+    - name: Cache the Open Ontologies checker
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/veriphy/open-ontologies
+        key: oo-horn-${{ hashFiles('src/veriphy/graph/_checker.py') }}
+
+    - name: Build the checker and install the reasoner of the pinned Open Ontologies release
+      run: uv run --extra graph python -m veriphy.graph checker build
+
+    - name: Run the test suite on SageMath, with the checker required
       run: uv run nox -s tests
+      env:
+        VERIPHY_REQUIRE_CHECKER: '1'
 
     - name: Install the built wheel into SageMath
       run: |
@@ -125,15 +141,16 @@ jobs:
           .lake
         key: lean-${{ hashFiles('lean-toolchain', 'lake-manifest.json') }}
 
-    - name: Install elan
-      run: |
-        curl -sSf https://elan.lean-lang.org/elan-init.sh | sh -s -- -y --default-toolchain none
-        echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-
     - name: Run the tactic suite against the installed daemon
       run: |
         lake exe cache get
         lake build VeriphyTest
+
+    - name: Run the research workflow on a fixture chapter, over a Lean export, with the checker
+      run: |
+        printf 'import VeriphyTest.Graph\n#veriphy_graph GraphTest\n' > Export.lean
+        lake env lean Export.lean
+        tests/graph/fixtures/workflow/run.sh "$(uv run --extra graph which python)"
 
   doc:
 

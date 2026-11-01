@@ -1,0 +1,11 @@
+@prefix vp: <urn:veriphy:vocabulary#> .
+@prefix : <urn:veriphy:source:chapter#> .
+
+:metric-three a vp:Convention ; vp:conventionFor "metric-constant" ; vp:statement "m = 3" ;
+    vp:realizedBy <urn:veriphy:lean:GraphTest.metric> .
+:lemma-1 a vp:Claim ; vp:statedIn :chapter ; vp:location "chapter.tex:5" ; vp:statement "2 + 2 = 4" ;
+    vp:formalizedBy <urn:veriphy:lean:GraphTest.certified> ; vp:triage "recipe" .
+:eq-2 a vp:Claim ; vp:statedIn :chapter ; vp:location "chapter.tex:9" ; vp:statement "m = 3" ;
+    vp:formalizedBy <urn:veriphy:lean:GraphTest.usesMetric> ; vp:triage "recipe" .
+:thm-3 a vp:Claim ; vp:statedIn :chapter ; vp:location "chapter.tex:13" ; vp:statement "m + 1 = 4" ;
+    vp:uses :lemma-1, :eq-2 ; vp:triage "formalize" .

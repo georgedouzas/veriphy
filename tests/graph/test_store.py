@@ -99,3 +99,17 @@ def test_confirm_refuses_a_triple_the_agent_file_lacks(workspace: Path) -> None:
     triple = (source_iri('chapter9', 'eq-4.1'), vp('uses'), source_iri('chapter9', 'thm-9.1'))
     with pytest.raises(GraphError, match='does not assert'):
         confirm(workspace, 'chapter9', triple)
+
+
+def test_load_graph_reads_the_lean_export(tmp_path: Path) -> None:
+    """Read a file `#veriphy_graph` wrote, with provenance lean and the IRIs `lean_iri` computes."""
+    (tmp_path / 'lakefile.toml').write_text('')
+    lean = tmp_path / '.veriphy' / 'graph' / 'lean'
+    lean.mkdir(parents=True)
+    (lean / 'GraphTest.nt').write_text((Path(__file__).parent / 'fixtures' / 'GraphTest.nt').read_text())
+    graph = load_graph(tmp_path)
+    named = lean_iri('GraphTest.«α prop»')
+    assert {a.provenance for a in graph.assertions} == {'lean'}
+    assert graph.objects(named, 'uses') == (lean_iri('GraphTest.metric'),)
+    assert graph.objects(lean_iri('GraphTest.tested'), 'hasLevel') == (vp('kernel-test'),)
+    assert graph.nodes_of_type('Definition') == {lean_iri('GraphTest.metric')}

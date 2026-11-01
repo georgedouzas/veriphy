@@ -120,3 +120,26 @@ def committed(workspace: Path) -> Path:
     ):
         subprocess.run([git, *args], cwd=workspace, check=True, capture_output=True)
     return workspace
+
+
+@pytest.fixture
+def compile_latex(tmp_path: Path) -> Callable[[str], None]:
+    """Return a function that compiles a LaTeX fragment in a minimal document, skipping without `pdflatex`."""
+    pdflatex = shutil.which('pdflatex')
+    if pdflatex is None:
+        pytest.skip('pdflatex is not on PATH')
+
+    def compile_fragment(fragment: str) -> None:
+        """Compile the fragment, failing the test with the log when LaTeX fails."""
+        source = tmp_path / 'appendix.tex'
+        source.write_text(f'\\documentclass{{article}}\n\\begin{{document}}\n{fragment}\n\\end{{document}}\n')
+        result = subprocess.run(
+            [pdflatex, '-interaction=nonstopmode', '-halt-on-error', source.name],
+            cwd=tmp_path,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert result.returncode == 0, result.stdout[-2000:]
+
+    return compile_fragment

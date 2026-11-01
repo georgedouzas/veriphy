@@ -94,6 +94,8 @@ with the root lakefile):
 | `.veriphy/translations/` | your project's translation and rewrite entries |
 | `.veriphy/lean/` | Lean files copied from Veriphy, such as recipe assets |
 | `.veriphy/coverage/` | coverage reports |
+| `.veriphy/tests/` | test records `sage_test` writes |
+| `.veriphy/graph/` | the [research claim graph](#the-research-claim-graph): `sources/`, `lean/` and `runs/` |
 
 Commit `.veriphy/` with your proofs. The proofs themselves stay in your own Lean files. Lean files copied into
 `.veriphy/lean/` build through a library you declare once in `lakefile.toml`:
@@ -299,6 +301,143 @@ Every claim then has one of four levels, in this order:
 
 `#veriphy_levels MyProject` lists the level of every theorem under a prefix. A claim gets the highest level that is
 feasible: the fallback applies only after recipe selection failed, and a test is never reported as a proof.
+
+## The research claim graph
+
+Veriphy checks one claim at a time. The research claim graph checks how the claims of a paper or a research program
+fit together: which conventions each claim assumes, which claims it rests on, and how verified it is once its
+weakest dependency counts. An untrusted reasoner derives the consequences, and `oo-horn`, a verified Lean checker
+from [Open Ontologies](https://github.com/fabio-rovai/open-ontologies) that shares no code with Veriphy, accepts or
+refuses every run. Veriphy reports a graph conclusion only with the verdict the checker printed.
+
+### Setup
+
+The graph needs no Sage. Install the extra, then build the checker and install the reasoner, both from the Open
+Ontologies release Veriphy pins:
+
+```bash
+sage -pip install 'veriphy[graph]'
+sage -python -m veriphy.graph checker build
+```
+
+The build needs `git` and `elan`. It clones the release into `~/.cache/veriphy/open-ontologies/v2.1.0`, builds
+`oo-horn` with that release's own Lean toolchain, and installs the release's Python reasoner. The reasoner comes
+from the release and not from PyPI because its PyPI package lacks the Horn reasoner. Set `VERIPHY_OO_HORN` to use
+another `oo-horn` binary. Without a checker every result is labelled `unchecked`.
+
+### Sources and provenance
+
+Each source, a paper, a chapter or a set of notes, has one Turtle file per provenance under `.veriphy/graph/sources/`:
+`chapter9.agent.ttl` for what an agent extracted and `chapter9.human.ttl` for what a person wrote or confirmed.
+Relative IRIs resolve against the source, so `<#lemma-5.2>` in `chapter9.agent.ttl` is the claim `lemma-5.2` of
+`chapter9`:
+
+```turtle
+@prefix vp: <urn:veriphy:vocabulary#> .
+@prefix : <urn:veriphy:source:chapter9#> .
+
+:half a vp:Convention ; vp:conventionFor "killing-normalization" ;
+    vp:statement "Tr(T^a T^b) = 1/2 δ^ab" ; vp:realizedBy <urn:veriphy:lean:KK.killingHalf> .
+:lemma-5.2 a vp:Claim ; vp:statedIn :chapter9 ; vp:statement "The Killing form is -3/2 δ." ;
+    vp:assumes :half ; vp:formalizedBy <urn:veriphy:lean:KK.killing_form_value> .
+:thm-9.1 a vp:Claim ; vp:statedIn :chapter9 ; vp:statement "The vacuum is stable." ;
+    vp:uses :lemma-5.2, <urn:veriphy:source:arXiv:0808.3236#thm-2> .
+```
+
+A claim of another paper is a node of that paper's source, named by its arXiv identifier or DOI, and `owl:sameAs`
+declares one concept of two sources the same. `python -m veriphy.graph vocabulary` prints the vocabulary.
+`python -m veriphy.graph confirm chapter9 lemma-5.2 assumes half` moves one extracted triple to the human file, and
+`python -m veriphy.graph validate` checks the files and the shapes (below).
+
+### The Lean export
+
+`#veriphy_graph KK` writes every theorem and definition under `KK` to `.veriphy/graph/lean/KK.nt`, with provenance
+`lean`. Each theorem, and each definition of type `Prop`, is a claim with the level `#veriphy_levels` gives it and
+its statement. Each declaration `uses` every other exported declaration its type or value mentions. These facts come
+from the Lean environment, so a formalized claim's level and dependencies never rest on extraction. Link a prose
+claim to its Lean claim with `formalizedBy`, and a convention to the Lean definition that realizes it with
+`realizedBy`: every claim that uses the definition then assumes the convention.
+
+### Reasoning and verdicts
+
+`python -m veriphy.graph reason` derives the consequences of the graph and writes a certificate under
+`.veriphy/graph/runs/<digest>/`: the asserted triples, the rules, one derivation line per conclusion, and a digest.
+Veriphy states the meaning of its vocabulary as OWL axioms that the checker's built-in rules evaluate, so every run
+uses the built-in rule table unchanged, and an accepted run earns the verdict `entailed` with the theorem
+`OOCert.entails_of_builtin_horn`: every conclusion is true in every model of the asserted triples.
+
+| Status | Meaning |
+|---|---|
+| `entailed` | the checker accepted the run, and the verdict is its own word |
+| `rejected` | the checker refused a derivation line, and names it |
+| `unchecked` | no checker was found or it did not finish, and no conclusion is reported as checked |
+| `incomplete` | the run stopped before its fixpoint |
+
+`python -m veriphy.graph recheck .veriphy/graph/runs/<digest>` checks a stored run again, without the reasoner, and
+says whether the current graph still asserts the same triples. The commands exit with status 3 when the checker did
+not accept the run.
+
+### Levels
+
+A claim's own level is the level the export gives it, or the level of the Lean claim that formalizes it, or `none`.
+Reasoning caps a claim at the level of every claim it uses, directly or through others, and the effective level is
+the lowest of these. Reasoning only ever lowers a level. `python -m veriphy.graph levels --source chapter9` prints:
+
+```
+| claim | own | effective | capped by | Lean |
+|---|---|---|---|---|
+| lemma-5.2 | certificate | certificate |  | KK.killing_form_value |
+| lemma-8.4 | oracle-test | oracle-test |  | KK.curvature_pos |
+| thm-9.1 | certificate | oracle-test | lemma-8.4 | KK.vacuum |
+```
+
+### Convention impact and plans
+
+`python -m veriphy.graph impact chapter9 half` lists every claim that assumes the convention `half`, directly or
+through its dependencies, each with the chain that reaches it and its Lean name. Before you change a convention, edit
+the source file and ask for a plan against the last commit:
+
+```bash
+python -m veriphy.graph plan --against HEAD
+```
+
+The plan reasons over the graph at `HEAD` and over the working graph, has both runs checked, and lists the
+assertions the edit changed and the consequences it adds and removes: `assumes` triples, level caps and clashes.
+An edit that changes only a statement's text reports one changed assertion and no changed consequence.
+
+### Shapes and clashes
+
+`python -m veriphy.graph validate` validates the graph against Veriphy's SHACL shapes: a claim has a statement and a
+source, a convention names the aspect it fixes, and `formalizedBy` and `realizedBy` name nodes the Lean export
+holds. The SHACL validator's report is a measurement, not a checked conclusion, and it says so.
+
+Conventions of the same aspect exclude each other. `python -m veriphy.graph excludes` proposes the `excludes`
+triples, and `--confirm` writes them as human assertions. `python -m veriphy.graph clashes` then reports every claim
+or concept with two checked `assumes` conclusions whose conventions exclude each other, including assumptions
+inherited across papers. The absence of a clash is the reasoner's result, not a checked conclusion, because a Horn
+certificate proves what is derived and not what is not.
+
+### Slices for the proving agent
+
+`python -m veriphy.graph slice chapter9 thm-9.1` prints the context an agent needs to formalize `thm-9.1`: its
+statement, the statements and levels of the claims it uses, and each convention it assumes with the Lean definition
+that realizes it. The slice is the set of asserted triples the claim's certified consequences rest on. Veriphy
+reasons over the slice alone, has that run checked, and offers the slice only when it keeps every consequence about
+the claim.
+
+### The verification appendix
+
+`python -m veriphy.graph appendix chapter9 --format latex` writes `.veriphy/graph/appendix/chapter9.tex`: one table row
+per claim with its own and effective levels, the claim that caps it, its Lean name and its clashes, and a paragraph
+with the run, the checker's verdict, the provenance of the assertions and the command that rechecks it. When the run
+is unchecked, the paragraph and the table header say so. `--format markdown` writes the same as Markdown.
+
+### Limits
+
+- The graph does not check that a prose claim and its Lean statement say the same thing. `formalizedBy` is an
+  assertion, and the reports count its provenance.
+- A checked conclusion is true relative to the asserted triples. An extraction error gives a faithfully wrong
+  conclusion, which is why every report counts the `agent`, `human`, `lean` and `veriphy` assertions it rests on.
 
 ## Product decision: a pure tool
 

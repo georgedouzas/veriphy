@@ -11,6 +11,8 @@ Hard rules:
 - The user supplies the target and owns the outcome. Never open PRs, commit to
   target repos beyond what was asked, or keep score anywhere.
 - Never invent a *definition*; flag it to the user and stop.
+- When the claim is in the workspace's research claim graph, state it under the
+  conventions its slice names (`python -m veriphy.graph slice <source> <label>`).
 - The final proof must contain no `sorry` and no live Sage call — only the
   Sage-free `Try this:` replacements `sage_run` emits.
 - A failure is a report (`blocked-library-gap` / `blocked-missing-building-block` /

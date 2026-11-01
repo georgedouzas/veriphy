@@ -13,13 +13,13 @@ Every `lake build` and `lake env lean` runs one Lean process at a time.
 - [x] 2.2 Load a project graph from `.veriphy/graph/sources/<source>.<provenance>.ttl` and `.veriphy/graph/lean/`, with root resolution through `veriphy.core` (D3). Verify with pytest on fixture projects: a multi-file load with counts per file, a syntax error with file and line, a file without a provenance, and an undeclared property in the Veriphy namespace.
 - [x] 2.3 Build node IRIs for source and Lean nodes and resolve links across sources, including arXiv and DOI sources (D4). Verify with pytest for same labels in two sources, a cross-source `uses`, and a stable Lean IRI.
 - [x] 2.4 Add the `confirm` and `vocabulary` CLI commands. Verify with pytest that confirming moves exactly one triple from the agent file to the human file.
-- [ ] 2.5 Document `.veriphy/graph/` in the user guide's layout section, and update the layout list in `docs/` to include `.veriphy/tests/` and `.veriphy/graph/`. Verify with `nox -s docs`.
+- [x] 2.5 Document `.veriphy/graph/` in the user guide's layout section, and update the layout list in `docs/` to include `.veriphy/tests/` and `.veriphy/graph/`. Verify with `nox -s docs`.
 
 ## 3. Lean export (lean-claim-export)
 
-- [ ] 3.1 Add `Veriphy/Kit/Graph.lean` with `#veriphy_graph p₁ … pₙ`: claims and definitions with levels from `levelOf`, `uses` from the used constants of type and value filtered to the exported set, and statements, written to `.veriphy/graph/lean/export.nt` (D5). Import it from `Veriphy/Kit.lean`. Verify with `VeriphyTest` tests on a module with a certified, a tested, a plain theorem and a definition: the written triples, the counts message, and the error for an unknown prefix.
+- [x] 3.1 Add `Veriphy/Kit/Graph.lean` with `#veriphy_graph p₁ … pₙ`: claims and definitions with levels from `levelOf`, `uses` from the used constants of type and value filtered to the exported set, and statements, written to `.veriphy/graph/lean/<prefixes>.nt` (D5). Import it from `Veriphy/Kit.lean`. Verify with `VeriphyTest` tests on a module with a certified, a tested, a plain theorem and a definition: the written triples, the counts message, and the error for an unknown prefix.
 - [ ] 3.2 Load the export in `veriphy.graph` with provenance `lean`. Verify with pytest on a recorded `export.nt`, and in the integration job by exporting `VeriphyTest` and loading it.
-- [ ] 3.3 Document `#veriphy_graph` in the user guide. Verify with `nox -s docs`.
+- [x] 3.3 Document `#veriphy_graph` in the user guide. Verify with `nox -s docs`.
 
 ## 4. Certified reasoning (certified-graph-reasoning)
 
@@ -28,7 +28,7 @@ Every `lake build` and `lake env lean` runs one Lean process at a time.
 - [ ] 4.3 Run reasoning: `run_horn` with the built-in table, the run directory under `.veriphy/graph/runs/<run>/` with the digest, the `check_horn` call, and a typed result with status, verdict and theorem copied from the checker. Unchecked, incomplete and rejected runs are labelled so (D1). Add the `reason` and `recheck` commands. Verify with pytest using a fake checker for each status, and with the real checker in the integration job on: a transitive `assumes`, `realizedBy`, `owl:sameAs`, `formalizedBy`, a level chain, and a forged derivation line that is rejected.
 - [ ] 4.4 Add the drift test that compares the built-in table bytes of `open-ontologies-lite` with `oo-horn rules`, failing rather than skipping when the checker is present. Verify that it runs in the integration job.
 - [ ] 4.5 Run the integration job with the checker: cache the built `oo-horn` per tag and set `VERIPHY_OO_HORN` for the graph tests. Verify with a green CI run.
-- [ ] 4.6 Document the reasoning, the verdict words, and the checker build in the user guide and the components page. Verify with `nox -s docs`.
+- [x] 4.6 Document the reasoning, the verdict words, and the checker build in the user guide and the components page. Verify with `nox -s docs`.
 
 ## 5. Effective levels (effective-levels)
 
@@ -39,14 +39,14 @@ Every `lake build` and `lake env lean` runs one Lean process at a time.
 
 - [x] 6.1 Add `impact <convention>`: the affected claims by source, each with its `uses` chain and its Lean name and level. Verify with pytest for direct and transitive claims, a formalized claim, and an unchecked run.
 - [x] 6.2 Add `plan --against REV` over two checked runs, diffing `assumes`, caps and clashes (D8). Verify with pytest on a temporary git repository: switching a convention, and an edit that changes only a statement.
-- [ ] 6.3 Document impact and plans with a worked example in the user guide. Verify with `nox -s docs`.
+- [x] 6.3 Document impact and plans with a worked example in the user guide. Verify with `nox -s docs`.
 
 ## 7. Graph checks (graph-checks)
 
 - [x] 7.1 Write `shapes.ttl` and validate the graph with it, labelling the report as a SHACL measurement. Verify with pytest for a claim without a statement, a broken `formalizedBy` link, a broken `realizedBy` link, and a conforming graph.
 - [x] 7.2 Add `excludes`: propose `excludes` triples for conventions that share `conventionFor`, written on confirmation. Verify with pytest for two metric signatures.
 - [x] 7.3 Report clashes as two checked `assumes` conclusions joined with an asserted `excludes` triple, including inherited and cross-source assumptions (D2). Verify with pytest and with the real checker on the cross-paper scenario, and check that the no-clash report says it is not a checked conclusion.
-- [ ] 7.4 Document shapes and clashes in the user guide. Verify with `nox -s docs`.
+- [x] 7.4 Document shapes and clashes in the user guide. Verify with `nox -s docs`.
 
 ## 8. Context slices (context-slices)
 
@@ -55,8 +55,8 @@ Every `lake build` and `lake env lean` runs one Lean process at a time.
 
 ## 9. Research workflow (research-workflow)
 
-- [ ] 9.1 Add the `appendix` command, writing Markdown and LaTeX with the level columns, provenance counts, verdict and recheck commands, and the unchecked wording. Verify with pytest snapshots of both formats for a checked and an unchecked run, and that the LaTeX compiles with `pdflatex` where it is available in CI.
-- [ ] 9.2 Write `prompts/research.md`, the `research` skill in `skills/research/` and `.claude/skills/research/`, and recipes for claim extraction and triage. Add the optional slice step to `prompts/prove.md` and the `prove` skill (D10). Verify by the documented commands running in `tests/recipes/` and by the skill listing in the plugin manifest.
+- [x] 9.1 Add the `appendix` command, writing Markdown and LaTeX with the level columns, provenance counts, verdict and recheck commands, and the unchecked wording. Verify with pytest snapshots of both formats for a checked and an unchecked run, and that the LaTeX compiles with `pdflatex` where it is available in CI.
+- [x] 9.2 Write `prompts/research.md`, the `research` skill in `skills/research/` and `.claude/skills/research/`, and recipes for claim extraction and triage. Add the optional slice step to `prompts/prove.md` and the `prove` skill (D10). Verify by the documented commands running in `tests/recipes/` and by the skill listing in the plugin manifest.
 - [ ] 9.3 Run the workflow end to end on a fixture chapter (a small LaTeX file with a convention, a lemma formalized in `VeriphyTest`, and a theorem that depends on it): extract, validate, export, reason, levels, impact, slice, appendix. Verify in the integration job that every step succeeds and that the appendix holds the verdict `entailed`.
 
 ## 10. Integration

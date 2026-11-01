@@ -196,8 +196,8 @@ def generate_axioms(conventions: Iterable[str]) -> list[Triple]:
     """Return the OWL axioms that make `assumes` and level caps follow the graph's links under the built-in rules.
 
     For each convention `k`, the class of nodes that assume `k` is a `hasValue` restriction, and the nodes that use,
-    or are `owl:sameAs`, a member are inside it. For each level, the same holds for `cappedAt` through `uses` and
-    `formalizedBy`, and each level's class is inside the class of the next level up.
+    are `owl:sameAs`, or are formalized by a member are inside it. For each level, the same holds for `cappedAt`
+    through `uses` and `formalizedBy`, and each level's class is inside the class of the next level up.
 
     Args:
         conventions: The conventions of the graph, in N-Triples spelling.
@@ -211,7 +211,7 @@ def generate_axioms(conventions: Iterable[str]) -> list[Triple]:
         ...  '<urn:veriphy:vocabulary#realizedBy>') in axioms
         True
         >>> len(generate_axioms(['<urn:veriphy:source:ch#k>', '<urn:veriphy:source:ch#j>'])) - len(axioms)
-        8
+        11
     """
     triples: list[Triple] = [
         (vp('realizes'), f'<{OWL}inverseOf>', vp('realizedBy')),
@@ -222,7 +222,7 @@ def generate_axioms(conventions: Iterable[str]) -> list[Triple]:
         name = f'assumes/{convention.strip("<>")}'
         target = _axiom(name)
         triples += _restriction(target, vp('assumes'), 'hasValue', convention)
-        triples += _propagation(target, name, [('uses', vp('uses')), ('same', SAME_AS)])
+        triples += _propagation(target, name, [('uses', vp('uses')), ('same', SAME_AS), ('formal', vp('formalizedBy'))])
     for index, level in enumerate(LEVELS):
         name = f'capped/{level}'
         target = _axiom(name)

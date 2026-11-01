@@ -11,6 +11,7 @@ The kit `sage_run` is built from.
   Kit.Levels   verification levels: `veriphy_certified`, `veriphy_tested`, `veriphy_instance%`, `#veriphy_levels`
   Kit.Claim    a claim's universal binders and body as a problem, and dependence on a claim
   Kit.Linear   packaging lemmas for linear-algebra certificates (minors, factorisations, kernels, signatures)
+  Kit.Graph    `#veriphy_graph`: the formalized claims, levels and dependencies for the research claim graph
 -/
 import Veriphy.Kit.Problem
 import Veriphy.Kit.Packs
@@ -22,3 +23,4 @@ import Veriphy.Kit.Inspect
 import Veriphy.Kit.Linear
 import Veriphy.Kit.Levels
 import Veriphy.Kit.Claim
+import Veriphy.Kit.Graph
