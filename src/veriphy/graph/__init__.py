@@ -1,7 +1,22 @@
 """Record a research project as a claim graph and reason over it with certificates that `oo-horn` checks."""
 
 from veriphy.graph._appendix import appendix, latex_escape
-from veriphy.graph._checker import BuildReport, CheckerLookup, build_checker, builtin_rules, cache_dir, find_checker
+from veriphy.graph._checker import (
+    PINNED_RELEASE,
+    BuildReport,
+    CheckerLookup,
+    Release,
+    Setup,
+    build_checker,
+    builtin_rules,
+    cache_dir,
+    ensure_checker,
+    ensure_reasoner,
+    ensure_release,
+    find_checker,
+    notify_stderr,
+    setup_enabled,
+)
 from veriphy.graph._checks import (
     Clash,
     ShapeReport,
@@ -35,6 +50,7 @@ from veriphy.graph._vocabulary import (
 
 __all__ = [
     'COMMANDS',
+    'PINNED_RELEASE',
     'Assertion',
     'BuildReport',
     'CheckerLookup',
@@ -43,7 +59,9 @@ __all__ = [
     'LevelRow',
     'Plan',
     'ProjectGraph',
+    'Release',
     'Run',
+    'Setup',
     'ShapeReport',
     'ShapeViolation',
     'Slice',
@@ -60,6 +78,9 @@ __all__ = [
     'clashes',
     'confirm',
     'convention_impact',
+    'ensure_checker',
+    'ensure_reasoner',
+    'ensure_release',
     'find_checker',
     'generate_axioms',
     'graph_dir',
@@ -72,6 +93,7 @@ __all__ = [
     'load_graph',
     'load_run',
     'main',
+    'notify_stderr',
     'own_level',
     'plan',
     'plan_report',
@@ -82,6 +104,7 @@ __all__ = [
     'recheck',
     'render_slice',
     'resolve_term',
+    'setup_enabled',
     'shape_report',
     'shapes_text',
     'slice_claim',

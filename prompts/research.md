@@ -8,8 +8,9 @@ reporting the verification of every claim. What happens to the report is the cal
 
 ## Preconditions
 
-- The graph extra and the checker are installed: `sage -pip install 'veriphy[graph]'` and
-  `sage -python -m veriphy.graph checker build`. `sage -python -m veriphy.graph checker path` prints the checker.
+- The graph extra is installed: `sage -pip install 'veriphy[graph]'`. The first `reason` sets up the reasoner and the
+  checker by itself and says so. When `VERIPHY_GRAPH_SETUP=off` forbids that, run
+  `sage -python -m veriphy.graph checker build` first.
 - The workspace is a Lean workspace that requires Veriphy. Every graph command runs from inside it.
 - Only step 4 needs Sage. Without a checker the playbook still runs, and every graph result is reported `unchecked`.
 

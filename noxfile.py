@@ -195,8 +195,9 @@ def tests(session: nox.Session) -> None:
         [str(venv / 'bin' / 'pytest'), '-n', 'auto', *selection, 'tests', 'src'],
         *([str(venv / 'bin' / 'coverage'), step] for step in ('report', 'html', 'xml')),
     ]
+    # The release is fetched above, so no test reaches the network through first-use setup.
     for command in commands:
-        session.run(sage, '-sh', '-c', shlex.join(command), env=env, external=True)
+        session.run(sage, '-sh', '-c', shlex.join(command), env={**env, 'VERIPHY_GRAPH_SETUP': 'off'}, external=True)
 
 
 @nox.session

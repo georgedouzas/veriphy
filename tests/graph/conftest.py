@@ -1,5 +1,6 @@
 """Provide the research-graph fixtures: a workspace with sources and a Lean export, and real or fake checkers."""
 
+import hashlib
 import json
 import os
 import shutil
@@ -10,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from veriphy.graph import find_checker
+from veriphy.graph import PINNED_RELEASE, Release, cache_dir, find_checker
 
 PREFIXES = '@prefix vp: <urn:veriphy:vocabulary#> .\n@prefix owl: <http://www.w3.org/2002/07/owl#> .\n'
 CHAPTER = """@prefix : <urn:veriphy:source:chapter9#> .
@@ -143,3 +144,70 @@ def compile_latex(tmp_path: Path) -> Callable[[str], None]:
         assert result.returncode == 0, result.stdout[-2000:]
 
     return compile_fragment
+
+
+def _git(directory: Path, *args: str) -> str:
+    """Run git in a directory and return its output."""
+    git = shutil.which('git')
+    if git is None:
+        pytest.skip('git is not on PATH')
+    result = subprocess.run([git, *args], cwd=directory, check=True, capture_output=True, text=True)
+    return result.stdout.strip()
+
+
+def _executable_script(path: Path, text: str) -> Path:
+    """Write an executable script."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text)
+    path.chmod(path.stat().st_mode | stat.S_IEXEC)
+    return path
+
+
+@pytest.fixture
+def accepting_script() -> str:
+    """Return the text of a fake checker that accepts every certificate."""
+    report, code = FAKE_REPORTS['accepted']
+    return f"#!/bin/sh\nif [ \"$1\" = rules ]; then exit 0; fi\necho '{json.dumps(report)}'\nexit {code}\n"
+
+
+@pytest.fixture(scope='session')
+def real_reasoner() -> Path:
+    """Return the pinned release's reasoner source, resolved before any test changes the environment."""
+    source = cache_dir(release=PINNED_RELEASE) / 'python' / 'src'
+    if not (source / 'open_ontologies_lite' / 'horn').is_dir():
+        pytest.skip('the pinned release is not fetched: python -m veriphy.graph checker build --reasoner-only')
+    return source
+
+
+@pytest.fixture
+def fake_release(tmp_path: Path, accepting_script: str, real_reasoner: Path) -> Release:
+    """Return a release served from a local git repository and a local assets directory, holding the real reasoner."""
+    origin = tmp_path / 'origin'
+    shutil.copytree(real_reasoner, origin / 'python' / 'src')
+    (origin / 'lean').mkdir()
+    (origin / 'lean' / 'lakefile.toml').write_text('')
+    _git(origin, 'init', '-q')
+    _git(origin, 'add', '-A')
+    _git(origin, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '-m', 'release')
+    _git(origin, 'tag', 'v-test')
+    assets = tmp_path / 'assets'
+    binary = _executable_script(assets / 'oo-horn-fake', accepting_script)
+    digest = hashlib.sha256(binary.read_bytes()).hexdigest()
+    (assets / 'SHASUMS.txt').write_text(f'{digest}  oo-horn-fake\n')
+    commit = _git(origin, 'rev-parse', 'HEAD')
+    return Release(str(origin), 'v-test', commit, assets.as_uri(), 'oo-horn-fake', digest)
+
+
+@pytest.fixture
+def fake_lake(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, accepting_script: str) -> Path:
+    """Put a fake `lake` on PATH that builds a fake checker, and return the log of its calls."""
+    log = tmp_path / 'lake.log'
+    checker_text = accepting_script.replace("'", "'\\''")
+    script = (
+        f'#!/bin/sh\necho "$*" >> "{log}"\n/bin/mkdir -p .lake/build/bin\n'
+        f"printf '%s' '{checker_text}' > .lake/build/bin/oo-horn\n/bin/chmod +x .lake/build/bin/oo-horn\n"
+    )
+    bin_dir = tmp_path / 'lake-bin'
+    _executable_script(bin_dir / 'lake', script)
+    monkeypatch.setenv('PATH', f'{bin_dir}{os.pathsep}{os.environ["PATH"]}')
+    return log

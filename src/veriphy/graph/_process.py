@@ -1,10 +1,16 @@
-"""Run the external programs the research graph needs: git, lake, the installer and `oo-horn`."""
+"""Run the external programs the research graph needs, git, lake and `oo-horn`, and fetch release assets."""
 
 import shutil
 import subprocess  # nosec B404 - every command is a list of fixed arguments, never a shell
+import urllib.request
 from pathlib import Path
+from urllib.error import URLError
+from urllib.parse import urlparse
 
 from veriphy.core import CheckerError
+
+FETCH_SCHEMES = ('https', 'file')
+FETCH_TIMEOUT = 300
 
 
 def find_tool(name: str, purpose: str) -> str:
@@ -54,3 +60,28 @@ def run_process(command: list[str], cwd: Path | None = None, timeout: float | No
         message = f'{" ".join(command)}: {exc}'
         raise CheckerError(message) from exc
     return result.returncode, result.stdout, result.stderr
+
+
+def fetch_url(url: str, timeout: float = FETCH_TIMEOUT) -> bytes:
+    """Return the bytes an `https` or `file` URL holds.
+
+    Args:
+        url: The URL.
+        timeout: Seconds before the fetch is stopped.
+
+    Returns:
+        The content.
+
+    Raises:
+        CheckerError: When the scheme is not `https` or `file`, or the fetch fails.
+    """
+    if urlparse(url).scheme not in FETCH_SCHEMES:
+        message = f'{url}: only https and file URLs are fetched'
+        raise CheckerError(message)
+    try:
+        response = urllib.request.urlopen(url, timeout=timeout)  # noqa: S310  # nosec B310 - scheme checked above
+        with response:
+            return bytes(response.read())
+    except (URLError, OSError) as exc:
+        message = f'{url}: {exc}'
+        raise CheckerError(message) from exc
