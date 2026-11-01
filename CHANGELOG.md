@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Docs
 
+- Archive research-claim-graph with its specs synced; README and plugin pin 0.4.0 ([b4fd76b](https://github.com/georgedouzas/veriphy/commit/b4fd76bccbc6de0a7656cf1a4ce5c08bf1bbc177) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- research-claim-graph tasks complete, CI green with the checker ([d1900ad](https://github.com/georgedouzas/veriphy/commit/d1900ad39b772b67ce2f1a40a8c74eb905d53ca8) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Changelog for the research claim graph; Project Profile names veriphy.graph ([4cb745a](https://github.com/georgedouzas/veriphy/commit/4cb745a49342e4cb9824e51bed08ea294f260795) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 - Plan research-claim-graph: a certified research claim graph with Open Ontologies ([d1e58d6](https://github.com/georgedouzas/veriphy/commit/d1e58d6db0329122e785a5ddb07f84290222edbb) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 
 ## [0.3.1](https://github.com/georgedouzas/veriphy/releases/tag/0.3.1) - 2026-10-18
