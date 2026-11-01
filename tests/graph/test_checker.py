@@ -69,6 +69,19 @@ def test_build_checker_reasoner_only_skips_lake(tmp_path: Path, monkeypatch: pyt
     assert 'lake' not in log.read_text()
 
 
+def test_build_checker_keeps_a_built_checker(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Skip lake when the cached checker is already built."""
+    log = _fake_tools(tmp_path, monkeypatch, ('git', 'uv'))
+    cache = tmp_path / 'cache'
+    binary = cache_dir({'XDG_CACHE_HOME': str(cache)}) / 'lean' / '.lake' / 'build' / 'bin' / 'oo-horn'
+    binary.parent.mkdir(parents=True)
+    binary.write_text('')
+    (binary.parents[4] / '.git').mkdir()
+    report = build_checker(environ={'XDG_CACHE_HOME': str(cache)})
+    assert report.checker == binary
+    assert 'lake' not in log.read_text()
+
+
 def test_build_checker_names_a_missing_tool(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Name the tool that is not on PATH."""
     _fake_tools(tmp_path, monkeypatch, ())

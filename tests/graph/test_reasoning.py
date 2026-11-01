@@ -61,7 +61,7 @@ def test_recheck_compares_the_digest(workspace: Path, fake_checker: Callable[[st
 
 
 def test_reason_derives_every_propagation(workspace: Path, checker: Path) -> None:
-    """Derive assumes through uses, realizedBy and sameAs, and caps through formalizedBy, all checked."""
+    """Derive assumes through uses, realizedBy, sameAs and formalizedBy, and caps through formalizedBy, all checked."""
     sources = workspace / '.veriphy' / 'graph' / 'sources'
     (sources / 'extra.human.ttl').write_text(
         '@prefix vp: <urn:veriphy:vocabulary#> .\n@prefix owl: <http://www.w3.org/2002/07/owl#> .\n'
@@ -75,6 +75,7 @@ def test_reason_derives_every_propagation(workspace: Path, checker: Path) -> Non
     assert (run.verdict, run.theorem) == ('entailed', 'OOCert.entails_of_builtin_horn')
     assert all(run.holds(t) for t in (_assumes(a, k), _assumes(b, k), _assumes(f, k2)))
     assert run.holds(_assumes(lean_iri('KK.vacuum'), source_iri('chapter9', 'half')))
+    assert run.holds(_assumes(source_iri('chapter9', 'thm-9.1'), source_iri('chapter9', 'half')))
     assert run.holds((source_iri('chapter9', 'thm-9.1'), vp('cappedAt'), vp('oracle-test')))
     builtin = {rule.split('\t')[0] for rule in builtin_rules(checker).splitlines()}
     assert {step.rule for step in run.steps} <= builtin

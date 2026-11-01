@@ -64,11 +64,14 @@ classes that the built-in rules evaluate. For a convention `k`:
 A_k   ≡ hasValue restriction   (onProperty vp:assumes,     hasValue k)        cls-hv1, cls-hv2
 U_k   = someValuesFrom          (onProperty vp:uses,        someValuesFrom A_k) cls-svf1
 S_k   = someValuesFrom          (onProperty owl:sameAs,     someValuesFrom A_k) cls-svf1
-U_k ⊑ A_k,  S_k ⊑ A_k                                                          rdfs9
+F_k   = someValuesFrom          (onProperty vp:formalizedBy, someValuesFrom A_k) cls-svf1
+U_k ⊑ A_k,  S_k ⊑ A_k,  F_k ⊑ A_k                                              rdfs9
 vp:realizes owl:inverseOf vp:realizedBy,  vp:realizes ⊑ vp:assumes            prp-inv1, rdfs7
 ```
 
 `a uses b` and `b assumes k` give `a ∈ U_k` (`cls-svf1`), then `a ∈ A_k` (`rdfs9`), then `a assumes k` (`cls-hv1`).
+A prose claim formalized by a Lean claim assumes what the Lean claim assumes, because the formalization fixes the
+conventions the prose leaves implicit.
 For a level `L`, the same pattern on `vp:cappedAt` (with `vp:hasLevel ⊑ vp:cappedAt`) and on both `vp:uses` and
 `vp:formalizedBy` gives caps that follow dependencies and formalizations, and `Cap_L ⊑ Cap_M` for `L` below `M` gives
 caps at every higher level. `owl:sameAs` is symmetric through `eq-sym`. The generated classes have IRIs, not blank
@@ -99,7 +102,8 @@ Source nodes are `urn:veriphy:source:<source>#<label>`, with `<source>` the file
 
 `#veriphy_graph p₁ … pₙ` walks the environment's constants under the prefixes. It reuses `levelOf` for levels and
 `ConstantInfo.getUsedConstants` on type and value for `uses`, filtered to the exported set. It writes
-`.veriphy/graph/lean/export.nt` with each claim's type, pretty-printed, as its `statement`. It resolves `.veriphy/` the
+`.veriphy/graph/lean/<prefixes>.nt` with each claim's type, pretty-printed, as its `statement`, and with
+`veriphy.graph.write` off it prints the triples instead, which is what the Lean tests guard. It resolves `.veriphy/` the
 way `sage_test` does for its records. N-Triples is chosen because it is one triple per line, so the Lean side needs no
 Turtle writer.
 
@@ -168,8 +172,8 @@ offer the slice.
 - [Open Ontologies moves fast: the reasoner or the certificate format changes] → Reasoner and checker come from one
   pinned tag, installed by one command. The drift test fails rather than skips.
 - [The reasoner is installed outside pip's resolution, by `checker build`] → The command prints what it installed and
-  from which commit. `GraphExtraMissingError` names the command when the reasoner is absent, and the CI job runs the same
-  command. Veriphy relies only on the Horn certificate format,
+  from which commit. `GraphExtraMissingError` names the command when the reasoner is absent, and the CI job runs
+  the same command. Veriphy relies only on the Horn certificate format,
   which Open Ontologies' decision 0003 fixes.
 - [Building `oo-horn` needs `elan`, `git` and minutes of build time] → The build is cached per tag, the explicit path
   overrides it, and without a checker every result is labelled `unchecked` instead of failing.

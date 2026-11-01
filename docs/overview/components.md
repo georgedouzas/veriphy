@@ -50,6 +50,12 @@ finite data.
 |---|---|---|---|
 | Test fallback (`_testing`) | seeded instances with edge cases; exact or interval evaluations of instances Lean cannot state | each kernel instance, stated from the claim's statement and independent of its proof (`sage_test`, `veriphy_instance%`); the level attribute `veriphy_tested` | `test_fallback` |
 
+## Research claim graph
+
+| Component | Computes | Checks | Entry points |
+|---|---|---|---|
+| Claim graph (`veriphy.graph`) | the consequences of a research graph of claims, conventions and sources, with the Horn reasoner of Open Ontologies under OWL axioms Veriphy generates; levels, convention impact, plans, clashes, slices, appendices | every run by `oo-horn`, a verified Lean checker from Open Ontologies built at a pinned release (verdict `entailed`); the Lean export `#veriphy_graph` for formalized claims; SHACL shapes as a measurement | `python -m veriphy.graph`, the `research` skill |
+
 ## Checkers and assets
 
 | `VeriphyCheck` module | Checks |
