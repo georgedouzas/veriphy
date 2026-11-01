@@ -6,21 +6,39 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 <!-- insertion marker -->
+## [0.5.0](https://github.com/georgedouzas/veriphy/releases/tag/0.5.0) - 2026-11-01
+
+<small>[Compare with 0.4.0](https://github.com/georgedouzas/veriphy/compare/0.4.0...0.5.0)</small>
+
+### Features
+
+- One install command for the research graph: reasoner and checker set up on first use from the pinned release, prebuilt checker on Linux, pinned commit and hash; README covers the graph ([5f26213](https://github.com/georgedouzas/veriphy/commit/5f2621360462b844570e68f152bd07e8fd9c2dc7) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+### Docs
+
+- Archive graph-first-use-setup with its specs synced; README and plugin pin 0.5.0 ([3d9b7dd](https://github.com/georgedouzas/veriphy/commit/3d9b7dde36d1e52b13b86c196ea4ede1f4667f8b) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- graph-first-use-setup tasks complete, CI green with first-use setup from an empty cache ([0b52f0b](https://github.com/georgedouzas/veriphy/commit/0b52f0b2cc7f2c485e75d5b19db3322cf29fd865) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Plan graph-first-use-setup: one install command for the research graph ([bb08b03](https://github.com/georgedouzas/veriphy/commit/bb08b03ba5159937b83856fd8e413150e163a81c) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
 ## [0.4.0](https://github.com/georgedouzas/veriphy/releases/tag/0.4.0) - 2026-11-01
 
 <small>[Compare with 0.3.1](https://github.com/georgedouzas/veriphy/compare/0.3.1...0.4.0)</small>
 
 ### Features
 
-- Lean export #veriphy_graph, the research skill and playbook, the graph in CI, and the research graph documented ([201a840](https://github.com/georgedouzas/veriphy/commit/201a840560c62c7e26a75ed814b7e5020b341129) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
-- Research claim graph: vocabulary, project graph with provenance, certified reasoning checked by oo-horn, levels, impact, plans, clashes, slices and appendix ([42c2cd4](https://github.com/georgedouzas/veriphy/commit/42c2cd4b87653198a6fe2c4141de4eac76e7a6d2) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Lean export #veriphy_graph, the research skill and playbook, the graph in CI, and the research graph documented ([7f51354](https://github.com/georgedouzas/veriphy/commit/7f51354ee2581aa9e505078ba74a7ba9191f98b7) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Research claim graph: vocabulary, project graph with provenance, certified reasoning checked by oo-horn, levels, impact, plans, clashes, slices and appendix ([d4b7e5e](https://github.com/georgedouzas/veriphy/commit/d4b7e5edd2b80331871353ed5333eef003d3e1d1) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 
 ### Docs
 
-- Archive research-claim-graph with its specs synced; README and plugin pin 0.4.0 ([b4fd76b](https://github.com/georgedouzas/veriphy/commit/b4fd76bccbc6de0a7656cf1a4ce5c08bf1bbc177) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
-- research-claim-graph tasks complete, CI green with the checker ([d1900ad](https://github.com/georgedouzas/veriphy/commit/d1900ad39b772b67ce2f1a40a8c74eb905d53ca8) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
-- Changelog for the research claim graph; Project Profile names veriphy.graph ([4cb745a](https://github.com/georgedouzas/veriphy/commit/4cb745a49342e4cb9824e51bed08ea294f260795) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
-- Plan research-claim-graph: a certified research claim graph with Open Ontologies ([d1e58d6](https://github.com/georgedouzas/veriphy/commit/d1e58d6db0329122e785a5ddb07f84290222edbb) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Archive research-claim-graph with its specs synced; README and plugin pin 0.4.0 ([d0d3cea](https://github.com/georgedouzas/veriphy/commit/d0d3ceafd9169d2856a6489b972887250236e191) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- research-claim-graph tasks complete, CI green with the checker ([90f2806](https://github.com/georgedouzas/veriphy/commit/90f280614e3a1b11097f149389e847c42f911adb) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Changelog for the research claim graph; Project Profile names veriphy.graph ([a171285](https://github.com/georgedouzas/veriphy/commit/a171285cece8899dfaf275d8dad29c46ce96491c) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Plan research-claim-graph: a certified research claim graph with Open Ontologies ([07b2f76](https://github.com/georgedouzas/veriphy/commit/07b2f76664952274c88b0dcf6f7ea10a32352396) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+### Chore
+
+- Release 0.4.0 ([5c9b87f](https://github.com/georgedouzas/veriphy/commit/5c9b87f9d3f87e3edad56560d2a37fda58b9f5bc) by georgedouzas).
 
 ## [0.3.1](https://github.com/georgedouzas/veriphy/releases/tag/0.3.1) - 2026-10-18
 
