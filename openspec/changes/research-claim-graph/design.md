@@ -116,7 +116,7 @@ A new package that never imports Sage:
   `impact`, `plan`, `slice`, `excludes`, `confirm`, `appendix`, `axioms`, `vocabulary` and `checker`.
 
 `open-ontologies-lite` is imported in one module, behind the one allowed lazy import. A missing reasoner raises
-`GraphExtraMissing` from `veriphy.core`, with the two install lines: `sage -pip install 'veriphy[graph]'` and
+`GraphExtraMissingError` from `veriphy.core`, with the two install lines: `sage -pip install 'veriphy[graph]'` and
 `sage -python -m veriphy.graph checker build`. The CLI and the
 Python API expose the same capabilities, and a parity test asserts it.
 
@@ -168,7 +168,7 @@ offer the slice.
 - [Open Ontologies moves fast: the reasoner or the certificate format changes] → Reasoner and checker come from one
   pinned tag, installed by one command. The drift test fails rather than skips.
 - [The reasoner is installed outside pip's resolution, by `checker build`] → The command prints what it installed and
-  from which commit. `GraphExtraMissing` names the command when the reasoner is absent, and the CI job runs the same
+  from which commit. `GraphExtraMissingError` names the command when the reasoner is absent, and the CI job runs the same
   command. Veriphy relies only on the Horn certificate format,
   which Open Ontologies' decision 0003 fixes.
 - [Building `oo-horn` needs `elan`, `git` and minutes of build time] → The build is cached per tag, the explicit path

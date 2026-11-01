@@ -1,0 +1,62 @@
+@prefix vp: <urn:veriphy:vocabulary#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+# The vocabulary of Veriphy's research claim graph.
+
+vp:Claim a owl:Class ;
+    rdfs:comment "A statement a source makes: an equation, a lemma, a theorem, or a Lean theorem." .
+vp:Convention a owl:Class ;
+    rdfs:comment "A choice a statement depends on, such as a metric signature or a normalization." .
+vp:Concept a owl:Class ;
+    rdfs:comment "A notion a source uses, such as the Killing form of a coset space." .
+vp:Source a owl:Class ;
+    rdfs:comment "A paper, a chapter or a set of notes." .
+vp:Definition a owl:Class ;
+    rdfs:comment "A Lean definition the export wrote that is not a claim." .
+vp:Level a owl:Class ;
+    rdfs:comment "A verification level." .
+
+vp:uses a owl:ObjectProperty ;
+    rdfs:comment "The subject relies on the object: a claim on a claim, a concept or a definition." .
+vp:assumes a owl:ObjectProperty ;
+    rdfs:comment "The subject holds under the convention the object names." .
+vp:defines a owl:ObjectProperty ;
+    rdfs:comment "The subject, a claim, defines the object, a concept." .
+vp:statedIn a owl:ObjectProperty ;
+    rdfs:comment "The source the subject comes from." .
+vp:statement a owl:DatatypeProperty ;
+    rdfs:comment "The subject's text, as the source states it." .
+vp:location a owl:DatatypeProperty ;
+    rdfs:comment "Where the source states the subject, such as a file and a line." .
+vp:leanName a owl:DatatypeProperty ;
+    rdfs:comment "The Lean name of an exported declaration." .
+vp:formalizedBy a owl:ObjectProperty ;
+    rdfs:comment "The Lean claim that formalizes the subject." .
+vp:realizedBy a owl:ObjectProperty ;
+    rdfs:comment "The Lean definition that realizes the subject, a convention." .
+vp:realizes a owl:ObjectProperty ;
+    owl:inverseOf vp:realizedBy ;
+    rdfs:comment "The subject, a Lean definition, realizes the object, a convention." .
+vp:hasLevel a owl:ObjectProperty ;
+    rdfs:comment "The subject's own verification level." .
+vp:cappedAt a owl:ObjectProperty ;
+    rdfs:comment "The subject is verified at most at the object's level." .
+vp:conventionFor a owl:DatatypeProperty ;
+    rdfs:comment "The aspect the subject, a convention, fixes, such as metric-signature." .
+vp:excludes a owl:ObjectProperty, owl:SymmetricProperty ;
+    rdfs:comment "The two conventions cannot hold together." .
+vp:triage a owl:DatatypeProperty ;
+    rdfs:comment "The triage group of a claim: recipe, test, formalize or suspect." .
+
+vp:none a vp:Level ; rdfs:comment "Neither proved nor tested by Veriphy." .
+vp:oracle-test a vp:Level ; rdfs:comment "Sage evaluated the claim at instances." .
+vp:kernel-test a vp:Level ; rdfs:comment "The kernel checked the claim at instances." .
+vp:certificate a vp:Level ; rdfs:comment "A recipe built the proof, which the kernel checked." .
+
+vp:below a owl:ObjectProperty, owl:TransitiveProperty ;
+    rdfs:comment "The subject, a level, is lower than the object." .
+vp:none vp:below vp:oracle-test .
+vp:oracle-test vp:below vp:kernel-test .
+vp:kernel-test vp:below vp:certificate .

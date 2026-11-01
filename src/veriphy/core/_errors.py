@@ -64,3 +64,27 @@ class TableError(VeriphyError):
         self.source = source
         self.field = field
         self.reason = reason
+
+
+class GraphError(VeriphyError):
+    """Signal a research graph that cannot be loaded, reasoned over or written."""
+
+
+class GraphExtraMissingError(GraphError):
+    """Signal that the research graph's dependencies are not installed.
+
+    Args:
+        module: The module that could not be imported.
+    """
+
+    def __init__(self, module: str) -> None:
+        message = (
+            f"the research graph needs '{module}': install it with `sage -pip install 'veriphy[graph]'` and "
+            '`sage -python -m veriphy.graph checker build`'
+        )
+        super().__init__(message)
+        self.module = module
+
+
+class CheckerError(GraphError):
+    """Signal that `oo-horn`, the certificate checker, could not be built or run."""
