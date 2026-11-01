@@ -6,7 +6,7 @@
 - [x] 1.2 Import the reasoner from `<cache>/python/src` in the engine, with `run_reasoner` taking the source directory, and drop the run-time pip install from `checker build` (D1). Verify with pytest that the reasoner imports from a fake release's source and that no package is installed.
 - [x] 1.3 Add the prebuilt download on Linux x86_64 with both hash checks, the `oo-horn rules` probe and the fallback to a build, through `_process` (D3). Verify with pytest on a fake release directory: a good binary kept, a tampered binary deleted with both hashes named, and a failing probe that falls back to the build.
 - [x] 1.4 Call `ensure_reasoner` and `ensure_checker` from reasoning, honour `VERIPHY_GRAPH_SETUP=off`, report setup failures as unchecked with the failing step, and print setup messages only when something is set up (D2). Verify with pytest for: first use sets up and reports the verdict, a second run prints nothing, setup off gives an unchecked run with no fetch, and a failed setup gives an unchecked run naming the step.
-- [ ] 1.5 Update the `tests` nox session and the CI integration job: fetch the release before pytest, run pytest with setup off, and run the fixture-chapter workflow with an empty cache (D5). Verify with a green CI run whose workflow step shows the first-use messages and the verdict `entailed`.
+- [x] 1.5 Update the `tests` nox session and the CI integration job: fetch the release before pytest, run pytest with setup off, and run the fixture-chapter workflow with an empty cache (D5). Verify with a green CI run whose workflow step shows the first-use messages and the verdict `entailed`.
 
 ## 2. Documentation
 
@@ -15,7 +15,7 @@
 
 ## 3. Integration
 
-- [ ] 3.1 Run the full gate in order (formatting of the changed files, checks, docs, tests) and the integration job. Verify that every session is green.
+- [x] 3.1 Run the full gate in order (formatting of the changed files, checks, docs, tests) and the integration job. Verify that every session is green.
 
 ## Workflow follow-up
 
