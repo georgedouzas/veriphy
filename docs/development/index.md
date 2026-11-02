@@ -34,6 +34,29 @@ environment you can follow the next steps:
 | Run the script with `problem` and the toolkit bound; read `proof` | `run`, `src/veriphy/oracle/_scripts.py` |
 | Parse the block, run exactly that, reject `sorry` and non-standard axioms, replay, emit | `sage_run`, `closeAndEmit` in `Veriphy/Kit/Family.lean` |
 
+## Layout
+
+```text
+Veriphy/       Lean library: sage_run, problem extraction, checks and replay, the daemon bridge
+src/veriphy/   Python package: the Sage daemon, the toolkit, the catalog, the claim graph
+VeriphyCheck/  Mathlib-only kernel checkers, bundled by scripts/bundle_check.py
+coverage/      Lake project measuring translation coverage on Physlib and mathlib
+prompts/       Playbooks and recipes with templates, as plain markdown
+skills/        Claude Code wrappers for the playbooks
+```
+
+The repository is generated from [copier-modern-python](https://github.com/georgedouzas/copier-modern-python), and
+`copier update` pulls template changes. The Python code follows `openspec/constitution.md`.
+
+## Daemon protocol
+
+The daemon reads one JSON request per line on stdin and writes one response per line on stdout. Each response carries
+the package version. The methods are `ping`, `run` (a proof script against a serialized problem) and the advisory
+`symbolic_check`, `matrix_check`, `solve` and `run_script`.
+
+Scripts run with the daemon's own privileges. The daemon is a user-launched, untrusted oracle, and the trust boundary
+is the Lean kernel.
+
 ## Adding a recipe
 
 A recipe is knowledge, not code in Veriphy.
@@ -122,6 +145,19 @@ Tests run with `set_option veriphy.checkReplay true`: every emitted replacement 
 re-run on the original goal with the bridge disabled. That catches hygienic names (`h✝`), printer round-trip
 failures and hidden Sage calls. `lake build VeriphyTest.Kit` covers extraction, `closeAndEmit` and the axiom guard
 without Sage. `VeriphyTest/SageRun.lean` and `VeriphyTest/Benchmark.lean` need Sage.
+
+## Releases
+
+Each release is one git tag `X.Y.Z`, and that tag is the only place a version is written.
+
+| Channel | Artifact | How a user gets it |
+|---|---|---|
+| Lake | the Lean library | `[[require]] … rev = "X.Y.Z"` |
+| PyPI | the `veriphy` package, including the Sage daemon | `sage -pip install veriphy` |
+| Claude plugin | the skills and playbooks | `claude plugin install veriphy@veriphy` |
+
+CI gates a release with a Lean job without Sage, the Python checks, and an integration job in a SageMath container that
+installs the built wheel and runs the tactic suite with replay on.
 
 ## Known future work
 
