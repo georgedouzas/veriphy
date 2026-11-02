@@ -103,7 +103,7 @@ def build (prefixes : Array Name) : MetaM Export := do
       s!"{iri} {vocab "statement"} {literal (← statement info)} ."] }
     if claim then
       out := { out with claims := out.claims + 1,
-                        lines := out.lines.push s!"{iri} {vocab "hasLevel"} {vocab (levelOf env name)} ." }
+                        lines := out.lines.push s!"{iri} {vocab "hasLevel"} {vocab (← levelOf name)} ." }
     else
       out := { out with definitions := out.definitions + 1 }
     let used := (mentions info).foldl (init := #[]) fun acc n =>

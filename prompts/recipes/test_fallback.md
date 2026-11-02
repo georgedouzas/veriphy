@@ -15,7 +15,7 @@
   one an edge case (zero, one, the identity, a singular matrix, `n = 0`).
 - The result has a level, and the report names it: `kernel-test` when every accepted instance is kernel-checked,
   `oracle-test` when some are Sage's alone. `#veriphy_levels <prefix>` lists every claim's level (`certificate`,
-  `kernel-test`, `oracle-test`, `none`).
+  `lean-proof`, `kernel-test`, `oracle-test`, `none`).
 
 ## Template
 

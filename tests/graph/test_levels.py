@@ -8,7 +8,7 @@ import pytest
 
 from veriphy.graph import LevelRow, claim_levels, level_report, load_graph, own_level, reason, source_iri
 
-LEVELS = ('none', 'oracle-test', 'kernel-test', 'certificate')
+LEVELS = ('none', 'oracle-test', 'kernel-test', 'lean-proof', 'certificate')
 
 
 def _rows(workspace: Path, checker: Path) -> dict[str, LevelRow]:
@@ -61,7 +61,7 @@ def test_level_report_counts_each_level(workspace: Path, fake_checker: Callable[
     run = reason(graph, fake_checker('accepted'))
     report = level_report(claim_levels(graph, run, 'chapter9'), run)
     assert '| thm-9.1 | certificate | oracle-test | lemma-8.4 | KK.vacuum |' in report
-    assert report.rstrip().endswith('certificate: 1, kernel-test: 0, oracle-test: 2, none: 2')
+    assert report.rstrip().endswith('certificate: 1, lean-proof: 0, kernel-test: 0, oracle-test: 2, none: 2')
 
 
 def _random_graph(rng: random.Random, size: int) -> tuple[str, dict[int, str], set[tuple[int, int]]]:

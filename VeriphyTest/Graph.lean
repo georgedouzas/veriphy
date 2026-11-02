@@ -33,7 +33,7 @@ info: 5 claims, 1 definitions, 2 dependencies
 <urn:veriphy:lean:GraphTest.plain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <urn:veriphy:vocabulary#Claim> .
 <urn:veriphy:lean:GraphTest.plain> <urn:veriphy:vocabulary#leanName> "GraphTest.plain" .
 <urn:veriphy:lean:GraphTest.plain> <urn:veriphy:vocabulary#statement> "1 + 1 = 2" .
-<urn:veriphy:lean:GraphTest.plain> <urn:veriphy:vocabulary#hasLevel> <urn:veriphy:vocabulary#none> .
+<urn:veriphy:lean:GraphTest.plain> <urn:veriphy:vocabulary#hasLevel> <urn:veriphy:vocabulary#lean-proof> .
 <urn:veriphy:lean:GraphTest.tested> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <urn:veriphy:vocabulary#Claim> .
 <urn:veriphy:lean:GraphTest.tested> <urn:veriphy:vocabulary#leanName> "GraphTest.tested" .
 <urn:veriphy:lean:GraphTest.tested> <urn:veriphy:vocabulary#statement> "∀ (n : Nat), n + 0 = n" .
@@ -41,7 +41,7 @@ info: 5 claims, 1 definitions, 2 dependencies
 <urn:veriphy:lean:GraphTest.usesMetric> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <urn:veriphy:vocabulary#Claim> .
 <urn:veriphy:lean:GraphTest.usesMetric> <urn:veriphy:vocabulary#leanName> "GraphTest.usesMetric" .
 <urn:veriphy:lean:GraphTest.usesMetric> <urn:veriphy:vocabulary#statement> "GraphTest.metric = 3" .
-<urn:veriphy:lean:GraphTest.usesMetric> <urn:veriphy:vocabulary#hasLevel> <urn:veriphy:vocabulary#none> .
+<urn:veriphy:lean:GraphTest.usesMetric> <urn:veriphy:vocabulary#hasLevel> <urn:veriphy:vocabulary#lean-proof> .
 <urn:veriphy:lean:GraphTest.usesMetric> <urn:veriphy:vocabulary#uses> <urn:veriphy:lean:GraphTest.metric> .
 <urn:veriphy:lean:GraphTest.%C2%AB%CE%B1%20prop%C2%BB> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <urn:veriphy:vocabulary#Claim> .
 <urn:veriphy:lean:GraphTest.%C2%AB%CE%B1%20prop%C2%BB> <urn:veriphy:vocabulary#leanName> "GraphTest.«α prop»" .

@@ -3,9 +3,11 @@ Verification levels: how a claim was checked through Veriphy.
 
 * `certificate`: a recipe built the proof. Its replacement runs inside `veriphy_certified`, which leaves the marker
   `Veriphy.certified` (the identity on proofs) in the proof term, so the level survives the replacement.
+* `lean-proof`: a complete Lean proof that no recipe built, on Lean's standard axioms alone.
 * `kernel-test` and `oracle-test`: `sage_test` checked the claim at instances, by the kernel or by Sage alone. The
   replacement carries the attribute `veriphy_tested` with the level and the instance counts.
-* `none`: a proof Veriphy did not build or test.
+* `none`: a statement without a checked proof: a definition of type `Prop`, or a theorem that depends on `sorry` or on
+  an axiom beyond the standard ones.
 
 `veriphy_instance% c v₁ … vₙ` is the claim `c` at the values, built from `c`'s statement and never from its proof, so
 a tested instance cannot depend on the claim it tests. `#veriphy_levels p₁ …` lists the declarations under the
@@ -16,6 +18,9 @@ import Lean
 namespace Veriphy
 
 open Lean Elab Meta Term Tactic Command
+
+/-- The axioms a Veriphy proof may depend on: Lean's standard three. -/
+def standardAxioms : List Name := [``propext, ``Classical.choice, ``Quot.sound]
 
 /-- Marks a proof built by a Veriphy recipe: the identity on proofs, kept in the proof term. -/
 theorem certified {p : Prop} (h : p) : p := h
@@ -93,14 +98,18 @@ syntax (name := veriphyInstance) "veriphy_instance% " ident (ppSpace colGt term:
     instantiateMVars ty
   | _ => throwUnsupportedSyntax
 
-/-- The level of a declaration: `certificate`, `kernel-test`, `oracle-test` or `none`. -/
-def levelOf (env : Environment) (name : Name) : String :=
+/-- The level of a declaration: `certificate`, `lean-proof`, `kernel-test`, `oracle-test` or `none`. A test recorded
+with `veriphy_tested` names the level, and a theorem's proof sets it otherwise, on the standard axioms alone. -/
+def levelOf [Monad m] [MonadEnv m] (name : Name) : m String := do
+  let env ← getEnv
   match testedAttr.getParam? env name with
-  | some t => t.level
+  | some t => return t.level
   | none =>
     match env.find? name with
-    | some (.thmInfo t) => if t.value.getUsedConstants.contains ``Veriphy.certified then "certificate" else "none"
-    | _ => "none"
+    | some (.thmInfo t) =>
+      unless (← collectAxioms name).all standardAxioms.contains do return "none"
+      return if t.value.getUsedConstants.contains ``Veriphy.certified then "certificate" else "lean-proof"
+    | _ => return "none"
 
 /-- `#veriphy_levels p₁ …`: each theorem (and tested proposition) under the prefixes, with its level. -/
 syntax (name := veriphyLevels) "#veriphy_levels" (ppSpace ident)+ : command
@@ -114,7 +123,7 @@ elab_rules : command
           (info matches .thmInfo _ || (testedAttr.getParam? env name).isSome) then
         acc.push name
       else acc
-    let lines := (names.qsort (·.toString < ·.toString)).map fun n => s!"{n}: {levelOf env n}"
+    let lines ← (names.qsort (·.toString < ·.toString)).mapM fun n => return s!"{n}: {← levelOf n}"
     logInfo (if lines.isEmpty then "no theorems under the prefixes" else "\n".intercalate lines.toList)
 
 end Veriphy
