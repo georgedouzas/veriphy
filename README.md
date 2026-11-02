@@ -104,7 +104,7 @@ Then require Veriphy in your project's `lakefile.toml`:
 [[require]]
 name = "veriphy"
 git = "https://github.com/georgedouzas/veriphy"
-rev = "0.5.0"
+rev = "0.6.0"
 ```
 
 Run `lake update && lake exe cache get && lake build`, and add `import Veriphy` to your Lean files.
