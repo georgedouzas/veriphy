@@ -32,6 +32,7 @@ SPEC_TERMS = [
     'none',
     'oracle-test',
     'kernel-test',
+    'lean-proof',
     'certificate',
 ]
 
@@ -43,12 +44,13 @@ def test_vocabulary_terms_declares_every_spec_term() -> None:
 
 
 def test_vocabulary_terms_orders_the_levels() -> None:
-    """State none below oracle-test below kernel-test below certificate."""
+    """State none below oracle-test below kernel-test below lean-proof below certificate."""
     order = {(s, o) for s, p, o in vocabulary_triples() if p == vp('below')}
     assert order == {
         (vp('none'), vp('oracle-test')),
         (vp('oracle-test'), vp('kernel-test')),
-        (vp('kernel-test'), vp('certificate')),
+        (vp('kernel-test'), vp('lean-proof')),
+        (vp('lean-proof'), vp('certificate')),
     }
 
 

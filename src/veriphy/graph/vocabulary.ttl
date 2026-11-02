@@ -50,13 +50,15 @@ vp:excludes a owl:ObjectProperty, owl:SymmetricProperty ;
 vp:triage a owl:DatatypeProperty ;
     rdfs:comment "The triage group of a claim: recipe, test, formalize or suspect." .
 
-vp:none a vp:Level ; rdfs:comment "Neither proved nor tested by Veriphy." .
+vp:none a vp:Level ; rdfs:comment "Neither proved in Lean nor tested by Veriphy." .
 vp:oracle-test a vp:Level ; rdfs:comment "Sage evaluated the claim at instances." .
 vp:kernel-test a vp:Level ; rdfs:comment "The kernel checked the claim at instances." .
+vp:lean-proof a vp:Level ; rdfs:comment "A complete Lean proof on the standard axioms, which no recipe built." .
 vp:certificate a vp:Level ; rdfs:comment "A recipe built the proof, which the kernel checked." .
 
 vp:below a owl:ObjectProperty, owl:TransitiveProperty ;
     rdfs:comment "The subject, a level, is lower than the object." .
 vp:none vp:below vp:oracle-test .
 vp:oracle-test vp:below vp:kernel-test .
-vp:kernel-test vp:below vp:certificate .
+vp:kernel-test vp:below vp:lean-proof .
+vp:lean-proof vp:below vp:certificate .

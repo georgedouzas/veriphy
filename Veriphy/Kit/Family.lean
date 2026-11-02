@@ -10,14 +10,12 @@ import Mathlib.Tactic.LinearCombination
 import Mathlib.Tactic.NormNum
 import Mathlib.Tactic.Positivity
 import Mathlib.Tactic.Ring
+import Veriphy.Kit.Levels
 import Veriphy.Kit.Replay
 
 namespace Veriphy
 
 open Lean Elab Tactic Meta
-
-/-- The axioms a Veriphy proof may depend on: Lean's standard three. -/
-def standardAxioms : List Name := [``propext, ``Classical.choice, ``Quot.sound]
 
 /-- Reject a proof of `goal` that uses `sorry` or depends on an axiom outside `standardAxioms`
 (such as `Lean.ofReduceBool`, which `native_decide` introduces). Unassigned subgoals are allowed. -/

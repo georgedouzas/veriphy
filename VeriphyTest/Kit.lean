@@ -824,6 +824,14 @@ attribute [veriphy_tested kernel_test 2 0] testedOne
 
 theorem plainOne : (2 : ℚ) * 2 = 4 := by norm_num
 
+theorem sorriedOne : (2 : ℚ) * 2 = 5 := sorry
+
+axiom extraAxiom : (2 : ℚ) * 2 = 5
+
+theorem axiomOne : (2 : ℚ) * 2 = 5 := extraAxiom
+
+theorem certifiedOnAxiom : (2 : ℚ) * 2 = 5 := by veriphy_certified exact extraAxiom
+
 end KitLevels
 
 -- a statement over `n : ℕ` and `A : Matrix (Fin n) (Fin n) ℚ`: the binders are locals and listed
@@ -841,8 +849,11 @@ info: 1 binders: {"atom_types":["ℕ"],"atoms":["n"],"carrier":"ℕ","definition
 #kit_claim KitClaim.addZero
 
 /--
-info: KitLevels.certifiedOne: certificate
-KitLevels.plainOne: none
+info: KitLevels.axiomOne: none
+KitLevels.certifiedOnAxiom: none
+KitLevels.certifiedOne: certificate
+KitLevels.plainOne: lean-proof
+KitLevels.sorriedOne: none
 KitLevels.testedOne: kernel-test
 -/
 #guard_msgs in

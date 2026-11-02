@@ -49,7 +49,7 @@ reporting the verification of every claim. What happens to the report is the cal
 7. **Report to the caller.** Give the appendix path and, per claim, its group and effective level. Name every clash,
    every `suspect` claim with its counterexample, and every claim capped below its own level with the claim that caps
    it. Say whether the run was checked. Never report a claim as proved when its effective level is below
-   `certificate`, and never call an unchecked result checked.
+   `lean-proof`, and never call an unchecked result checked.
 
 ## Rules
 

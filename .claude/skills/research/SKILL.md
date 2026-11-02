@@ -12,4 +12,4 @@ Hard rules:
 - Write only `.agent.ttl` files. Confirming an assertion is the user's act.
 - Report a graph conclusion with the checker's verdict word, or as `unchecked`.
   Never report the absence of a clash as checked.
-- Never report a claim as proved when its effective level is below `certificate`.
+- Never report a claim as proved when its effective level is below `lean-proof`.
