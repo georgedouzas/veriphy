@@ -21,7 +21,7 @@ definitions as definitions. A second run SHALL replace the files of the first.
 - **THEN** the command fails and names the prefix
 
 ### Requirement: Levels from the environment
-Each exported claim SHALL carry the level `#veriphy_levels` reports for it: `certificate`, `kernel-test`,
+Each exported claim SHALL carry the level `#veriphy_levels` reports for it: `certificate`, `lean-proof`, `kernel-test`,
 `oracle-test` or `none`. The export SHALL NOT compute a level any other way.
 
 #### Scenario: A recipe-built proof
@@ -31,6 +31,10 @@ Each exported claim SHALL carry the level `#veriphy_levels` reports for it: `cer
 #### Scenario: A tested claim
 - **WHEN** `KK.trace_identity` carries `veriphy_tested kernel_test 3 0`
 - **THEN** its exported level is `kernel-test`
+
+#### Scenario: A plain proof
+- **WHEN** the theorem `KK.plain` has a complete proof that no recipe built, on the standard axioms
+- **THEN** its exported level is `lean-proof`
 
 ### Requirement: Dependencies from the proof terms
 For each exported declaration, the export SHALL write a `uses` triple to every other exported declaration that its

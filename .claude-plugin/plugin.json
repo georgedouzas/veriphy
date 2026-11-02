@@ -1,7 +1,7 @@
 {
   "name": "veriphy",
   "description": "Machine-verified physics/math proofs in Lean 4 with SageMath as an untrusted oracle: the prove, certify and research skills, a research claim graph checked by the Lean checker oo-horn, the sage_run tactic, a toolkit and recipes for building kernel-checked certificates, and advisory bridge methods.",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "author": {
     "name": "Georgios Douzas"
   }
