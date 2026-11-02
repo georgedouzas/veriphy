@@ -6,19 +6,36 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 <!-- insertion marker -->
+## [0.6.0](https://github.com/georgedouzas/veriphy/releases/tag/0.6.0) - 2026-11-02
+
+<small>[Compare with 0.5.0](https://github.com/georgedouzas/veriphy/compare/0.5.0...0.6.0)</small>
+
+### Features
+
+- Add the verification level lean-proof, and require the standard axioms for certificate and lean-proof ([77b5ead](https://github.com/georgedouzas/veriphy/commit/77b5eadb50e73e41f85654af3eeb09b65b4483d6) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+### Docs
+
+- Archive lean-proof-level with its specs synced; README and plugin pin 0.6.0 ([c43aca5](https://github.com/georgedouzas/veriphy/commit/c43aca5e86c44c8e2e2c0a0e1d6dfcc7d29e17bb) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Center the README and user guide on the skill workflows, for a theorem and for a paper ([f7ea381](https://github.com/georgedouzas/veriphy/commit/f7ea381ee46eb03c17bc59d896395b88b82aed82) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
 ## [0.5.0](https://github.com/georgedouzas/veriphy/releases/tag/0.5.0) - 2026-11-01
 
 <small>[Compare with 0.4.0](https://github.com/georgedouzas/veriphy/compare/0.4.0...0.5.0)</small>
 
 ### Features
 
-- One install command for the research graph: reasoner and checker set up on first use from the pinned release, prebuilt checker on Linux, pinned commit and hash; README covers the graph ([5f26213](https://github.com/georgedouzas/veriphy/commit/5f2621360462b844570e68f152bd07e8fd9c2dc7) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- One install command for the research graph: reasoner and checker set up on first use from the pinned release, prebuilt checker on Linux, pinned commit and hash; README covers the graph ([949ddcd](https://github.com/georgedouzas/veriphy/commit/949ddcd55c4f50301fb1553e48ae04f003144456) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 
 ### Docs
 
-- Archive graph-first-use-setup with its specs synced; README and plugin pin 0.5.0 ([3d9b7dd](https://github.com/georgedouzas/veriphy/commit/3d9b7dde36d1e52b13b86c196ea4ede1f4667f8b) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
-- graph-first-use-setup tasks complete, CI green with first-use setup from an empty cache ([0b52f0b](https://github.com/georgedouzas/veriphy/commit/0b52f0b2cc7f2c485e75d5b19db3322cf29fd865) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
-- Plan graph-first-use-setup: one install command for the research graph ([bb08b03](https://github.com/georgedouzas/veriphy/commit/bb08b03ba5159937b83856fd8e413150e163a81c) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Archive graph-first-use-setup with its specs synced; README and plugin pin 0.5.0 ([94ec41f](https://github.com/georgedouzas/veriphy/commit/94ec41fcbd50e64be677df29b4bb9e195b2f952b) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- graph-first-use-setup tasks complete, CI green with first-use setup from an empty cache ([08e2f17](https://github.com/georgedouzas/veriphy/commit/08e2f17cc8c87331fb44b1c6679de958a908cf4a) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Plan graph-first-use-setup: one install command for the research graph ([1c7c513](https://github.com/georgedouzas/veriphy/commit/1c7c5132fdbffe465be2755727b17bee21fdcd87) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+### Chore
+
+- Release 0.5.0 ([33adcb0](https://github.com/georgedouzas/veriphy/commit/33adcb0ea6f4e7203725b4db3fab251615543bc3) by georgedouzas).
 
 ## [0.4.0](https://github.com/georgedouzas/veriphy/releases/tag/0.4.0) - 2026-11-01
 
