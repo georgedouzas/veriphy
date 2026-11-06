@@ -67,8 +67,8 @@ diagonal, and the proof SHALL check the congruence and `det P ≠ 0` with `matri
 - **THEN** the template closes it with an explicit `P` and the diagonal `2, 3/2, 4/3`
 
 ### Requirement: Linear packaging lemmas
-`Veriphy/Kit/Linear.lean` SHALL provide the lemmas the emitters use, each with the standard axioms only: the span of an
-echelon family, rank bounds from a minor and from a factorisation, and independence from a non-zero minor.
+The module `Veriphy.Kit.Linear` SHALL provide the lemmas the emitters use, each with the standard axioms only: the span
+of an echelon family, rank bounds from a minor and from a factorisation, and independence from a non-zero minor.
 
 #### Scenario: Axiom audit
 - **WHEN** `#print axioms` runs on each lemma
