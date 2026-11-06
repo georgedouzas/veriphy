@@ -6,7 +6,7 @@
   fusion or braided fusion category, with the `FusionData` asset: `FusionData.IsFusion (RepData.toData E ζ)` (fusion
   ring axioms and every pentagon equation) or `FusionData.IsBraidedFusion` (also both hexagons), or that two data
   differ by a gauge transformation (`FusionData.GaugeRelated`).
-- Copy the asset `assets/VeriphyAssets/FusionData.lean` to the project's `.veriphy/lean/VeriphyAssets/FusionData.lean`
+- Copy the asset `lean/assets/VeriphyAssets/FusionData.lean` to the project's `.veriphy/lean/VeriphyAssets/FusionData.lean`
   and declare the `VeriphyAssets` library (see the user guide). It imports mathlib only.
 - Values live in a number field `ℚ(ζ)` with `ζ ^ m = r`: `ℚ(√5)` (`ζ² = 5`) for Fibonacci, `ℚ(ζ₁₆)` (`ζ⁸ = -1`) for
   Ising. A `RepData` stores them as rational coefficients on `1, ζ, ζ², …`; `RepData.toData E ζ` evaluates them at
@@ -81,7 +81,7 @@ proof = naturality_proof(matrix(QQ, [[1, 1, 1]]), [cycle, swap], [one, one], rho
     closure='generators')"
 ```
 
-`VeriphyTest/SageRun.lean` also proves the Fibonacci pentagons over `ℝ`, states the `SU(2)` level 2 fusion rules as
+`lean/VeriphyTest/SageRun.lean` also proves the Fibonacci pentagons over `ℝ`, states the `SU(2)` level 2 fusion rules as
 facts, and builds the S₃ intertwiner as a morphism of `Rep`.
 
 ## Failure modes

@@ -35,7 +35,7 @@ example : ∫ x in (0 : ℝ)..1, (x ^ 2 + 2 * x) = 4 / 3 := by
   sage_run file "definite_integral.sage"
 ```
 
-`VeriphyTest/SageRun.lean` also integrates `sin 2φ` over a period.
+`lean/VeriphyTest/SageRun.lean` also integrates `sin 2φ` over a period.
 
 ## Failure modes
 

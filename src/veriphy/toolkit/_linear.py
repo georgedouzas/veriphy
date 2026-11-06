@@ -2,7 +2,7 @@
 
 Sage computes echelon forms, non-singular minors, rank factorisations, kernel bases with their free coordinates,
 dependence relations, congruences `Pᵀ S P = D` of symmetric matrices, and points where a map fails to be linear. The
-emitters state each claim through the lemmas of `Veriphy/Kit/Linear.lean` and close the resulting finite checks by
+emitters state each claim through the lemmas of `lean/Veriphy/Kit/Linear.lean` and close the resulting finite checks by
 evaluation (`simp +decide` on determinants, `ext` and `fin_cases` on vector identities).
 """
 

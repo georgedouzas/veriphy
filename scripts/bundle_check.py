@@ -11,12 +11,13 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+SOURCES = ROOT / 'lean'
 MODULE = re.compile(r'^import (\S+)$', re.MULTILINE)
 
 
 def _module_path(name: str) -> Path:
     """Return the source file of a `VeriphyCheck` module."""
-    return ROOT.joinpath(*name.split('.')).with_suffix('.lean')
+    return SOURCES.joinpath(*name.split('.')).with_suffix('.lean')
 
 
 def _order(name: str, seen: list[str]) -> None:
@@ -32,7 +33,7 @@ def _order(name: str, seen: list[str]) -> None:
 def bundle() -> str:
     """Return the bundled source: mathlib imports first, then each module's body in dependency order."""
     modules: list[str] = []
-    for root_import in MODULE.findall((ROOT / 'VeriphyCheck.lean').read_text()):
+    for root_import in MODULE.findall((SOURCES / 'VeriphyCheck.lean').read_text()):
         _order(root_import, modules)
     imports: list[str] = []
     bodies: list[str] = []

@@ -5,7 +5,7 @@
 - The goal is about a **metric given in coordinates** (a family of component functions on `Fin n → ℝ`), stated with
   the definitions of the `CoordinateGeometry` asset: `christoffel g k i j x`, `riemann`, `ricci`,
   `scalarCurvature`, `lieMetric` and `IsKilling`, or about differential forms with `extDeriv`, `wedge` and `hodge`.
-- Copy the asset `assets/VeriphyAssets/CoordinateGeometry.lean` to the project's
+- Copy the asset `lean/assets/VeriphyAssets/CoordinateGeometry.lean` to the project's
   `.veriphy/lean/VeriphyAssets/CoordinateGeometry.lean` and declare the `VeriphyAssets` library (see the user
   guide). It imports mathlib only: partial derivatives are `deriv` along `Function.update`, the inverse metric is
   mathlib's `Matrix.inv`.
@@ -58,7 +58,7 @@ example : CoordinateGeometry.IsKilling sphere ![fun _ => 0, fun _ => 1] := by
   sage_run "proof = killing_proof(unfold=['sphere'])"
 ```
 
-`VeriphyTest/SageRun.lean` also proves every Christoffel symbol of Minkowski space zero, an exact 1-form on ℝ³ with
+`lean/VeriphyTest/SageRun.lean` also proves every Christoffel symbol of Minkowski space zero, an exact 1-form on ℝ³ with
 its primitive, and `F_μν F^μν = 2 (B² - E²)`.
 
 ## Failure modes

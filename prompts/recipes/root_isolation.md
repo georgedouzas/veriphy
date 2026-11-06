@@ -36,7 +36,7 @@ example : ∃! x : ℝ, (3 / 2 < x ∧ x < 3) ∧ x ^ 3 - 2 * x - 1 = 0 := by
   sage_run file "golden_root.sage"
 ```
 
-`VeriphyTest/SageRun.lean` also certifies the largest eigenvalue of a symmetric 3 by 3 matrix in `(3, 4)`.
+`lean/VeriphyTest/SageRun.lean` also certifies the largest eigenvalue of a symmetric 3 by 3 matrix in `(3, 4)`.
 
 ## Failure modes
 

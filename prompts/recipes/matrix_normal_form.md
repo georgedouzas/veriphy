@@ -39,7 +39,7 @@ example : True := by
   sage_run file "smith_example.sage"
 ```
 
-`VeriphyTest/SageRun.lean` also checks a Jordan form with a nontrivial block.
+`lean/VeriphyTest/SageRun.lean` also checks a Jordan form with a nontrivial block.
 
 ## Failure modes
 

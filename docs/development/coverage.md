@@ -15,18 +15,18 @@ is opaque. Statements with no relation are left out of the shares. Generated lem
 
 ## Reproducing
 
-The runner is the Lake project `coverage/` in the repository. It requires Veriphy by path, Physlib at a pinned commit
+The runner is the Lake project `lean/coverage/`. It requires Veriphy by path, Physlib at a pinned commit
 whose dependencies match Veriphy's, and mathlib's `Archive`:
 
 ```sh
-cd coverage
+cd lean/coverage
 lake update && lake exe cache get
 (cd .lake/packages/Physlib && LAKE_CONFIG=$PWD/lake-cache.toml \
   lake cache get --scope=physlib-master/leanprover-lean4-v4.34.1/physlib)
 lake build Coverage
 ```
 
-Each corpus writes its JSON report to `coverage/.veriphy/coverage/<prefix>.json`.
+Each corpus writes its JSON report to `lean/coverage/.veriphy/coverage/<prefix>.json`.
 
 ## After the book-coverage release (2026-10-16)
 

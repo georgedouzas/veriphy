@@ -23,26 +23,31 @@ environment you can follow the next steps:
 - `uv run nox -s tests` runs pytest and the doctests on SageMath's interpreter.
 - `lake build VeriphyTest` runs the tactic suite against live Sage, with replay on.
 - `lake build VeriphyTest.Kit` runs the kit tests, which need no Sage.
-- `lake build VeriphyCheck` builds the checkers; `VeriphyTest/Check.lean` tests them without Sage.
+- `lake build VeriphyCheck` builds the checkers; `lean/VeriphyTest/Check.lean` tests them without Sage.
 
 ## How the pieces fit
 
 | Stage | Where |
 |---|---|
-| Extract the goal and every nameable hypothesis (polynomial forms where they exist, Lean text always) | `withLenientProblem`, `Veriphy/Kit/Problem.lean` |
-| Send the problem and the script to the daemon session (one Sage process per Lean process) | `Kit.run (Bridge.run …)`, `Veriphy/Bridge.lean` |
+| Extract the goal and every nameable hypothesis (polynomial forms where they exist, Lean text always) | `withLenientProblem`, `lean/Veriphy/Kit/Problem.lean` |
+| Send the problem and the script to the daemon session (one Sage process per Lean process) | `Kit.run (Bridge.run …)`, `lean/Veriphy/Bridge.lean` |
 | Run the script with `problem` and the toolkit bound; read `proof` | `run`, `src/veriphy/oracle/_scripts.py` |
-| Parse the block, run exactly that, reject `sorry` and non-standard axioms, replay, emit | `sage_run`, `closeAndEmit` in `Veriphy/Kit/Family.lean` |
+| Parse the block, run exactly that, reject `sorry` and non-standard axioms, replay, emit | `sage_run`, `closeAndEmit` in `lean/Veriphy/Kit/Family.lean` |
 
 ## Layout
 
 ```text
-Veriphy/       Lean library: sage_run, problem extraction, checks and replay, the daemon bridge
-src/veriphy/   Python package: the Sage daemon, the toolkit, the catalog, the claim graph
-VeriphyCheck/  Mathlib-only kernel checkers, bundled by scripts/bundle_check.py
-coverage/      Lake project measuring translation coverage on Physlib and mathlib
-prompts/       Playbooks and recipes with templates, as plain markdown
-skills/        Claude Code wrappers for the playbooks
+lakefile.toml         Lake configuration, with lake-manifest.json and lean-toolchain, kept at the root
+lean/Veriphy/         Lean library: sage_run, problem extraction, checks and replay, the daemon bridge
+lean/VeriphyCheck/    Mathlib-only kernel checkers, bundled by scripts/bundle_check.py
+lean/VeriphyTest/     Lean tests: the kit (no Sage), sage_run examples, the benchmark
+lean/assets/          Recipe assets projects copy into .veriphy/lean/
+lean/coverage/        Lake project measuring translation coverage on Physlib and mathlib
+.veriphy/             The workspace's certificate scripts, which the Lean tests run
+src/veriphy/          Python package: the Sage daemon, the toolkit, the catalog, the claim graph
+tests/                Python tests
+prompts/              Playbooks and recipes with templates, as plain markdown
+skills/               Claude Code wrappers for the playbooks
 ```
 
 The repository is generated from [copier-modern-python](https://github.com/georgedouzas/copier-modern-python), and
@@ -66,7 +71,7 @@ A recipe is knowledge, not code in Veriphy.
 2. Write `prompts/recipes/<name>.md`, embedding the template verbatim and giving its decision rule, a worked example
    and its failure modes.
 3. Add a Lean example that runs the template with `sage_run file "prompts/recipes/templates/<name>.sage"`
-   (`VeriphyTest/SageRun.lean`, or the benchmark if it replaces a former tactic).
+   (`lean/VeriphyTest/SageRun.lean`, or the benchmark if it replaces a former tactic).
 4. Add it to the index in `prompts/prove.md` step 3c.
 
 `tests/recipes/test_templates.py` checks that each recipe embeds its template, that the header is complete, and that
@@ -89,14 +94,14 @@ chains; `_reflect` packs data for the `VeriphyCheck` checkers). Otherwise it is 
 
 ## Adding a core translation entry
 
-The core table (`mathlib` namespace) is `coreTable` in `Veriphy/Kit/Table.lean`; the Python toolkit reads a JSON
+The core table (`mathlib` namespace) is `coreTable` in `lean/Veriphy/Kit/Table.lean`; the Python toolkit reads a JSON
 copy.
 
 1. Add the function, constant, coercion or rewrite entry, with its domain conditions and an example.
 2. Run `scripts/sync_tables.sh` to regenerate `src/veriphy/toolkit/core_table.json` and the pack copies. A
    Sage-free kit test fails until the copies match.
-3. Add a kit test in `VeriphyTest/Kit.lean` showing the translation and its conditions, and a round trip in
-   `VeriphyTest/SageRun.lean` if Sage's name differs from the obvious one.
+3. Add a kit test in `lean/VeriphyTest/Kit.lean` showing the translation and its conditions, and a round trip in
+   `lean/VeriphyTest/SageRun.lean` if Sage's name differs from the obvious one.
 4. Rerun the coverage runner (`docs/development/coverage.md`) when the entry targets a frequent opaque head.
 
 ## Adding a library pack
@@ -105,22 +110,22 @@ A pack holds one library's translation entries, notations and sign conventions, 
 only when the library is imported. Veriphy never imports the library: constants are named as strings and checked when
 the pack activates.
 
-1. Write `Veriphy/Packs/<Library>.lean` with a `Pack`: the library name, a sentinel constant whose presence means the
-   library is imported, and the table. Record sign conventions (metric signature, normalizations) under
+1. Write `lean/Veriphy/Packs/<Library>.lean` with a `Pack`: the library name, a sentinel constant whose presence means
+   the library is imported, and the table. Record sign conventions (metric signature, normalizations) under
    `conventions`, because scripts read them to state results in the library's own terms.
-2. Add it to `shippedPacks` in `Veriphy/Kit/Packs.lean` and run `scripts/sync_tables.sh`.
-3. Test activation and translation in the coverage runner (`coverage/PackCheck.lean`), which imports the library.
+2. Add it to `shippedPacks` in `lean/Veriphy/Kit/Packs.lean` and run `scripts/sync_tables.sh`.
+3. Test activation and translation in the coverage runner (`lean/coverage/PackCheck.lean`), which imports the library.
    Library recipes go in `prompts/recipes/<library>/`.
 
 ## Adding a checker
 
-Checkers live in `VeriphyCheck/` and import only mathlib, so `scripts/bundle_check.py` can bundle them for projects
+Checkers live in `lean/VeriphyCheck/` and import only mathlib, so `scripts/bundle_check.py` can bundle them for projects
 that do not depend on Veriphy.
 
 1. Write a `Bool`-valued function computed by structural recursion over lists or `List.finRange` (no well-founded
    recursion, which the kernel does not unfold efficiently), and a soundness theorem from `= true` to the mathlib
    statement.
-2. Test it in `VeriphyTest/Check.lean` on a small true case, a false case the kernel refuses, a large case, and
+2. Test it in `lean/VeriphyTest/Check.lean` on a small true case, a false case the kernel refuses, a large case, and
    `#print axioms` showing only `propext`, `Classical.choice` and `Quot.sound`.
 3. Add the emitter in `src/veriphy/toolkit/_reflect.py`, deciding by size between an entrywise proof and the
    checker. Measure before adding: a kernel checker that is slower than mathlib's tactic on realistic inputs (as a
@@ -144,7 +149,7 @@ Committed proofs need no migration, because they contain only emitted replacemen
 Tests run with `set_option veriphy.checkReplay true`: every emitted replacement is pretty-printed, re-parsed and
 re-run on the original goal with the bridge disabled. That catches hygienic names (`h✝`), printer round-trip
 failures and hidden Sage calls. `lake build VeriphyTest.Kit` covers extraction, `closeAndEmit` and the axiom guard
-without Sage. `VeriphyTest/SageRun.lean` and `VeriphyTest/Benchmark.lean` need Sage.
+without Sage. `lean/VeriphyTest/SageRun.lean` and `lean/VeriphyTest/Benchmark.lean` need Sage.
 
 ## Releases
 

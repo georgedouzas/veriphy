@@ -209,10 +209,11 @@ This section instantiates the body above for this repository.
 
 - Ecosystem contract: the Sage daemon's JSON-lines protocol (one request object per stdin line, one response per
   stdout line) as specified in `openspec/specs/certificates/oracle-methods` and `openspec/specs/distribution/*`. The
-  Lean bridge in `Veriphy/Bridge.lean` is its only client, and method names, parameters, and result shapes MUST NOT
+  Lean bridge in `lean/Veriphy/Bridge.lean` is its only client, and method names, parameters, and result shapes MUST NOT
   change incompatibly.
 - Language: Python >=3.11, <3.15 for `src/` and `tests/`. Lean 4 at the toolchain pinned in `lean-toolchain` for
-  `Veriphy/`, `VeriphyCheck/`, `VeriphyTest/`, `assets/` and the coverage runner in `coverage/`.
+  `lean/` (`Veriphy/`, `VeriphyCheck/`, `VeriphyTest/`, `assets/` and the coverage runner in `coverage/`), with the
+  Lake configuration at the repository root.
 - Scope of the Python rules: the Python rules of this constitution bind `src/`, `tests/`, `scripts/`, and
   `noxfile.py`. The Lean code follows mathlib's conventions and is gated by `lake build`, `lake build VeriphyCheck`,
   `lake build VeriphyAssets` and `lake build VeriphyTest`. `VeriphyCheck` (kernel checkers with soundness theorems)

@@ -9,9 +9,9 @@ ROOT = Path(__file__).resolve().parents[2]
 RECIPES = ROOT / 'prompts' / 'recipes'
 TEMPLATES = sorted((RECIPES / 'templates').glob('*.sage'))
 LIBRARY_TEMPLATES = sorted(RECIPES.glob('*/templates/*.sage'))
-LEAN_TESTS = '\n'.join(p.read_text() for p in (ROOT / 'VeriphyTest').glob('*.lean'))
+LEAN_TESTS = '\n'.join(p.read_text() for p in (ROOT / 'lean' / 'VeriphyTest').glob('*.lean'))
 # library recipes run in the coverage runner, which imports the libraries
-RUNNER_TESTS = '\n'.join(p.read_text() for p in (ROOT / 'coverage').glob('*.lean'))
+RUNNER_TESTS = '\n'.join(p.read_text() for p in (ROOT / 'lean' / 'coverage').glob('*.lean'))
 HEADER_KEYS = ('name', 'technique', 'goal', 'description')
 
 

@@ -1,4 +1,6 @@
 name = "veriphy"
+# The Lean sources live under `lean/`. The configuration stays at the root, so dependents require the repository as is.
+srcDir = "lean"
 defaultTargets = ["Veriphy", "VeriphyCheck"]
 
 [[lean_lib]]

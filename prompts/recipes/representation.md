@@ -71,7 +71,7 @@ blocks = [block_diagonal_matrix([spin_representation(s)[k] for s in spins]) for 
 proof = steps(intertwining_facts(t, product, blocks), tactic('trivial'))"
 ```
 
-`VeriphyTest/SageRun.lean` also runs the adjoint of 𝔰𝔩₃ (28 bracket relations of 8×8 matrices) and the branching of
+`lean/VeriphyTest/SageRun.lean` also runs the adjoint of 𝔰𝔩₃ (28 bracket relations of 8×8 matrices) and the branching of
 the 10 of SU(5).
 
 ## Failure modes

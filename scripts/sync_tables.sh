@@ -1,6 +1,6 @@
 #!/bin/sh
 # Regenerate the Python toolkit's JSON copies of the core translation table and the shipped library packs from
-# their Lean definitions. A Sage-free test in VeriphyTest/Kit.lean fails until the copies match.
+# their Lean definitions. A Sage-free test in lean/VeriphyTest/Kit.lean fails until the copies match.
 set -e
 cd "$(dirname "$0")/.."
 tmp=$(mktemp -d)

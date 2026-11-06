@@ -7,7 +7,7 @@ import pytest
 
 from veriphy.translations import main
 
-FIXTURES = Path(__file__).resolve().parents[2] / 'VeriphyTest' / 'fixtures' / 'translations'
+FIXTURES = Path(__file__).resolve().parents[2] / 'lean' / 'VeriphyTest' / 'fixtures' / 'translations'
 
 
 @pytest.fixture

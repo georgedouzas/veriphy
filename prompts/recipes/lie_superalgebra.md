@@ -65,7 +65,7 @@ example : qp * qm + qm * qp = -h ∧ qp * qp + qp * qp = 2 • e := by
 -- replacement: have hs_i_j : … := VeriphyCheck.eq_of_check (by decide +kernel) for each pair, then the CLOSE tactic
 ```
 
-`VeriphyTest/SageRun.lean` runs these, and `G(3)` (31-dimensional).
+`lean/VeriphyTest/SageRun.lean` runs these, and `G(3)` (31-dimensional).
 
 ## Failure modes
 

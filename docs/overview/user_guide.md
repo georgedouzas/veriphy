@@ -106,7 +106,7 @@ Veriphy keeps its files under `.veriphy/` at the Lean workspace root. Commit it 
 Projects from Veriphy 0.1.0 keep scripts in a top-level `certificates/`. They still work, and the catalog prints the
 command that moves them.
 
-Some recipes need Lean assets. Copy them from `assets/VeriphyAssets/` in the Veriphy repository to
+Some recipes need Lean assets. Copy them from `lean/assets/VeriphyAssets/` in the Veriphy repository to
 `.veriphy/lean/VeriphyAssets/`, and declare the library once in `lakefile.toml`:
 
 ```toml

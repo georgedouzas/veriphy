@@ -48,7 +48,7 @@ example (ψ : ℝ → ℝ) (hψ : ContDiff ℝ 1 ψ) (x : ℝ) : deriv (fun y =>
   sage_run file "canonical_commutator.sage"
 ```
 
-`VeriphyTest/SageRun.lean` also proves `[L₁, L₂] = -L₃` for angular momentum in three variables, the Pauli
+`lean/VeriphyTest/SageRun.lean` also proves `[L₁, L₂] = -L₃` for angular momentum in three variables, the Pauli
 commutators and the truncated ladder operators.
 
 ## Failure modes

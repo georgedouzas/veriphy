@@ -5,7 +5,7 @@ defaultTargets = ["Coverage"]
 
 [[require]]
 name = "veriphy"
-path = ".."
+path = "../.."
 
 # Physlib master at a commit whose lake-manifest pins the same mathlib (v4.34.1) and dependencies as Veriphy.
 [[require]]

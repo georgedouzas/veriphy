@@ -202,7 +202,7 @@ example (a b : ℝ) : Real.exp a * Real.exp b = Real.exp (a + b) := by
 example (x : ℝ) : Real.sin x ^ 2 + Real.cos x ^ 2 = 1 := by
   sage_run file "prompts/recipes/templates/transcendental_rewrite.sage"
 -- a rewrite entry from the project's own tables, picked by the template unedited
-set_option veriphy.translationsDir "VeriphyTest/fixtures/project_translations" in
+set_option veriphy.translationsDir "lean/VeriphyTest/fixtures/project_translations" in
 example (x : ℝ) (hx : x ≠ 0) : Real.Gamma (x + 1) = x * Real.Gamma x := by
   sage_run file "prompts/recipes/templates/transcendental_rewrite.sage"
 -- a pattern entry: the tables bind `log_mul`'s arguments and its side conditions come from the hypotheses
@@ -269,7 +269,7 @@ passed: rw [Real.Gamma_add_one]
 failed: Real.arsinh ↔ asinhh: sage daemon error: run: AssertionError: Sage could not read the translation: check the sage name
 -/
 #guard_msgs in
-#veriphy_check_translations "VeriphyTest/fixtures/check"
+#veriphy_check_translations "lean/VeriphyTest/fixtures/check"
 
 /-! ## Reflective certificates -/
 

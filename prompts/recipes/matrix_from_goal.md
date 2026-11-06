@@ -53,7 +53,7 @@ example : !![(2 : ℝ), 1, 0; 1, 2, 1; 0, 1, 2] *ᵥ ![1, Real.sqrt 2, 1] = (2 +
   sage_run "proof = matrix_from_goal_proof(goal, problem, relations=['Real.sq_sqrt'])"
 ```
 
-`VeriphyTest/SageRun.lean` also proves a general `4 × 4` determinant, a product with a transpose and symbolic
+`lean/VeriphyTest/SageRun.lean` also proves a general `4 × 4` determinant, a product with a transpose and symbolic
 entries, the field-strength invariant `trace (Fᵀ η F η) = 2 (B² - E²)`, and an orthogonal rotation.
 
 ## Failure modes

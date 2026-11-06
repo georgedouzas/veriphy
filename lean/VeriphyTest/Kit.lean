@@ -640,7 +640,7 @@ problem: project: entry for Real.exp conflicts with the mathlib entry for Real.e
 -/
 #guard_msgs in
 run_meta do
-  let (tables, problems) ← Veriphy.loadProjectTables "VeriphyTest/fixtures/translations"
+  let (tables, problems) ← Veriphy.loadProjectTables "lean/VeriphyTest/fixtures/translations"
   let (ts, conflicts) := Veriphy.resolveTables (← getEnv) [] tables
   Lean.logInfo ("\n".intercalate (problems.toList ++ [s!"loaded: {tables.length} tables"] ++
     Veriphy.describeTables ts ++ conflicts.toList.map ("problem: " ++ ·)))
@@ -648,7 +648,7 @@ run_meta do
 /-- Test tactic: translate the goal's left side with the fixture project tables. -/
 elab "kit_sym_project" : tactic => Lean.Elab.Tactic.withMainContext do
   let some (_, a, _, _) := Veriphy.relOf? (← Lean.Elab.Tactic.getMainTarget) | throwError "not a relation"
-  let (project, _) ← Veriphy.loadProjectTables "VeriphyTest/fixtures/translations"
+  let (project, _) ← Veriphy.loadProjectTables "lean/VeriphyTest/fixtures/translations"
   let (tables, _) := Veriphy.resolveTables (← getEnv) [] project
   let (s, st) ← (Veriphy.exprToSym a).run { atoms := #[], tables }
   Lean.logInfo m!"{s.toSage} with {st.conditions.size} condition(s), used {st.usedEntries}"
