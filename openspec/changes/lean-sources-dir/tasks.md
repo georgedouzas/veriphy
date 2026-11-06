@@ -13,7 +13,7 @@
 
 ## 3. Integration
 
-- [ ] 3.1 Run the gate (checks, tests, the Sage-backed `lake build VeriphyTest`) and CI on the branch. Verify that every session and job is green.
+- [x] 3.1 Run the gate (checks, tests, the Sage-backed `lake build VeriphyTest`) and CI on the branch. Verify that every session and job is green.
 
 ## Workflow follow-up
 
