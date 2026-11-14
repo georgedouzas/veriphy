@@ -3,7 +3,7 @@
 ## 1. Move and package
 
 - [x] 1.1 Move `prompts/` to `src/veriphy/prompts/` with `git mv`, and force-include `lean/assets/VeriphyAssets/` in the wheel as `veriphy/prompts/assets/VeriphyAssets/` (D1, D3). Verify with `uv build` that the wheel lists `veriphy/prompts/prove.md`, every template and both assets, and that `--doctest-modules` collects no new item (D6).
-- [ ] 1.2 Add `veriphy.prompts` with `path`, `list`, `show` and `copy`, including the editable-install fallback for assets (D2, D3). Verify with pytest in `tests/prompts/`: each subcommand, an optional extension, an unknown name with its closest matches and status 1, a copy into a workspace, the refusal to overwrite, and the asset fallback.
+- [x] 1.2 Add `veriphy.prompts` with `path`, `list`, `show` and `copy`, including the editable-install fallback for assets (D2, D3). Verify with pytest in `tests/prompts/`: each subcommand, an optional extension, an unknown name with its closest matches and status 1, a copy into a workspace, the refusal to overwrite, and the asset fallback.
 
 ## 2. Callers
 
