@@ -67,5 +67,5 @@ example (x : ℝ) : x / (x ^ 2 + 1) ≤ 1 / 2 := by
 
 - **"no sum of squares for the numerator":** the numerator has real zeros (the SDP sits on the boundary) or is not a sum of squares. Put the expected squares in `HINTS`, or use `hint_search` on the numerator.
 - **`positivity` fails on `0 < D`:** the denominator's sign comes from a hypothesis. Set `D_PROOF`, for example `nlinarith [hy]`.
-- **`field_simp; ring` fails on `key`:** a denominator is not known to be nonzero. `field_simp` needs a fact for each one; add `have` facts first (see `field_simp_clearing` in `prompts/certify.md`).
+- **`field_simp; ring` fails on `key`:** a denominator is not known to be nonzero. `field_simp` needs a fact for each one; add `have` facts first (see `field_simp_clearing` in `certify.md`).
 - **A strict goal:** the numerator must be strictly positive. The template asserts a positive constant; otherwise use `hint_search` with `nlinarith`.

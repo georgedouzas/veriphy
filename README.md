@@ -78,7 +78,7 @@ that goal. It is also the route for `sage_run` by hand, described in the
 |---|---|
 | `sage_run` | runs a proof script against the goal, checks the emitted block, and emits a Sage-free replacement |
 | Toolkit (`veriphy.toolkit`) | binds the goal as a `problem`, emits Lean (`linear_combination`, `nlinarith`, `calc`, witnesses, refutations and more), and has exact solvers (rational LP, SOS from an SDP) |
-| Recipes (`prompts/recipes/`) | one per technique: when to use it, a tested template, a worked example and its failure modes |
+| Playbooks and recipes (`veriphy.prompts`) | one per technique: when to use it, a tested template, a worked example and its failure modes |
 | Translation tables | map Lean terms to Sage, for mathlib, library packs such as `physlib`, and your project's own entries, each checked by `#veriphy_check_translations` |
 | `VeriphyCheck` | mathlib-only kernel checkers (`decide +kernel`) with soundness theorems, for matrix products, structure constants and primality too large for entrywise proofs |
 | `sage_test` and levels | test claims with no feasible certificate at instances. `#veriphy_levels` reports `certificate`, `lean-proof`, `kernel-test`, `oracle-test` or `none` |
@@ -115,18 +115,19 @@ prebuilt binary. Elsewhere it is built once with `elan`, which takes a few minut
 
 Install the plugin from the git URL. A local clone would copy its 8 GB `.lake/` into the plugin cache.
 
-**Other agents.** The skills are plain markdown. Point your agent at
-[`prompts/prove.md`](https://github.com/georgedouzas/veriphy/blob/main/prompts/prove.md),
-[`certify.md`](https://github.com/georgedouzas/veriphy/blob/main/prompts/certify.md) or
-[`research.md`](https://github.com/georgedouzas/veriphy/blob/main/prompts/research.md).
+**Other agents.** The playbooks are plain markdown, installed with the Python package.
+`sage -python -m veriphy.prompts path` prints their directory: point your agent at `prove.md`, `certify.md` or
+`research.md` there.
 
-**Claude Code without the plugin:**
+**Claude Code without the plugin:** the skills read the playbooks from the installed package, so copying the three
+skill files is enough:
 
 ```sh
-git clone https://github.com/georgedouzas/veriphy ~/veriphy
-mkdir -p ~/.claude/skills
-cp -r ~/veriphy/skills/prove ~/veriphy/skills/certify ~/veriphy/skills/research ~/.claude/skills/
-export VERIPHY_HOME=~/veriphy   # in your shell profile
+for skill in prove certify research; do
+  mkdir -p ~/.claude/skills/$skill
+  curl -fsSL https://raw.githubusercontent.com/georgedouzas/veriphy/0.7.0/skills/$skill/SKILL.md \
+    -o ~/.claude/skills/$skill/SKILL.md
+done
 ```
 
 ## What a proof looks like

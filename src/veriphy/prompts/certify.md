@@ -4,6 +4,9 @@ Use this when a goal's computational core needs Sage: coefficients, squares,
 multipliers, witnesses, closed forms, or intermediate expressions. Sage finds
 them, and Lean checks the proof you emit. Sage is never trusted.
 
+Paths in this playbook are relative to its directory, which `sage -python -m veriphy.prompts path` prints. The
+playbooks ship with the installed `veriphy` package, at the version of its toolkit.
+
 ## The loop
 
 1. **Inspect the problem.** A first script can just print what it sees:
@@ -38,9 +41,10 @@ them, and Lean checks the proof you emit. Sage is never trusted.
    code when the header is not enough to judge a match. A saved script reads
    the bound `problem`, so it usually runs unchanged on a goal of the same
    shape.
-3. **Otherwise pick a recipe.** Use the index in `prompts/prove.md` step 3, then
-   read `prompts/recipes/<name>.md`. Copy its template to
-   `.veriphy/certificates/<specific_name>.sage` in the project. Adapt the `EDIT` lines,
+3. **Otherwise pick a recipe.** Use the index in `prove.md` step 3, then
+   read `recipes/<name>.md`. Copy its template into the project with
+   `sage -python -m veriphy.prompts copy recipes/templates/<name>`, rename it to
+   `.veriphy/certificates/<specific_name>.sage`, adapt the `EDIT` lines,
    and update the header: `name` the same as the file name, plus an accurate
    `goal` and `description`. A script with goal-specific edits, such as
    hard-coded `HINTS`, gets a goal-specific name, so it is not mistaken for a
@@ -106,6 +110,6 @@ write Veriphy artifacts anywhere else, and never move the committed proofs into 
 - If no primitive or emitter can express the certificate, report
   `blocked-missing-building-block` and name what is missing.
 - When no certificate is feasible (every matching recipe failed, or the claim quantifies over a
-  dimension, a space or a function), test the claim with `sage_test` (`prompts/recipes/test_fallback.md`)
+  dimension, a space or a function), test the claim with `sage_test` (`recipes/test_fallback.md`)
   and name the level it reached, `kernel-test` or `oracle-test`. A test never replaces a certificate, and
   is never reported as a proof.

@@ -45,8 +45,8 @@ lean/assets/          Recipe assets projects copy into .veriphy/lean/
 lean/coverage/        Lake project measuring translation coverage on Physlib and mathlib
 .veriphy/             The workspace's certificate scripts, which the Lean tests run
 src/veriphy/          Python package: the Sage daemon, the toolkit, the catalog, the claim graph
+src/veriphy/prompts/  Playbooks and recipes with templates, as plain markdown, installed with the package
 tests/                Python tests
-prompts/              Playbooks and recipes with templates, as plain markdown
 skills/               Claude Code wrappers for the playbooks
 ```
 
@@ -66,13 +66,13 @@ is the Lean kernel.
 
 A recipe is knowledge, not code in Veriphy.
 
-1. Write `prompts/recipes/templates/<name>.sage` with the catalog header (`name`, `technique`, `goal`,
+1. Write `src/veriphy/prompts/recipes/templates/<name>.sage` with the catalog header (`name`, `technique`, `goal`,
    `description`). Make it generic: it reads `problem`, and marks the lines a user adapts with `EDIT`.
-2. Write `prompts/recipes/<name>.md`, embedding the template verbatim and giving its decision rule, a worked example
-   and its failure modes.
-3. Add a Lean example that runs the template with `sage_run file "prompts/recipes/templates/<name>.sage"`
+2. Write `src/veriphy/prompts/recipes/<name>.md`, embedding the template verbatim and giving its decision rule, a
+   worked example and its failure modes.
+3. Add a Lean example that runs the template with `sage_run file "src/veriphy/prompts/recipes/templates/<name>.sage"`
    (`lean/VeriphyTest/SageRun.lean`, or the benchmark if it replaces a former tactic).
-4. Add it to the index in `prompts/prove.md` step 3c.
+4. Add it to the index in `src/veriphy/prompts/prove.md` step 3c.
 
 `tests/recipes/test_templates.py` checks that each recipe embeds its template, that the header is complete, and that
 every template runs in the Lean tests.
@@ -115,7 +115,7 @@ the pack activates.
    `conventions`, because scripts read them to state results in the library's own terms.
 2. Add it to `shippedPacks` in `lean/Veriphy/Kit/Packs.lean` and run `scripts/sync_tables.sh`.
 3. Test activation and translation in the coverage runner (`lean/coverage/PackCheck.lean`), which imports the library.
-   Library recipes go in `prompts/recipes/<library>/`.
+   Library recipes go in `src/veriphy/prompts/recipes/<library>/`.
 
 ## Adding a checker
 

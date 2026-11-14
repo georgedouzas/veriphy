@@ -5,9 +5,9 @@
 - The goal is about a **metric given in coordinates** (a family of component functions on `Fin n → ℝ`), stated with
   the definitions of the `CoordinateGeometry` asset: `christoffel g k i j x`, `riemann`, `ricci`,
   `scalarCurvature`, `lieMetric` and `IsKilling`, or about differential forms with `extDeriv`, `wedge` and `hodge`.
-- Copy the asset `lean/assets/VeriphyAssets/CoordinateGeometry.lean` to the project's
-  `.veriphy/lean/VeriphyAssets/CoordinateGeometry.lean` and declare the `VeriphyAssets` library (see the user
-  guide). It imports mathlib only: partial derivatives are `deriv` along `Function.update`, the inverse metric is
+- Copy the asset into the project with
+  `sage -python -m veriphy.prompts copy assets/VeriphyAssets/CoordinateGeometry` and declare the `VeriphyAssets`
+  library (see the user guide). It imports mathlib only: partial derivatives are `deriv` along `Function.update`, the inverse metric is
   mathlib's `Matrix.inv`.
 - SageManifolds computes the components (`christoffel_symbols(metric)`). Lean proves each component from the
   definitions: the inverse metric as a matrix identity (its determinant nonzero by a hypothesis such as

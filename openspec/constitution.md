@@ -215,7 +215,8 @@ This section instantiates the body above for this repository.
   `lean/` (`Veriphy/`, `VeriphyCheck/`, `VeriphyTest/`, `assets/` and the coverage runner in `coverage/`), with the
   Lake configuration at the repository root.
 - Scope of the Python rules: the Python rules of this constitution bind `src/`, `tests/`, `scripts/`, and
-  `noxfile.py`. The Lean code follows mathlib's conventions and is gated by `lake build`, `lake build VeriphyCheck`,
+  `noxfile.py`. The playbooks, recipes and templates in `src/veriphy/prompts/` are package data, not Python modules,
+  and the `veriphy.prompts` command alone gives access to them. The Lean code follows mathlib's conventions and is gated by `lake build`, `lake build VeriphyCheck`,
   `lake build VeriphyAssets` and `lake build VeriphyTest`. `VeriphyCheck` (kernel checkers with soundness theorems)
   and `VeriphyAssets` (recipe assets) MUST import mathlib only.
 - Runtime: SageMath is an optional runtime, not a declared dependency. The package is installed into an existing Sage

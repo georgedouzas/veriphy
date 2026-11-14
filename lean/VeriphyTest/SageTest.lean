@@ -72,7 +72,7 @@ sage_test SageTestTest.expGe "instances = [oracle_instance('1', lhs=RDF(2), rhs=
 error: sage daemon error: test: AssertionError: fill in PROOF (and CASES, unless the default instances fit the binders) in a copy
 -/
 #guard_msgs (warning, error, drop info) in
-sage_test SageTestTest.addZero file "prompts/recipes/templates/test_fallback.sage"
+sage_test SageTestTest.addZero file "src/veriphy/prompts/recipes/templates/test_fallback.sage"
 
 -- the levels the runs recorded
 /--

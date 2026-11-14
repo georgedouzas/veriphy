@@ -6,6 +6,9 @@ The caller supplies one source: a LaTeX or Markdown draft, a chapter, or a paper
 The playbook records the source's claims in the research claim graph, proves or tests what it can, and ends by
 reporting the verification of every claim. What happens to the report is the caller's decision.
 
+Paths in this playbook are relative to its directory, which `sage -python -m veriphy.prompts path` prints. The
+playbooks ship with the installed `veriphy` package, at the version of its toolkit.
+
 ## Preconditions
 
 - The graph extra is installed: `sage -pip install 'veriphy[graph]'`. The first `reason` sets up the reasoner and the
@@ -16,14 +19,14 @@ reporting the verification of every claim. What happens to the report is the cal
 
 ## Loop
 
-1. **Extract.** Follow `prompts/research/extraction.md`. Write the source's claims, conventions, concepts and
+1. **Extract.** Follow `research/extraction.md`. Write the source's claims, conventions, concepts and
    dependencies to `.veriphy/graph/sources/<source>.agent.ttl`. Never write to a `.human.ttl` file: those are the
    caller's.
 
 2. **Validate.** Run `sage -python -m veriphy.graph validate` and fix every violation in the agent file. The SHACL
    report is a measurement, so a clean report means the file is complete, not that it is right.
 
-3. **Triage.** Follow `prompts/research/triage.md`. Record each claim's group with `vp:triage`. Do not try to prove a
+3. **Triage.** Follow `research/triage.md`. Record each claim's group with `vp:triage`. Do not try to prove a
    `suspect` claim.
 
 4. **Prove.** For each claim in the `recipe`, `test` or `formalize` group, in dependency order (a claim after the
@@ -32,7 +35,7 @@ reporting the verification of every claim. What happens to the report is the cal
       claim assumes and the Lean definitions that realize them. State the claim in Lean under exactly those
       definitions. If the command refuses the slice, report the lost consequences to the caller and stop on this
       claim.
-   2. Follow `prompts/prove.md` (and `prompts/certify.md` for certificates) to prove it, or `sage_test` it when no
+   2. Follow `prove.md` (and `certify.md` for certificates) to prove it, or `sage_test` it when no
       certificate is feasible.
    3. Link it: add `vp:formalizedBy <urn:veriphy:lean:<Lean name>>` to the claim in the agent file.
 
@@ -58,4 +61,4 @@ reporting the verification of every claim. What happens to the report is the cal
 - A graph conclusion is reported with the checker's verdict word, or as `unchecked`. The absence of a clash is never
   reported as checked.
 - `formalizedBy` claims that the Lean statement says what the prose says. Make that claim only after the round-trip
-  check of `prompts/prove.md` step 1.
+  check of `prove.md` step 1.

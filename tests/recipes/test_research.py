@@ -6,17 +6,19 @@ from pathlib import Path
 import pytest
 
 from veriphy.graph import COMMANDS, load_graph
+from veriphy.prompts import content_dir
 
 ROOT = Path(__file__).resolve().parents[2]
+PROMPTS = content_dir()
 DOCUMENTS = [
-    ROOT / 'prompts' / 'research.md',
-    *sorted((ROOT / 'prompts' / 'research').glob('*.md')),
+    PROMPTS / 'research.md',
+    *sorted((PROMPTS / 'research').glob('*.md')),
     ROOT / 'skills' / 'research' / 'SKILL.md',
     ROOT / '.claude' / 'skills' / 'research' / 'SKILL.md',
     ROOT / 'docs' / 'overview' / 'user_guide.md',
     ROOT / 'README.md',
 ]
-TEMPLATES = sorted((ROOT / 'prompts' / 'research').glob('*.md'))
+TEMPLATES = sorted((PROMPTS / 'research').glob('*.md'))
 
 
 @pytest.mark.parametrize('document', DOCUMENTS, ids=lambda p: str(p.relative_to(ROOT)))
@@ -38,9 +40,18 @@ def test_research_templates_load(document: Path, tmp_path: Path) -> None:
     assert load_graph(tmp_path).assertions
 
 
-def test_research_skill_has_both_copies() -> None:
-    """Point the plugin copy and the repository copy of the skill at the playbook."""
-    for skill in (ROOT / 'skills' / 'research' / 'SKILL.md', ROOT / '.claude' / 'skills' / 'research' / 'SKILL.md'):
-        text = skill.read_text()
-        assert text.startswith('---\nname: research\n')
-        assert 'prompts/research.md' in text
+def test_research_templates_exist() -> None:
+    """Find the research templates in the installed package, so the tests above never run on nothing."""
+    assert [p.stem for p in TEMPLATES] == ['extraction', 'triage']
+
+
+@pytest.mark.parametrize('skill', ['prove', 'certify', 'research'])
+def test_skill_copies_are_identical_and_read_the_package(skill: str) -> None:
+    """Keep the plugin copy and the repository copy of each skill identical, reading the installed playbooks."""
+    plugin, repository = (base / 'skills' / skill / 'SKILL.md' for base in (ROOT, ROOT / '.claude'))
+    text = plugin.read_text()
+    assert text == repository.read_text()
+    assert text.startswith(f'---\nname: {skill}\n')
+    assert 'sage -python -m veriphy.prompts path' in text
+    assert f'<prompts>/{skill}.md' in text
+    assert 'VERIPHY_HOME' not in text

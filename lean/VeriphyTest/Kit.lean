@@ -258,8 +258,8 @@ example (x : ℚ) : (Polynomial.X ^ 2 + Polynomial.C 1 : Polynomial ℚ).eval x 
     (← Veriphy.resolveScriptPath "anomaly.sage" (some sub)) == root / ".veriphy" / "certificates" / "anomaly.sage",
     (← Veriphy.resolveScriptPath ".veriphy/certificates/anomaly.sage" (some sub)) ==
       root / ".veriphy/certificates/anomaly.sage",
-    (← Veriphy.resolveScriptPath "prompts/recipes/templates/sos.sage") ==
-      root / "prompts/recipes/templates/sos.sage"]
+    (← Veriphy.resolveScriptPath "src/veriphy/prompts/recipes/templates/sos.sage") ==
+      root / "src/veriphy/prompts/recipes/templates/sos.sage"]
 
 -- a missing script is reported with its resolved path, before any daemon call
 /-- info: true -/

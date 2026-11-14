@@ -2,7 +2,7 @@
 
 ## When to use
 
-- Step 1 of `prompts/research.md`: a source enters the research claim graph.
+- Step 1 of `research.md`: a source enters the research claim graph.
 - The source is a LaTeX or Markdown draft. The output is `.veriphy/graph/sources/<source>.agent.ttl`, where
   `<source>` is the file stem (`chapter9`), an arXiv identifier (`arXiv:0808.3236`) or a DOI.
 

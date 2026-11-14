@@ -2,7 +2,7 @@
 
 ## When to use
 
-- Only when no certificate is feasible: the recipe selection of `prompts/certify.md` ran and every matching recipe
+- Only when no certificate is feasible: the recipe selection of `certify.md` ran and every matching recipe
   failed, or the claim quantifies over a dimension, a space or a function (rank-nullity for every `A`, a statement
   in every dimension `n`). A certificate always comes first; a test never stands in for one.
 - The claim is a theorem (proved in mathlib, or by hand) or a definition of type `Prop` (stated, unproved), with

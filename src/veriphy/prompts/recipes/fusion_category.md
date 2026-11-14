@@ -6,7 +6,7 @@
   fusion or braided fusion category, with the `FusionData` asset: `FusionData.IsFusion (RepData.toData E ζ)` (fusion
   ring axioms and every pentagon equation) or `FusionData.IsBraidedFusion` (also both hexagons), or that two data
   differ by a gauge transformation (`FusionData.GaugeRelated`).
-- Copy the asset `lean/assets/VeriphyAssets/FusionData.lean` to the project's `.veriphy/lean/VeriphyAssets/FusionData.lean`
+- Copy the asset into the project with `sage -python -m veriphy.prompts copy assets/VeriphyAssets/FusionData`
   and declare the `VeriphyAssets` library (see the user guide). It imports mathlib only.
 - Values live in a number field `ℚ(ζ)` with `ζ ^ m = r`: `ℚ(√5)` (`ζ² = 5`) for Fibonacci, `ℚ(ζ₁₆)` (`ζ⁸ = -1`) for
   Ising. A `RepData` stores them as rational coefficients on `1, ζ, ζ², …`; `RepData.toData E ζ` evaluates them at

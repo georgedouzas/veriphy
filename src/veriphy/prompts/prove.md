@@ -9,9 +9,12 @@ backlog item (e.g. a Physlib `informal_lemma`). The caller also owns the
 outcome: this playbook ends by *reporting*, never by opening PRs, keeping
 score, or committing to the target repo beyond what the caller asked for.
 
+Paths in this playbook are relative to its directory, which `sage -python -m veriphy.prompts path` prints. The
+playbooks ship with the installed `veriphy` package, at the version of its toolkit.
+
 ## Preconditions
 
-- Veriphy builds: `lake build` in this repo succeeds.
+- The Lean workspace requires Veriphy and builds (`lake build`).
 - If the statement refers to another library's definitions, the caller has
   provided that library (checked out and building), and a workspace exists
   whose lakefile requires both it and Veriphy. Create one if needed; it is
@@ -50,7 +53,7 @@ score, or committing to the target repo beyond what the caller asked for.
    c. build a certificate: isolate the computational core (polynomial
       identity, inequality, closed-form sum, root, linear system, witness,
       matrix identity) and build its proof with `sage_run`, following
-      `prompts/certify.md`. Prove the glue yourself. Veriphy ships no
+      `certify.md`. Prove the glue yourself. Veriphy ships no
       ready-made certificates. You create each one from the recipes, reusing
       what the project already has:
       - first `sage -python -m veriphy.certificates list` in the project, and
@@ -97,9 +100,9 @@ score, or committing to the target repo beyond what the caller asked for.
       | fusion or braided fusion data (pentagons, hexagons, gauges), naturality of an intertwiner | `fusion_category` |
       | graded brackets, super-Jacobi (`sl(m\|n)`, `osp`, `D(2,1;α)`, `G(3)`, `F(4)`) | `lie_superalgebra` |
 
-      Recipes are in `prompts/recipes/<name>.md`. Read only the one you use.
+      Recipes are in `recipes/<name>.md`. Read only the one you use.
 
-      Recipes for one library live in `prompts/recipes/<library>/` and apply
+      Recipes for one library live in `recipes/<library>/` and apply
       only when that library's pack is active (`#veriphy_tables` lists the
       active namespaces). They use the library's own definitions and sign
       conventions, recorded in its pack.

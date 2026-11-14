@@ -29,8 +29,9 @@ and a recipe per technique. Each certificate is written for the goal in hand and
 ## Skills
 
 `research` calls `prove` for each claim, and `prove` calls `certify` for each computational core. The skills are thin
-wrappers around plain markdown (`prompts/prove.md`, `prompts/certify.md`, `prompts/research.md`, `prompts/recipes/`), so
-any agent can follow them.
+wrappers around plain markdown that ships with the Python package: `prove.md`, `certify.md`, `research.md` and
+`recipes/`, in the directory `sage -python -m veriphy.prompts path` prints. Any agent can follow them, and
+`sage -python -m veriphy.prompts list` names every playbook, recipe, template and asset.
 
 ### `prove`: from a statement to a proof
 
@@ -106,8 +107,8 @@ Veriphy keeps its files under `.veriphy/` at the Lean workspace root. Commit it 
 Projects from Veriphy 0.1.0 keep scripts in a top-level `certificates/`. They still work, and the catalog prints the
 command that moves them.
 
-Some recipes need Lean assets. Copy them from `lean/assets/VeriphyAssets/` in the Veriphy repository to
-`.veriphy/lean/VeriphyAssets/`, and declare the library once in `lakefile.toml`:
+Some recipes need Lean assets. `sage -python -m veriphy.prompts copy assets/VeriphyAssets/<name>` copies one to
+`.veriphy/lean/VeriphyAssets/`, and the library is declared once in `lakefile.toml`:
 
 ```toml
 [[lean_lib]]
@@ -126,7 +127,6 @@ Environment variables:
 |---|---|
 | `VERIPHY_SAGE_CMD` | the `sage` executable, if it isn't on `PATH` |
 | `VERIPHY_SAGE_TIMEOUT` | seconds allowed per Sage request (default 150) |
-| `VERIPHY_HOME` | your Veriphy clone, when the skills are copied by hand |
 | `VERIPHY_GRAPH_SETUP` | `off` stops the graph fetching or building anything |
 | `VERIPHY_OO_HORN` | use this `oo-horn` binary |
 
@@ -149,8 +149,8 @@ The steps are the ones `certify` follows:
    the error shows the problem.
 2. **Reuse.** `sage -python -m veriphy.certificates list` shows your saved scripts, and `show <name>` prints one. A
    saved script runs unchanged on any goal of the same shape.
-3. **Adapt.** Otherwise copy a template from `prompts/recipes/templates/` to `.veriphy/certificates/` and edit the lines
-   marked `EDIT`.
+3. **Adapt.** Otherwise copy a template with `sage -python -m veriphy.prompts copy recipes/templates/<name>` and edit
+   the lines marked `EDIT`.
 4. **Iterate.** A failure shows the script's output, the Lean text and Lean's error together.
 5. **Commit** the emitted replacement, and keep the script.
 
