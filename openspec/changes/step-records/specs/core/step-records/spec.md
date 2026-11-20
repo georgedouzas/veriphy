@@ -17,8 +17,8 @@ for check and derived steps, the level it grants. A record SHALL NOT be edited a
 
 ### Requirement: Replay by digest
 The input digest SHALL be the SHA-256 of the step name, the content of each input, the config digest and the seed.
-When a record with that digest exists, the step SHALL return it without running a tool. With `--rerun` the step SHALL
-run again, report whether the output changed, and keep both records when it did.
+When a record with that digest and a final status exists, the step SHALL return it without running a tool. `unchecked`
+and `failed` are not final. With `--rerun` the step SHALL run again and keep both records when the output changed.
 
 #### Scenario: Same inputs
 - **WHEN** `python -m veriphy reason` runs twice on an unchanged graph
@@ -27,6 +27,10 @@ run again, report whether the output changed, and keep both records when it did.
 #### Scenario: Moved file
 - **WHEN** a source file moves to another path with the same content
 - **THEN** its digest and its record stay the same
+
+#### Scenario: Checker installed later
+- **WHEN** `reason` was recorded as `unchecked` and the checker is set up afterwards
+- **THEN** the next `reason` runs again instead of replaying the unchecked record
 
 #### Scenario: Changed result on rerun
 - **WHEN** `--rerun` gives a different output for the same digest

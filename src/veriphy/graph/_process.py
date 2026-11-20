@@ -1,13 +1,12 @@
 """Run the external programs the research graph needs, git, lake and `oo-horn`, and fetch release assets."""
 
-import shutil
-import subprocess  # nosec B404 - every command is a list of fixed arguments, never a shell
 import urllib.request
 from pathlib import Path
 from urllib.error import URLError
 from urllib.parse import urlparse
 
-from veriphy.core import CheckerError
+from veriphy.core import CheckerError, ToolError
+from veriphy.core import _process as core_process
 
 FETCH_SCHEMES = ('https', 'file')
 FETCH_TIMEOUT = 300
@@ -26,11 +25,10 @@ def find_tool(name: str, purpose: str) -> str:
     Raises:
         CheckerError: When the tool is not on PATH.
     """
-    path = shutil.which(name)
-    if path is None:
-        message = f'`{name}` is not on PATH: {purpose}'
-        raise CheckerError(message)
-    return path
+    try:
+        return core_process.find_tool(name, purpose)
+    except ToolError as exc:
+        raise CheckerError(str(exc)) from exc
 
 
 def run_process(command: list[str], cwd: Path | None = None, timeout: float | None = None) -> tuple[int, str, str]:
@@ -48,18 +46,9 @@ def run_process(command: list[str], cwd: Path | None = None, timeout: float | No
         CheckerError: When the command cannot start or does not finish in time.
     """
     try:
-        result = subprocess.run(  # noqa: S603  # nosec B603 - fixed argument lists, never a shell
-            command,
-            cwd=cwd,
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=timeout,
-        )
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        message = f'{" ".join(command)}: {exc}'
-        raise CheckerError(message) from exc
-    return result.returncode, result.stdout, result.stderr
+        return core_process.run_process(command, cwd, timeout)
+    except ToolError as exc:
+        raise CheckerError(str(exc)) from exc
 
 
 def fetch_url(url: str, timeout: float = FETCH_TIMEOUT) -> bytes:

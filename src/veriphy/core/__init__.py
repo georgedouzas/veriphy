@@ -8,14 +8,31 @@ from veriphy.core._errors import (
     GraphExtraMissingError,
     MethodError,
     ParamError,
+    RecordError,
     ScriptError,
+    StepError,
     TableError,
+    ToolError,
     VeriphyError,
 )
+from veriphy.core._process import find_tool, run_process
 from veriphy.core._project import PROJECT_DIR_NAME, find_workspace_root, project_dir
+from veriphy.core._records import (
+    KINDS,
+    LEVELLED_KINDS,
+    Record,
+    RecordStore,
+    canonical_json,
+    config_digest,
+    content_digest,
+    input_digest,
+    read_record,
+)
 from veriphy.core._types import RELATIONS, Coercer, JsonObject, JsonValue, Method
 
 __all__ = [
+    'KINDS',
+    'LEVELLED_KINDS',
     'PROJECT_DIR_NAME',
     'RELATIONS',
     'CertificateError',
@@ -29,9 +46,21 @@ __all__ = [
     'Method',
     'MethodError',
     'ParamError',
+    'Record',
+    'RecordError',
+    'RecordStore',
     'ScriptError',
+    'StepError',
     'TableError',
+    'ToolError',
     'VeriphyError',
+    'canonical_json',
+    'config_digest',
+    'content_digest',
+    'find_tool',
     'find_workspace_root',
+    'input_digest',
     'project_dir',
+    'read_record',
+    'run_process',
 ]
