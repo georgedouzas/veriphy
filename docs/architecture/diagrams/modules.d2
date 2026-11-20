@@ -1,28 +1,28 @@
 ...@_style
 direction: down
 
-core: "veriphy.core" {
-  class: deterministic
-  grid-columns: 4
-  config: "config\nschema · merge · check"
-  records: "records\ndigest · store"
-  workspace
-  levels: "levels\norder · trust"
+stack: "Each module imports only the modules below it and the shared ones" {
+  style: {stroke-width: 0; fill: transparent}
+  grid-columns: 1
+  vertical-gap: 24
+  agents: "4 · skills/ and the packs' playbooks" {class: open}
+  workflows: "3 · veriphy.workflows · next · run" {class: deterministic}
+  claims: "2 · veriphy.graph · claims · levels · reasoning · reports" {class: deterministic}
+  stepper: "1 · veriphy.steps · the step runner · python -m veriphy <step>" {class: deterministic}
+  primitives: "0 · veriphy.primitives · descriptors · contracts · pins · python -m veriphy primitive" {
+    class: deterministic
+  }
+  shared: "shared by every layer" {
+    grid-columns: 2
+    config: "veriphy.config\nschema · packs · merge · registries" {class: deterministic}
+    core: "veriphy.core\nerrors · digests · canonical JSON · record store" {class: deterministic}
+  }
+  packs: "packs: data in pack.yaml, code in their own modules" {
+    class: open
+    grid-columns: 4
+    core: "veriphy.packs.core\noo-horn · claim graph steps"
+    lean: "veriphy.packs.lean\nLean primitives · Lean library"
+    math: "veriphy.packs.math\nSage daemon · toolkit ·\nrecipes · translations"
+    reproduction: "veriphy.packs.reproduction\nR · example"
+  }
 }
-stepper: "veriphy.steps\none module per step · python -m veriphy <step>" {class: deterministic}
-adapters: "veriphy.adapters\nfiles · json-lines contracts" {class: deterministic}
-graph: "veriphy.graph\nclaim graph · reasoning" {class: deterministic}
-packs: "packs (plug-ins)" {
-  class: open
-  grid-columns: 2
-  math: "veriphy-math\nSage toolkit · recipes · Lean assets"
-  econ: "veriphy-econ\nR · reproduction levels"
-}
-lean: "Lean library\nsage_run · sage_test · #veriphy_levels · #veriphy_graph" {class: deterministic}
-
-stepper -> core
-stepper -> adapters
-stepper -> graph
-graph -> core
-adapters -> packs: "tools declared in pack.yaml"
-lean -> adapters: "sage_run calls a tool"

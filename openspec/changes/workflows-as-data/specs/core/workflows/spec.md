@@ -3,7 +3,7 @@
 ## ADDED Requirements
 
 ### Requirement: Workflow schema
-A workflow in the config SHALL be an ordered list of entries, each a step name or a step with transitions from status
+A workflow, declared by a pack or the workspace file, SHALL be an ordered list of entries, each a step name or a step with transitions from status
 to the next entry or `stop`, an optional `attempts` limit and an optional `when` condition. `config check` SHALL refuse
 a workflow that names an undefined step.
 

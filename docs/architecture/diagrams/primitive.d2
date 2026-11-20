@@ -1,0 +1,35 @@
+...@_style
+direction: down
+
+callers: "Callers" {
+  class: open
+  grid-columns: 3
+  person: "a person\npython -m veriphy primitive run"
+  lean: "a Lean file\n#veriphy_meaning · sage_run"
+  step: "a step\n(layer 1)"
+}
+
+primitive: "Primitive: sage.sample" {
+  class: deterministic
+  grid-columns: 3
+  input: "input schema\nJSON Schema"
+  output: "output schema\nJSON Schema"
+  trust: "trust class\noracle"
+  pin: "pin\nversion 10.9"
+  seed: "seed\nhow the tool takes it"
+  contract: "contract\njson-lines"
+}
+
+valid: "input valid?" {shape: diamond}
+pinned: "pin matches?" {shape: diamond}
+tool: "the tool's process\nSageMath daemon"
+out: "output\nsame input and seed, same output" {class: derived}
+refused: "refused\nnames the field or both versions" {shape: oval}
+
+callers -> primitive: "input as JSON"
+primitive -> valid
+valid -> pinned: yes
+valid -> refused: no
+pinned -> tool: yes
+pinned -> refused: no
+tool -> out: "checked against the output schema"

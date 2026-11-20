@@ -2,7 +2,8 @@
 
 ## Context
 
-After the earlier changes, every step writes a record, and the config holds the packs. The playbooks still sequence
+After the earlier changes, every step is declared in a pack and writes a record, agent steps record their artifacts,
+and claims take their levels from records. The playbooks still sequence
 the steps in prose, with budgets ("stop after about 30 minutes or 3 attempts") the agent counts itself.
 
 ## Goals / Non-Goals
@@ -31,9 +32,14 @@ start. Nothing else is stored, so deleting a record moves the workflow back to t
 ### D3. `run` stops at agent steps
 
 `run` executes `evidence`, `check` and `derived` steps until the next one is an `agent` step or the workflow stops, and
-prints what the agent must provide. An agent step is done when its artifact exists and is recorded.
+prints what the agent must provide. An agent step is done when its artifact is recorded, as `declarative-steps` defines.
 
-### D4. Attempts are counted from records
+### D4. Conditions read records and claims
+
+A `when` condition reads the target's records or its claim's level, such as `no-certificate` (no record grants a
+`kernel` level). It never reads anything else, so `next` stays a function of the records.
+
+### D5. Attempts are counted from records
 
 The number of records of a step for the target is its attempt count, so the budget is enforced by the engine, not by
 the agent.
