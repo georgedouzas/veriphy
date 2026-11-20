@@ -6,18 +6,45 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 <!-- insertion marker -->
+## [0.7.0](https://github.com/georgedouzas/veriphy/releases/tag/0.7.0) - 2026-11-20
+
+<small>[Compare with 0.6.0](https://github.com/georgedouzas/veriphy/compare/0.6.0...0.7.0)</small>
+
+### Features
+
+- Ship the playbooks, recipes, templates and recipe assets in the Python package, with python -m veriphy.prompts; the skills read them from the installed package instead of a clone ([a035ffd](https://github.com/georgedouzas/veriphy/commit/a035ffdb483b4bc8e1ce8ee04021be8b4366fbff) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+### Docs
+
+- README and plugin pin 0.7.0 ([9817f4b](https://github.com/georgedouzas/veriphy/commit/9817f4bed2a5ed590f17eacfe293b932b42d9e58) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Write the purpose of the packaged-playbooks spec ([a767535](https://github.com/georgedouzas/veriphy/commit/a767535ef16bf22d57f40614f2cabdbbffb36a8a) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Archive packaged-playbooks with its specs synced ([9bd590d](https://github.com/georgedouzas/veriphy/commit/9bd590d40fa83e1a0afca6d7dda833e8251d3158) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Propose the target architecture, with D2 diagrams: deterministic steps and records, trust classes, veriphy.yaml with packs, workflows as data ([5c59451](https://github.com/georgedouzas/veriphy/commit/5c594517497923f1a862ea92a28623fe2d61aeb6) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Mark the prompts command task done ([54fa279](https://github.com/georgedouzas/veriphy/commit/54fa279201acfc8867a258f73192abfbf90cc3c8) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- packaged-playbooks tasks complete, CI green with the templates run from the package ([0a33da0](https://github.com/georgedouzas/veriphy/commit/0a33da0ec3d6b0e9f0060789783cb425a131d382) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Archive lean-sources-dir with its specs synced ([e07edc8](https://github.com/georgedouzas/veriphy/commit/e07edc81a6fab6c190b201c771702a9397b90741) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- lean-sources-dir tasks complete, CI green with the Lean sources under lean/ ([be9808f](https://github.com/georgedouzas/veriphy/commit/be9808f947574e9c04b44943e486ed5c4fbefc5f) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+### Code Refactoring
+
+- Move the Lean sources under lean/, keeping the Lake configuration at the root so dependents require the repository unchanged ([bea3785](https://github.com/georgedouzas/veriphy/commit/bea3785e4365cab1a01b367764613d6d77a1342b) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
 ## [0.6.0](https://github.com/georgedouzas/veriphy/releases/tag/0.6.0) - 2026-11-02
 
 <small>[Compare with 0.5.0](https://github.com/georgedouzas/veriphy/compare/0.5.0...0.6.0)</small>
 
 ### Features
 
-- Add the verification level lean-proof, and require the standard axioms for certificate and lean-proof ([77b5ead](https://github.com/georgedouzas/veriphy/commit/77b5eadb50e73e41f85654af3eeb09b65b4483d6) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Add the verification level lean-proof, and require the standard axioms for certificate and lean-proof ([110c9d6](https://github.com/georgedouzas/veriphy/commit/110c9d66b208065129c48fdae735ba0263178cbe) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 
 ### Docs
 
-- Archive lean-proof-level with its specs synced; README and plugin pin 0.6.0 ([c43aca5](https://github.com/georgedouzas/veriphy/commit/c43aca5e86c44c8e2e2c0a0e1d6dfcc7d29e17bb) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
-- Center the README and user guide on the skill workflows, for a theorem and for a paper ([f7ea381](https://github.com/georgedouzas/veriphy/commit/f7ea381ee46eb03c17bc59d896395b88b82aed82) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Archive lean-proof-level with its specs synced; README and plugin pin 0.6.0 ([359f519](https://github.com/georgedouzas/veriphy/commit/359f519435c444a23f36bc7bf4e052f56e1a1327) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Center the README and user guide on the skill workflows, for a theorem and for a paper ([154d0ad](https://github.com/georgedouzas/veriphy/commit/154d0adb81da33b170750e2a0c4dd70066fdfc04) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+### Chore
+
+- Release 0.6.0 ([b85488e](https://github.com/georgedouzas/veriphy/commit/b85488e7b7657c9cab1456292eecde83534fc1e4) by georgedouzas).
 
 ## [0.5.0](https://github.com/georgedouzas/veriphy/releases/tag/0.5.0) - 2026-11-01
 
