@@ -1,7 +1,7 @@
 # distribution/packaged-playbooks Specification
 
 ## Purpose
-TBD - created by archiving change packaged-playbooks. Update Purpose after archive.
+Ships the playbooks, recipes, templates and recipe assets inside the `veriphy` Python package, at the version of the toolkit they describe, and gives agents access to them through `python -m veriphy.prompts`, so no clone of the repository is needed.
 
 ## Requirements
 
