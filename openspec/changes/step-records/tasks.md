@@ -14,7 +14,7 @@
 ## 3. Documents and integration
 
 - [x] 3.1 Document the step command and the records in the user guide, and link the change from the architecture page. Verify with `uv run nox -s docs -- build`.
-- [ ] 3.2 Run the gate (formatting of the changed files, checks, tests, docs) and CI. Verify that every session and job is green.
+- [x] 3.2 Run the gate (formatting of the changed files, checks, tests, docs) and CI. Verify that every session and job is green.
 
 ## Workflow follow-up
 
