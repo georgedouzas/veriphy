@@ -14,10 +14,12 @@ workflows as data makes that function explicit, and lets the skills shrink to th
   same records.
 - `python -m veriphy run <workflow> <target>` runs steps until one needs the agent, then stops and says which.
 - The `math` pack defines `prove-claim` and `verify-paper`, the `reproduction` pack `reproduce-analysis`.
-- The skills follow `next`, and the playbooks keep only the guidance for agent steps: formalizing, extracting,
-  writing scripts.
+- A pack adds workflows in its `pack.yaml`, and a workspace can override or add one in `veriphy.yaml`.
+- The skills (layer 4) follow `next`, and the playbooks keep only the guidance for agent steps: formalizing,
+  extracting, writing scripts.
 
-Depends on `step-records`, `workspace-config` and `meaning-step`.
+Workflows are layer 3: they use steps (layer 1) and read what the records establish (layer 2), and add nothing
+below. Depends on `declarative-steps` and `claims-and-trust`, and on `reproduction-pack` for its workflow.
 
 ## Capabilities
 

@@ -2,14 +2,15 @@
 
 ## Context
 
-After `tool-contracts`, a tool is YAML: a command, a contract and a pin. The claim graph already carries conventions,
-`excludes` and effective levels, and `oo-horn` checks the reasoning whatever the levels are called.
+After `claims-and-trust`, a pack can add tools, primitives, steps with `compare`, levels with a trust class, and
+conventions, and the claim graph takes own levels from any record. The graph already finds clashes between exclusive
+conventions, and `oo-horn` checks the reasoning whatever the levels are called.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- Show that a new field needs YAML, a playbook and no change to the core.
+- Show that a new field fills every layer with YAML, one small composite, a playbook, and no change to the core.
 - Make `reproduced` mean one exact thing: the same estimate from the same code, data and environment.
 
 **Non-Goals:**
@@ -19,25 +20,30 @@ After `tool-contracts`, a tool is YAML: a command, a contract and a pin. The cla
 
 ## Decisions
 
-### D1. Data is pinned by content
+### D1. Data is pinned by content, in the primitive
 
-The claim names its data by SHA-256. `reproduce` refuses to run when the file's hash differs, so a reproduction is
-always of the data the claim names.
+`r.run`'s input names the data file and its expected SHA-256, and the primitive refuses to start R when they differ.
+So a reproduction is always of the data the claim names, whoever calls the primitive.
 
 ### D2. The script reports a named estimate
 
-The analysis script writes `{"estimate": …, "se": …}` to `{out}`. The step compares `estimate` with the claim's value
-within the declared tolerance and records both values in every outcome.
+The analysis script writes `{"estimate": …, "se": …}` to `{out}`. The `reproduce` step compares `estimate` with the
+claim's value by the generic `compare`, and records both values in every outcome.
 
-### D3. Robustness is a declared list
+### D3. Robustness is a declared list, run by a composite
 
-The variations (other controls, another period) are listed with the claim before `test` runs, so an agent cannot pick
-variations after seeing results. `robust` requires the estimate's sign and significance to hold under each.
+The variations (other controls, another period) are listed with the claim before `robustness` runs, so an agent cannot
+pick variations after seeing results. `r.robustness` runs `r.run` once per variation, and its output says whether the
+estimate's sign and significance hold under each. Its deciding part is `r.run`, so its class is `reproduction`.
 
 ### D4. Identification is a convention
 
 `identification` is a convention aspect with `parallel-trends` and `no-parallel-trends`. A claim that rests on one and
 cites a claim that assumes the other is a clash, found by the existing graph checks.
+
+### D5. No Lean, by test
+
+The pack's tests run with `packs: [core, reproduction]`, so any hidden dependency on Lean or SageMath fails them.
 
 ## Risks / Trade-offs
 

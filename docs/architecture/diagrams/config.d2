@@ -1,22 +1,33 @@
 ...@_style
 direction: right
 
-core: "core defaults" {class: deterministic}
-packs: "packs, in listed order" {
+defaults: "core defaults" {class: deterministic}
+packs: "packs, each after the packs it needs" {
   class: deterministic
-  math: "math\nLean · Sage · oo-horn · recipes"
+  grid-columns: 1
+  core: "core\nrecords · claim graph · oo-horn"
+  lean: "lean\nLean toolchain"
+  math: "math · needs lean\nSageMath · recipes"
   econ: "./packs/econ\nR · levels · conventions"
 }
 workspace: "veriphy.yaml\n(every key optional)" {shape: page}
-merge: "merge\nlater wins, key by key" {shape: diamond}
+merge: "merge\nlater wins, key by key\nnull removes" {shape: diamond}
 resolved: "resolved config" {class: derived}
-validate: "veriphy config check\npins · seeds · trust rules" {class: check}
-records: "every record\ncarries its digest" {shape: cylinder}
+check: "veriphy config check\nschemas · pins · seeds ·\ntrust · one level order" {class: check}
 
-core -> merge
-packs.math -> merge
-packs.econ -> merge
+registries: "one registry per layer" {
+  class: deterministic
+  grid-columns: 1
+  p: "primitives"
+  st: "steps"
+  l: "levels · conventions"
+  w: "workflows"
+  b: "playbooks"
+}
+
+defaults -> merge
+packs -> merge
 workspace -> merge
 merge -> resolved
-resolved -> validate
-resolved -> records: hashed into
+resolved -> check
+resolved -> registries

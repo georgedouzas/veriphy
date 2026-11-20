@@ -1,15 +1,15 @@
 # Tasks
 
-## 1. Pack
+## 1. Pack and primitives
 
-- [ ] 1.1 Write `packs/reproduction/pack.yaml` with the tool, levels, convention aspect and workflow. Verify with `config check` on a workspace that selects it, and with pytest that `config show` lists them.
+- [ ] 1.1 Write `packs/reproduction/pack.yaml` with the tool, primitives, steps, levels, convention aspect and workflow, requiring only `core`. Verify with `config check` on a workspace with `packs: [core, reproduction]`, and with pytest that `config show` lists them and no Lean or SageMath entry (D5).
 - [ ] 1.2 Add the example: a small public dataset with its hash, an R regression script and a claim file. Verify by running the script in the pinned image and comparing its estimate with the claim.
+- [ ] 1.3 Add `r.run` with the data-hash check, and the composite `r.robustness` (D1, D3). Verify with pytest using fake files tools, and with the example in the pinned image, skipped without a container runtime: a changed hash refuses to start R, and one flipping variation is named.
 
-## 2. Steps
+## 2. Steps and claims
 
-- [ ] 2.1 Add `reproduce` with the data-hash check and the estimate comparison (D1, D2). Verify with pytest using a fake files tool, and with the example in the pinned image, skipped without a container runtime: a match grants `reproduced`, a changed hash refuses to run.
-- [ ] 2.2 Add `test` over declared variations (D3). Verify with pytest: all variations holding grants `robust`, and one flipping keeps `reproduced` and names it.
-- [ ] 2.3 Check that a clash on `identification` is found by the graph checks (D4). Verify with a graph test of two claims assuming exclusive conventions.
+- [ ] 2.1 Declare `reproduce` with `compare`, and `robustness` (D2). Verify with pytest on fake tools: agreeing grants `reproduced`, differing grants nothing and records both estimates, and all variations holding grants `robust`.
+- [ ] 2.2 Check that a reproduce record gives the claim its own level, and that a clash on `identification` is found (D4). Verify with graph tests: a claim reaches `reproduced (reproduction)` in the level report, and two claims assuming exclusive conventions clash.
 
 ## 3. Playbook and integration
 

@@ -1,0 +1,20 @@
+...@_style
+direction: right
+
+meaning: "Composite: meaning · class oracle" {
+  class: deterministic
+  direction: right
+  serialize: "lean.serialize\nstatement as data"
+  sample: "sage.sample\nseeded values" {class: evidence}
+  serialize -> sample
+}
+
+certify: "Composite: certify · class kernel" {
+  class: deterministic
+  direction: right
+  search: "sage.search\ncandidate certificate" {class: evidence}
+  check: "lean.check\ndecides" {class: check}
+  search -> check: candidate
+}
+
+rule: "A composite's trust class is the class of the part that decides.\nWithout a deciding part, it is the lowest class of its parts." {shape: page}

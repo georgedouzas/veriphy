@@ -3,29 +3,38 @@
 ## ADDED Requirements
 
 ### Requirement: Reproduction pack
-Veriphy SHALL ship the pack `reproduction`, declaring an `r` tool of class `reproduction` pinned by container image,
-the levels `reproduced` (above `none`) and `robust` (above `reproduced`), the convention aspect `identification`, and
-the workflow `reproduce-analysis`. Using it SHALL need no change to the core.
+Veriphy SHALL ship the pack `reproduction`, requiring only `core`, with the `r` tool pinned by container image, the
+primitives `r.run` and `r.robustness` of class `reproduction`, the steps `reproduce` and `robustness`, the levels
+`reproduced` and `robust`, the convention aspect `identification`, the workflow `reproduce-analysis` and the
+`reproduce` playbook. Using it SHALL need no change to the core.
 
 #### Scenario: Selecting the pack
 - **WHEN** a workspace lists `packs: [core, reproduction]`
-- **THEN** `config show` lists the `r` tool, the two levels and the workflow, and no SageMath
+- **THEN** `config show` lists the `r` tool, the two primitives, the two steps, the two levels and the workflow, and
+  no Lean or SageMath entry
+
+### Requirement: Running an analysis
+`r.run` SHALL run an analysis script on a data file whose SHA-256 matches the one in its input, with the given seed,
+and return the estimate the script reports. A hash mismatch SHALL refuse to start R.
+
+#### Scenario: Wrong data
+- **WHEN** the data file's hash differs from the one in the input
+- **THEN** R does not start, and the error names both hashes
 
 ### Requirement: Reproduce step
-`reproduce` SHALL run the claim's analysis script on data whose SHA-256 matches the claim, with a recorded seed, and
-compare the reported estimate with the claimed one within the declared tolerance. A match SHALL grant `reproduced`,
-and a mismatch SHALL record both estimates.
+`reproduce` SHALL be declared over `r.run` with `compare` against the claimed estimate and a tolerance, and SHALL grant
+`reproduced` when the status is `agrees`. Every record SHALL hold both estimates, the seed and the image digest.
 
 #### Scenario: Matching estimate
 - **WHEN** the example claim is reproduced with its script and data
-- **THEN** the record grants `reproduced` and holds the estimate, the seed and the image digest
+- **THEN** the record's status is `agrees`, it grants `reproduced`, and the claim's own level is `reproduced`
 
-#### Scenario: Wrong data
-- **WHEN** the data file's hash differs from the claim's
-- **THEN** the step does not run and names both hashes
+#### Scenario: Differing estimate
+- **WHEN** the script's estimate is beyond the tolerance
+- **THEN** the status is `differs`, no level is granted, and both estimates are recorded
 
 ### Requirement: Robustness step
-`test` SHALL run each variation declared with the claim and grant `robust` when the estimate keeps its sign and
+`robustness` SHALL run each variation declared with the claim and grant `robust` when the estimate keeps its sign and
 significance under every variation. The record SHALL list the variations and their estimates.
 
 #### Scenario: A fragile result
