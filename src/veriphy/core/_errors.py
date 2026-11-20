@@ -88,3 +88,15 @@ class GraphExtraMissingError(GraphError):
 
 class CheckerError(GraphError):
     """Signal that `oo-horn`, the certificate checker, could not be built or run."""
+
+
+class RecordError(VeriphyError):
+    """Signal a step record that cannot be written or read, such as an attempt to overwrite one."""
+
+
+class StepError(VeriphyError):
+    """Signal a step that broke the step contract, such as an evidence step that returned a level."""
+
+
+class ToolError(VeriphyError):
+    """Signal an external program that is not installed, could not start or did not finish in time."""

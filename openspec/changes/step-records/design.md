@@ -35,6 +35,9 @@ Failures, refusals and timeouts are records too, with the status that says which
 with `--rerun` writes nothing new when the output matches, and writes a new record beside the old one, with a suffix,
 when it differs, so a changed result is visible.
 
+Only a final status is replayed. `unchecked` (no checker was found) and `failed` (a tool did not run or crashed)
+describe the machine, not the inputs, so such a record is kept but the step runs again the next time.
+
 ### D3. Four kinds, and only checks and derived steps carry a level
 
 `agent` steps write an artifact. `evidence` steps find candidates or measure. `check` steps ask a trusted tool.
@@ -50,8 +53,8 @@ One Lean process per step call is the cost, and it keeps Lean's own checking aut
 ### D5. `reason` points to its certificate
 
 The graph certificate directory stays where it is, because `oo-horn` checks that layout. The step record's outputs
-name the directory and the verdict, and its digest is the existing asserted-triples digest combined with the rules
-digest.
+name the directory and the verdict. Its input is the run's asserted triples, so its digest changes exactly when the
+asserted-triples digest does. The rules are fixed by the pinned checker release, which the config digest covers.
 
 ### D6. Exit codes
 
@@ -60,6 +63,6 @@ digest.
 
 ## Risks / Trade-offs
 
-- [Records accumulate] → They are small JSON files. `python -m veriphy records --prune` removes records no current
-  input refers to.
+- [Records accumulate] → They are small JSON files, kept out of git by default, and deleting `.veriphy/runs/` only
+  costs reruns.
 - [A Lean process per call is slow] → Replay makes the second call free, and the agent calls Lean steps rarely.

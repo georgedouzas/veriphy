@@ -130,6 +130,29 @@ Environment variables:
 | `VERIPHY_GRAPH_SETUP` | `off` stops the graph fetching or building anything |
 | `VERIPHY_OO_HORN` | use this `oo-horn` binary |
 
+## Steps and records
+
+Veriphy's checks are steps, and every step writes a record. `python -m veriphy <step>` runs one:
+
+| Step | Kind | Does |
+|---|---|---|
+| `elaborate <file>` | check | Lean checks the file, and the record gives each declaration's axioms |
+| `level <module> [--prefix P]` | derived | the level `#veriphy_levels` gives each declaration |
+| `validate` | evidence | the research graph against its shapes |
+| `reason` | check | graph reasoning, with `oo-horn`'s verdict |
+| `report <source> [--format latex]` | derived | the verification appendix |
+
+A record is a JSON file under `.veriphy/runs/<step>/<digest>.json`. It holds the step, its kind, the digest of its
+inputs, the tool versions, the status, the outputs and, for checks and derived steps, the level. The digest covers the
+content of the inputs, not their paths, so a step that runs again on the same inputs returns its record without
+running anything. A record whose status is `unchecked` or `failed` describes the machine rather than the inputs, so
+the step runs again the next time. `--rerun` forces a run and keeps both records when the result changed.
+
+`--json` prints the record and nothing else, for agents. The command exits with status 0 when the step accepted, 1
+when it refused, found a counterexample or failed, 2 on bad usage and 3 when the result is unchecked.
+`python -m veriphy records` lists the records, and `records <digest>` shows one. The records stay out of git by
+default: delete `.veriphy/runs/` and the steps simply run again.
+
 ## Building proofs with `sage_run`
 
 ```lean

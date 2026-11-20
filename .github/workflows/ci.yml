@@ -123,11 +123,6 @@ jobs:
     - name: Set up the checker and the reasoner of the pinned Open Ontologies release
       run: uv run --extra graph python -m veriphy.graph checker build
 
-    - name: Run the test suite on SageMath, with the checker required
-      run: uv run nox -s tests
-      env:
-        VERIPHY_REQUIRE_CHECKER: '1'
-
     - name: Install the built wheel into SageMath
       run: |
         uv build
@@ -145,6 +140,12 @@ jobs:
       run: |
         lake exe cache get
         lake build VeriphyTest
+
+    # after the Lean build, so the tests that run Lean (the Lean steps, the emitted-proof checks) do not skip
+    - name: Run the test suite on SageMath, with the checker required
+      run: uv run nox -s tests
+      env:
+        VERIPHY_REQUIRE_CHECKER: '1'
 
     - name: Run the research workflow on a fixture chapter, over a Lean export, setting up on first use
       run: |

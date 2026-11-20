@@ -6,7 +6,8 @@ a certificate that a Lean checker re-verifies, so nothing here is trusted.
 
 - `veriphy.oracle` holds the daemon methods and their building blocks. It requires SageMath.
 - `veriphy.sage_server` is the runner that serves the protocol.
-- `veriphy.core` holds the named exceptions.
+- `veriphy.core` holds the named exceptions, the workspace layout and the step records.
+- `veriphy.steps` runs the steps, from the command line as `python -m veriphy <step>`.
 
 Importing `veriphy` itself does not import Sage:
 

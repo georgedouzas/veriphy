@@ -46,3 +46,4 @@ docs/generated/
 
 # Records the Lean tests' sage_test runs write (a project commits its own)
 .veriphy/tests/
+.veriphy/runs/
