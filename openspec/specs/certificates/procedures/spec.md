@@ -20,11 +20,17 @@ Technique-specific search (Farkas rows, ideal lifts, product search, witness sea
 - **THEN** the agent edits the template's Sage code in its own script, with no change to Veriphy
 
 ### Requirement: Agent-agnostic and progressively loaded
-Recipes SHALL be plain markdown readable by any agent, indexed from the `prove` playbook, and loaded one at a time rather than all at once. A dedicated `certify` skill SHALL guide the build loop: inspect `problem`, choose a recipe, adapt its template, run, read the combined feedback, iterate.
+Recipes SHALL be plain markdown readable by any agent, shipped in the Python package, indexed from the `prove`
+playbook, and loaded one at a time rather than all at once. A dedicated `certify` skill SHALL guide the build loop:
+inspect `problem`, choose a recipe, adapt its template, run, read the combined feedback, iterate.
 
 #### Scenario: Agent picks a recipe
 - **WHEN** the agent faces an inequality with hypotheses
 - **THEN** the playbook's index leads it to the Farkas or hint-search recipe by the stated decision rule, without loading the other recipes
+
+#### Scenario: Recipe from the installed package
+- **WHEN** an agent with no clone of the repository needs the Farkas recipe
+- **THEN** it reads it from the installed package, at the version of the installed toolkit
 
 ### Requirement: Every template is tested
 Each recipe's template, instantiated on its worked example, SHALL be a test in the Lean suite and SHALL pass with replay on.

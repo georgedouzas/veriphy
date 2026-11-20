@@ -53,4 +53,4 @@ The recipe set SHALL include `representation` (explicit representations and deco
 
 #### Scenario: Recipe index
 - **WHEN** an agent's goal is a branching statement
-- **THEN** the recipe index in `prompts/prove.md` routes it to `representation`
+- **THEN** the recipe index in the `prove` playbook routes it to `representation`

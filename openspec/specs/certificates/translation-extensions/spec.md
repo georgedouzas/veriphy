@@ -22,7 +22,7 @@ A library pack SHALL be active only when the elaboration environment contains it
 - **THEN** the `physlib` pack translates it as the derivative of `x` at `t`, and the problem names the pack the entry came from
 
 ### Requirement: Library-specific recipes
-Recipes and recipe assets specific to a library SHALL live under `prompts/recipes/<library>/`, be indexed in their own section of the recipe index, and be offered only when that library's pack is active.
+Recipes and recipe assets specific to a library SHALL live under `recipes/<library>/` of the packaged playbooks, be indexed in their own section of the recipe index, and be offered only when that library's pack is active.
 
 #### Scenario: Physlib recipe offered
 - **WHEN** the `physlib` pack is active and the goal concerns Physlib's `lorentzAlgebra`
