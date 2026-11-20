@@ -7,6 +7,7 @@ import pytest
 
 from veriphy.graph import COMMANDS, load_graph
 from veriphy.prompts import content_dir
+from veriphy.steps import STEPS
 
 ROOT = Path(__file__).resolve().parents[2]
 PROMPTS = content_dir()
@@ -26,6 +27,21 @@ def test_research_documents_name_real_commands(document: Path) -> None:
     """Name only commands the graph CLI has."""
     commands = set(re.findall(r'python -m veriphy\.graph (?:--root \S+ )?([a-z]+)', document.read_text()))
     assert commands <= set(COMMANDS)
+
+
+@pytest.mark.parametrize('document', [*DOCUMENTS, PROMPTS / 'prove.md'], ids=lambda p: str(p.relative_to(ROOT)))
+def test_documents_name_real_steps(document: Path) -> None:
+    """Name only steps `python -m veriphy` has."""
+    steps = set(re.findall(r'python -m veriphy (?:--root \S+ )?([a-z]+)', document.read_text()))
+    assert steps <= {*STEPS, 'records'}
+
+
+@pytest.mark.parametrize('playbook', ['prove.md', 'research/triage.md'])
+def test_playbooks_run_the_meaning_step(playbook: str) -> None:
+    """Have the formalization step and the triage run the meaning check, and cite its record."""
+    text = (PROMPTS / playbook).read_text()
+    assert 'python -m veriphy meaning <file> <declaration> --informal' in text
+    assert '.veriphy/runs/meaning/' in text or "record's path" in text or 'path of the record' in text
 
 
 @pytest.mark.parametrize('document', TEMPLATES, ids=lambda p: p.stem)

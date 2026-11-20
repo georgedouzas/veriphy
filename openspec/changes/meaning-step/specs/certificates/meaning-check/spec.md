@@ -3,9 +3,10 @@
 ## ADDED Requirements
 
 ### Requirement: Meaning check
-`#veriphy_meaning c [seed s] [values n]` and `python -m veriphy meaning <declaration>` SHALL evaluate the statement of
-`c` at seeded values satisfying its hypotheses, exactly or by intervals of at least 53 bits, and report `agrees`,
-`counterexample` or `undecided`. The step SHALL be of kind `evidence` and SHALL grant no level.
+`#veriphy_meaning c [seed s] [values n] [points p]` and `python -m veriphy meaning <file> <declaration>` SHALL
+evaluate the statement of `c` at seeded values satisfying its hypotheses and domain conditions, or at given points,
+exactly or by intervals of at least 53 bits, and report `agrees`, `counterexample` or `undecided`. The step SHALL be
+of kind `evidence` and SHALL grant no level.
 
 #### Scenario: A wrong formalization
 - **WHEN** the claim `∀ x : ℝ, 0 ≤ x → Real.sqrt (x ^ 2) = -x` is checked

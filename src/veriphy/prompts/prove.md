@@ -33,15 +33,24 @@ playbooks ship with the installed `veriphy` package, at the version of its toolk
    detectors:
    - *Round-trip*: informalize your formal statement back to English; compare
      with the original. Any semantic drift → redo.
-   - *Identity test*: when the claim is (or reduces to) an identity, try the
-     bridge's `symbolic_check` first (`matrix_check` when matrices are
-     involved — representation identities, Clifford relations, determinant
-     formulas) — symbolic equality under the stated assumptions is strictly
-     stronger than sampling and catches branch-cut and measure-zero traps. If
-     it returns `equal: null` (undecided) or the claim doesn't fit, fall back
-     to rendering the statement in Sage and evaluating at ≥10 random parameter
-     values satisfying the hypotheses. A counterexample means your
-     formalization (or the original claim) is wrong — stop and report which.
+   - *Meaning check*: state the claim in a file (as a `theorem … := sorry`, or
+     a `def c : Prop := …`) and run
+     `python -m veriphy meaning <file> <declaration> --informal "<your English reading>"`.
+     It evaluates the statement at seeded values satisfying its hypotheses,
+     exactly or by intervals, after trying an equation symbolically, and
+     records the outcome under `.veriphy/runs/meaning/`. The file must
+     elaborate, so fix its errors first as in step 2:
+     - `agrees`: go on. It is evidence, not a level. A note naming a domain
+       condition (`x ≠ 0`) means Lean's junk values there went untested; make
+       sure the claim does not rely on them.
+     - `counterexample` (exit status 1): your formalization, or the original
+       claim, is wrong at the values it names. Fix the formalization and run
+       again, or stop and report `statement-suspect` with the record's path.
+     - `undecided` (exit status 3): the reason names what blocked it, such as
+       a hypothesis no drawn value satisfies (`x = π`). Give values with
+       `--points '[{"x": "pi"}]'`, or say in the report that the statement was
+       not tested.
+     `#veriphy_meaning c` runs the same check inside Lean.
 
 2. **Compile-fix.** Iterate on compiler errors until the statement type-checks
    with `sorry` as the proof. Use LSP/REPL/`lake build` feedback, never guess
@@ -140,8 +149,8 @@ playbooks ship with the installed `veriphy` package, at the version of its toolk
      a Lean emitter that the toolkit lacks, so no `sage_run` script can build
      it. Name the missing primitive or emitter, and the certificate it would
      produce;
-   - `statement-suspect`: the numeric test contradicted the claim (give the
-     counterexample).
+   - `statement-suspect`: the meaning check found a counterexample (give it,
+     and the path of its record under `.veriphy/runs/meaning/`).
    - `tested`: no certificate is feasible (recipe selection failed, or the claim is
      in every dimension, space or function), the proof is a mathlib proof (or none, for a stated
      proposition), and `sage_test` checked the claim at instances: give the level, `kernel-test` or

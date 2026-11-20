@@ -27,7 +27,8 @@ The command reuses binder opening and serialization, and the daemon method draws
 
 ### D2. Hypotheses by rejection
 
-Values are drawn and kept only when every hypothesis evaluates to true. When fewer than 10 values survive 200 draws,
+Values are drawn and kept only when every hypothesis and every domain condition (a divisor `≠ 0`, a square root's
+argument `≥ 0`) evaluates to true, and every sub-expression Lean computes in `ℕ` or `ℤ` is an integer there. When fewer than 10 values survive 200 draws,
 the outcome is `undecided` and names the hypothesis that rejected most, so the agent can supply values.
 
 ### D3. Exact first, intervals second
@@ -47,6 +48,10 @@ digest changes when the reading does.
 
 ## Risks / Trade-offs
 
-- [Rejection sampling fails on narrow hypotheses] → `undecided` names the hypothesis, and `--values` lets the agent
-  give values, which are recorded.
+- [Rejection sampling fails on narrow hypotheses] → `undecided` names the hypothesis, and `--points` (`points` in
+  Lean) lets the agent give values, which Sage reads exactly (`pi`, `sqrt(2)`) and the record keeps. `--values n` is
+  how many values must agree.
+- [Lean's junk values] → Sage has no `x / 0 = 0`. A value at which a domain condition fails is set aside, and an
+  agreement names those conditions, so the agent sees what went untested. The symbolic attempt runs only when every
+  domain condition follows from a hypothesis.
 - [Agreement read as proof] → The record has kind `evidence` and no level, and reports say `agrees at n values`.

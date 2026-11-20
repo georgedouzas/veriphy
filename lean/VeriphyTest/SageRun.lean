@@ -1140,3 +1140,58 @@ example : ∫ φ in (0 : ℝ)..(2 * Real.pi), (3 + 2 * Real.cos φ) = 6 * Real.p
   sage_run file "src/veriphy/prompts/recipes/templates/definite_integral.sage"
 example : ∫ φ in (0 : ℝ)..(2 * Real.pi), (1 - Real.sin (2 * φ)) = 2 * Real.pi := by
   sage_run file "src/veriphy/prompts/recipes/templates/definite_integral.sage"
+
+/-! ## `#veriphy_meaning`: does a statement say what it was meant to? -/
+
+namespace MeaningTest
+
+def wrong : Prop := ∀ x : ℝ, 0 ≤ x → Real.sqrt (x ^ 2) = -x
+def faithful : Prop := ∀ x : ℝ, Real.sqrt (x ^ 2) = |x|
+def narrow : Prop := ∀ x : ℝ, x = Real.pi → Real.sin x = 0
+def pythagoras : Prop := ∀ x : ℝ, Real.cos x ^ 2 + Real.sin x ^ 2 = 1
+def selfDiv : Prop := ∀ x : ℝ, x / x = 1
+theorem selfDiv' (x : ℝ) (hx : x ≠ 0) : x / x = 1 := div_self hx
+
+end MeaningTest
+
+-- a wrong formalization: a counterexample, with both sides
+/-- info: meaning: `MeaningTest.wrong` fails at x := 1: the left side is 1 and the right side -1 -/
+#guard_msgs in
+#veriphy_meaning MeaningTest.wrong
+
+-- a faithful one agrees at seeded values; the seed and the count are the command's
+/-- info: meaning: `MeaningTest.faithful` agrees at 10 values (seed 0) -/
+#guard_msgs in
+#veriphy_meaning MeaningTest.faithful
+
+/-- info: meaning: `MeaningTest.faithful` agrees at 20 values (seed 5) -/
+#guard_msgs in
+#veriphy_meaning MeaningTest.faithful seed 5 values 20
+
+-- no drawn value satisfies `x = π`: undecided, naming the hypothesis; the agent then gives the values
+/--
+info: meaning: `MeaningTest.narrow` is undecided: 0 of the 10 values needed agreed; hyp0: x = Real.pi rejected 136 of the 136 distinct values drawn
+-/
+#guard_msgs in
+#veriphy_meaning MeaningTest.narrow
+
+/-- info: meaning: `MeaningTest.narrow` agrees at the 1 value given -/
+#guard_msgs in
+#veriphy_meaning MeaningTest.narrow points "[{\"x\": \"pi\"}]"
+
+-- an identity is decided symbolically
+/-- info: meaning: `MeaningTest.pythagoras` agrees symbolically -/
+#guard_msgs in
+#veriphy_meaning MeaningTest.pythagoras
+
+-- Lean's `x / 0 = 0` is a junk value Sage does not have: with no hypothesis `x ≠ 0` the identity is only sampled,
+-- and the values where the condition fails are named; with the hypothesis it is decided symbolically
+/--
+info: meaning: `MeaningTest.selfDiv` agrees at 10 values (seed 0); untested where a domain condition fails, where Lean takes a junk value: x ≠ 0 (1)
+-/
+#guard_msgs in
+#veriphy_meaning MeaningTest.selfDiv
+
+/-- info: meaning: `MeaningTest.selfDiv'` agrees symbolically -/
+#guard_msgs in
+#veriphy_meaning MeaningTest.selfDiv'

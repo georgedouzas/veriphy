@@ -1,4 +1,4 @@
-"""The steps that run Lean from the workspace: `elaborate` and `level`."""
+"""The steps that run Lean from the workspace: `elaborate`, `level` and `meaning`."""
 
 import json
 from pathlib import Path
@@ -9,6 +9,8 @@ from veriphy.steps._runner import Outcome, Params, Prepared, Step
 
 TIMEOUT_S = 1800
 AXIOMS_MARKER = 'veriphy-axioms '
+MEANING_MARKER = 'veriphy-meaning '
+MEANING_VALUES = 10
 # prepended to the copy `elaborate` runs; the appended script needs it, and line numbers are shifted back
 PRELUDE = 'import Lean\n'
 AXIOMS_SCRIPT = """
@@ -105,9 +107,7 @@ def _line(message: dict[str, object], shift: int) -> int:
 
 def _prepare_elaborate(root: Path, params: Params) -> Prepared:
     """Read the file and the workspace's Lean sources."""
-    path = Path(str(params['file']))
-    if not path.is_absolute():
-        path = root / path
+    path = _resolve(root, params['file'])
     return Prepared(
         {'file': path.read_bytes(), 'workspace': lean_sources(root)},
         {'file': str(path)},
@@ -181,3 +181,64 @@ def _level(root: Path, params: Params, prepared: Prepared) -> Outcome:
 
 ELABORATE = Step('elaborate', 'check', _prepare_elaborate, _elaborate)
 LEVEL = Step('level', 'derived', _prepare_level, _level)
+
+
+def _resolve(root: Path, file: object) -> Path:
+    """Return a file parameter as a path, relative ones taken from the workspace root."""
+    path = Path(str(file))
+    return path if path.is_absolute() else root / path
+
+
+def _prepare_meaning(root: Path, params: Params) -> Prepared:
+    """Read the file, the declaration, the seed, the count or the points, the agent's reading and the Lean sources."""
+    path = _resolve(root, params['file'])
+    declaration = str(params['declaration'])
+    values = int(str(params.get('values') or MEANING_VALUES))
+    points = params.get('points')
+    informal = params.get('informal')
+    if points is not None:
+        json.loads(str(points))
+    contents: dict[str, str | bytes] = {
+        'file': path.read_bytes(),
+        'workspace': lean_sources(root),
+        'declaration': declaration,
+        'values': str(values),
+        'points': '' if points is None else str(points),
+        'informal': '' if informal is None else str(informal),
+    }
+    sources: dict[str, object] = {'file': str(path), 'declaration': declaration}
+    return Prepared(contents, sources, seed=int(str(params.get('seed') or 0)), context=path)
+
+
+def _meaning(root: Path, params: Params, prepared: Prepared) -> Outcome:
+    """Run `#veriphy_meaning` after the file, and record its outcome with the agent's reading of the statement."""
+    path = prepared.context if isinstance(prepared.context, Path) else Path()
+    declaration = str(params['declaration'])
+    seed = prepared.seed or 0
+    command = f'#veriphy_meaning {declaration} seed {seed} values {int(str(params.get("values") or MEANING_VALUES))}'
+    if params.get('points') is not None:
+        command += f' points {json.dumps(str(params["points"]))}'
+    text = path.read_text()
+    last = len(text.splitlines())
+    source = f'import Veriphy.Tactic.Meaning\n{text}\n\nset_option veriphy.meaning.json true in\n{command}\n'
+    tools = {'lean': _toolchain(root), 'veriphy': __version__}
+    try:
+        _, error, messages = _run_lean(root, source, f'meaning-{content_digest(source)[:12]}')
+    except ToolError as exc:
+        return Outcome('failed', {'error': str(exc)}, tools)
+    errors = [{'line': _line(m, 1), 'message': _text(m)} for m in messages if m.get('severity') == 'error']
+    found = [_text(m).removeprefix(MEANING_MARKER) for m in messages if _text(m).startswith(MEANING_MARKER)]
+    if errors or not found:
+        where = (
+            'the file does not elaborate' if any(int(str(e['line'])) <= last for e in errors) else 'the check failed'
+        )
+        detail = '\n'.join(str(e['message']) for e in errors) or error.strip()[-4000:]
+        return Outcome('failed', {'error': f'{where}: {detail}'}, tools)
+    result: dict[str, object] = json.loads(found[0])
+    tools['sage'] = str(result.pop('sage_version', 'unknown'))
+    informal = params.get('informal')
+    outputs: dict[str, object] = {'declaration': declaration, 'informal': informal, **result}
+    return Outcome(str(result.get('outcome', 'failed')), outputs, tools)
+
+
+MEANING = Step('meaning', 'evidence', _prepare_meaning, _meaning)
