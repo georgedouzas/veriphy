@@ -215,12 +215,15 @@ no longer the core API.
 
 Suggested order:
 
-1. Records and steps in the core, with today's behaviour unchanged.
-2. The `meaning` step, which closes the one gap with no tool today.
-3. `veriphy.yaml` and its checks, with the `math` pack as the default.
-4. The tool contracts, with Sage and `oo-horn` behind them.
-5. A non-mathematical pilot pack (R, for reproducing analyses) to test that the abstraction generalizes.
-6. Workflows as data, and skills that follow them.
+1. Records and steps in the core, with today's behaviour unchanged (`step-records`).
+2. The `meaning` step, which closes the one gap with no tool today (`meaning-step`).
+3. `veriphy.yaml` and its checks, with the `math` pack as the default (`workspace-config`).
+4. The tool contracts, with Sage and `oo-horn` behind them (`tool-contracts`).
+5. A non-mathematical pilot pack (R, for reproducing analyses) to test that the abstraction generalizes
+   (`reproduction-pack`).
+6. Workflows as data, and skills that follow them (`workflows-as-data`).
+
+Each milestone is an OpenSpec change under `openspec/changes/`, with its specs, design and tasks.
 
 ## Open questions
 
