@@ -1,0 +1,28 @@
+...@_style
+direction: down
+
+core: "veriphy.core" {
+  class: deterministic
+  grid-columns: 4
+  config: "config\nschema · merge · check"
+  records: "records\ndigest · store"
+  workspace
+  levels: "levels\norder · trust"
+}
+stepper: "veriphy.steps\none module per step · python -m veriphy <step>" {class: deterministic}
+adapters: "veriphy.adapters\nfiles · json-lines contracts" {class: deterministic}
+graph: "veriphy.graph\nclaim graph · reasoning" {class: deterministic}
+packs: "packs (plug-ins)" {
+  class: open
+  grid-columns: 2
+  math: "veriphy-math\nSage toolkit · recipes · Lean assets"
+  econ: "veriphy-econ\nR · reproduction levels"
+}
+lean: "Lean library\nsage_run · sage_test · #veriphy_levels · #veriphy_graph" {class: deterministic}
+
+stepper -> core
+stepper -> adapters
+stepper -> graph
+graph -> core
+adapters -> packs: "tools declared in pack.yaml"
+lean -> adapters: "sage_run calls a tool"

@@ -1,0 +1,20 @@
+...@_style
+direction: right
+
+inputs: Inputs {
+  class: deterministic
+  artifacts: "artifacts\nstatement · script · data"
+  config: "resolved config\ntool pins"
+  seed: "seed\n(random tools)"
+}
+
+digest: "input digest" {shape: hexagon}
+known: "record\nexists?" {shape: diamond}
+tool: "tool adapter\npinned version" {class: deterministic}
+record: "record\n.veriphy/runs/<step>/<digest>.json" {shape: cylinder}
+
+inputs -> digest
+digest -> known
+known -> record: "yes: return it"
+known -> tool: "no: run"
+tool -> record: write

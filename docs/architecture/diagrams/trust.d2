@@ -1,0 +1,30 @@
+...@_style
+direction: right
+
+tools: "Tools, by trust class" {
+  lean: "Lean kernel\nkernel" {class: check}
+  oohorn: "oo-horn\nchecker" {class: check}
+  r: "R in a pinned image\nreproduction" {class: evidence}
+  sage: "SageMath\noracle" {class: evidence}
+  shacl: "SHACL validator\nmeasurement" {class: derived}
+}
+
+levels: "Levels, each granted by one trust class" {
+  certificate: "certificate · kernel"
+  leanproof: "lean-proof · kernel"
+  kerneltest: "kernel-test · kernel"
+  effective: "effective level · checker"
+  robust: "robust · reproduction"
+  reproduced: "reproduced · reproduction"
+  oracletest: "oracle-test · oracle"
+}
+
+tools.lean -> levels.certificate
+tools.lean -> levels.leanproof
+tools.lean -> levels.kerneltest
+tools.oohorn -> levels.effective
+tools.r -> levels.reproduced
+tools.r -> levels.robust
+tools.sage -> levels.oracletest
+tools.sage -> tools.lean: "candidate proof" {style.stroke-dash: 3}
+tools.shacl -> levels: "grants nothing" {style.stroke-dash: 3}

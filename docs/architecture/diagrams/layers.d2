@@ -1,0 +1,63 @@
+...@_style
+direction: down
+
+stack: "" {
+  grid-columns: 1
+  vertical-gap: 60
+  style: {stroke-width: 0; fill: transparent}
+
+  skills: "4 · Skills: the agent authors artifacts and chooses the next step" {
+    class: open
+    grid-columns: 4
+    prove
+    certify
+    research
+    reproduce: "reproduce-paper"
+  }
+
+  workflows: "3 · Workflows: step sequences, written as data" {
+    class: deterministic
+    grid-columns: 3
+    prove: "prove-claim"
+    paper: "verify-paper"
+    analysis: "reproduce-analysis"
+  }
+
+  stepper: "2 · Steps: hashed inputs, recorded outputs" {
+    class: deterministic
+    grid-columns: 4
+    formalize {class: agent}
+    extract {class: agent}
+    meaning {class: evidence}
+    search {class: evidence}
+    test {class: evidence}
+    reproduce {class: evidence}
+    check {class: check}
+    reason {class: check}
+  }
+
+  tools: "1 · Tool adapters: pinned, declared trust class" {
+    class: deterministic
+    grid-columns: 5
+    lean: "Lean\nkernel"
+    oohorn: "oo-horn\nchecker"
+    sage: "SageMath\noracle"
+    r: "R (pack)\nreproduction"
+    more: "…\nany pack" {class: open}
+  }
+
+  core: "0 · Core: pure functions of files" {
+    class: deterministic
+    grid-columns: 5
+    config: "resolved\nconfig"
+    workspace
+    records: {shape: cylinder}
+    graph: "claim\ngraph"
+    levels
+  }
+}
+
+stack.skills -> stack.workflows: follows
+stack.workflows -> stack.stepper: runs
+stack.stepper -> stack.tools: calls
+stack.tools -> stack.core: "results become records"

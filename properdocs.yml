@@ -25,6 +25,7 @@ nav:
     - License: overview/license.md
   - API: api/
   - Examples: generated/gallery
+  - Architecture: architecture/index.md
   - Development:
     - development/index.md
     - Benchmark: development/benchmark.md
