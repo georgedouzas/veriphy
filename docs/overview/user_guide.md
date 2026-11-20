@@ -138,6 +138,7 @@ Veriphy's checks are steps, and every step writes a record. `python -m veriphy <
 |---|---|---|
 | `elaborate <file>` | check | Lean checks the file, and the record gives each declaration's axioms |
 | `level <module> [--prefix P]` | derived | the level `#veriphy_levels` gives each declaration |
+| `meaning <file> <declaration>` | evidence | the statement tested at seeded values satisfying its hypotheses: `agrees`, `counterexample` or `undecided` |
 | `validate` | evidence | the research graph against its shapes |
 | `reason` | check | graph reasoning, with `oo-horn`'s verdict |
 | `report <source> [--format latex]` | derived | the verification appendix |
@@ -149,7 +150,14 @@ running anything. A record whose status is `unchecked` or `failed` describes the
 the step runs again the next time. `--rerun` forces a run and keeps both records when the result changed.
 
 `--json` prints the record and nothing else, for agents. The command exits with status 0 when the step accepted, 1
-when it refused, found a counterexample or failed, 2 on bad usage and 3 when the result is unchecked.
+when it refused, found a counterexample or failed, 2 on bad usage and 3 when the result is unchecked or undecided.
+`meaning` checks the one thing the kernel cannot: that a formal statement says what the informal one meant. It draws
+values for the binders with `--seed` (default 0), keeps those at which every hypothesis and every domain condition
+holds, and evaluates the conclusion exactly, or in interval arithmetic of 128 bits. An equation is first tried
+symbolically. `--informal "<text>"` stores the agent's reading of the statement in the record, `--values N` sets how
+many values must agree (10 by default), and `--points '[{"x": "pi"}]'` evaluates at given values instead.
+`#veriphy_meaning c` runs the same check inside Lean. Agreement is evidence and grants no level.
+
 `python -m veriphy records` lists the records, and `records <digest>` shows one. The records stay out of git by
 default: delete `.veriphy/runs/` and the steps simply run again.
 

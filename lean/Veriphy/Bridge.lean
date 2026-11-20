@@ -185,4 +185,13 @@ def test (problem : Json) (script : String) (cfg : Config := {}) : IO (Array Jso
     return (← field r "instances" (·.getArr?), ← field r "stdout" (·.getStr?), ← field r "seed" (·.getNat?),
       ← field r "sage_version" (·.getStr?))
 
+/-! ## Meaning checks -/
+
+/-- Test a claim's statement at seeded values satisfying its hypotheses (or at the given points, a JSON list of
+objects from binder name to value, `null` to draw them); returns the daemon's whole result. -/
+def meaning (problem : Json) (seed values : Nat) (points : Json) (cfg : Config := {}) : IO Json := do
+  let params := Json.mkObj [("problem", problem), ("seed", Json.num seed), ("values", Json.num values),
+    ("points", points)]
+  call "meaning" params (cfg := cfg) pure
+
 end Veriphy.Bridge

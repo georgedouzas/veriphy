@@ -1,0 +1,319 @@
+{
+ "divx": {
+  "atom_types": [
+   "ℝ",
+   "ℝ"
+  ],
+  "atoms": [
+   "x / x",
+   "x"
+  ],
+  "carrier": "ℝ",
+  "definitions": [],
+  "derivatives": [],
+  "domain": [
+   {
+    "expr": "x1",
+    "kind": "ne",
+    "text": "x ≠ 0"
+   }
+  ],
+  "exists_function": null,
+  "extensions": [],
+  "functions": [],
+  "goal": {
+   "expr": "((x1 / x1)) - (1)",
+   "kind": "rel",
+   "lhs": "x / x",
+   "lhs_poly": "x0",
+   "poly": "(x0) - (1)",
+   "rel": "eq",
+   "rhs": "1",
+   "rhs_poly": "1",
+   "text": "x / x = 1"
+  },
+  "hyps": [],
+  "integrals": [],
+  "matrix_indices": [],
+  "namespaces": [
+   "mathlib"
+  ],
+  "table_problems": [],
+  "universal": [
+   {
+    "name": "x",
+    "type": "ℝ"
+   }
+  ],
+  "vars": [
+   "x0",
+   "x1"
+  ]
+ },
+ "faithful": {
+  "atom_types": [
+   "ℝ",
+   "ℝ",
+   "ℝ"
+  ],
+  "atoms": [
+   "√(x ^ 2)",
+   "|x|",
+   "x"
+  ],
+  "carrier": "ℝ",
+  "definitions": [],
+  "derivatives": [],
+  "domain": [
+   {
+    "expr": "(x2)^(2)",
+    "kind": "nonneg",
+    "text": "0 ≤ x ^ 2"
+   }
+  ],
+  "exists_function": null,
+  "extensions": [],
+  "functions": [],
+  "goal": {
+   "expr": "(sqrt((x2)^(2))) - (abs(x2))",
+   "kind": "rel",
+   "lhs": "√(x ^ 2)",
+   "lhs_poly": "x0",
+   "poly": "(x0) - (x1)",
+   "rel": "eq",
+   "rhs": "|x|",
+   "rhs_poly": "x1",
+   "text": "√(x ^ 2) = |x|"
+  },
+  "hyps": [],
+  "integrals": [],
+  "matrix_indices": [],
+  "namespaces": [
+   "mathlib"
+  ],
+  "table_problems": [],
+  "universal": [
+   {
+    "name": "x",
+    "type": "ℝ"
+   }
+  ],
+  "vars": [
+   "x0",
+   "x1",
+   "x2"
+  ]
+ },
+ "narrow": {
+  "atom_types": [
+   "ℝ",
+   "ℝ",
+   "ℝ"
+  ],
+  "atoms": [
+   "Real.sin x",
+   "x",
+   "Real.pi"
+  ],
+  "carrier": "ℝ",
+  "definitions": [],
+  "derivatives": [],
+  "domain": [],
+  "exists_function": null,
+  "extensions": [],
+  "functions": [],
+  "goal": {
+   "expr": "(sin(x1)) - (0)",
+   "kind": "rel",
+   "lhs": "Real.sin x",
+   "lhs_poly": "x0",
+   "poly": "(x0) - (0)",
+   "rel": "eq",
+   "rhs": "0",
+   "rhs_poly": "0",
+   "text": "Real.sin x = 0"
+  },
+  "hyps": [
+   {
+    "expr": "(x1) - (pi)",
+    "name": "hyp0",
+    "poly": "(x1) - (x2)",
+    "rel": "eq",
+    "text": "x = Real.pi"
+   }
+  ],
+  "integrals": [],
+  "matrix_indices": [],
+  "namespaces": [
+   "mathlib"
+  ],
+  "table_problems": [],
+  "universal": [
+   {
+    "name": "x",
+    "type": "ℝ"
+   }
+  ],
+  "vars": [
+   "x0",
+   "x1",
+   "x2"
+  ]
+ },
+ "natsub": {
+  "atom_types": [
+   "ℕ",
+   "ℕ"
+  ],
+  "atoms": [
+   "n",
+   "m"
+  ],
+  "carrier": "ℕ",
+  "definitions": [],
+  "derivatives": [],
+  "domain": [],
+  "exists_function": null,
+  "extensions": [],
+  "functions": [],
+  "goal": {
+   "expr": "((max((x0 - x1), 0) + x1)) - (x0)",
+   "kind": "rel",
+   "lhs": "n - m + m",
+   "lhs_poly": "((x0 - x1) + x1)",
+   "poly": "(((x0 - x1) + x1)) - (x0)",
+   "rel": "eq",
+   "rhs": "n",
+   "rhs_poly": "x0",
+   "text": "n - m + m = n"
+  },
+  "hyps": [],
+  "integrals": [],
+  "matrix_indices": [],
+  "namespaces": [
+   "mathlib"
+  ],
+  "table_problems": [],
+  "universal": [
+   {
+    "name": "n",
+    "type": "ℕ"
+   },
+   {
+    "name": "m",
+    "type": "ℕ"
+   }
+  ],
+  "vars": [
+   "x0",
+   "x1"
+  ]
+ },
+ "trig": {
+  "atom_types": [
+   "ℝ",
+   "ℝ",
+   "ℝ"
+  ],
+  "atoms": [
+   "Real.cos x",
+   "Real.sin x",
+   "x"
+  ],
+  "carrier": "ℝ",
+  "definitions": [],
+  "derivatives": [],
+  "domain": [],
+  "exists_function": null,
+  "extensions": [],
+  "functions": [],
+  "goal": {
+   "expr": "(((cos(x2))^(2) + (sin(x2))^(2))) - (1)",
+   "kind": "rel",
+   "lhs": "Real.cos x ^ 2 + Real.sin x ^ 2",
+   "lhs_poly": "((x0)^2 + (x1)^2)",
+   "poly": "(((x0)^2 + (x1)^2)) - (1)",
+   "rel": "eq",
+   "rhs": "1",
+   "rhs_poly": "1",
+   "text": "Real.cos x ^ 2 + Real.sin x ^ 2 = 1"
+  },
+  "hyps": [],
+  "integrals": [],
+  "matrix_indices": [],
+  "namespaces": [
+   "mathlib"
+  ],
+  "table_problems": [],
+  "universal": [
+   {
+    "name": "x",
+    "type": "ℝ"
+   }
+  ],
+  "vars": [
+   "x0",
+   "x1",
+   "x2"
+  ]
+ },
+ "wrong": {
+  "atom_types": [
+   "ℝ",
+   "ℝ"
+  ],
+  "atoms": [
+   "√(x ^ 2)",
+   "x"
+  ],
+  "carrier": "ℝ",
+  "definitions": [],
+  "derivatives": [],
+  "domain": [
+   {
+    "expr": "(x1)^(2)",
+    "kind": "nonneg",
+    "text": "0 ≤ x ^ 2"
+   }
+  ],
+  "exists_function": null,
+  "extensions": [],
+  "functions": [],
+  "goal": {
+   "expr": "(sqrt((x1)^(2))) - ((-x1))",
+   "kind": "rel",
+   "lhs": "√(x ^ 2)",
+   "lhs_poly": "x0",
+   "poly": "(x0) - ((-x1))",
+   "rel": "eq",
+   "rhs": "-x",
+   "rhs_poly": "(-x1)",
+   "text": "√(x ^ 2) = -x"
+  },
+  "hyps": [
+   {
+    "expr": "(0) - (x1)",
+    "name": "hyp0",
+    "poly": "(0) - (x1)",
+    "rel": "le",
+    "text": "0 ≤ x"
+   }
+  ],
+  "integrals": [],
+  "matrix_indices": [],
+  "namespaces": [
+   "mathlib"
+  ],
+  "table_problems": [],
+  "universal": [
+   {
+    "name": "x",
+    "type": "ℝ"
+   }
+  ],
+  "vars": [
+   "x0",
+   "x1"
+  ]
+ }
+}

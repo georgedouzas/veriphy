@@ -6,6 +6,7 @@ from sage.all import version
 
 from veriphy.core import JsonObject, JsonValue, Method, MethodError
 from veriphy.core._version import __version__
+from veriphy.oracle._meaning import MEANING_METHODS
 from veriphy.oracle._registry import _register_method
 from veriphy.oracle._scripts import SCRIPT_METHODS
 from veriphy.oracle._symbolic import SYMBOLIC_METHODS
@@ -19,7 +20,7 @@ def _ping(_params: JsonObject) -> JsonObject:
     return {'ok': True, 'sage': version(), 'veriphy': __version__}
 
 
-METHODS: dict[str, Method] = {**PROTOCOL_METHODS, **SCRIPT_METHODS, **SYMBOLIC_METHODS}
+METHODS: dict[str, Method] = {**PROTOCOL_METHODS, **SCRIPT_METHODS, **SYMBOLIC_METHODS, **MEANING_METHODS}
 
 
 def _respond(req_id: JsonValue, key: str, value: JsonValue) -> JsonObject:

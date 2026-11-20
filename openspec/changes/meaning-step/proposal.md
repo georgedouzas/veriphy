@@ -8,8 +8,8 @@ has no tool. A wrong formalization that the agent never tested well produces a c
 
 ## What Changes
 
-- A Lean command, `#veriphy_meaning c`, and a step, `python -m veriphy meaning <declaration>`, that evaluate a claim's
-  statement at seeded values satisfying its hypotheses.
+- A Lean command, `#veriphy_meaning c`, and a step, `python -m veriphy meaning <file> <declaration>`, that evaluate a
+  claim's statement at seeded values satisfying its hypotheses and the domain conditions of its functions.
 - When the statement is an identity, `symbolic_check` runs first, and its answer is recorded.
 - The outcome is `agrees` (with the number of values), `counterexample` (with the values and both sides) or
   `undecided` (too few values satisfied the hypotheses, or the statement could not be evaluated).

@@ -8,10 +8,10 @@ from pathlib import Path
 
 from veriphy.core import RecordError, RecordStore, find_workspace_root, read_record
 from veriphy.steps._graph import REASON, REPORT, SUFFIXES, VALIDATE
-from veriphy.steps._lean import ELABORATE, LEVEL
+from veriphy.steps._lean import ELABORATE, LEVEL, MEANING
 from veriphy.steps._runner import USAGE_EXIT, Params, Result, Step, exit_code, run_step
 
-STEPS: dict[str, Step] = {step.name: step for step in (ELABORATE, LEVEL, VALIDATE, REASON, REPORT)}
+STEPS: dict[str, Step] = {step.name: step for step in (ELABORATE, LEVEL, MEANING, VALIDATE, REASON, REPORT)}
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -27,6 +27,13 @@ def _parser() -> argparse.ArgumentParser:
     level = commands.add_parser('level', parents=[shared], help='the levels of a module, from #veriphy_levels')
     level.add_argument('module')
     level.add_argument('--prefix', action='append', dest='prefixes', help='a name prefix (default: the module)')
+    meaning = commands.add_parser('meaning', parents=[shared], help='a statement tested at seeded values')
+    meaning.add_argument('file', help='the Lean file that states the declaration')
+    meaning.add_argument('declaration')
+    meaning.add_argument('--seed', type=int, default=0)
+    meaning.add_argument('--values', type=int, default=None, help='how many values must agree (default 10)')
+    meaning.add_argument('--points', help='values to evaluate at, as JSON: [{"x": "pi"}]')
+    meaning.add_argument('--informal', help="the agent's reading of the statement, kept in the record")
     commands.add_parser('validate', parents=[shared], help='the graph against its shapes')
     commands.add_parser('reason', parents=[shared], help='graph reasoning, checked by oo-horn')
     report = commands.add_parser('report', parents=[shared], help='the verification appendix of a source')
@@ -40,7 +47,7 @@ def _parser() -> argparse.ArgumentParser:
 
 def _params(args: argparse.Namespace) -> Params:
     """Return a step's parameters from the parsed arguments."""
-    names = ('file', 'module', 'prefixes', 'source', 'format')
+    names = ('file', 'module', 'prefixes', 'source', 'format', 'declaration', 'seed', 'values', 'points', 'informal')
     return {name: getattr(args, name) for name in names if getattr(args, name, None) is not None}
 
 
