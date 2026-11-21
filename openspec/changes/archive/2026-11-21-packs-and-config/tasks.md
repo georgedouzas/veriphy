@@ -14,7 +14,7 @@
 
 ## 3. Integration
 
-- [ ] 3.1 Document `veriphy.yaml`, `pack.yaml` and the two commands in the user guide, and run the gate and CI. Verify that every session and job is green.
+- [x] 3.1 Document `veriphy.yaml`, `pack.yaml` and the two commands in the user guide, and run the gate and CI. Verify that every session and job is green.
 
 ## Workflow follow-up
 
