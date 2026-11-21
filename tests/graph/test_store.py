@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
+from veriphy.claims import confirm, graph_dir, lean_iri, load_graph, resolve_term, source_iri, vp
 from veriphy.core import GraphError
-from veriphy.graph import confirm, graph_dir, lean_iri, load_graph, resolve_term, source_iri, vp
 
 SOURCES = Path('.veriphy') / 'graph' / 'sources'
 

@@ -1,0 +1,160 @@
+# Playbook: produce a verified proof of one physics statement
+
+Agent-agnostic instructions (the spec-kit pattern: logic lives here; per-agent
+adapters in `.claude/skills/`, `.cursor/commands/`, etc. just point at this file).
+
+Veriphy is a tool, not a campaign: the **caller supplies the target** — a Lean
+statement to prove, an informal statement to formalize and prove, or a repo +
+backlog item (e.g. a Physlib `informal_lemma`). The caller also owns the
+outcome: this playbook ends by *reporting*, never by opening PRs, keeping
+score, or committing to the target repo beyond what the caller asked for.
+
+Paths in this playbook are relative to its directory, which `sage -python -m veriphy.agents path` prints. The
+playbooks ship with the installed `veriphy` package, at the version of its toolkit.
+
+## Preconditions
+
+- The Lean workspace requires Veriphy and builds (`lake build`).
+- If the statement refers to another library's definitions, the caller has
+  provided that library (checked out and building), and a workspace exists
+  whose lakefile requires both it and Veriphy. Create one if needed; it is
+  disposable.
+- Sage daemon answers:
+  `echo '{"id":1,"method":"ping"}' | sage -python -m veriphy.packs.math.primitives.sage`
+  (if it is missing: `sage -pip install veriphy`).
+
+## Loop
+
+1. **Formalize the statement** (skip if the caller gave formal Lean). Mimic
+   the target file's local conventions. When the statement is a claim of the
+   workspace's research claim graph, first print its context with
+   `sage -python -m veriphy.claims slice <source> <label>` and state it under
+   the conventions and Lean definitions the slice names. Then run BOTH lie
+   detectors:
+   - *Round-trip*: informalize your formal statement back to English; compare
+     with the original. Any semantic drift → redo.
+   - *Meaning check*: state the claim in a file (as a `theorem … := sorry`, or
+     a `def c : Prop := …`) and run
+     `python -m veriphy meaning <file> <declaration> --informal "<your English reading>"`.
+     It evaluates the statement at seeded values satisfying its hypotheses,
+     exactly or by intervals, after trying an equation symbolically, and
+     records the outcome under `.veriphy/runs/meaning/`. The file must
+     elaborate, so fix its errors first as in step 2:
+     - `agrees`: go on. It is evidence, not a level. A note naming a domain
+       condition (`x ≠ 0`) means Lean's junk values there went untested; make
+       sure the claim does not rely on them.
+     - `counterexample` (exit status 1): your formalization, or the original
+       claim, is wrong at the values it names. Fix the formalization and run
+       again, or stop and report `statement-suspect` with the record's path.
+     - `undecided` (exit status 3): the reason names what blocked it, such as
+       a hypothesis no drawn value satisfies (`x = π`). Give values with
+       `--points '[{"x": "pi"}]'`, or say in the report that the statement was
+       not tested.
+     `#veriphy_meaning c` runs the same check inside Lean.
+
+2. **Compile-fix.** Iterate on compiler errors until the statement type-checks
+   with `sorry` as the proof. Use LSP/REPL/`lake build` feedback, never guess
+   blind.
+
+3. **Prove.** In order of cheapness:
+   a. `simp` / `norm_num` / `positivity` / `nlinarith` / `fun_prop` / `gcongr`
+   b. premise search (loogle, LeanSearch, `exact?`) for the missing lemma
+   c. build a certificate: isolate the computational core (polynomial
+      identity, inequality, closed-form sum, root, linear system, witness,
+      matrix identity) and build its proof with `sage_run`, following
+      `certify.md`. Prove the glue yourself. Veriphy ships no
+      ready-made certificates. You create each one from the recipes, reusing
+      what the project already has:
+      - first `sage -python -m veriphy.packs.math.steps.certificates list` in the project, and
+        adapt a saved script whose `goal` matches;
+      - otherwise pick a recipe from the index below, copy its template into
+        the project's `.veriphy/certificates/`, adapt it, and run it.
+
+      | goal shape | recipe |
+      |---|---|
+      | `a = b` from equality hypotheses | `ideal_membership` |
+      | `False`, `a ≤ b`, `a < b` linear in the hypotheses | `farkas` |
+      | `0 ≤ p`, `p` polynomial | `sos` |
+      | polynomial inequality needing products or squares | `hint_search` |
+      | `lhs = rhs` where the factored `lhs` helps | `factor_rewrite` |
+      | `∃ x₁ … xₙ, …` with rational values | `witness` |
+      | `∑ k ∈ Finset.range n, f k = F n` | `sum_induction` |
+      | long manipulation through intermediate forms | `calc_derivation` |
+      | easy on each side of a condition | `case_split` |
+      | identity between explicit matrices | `matrix_identity` |
+      | `lhs ≤ rhs` with divisions (rational functions) | `rational_inequality` |
+      | identity of `exp`, `log`, `sqrt`, `sin`, `cos` by named lemmas | `transcendental_rewrite` |
+      | `!![…]` identity, `det` or `trace` written in the goal | `matrix_from_goal` |
+      | `deriv (fun x => f x) a = v` with an explicit `f` | `derivative` |
+      | ODE in `deriv x`, `x` given by `hx : x = fun s => …` or asked for by `∃ x` | `ode_solution` |
+      | bracket relations, Casimirs, Cartan-matrix facts of explicit matrices | `lie_structure` |
+      | representations, decompositions, branching, Clebsch-Gordan | `representation` |
+      | `False` from nonlinear polynomial hypotheses; `p = 0` from `pᵏ` in the ideal | `infeasibility` |
+      | `Nat.Prime p` for a large explicit `p` | `primality` |
+      | Smith or Jordan form, diagonalization of an explicit matrix | `matrix_normal_form` |
+      | `NormedSpace.exp` of an explicit matrix (nilpotent, diagonalizable) | `matrix_exponential` |
+      | commutators of explicit or differential operators; gamma-matrix identities | `operator_identity` |
+      | Christoffel symbols, Killing vectors, exact forms, contractions in coordinates | `coordinate_geometry` |
+      | hypergeometric sums (binomials, factorials): WZ pairs, Gosper | `wz_certificate` |
+      | closed forms of linear recurrences | `recurrence` |
+      | rational bounds on `exp`, `log`, `sin`, `cos`, `π` at explicit points | `certified_bound` |
+      | a real root or eigenvalue in an explicit interval | `root_isolation` |
+      | `∫ x in a..b, f x = v` with an elementary antiderivative | `definite_integral` |
+      | `LinearIndependent K v`, its negation, spans equal to spans or kernels | `independence` |
+      | `Matrix.rank A = r` and its bounds, for an explicit matrix | `matrix_rank` |
+      | `Module.finrank K V = n` for spans, intersections, kernels, product spaces | `dimension` |
+      | `¬ ∃ f : V →ₗ[K] W, …`: a map that is not linear or bilinear | `nonlinearity` |
+      | the signature of an explicit symmetric matrix (`Veriphy.Linear.HasSignature`) | `signature` |
+      | no certificate is feasible: test the claim at instances (`sage_test`) | `test_fallback` |
+      | fusion or braided fusion data (pentagons, hexagons, gauges), naturality of an intertwiner | `fusion_category` |
+      | graded brackets, super-Jacobi (`sl(m\|n)`, `osp`, `D(2,1;α)`, `G(3)`, `F(4)`) | `lie_superalgebra` |
+
+      Recipes are in `recipes/<name>.md`. Read only the one you use.
+
+      Recipes for one library live in `recipes/<library>/` and apply
+      only when that library's pack is active (`#veriphy_tables` lists the
+      active namespaces). They use the library's own definitions and sign
+      conventions, recorded in its pack.
+
+      | library | goal shape | recipe |
+      |---|---|---|
+      | Physlib | an explicit matrix `∈ lorentzAlgebra` | `physlib/lorentz_algebra` |
+      | Physlib | a commutator of ladder operators, positions and momenta | `physlib/ladder_operators` |
+
+      Save a script that closed its goal into the project's `.veriphy/certificates/`,
+      with its header, so the next similar goal reuses it.
+   d. oracle: when stuck on *what the proof even is* — solving an equation
+      system (a kernel computation, an equilibrium, a change of variables),
+      finding the case split, locating the closed form — ask the bridge's
+      advisory methods (`solve`, `symbolic_check`, `matrix_check`). When the
+      exploration is session-shaped rather than query-shaped — deriving
+      representation matrices, testing a decomposition scheme on random
+      samples, generating Lean-ready tables — send a whole derivation script
+      through `run_script` and read back its structured `results`. All of it
+      is UNTRUSTED guidance: never transcribe it into the proof; re-prove in
+      Lean whatever you take from it.
+   e. recursion: if a sub-lemma is missing, prove it first (lemmas only —
+      never invent definitions; flag those to the caller).
+   Budget: stop after ~30 min wall clock or 3 decomposition attempts.
+
+4. **Verify.** `lake build` from clean. Zero `sorry`. The final proof must not
+   invoke Sage — commit only the `Try this:` replacements `sage_run` emits.
+
+5. **Report to the caller** — one of:
+   - `proved`: the verified Lean proof (file/diff), noting which recipes and
+     saved scripts were used, if any;
+   - `blocked-library-gap`: the statement needs theory that doesn't exist yet
+     (name precisely what);
+   - `blocked-missing-building-block`: the proof needs a Sage computation or
+     a Lean emitter that the toolkit lacks, so no `sage_run` script can build
+     it. Name the missing primitive or emitter, and the certificate it would
+     produce;
+   - `statement-suspect`: the meaning check found a counterexample (give it,
+     and the path of its record under `.veriphy/runs/meaning/`).
+   - `tested`: no certificate is feasible (recipe selection failed, or the claim is
+     in every dimension, space or function), the proof is a mathlib proof (or none, for a stated
+     proposition), and `sage_test` checked the claim at instances: give the level, `kernel-test` or
+     `oracle-test`, and the instance counts. Never report a test as `proved` by Veriphy.
+
+   What to do with the result — commit, PR, record-keeping — is the caller's
+   decision, not this playbook's.

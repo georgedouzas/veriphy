@@ -1,5 +1,5 @@
-"""Catalog a project's `.veriphy/translations/`: `python -m veriphy.translations list` or `show <name>`."""
+"""Deprecated alias of `veriphy.packs.math.primitives.translations`, kept for one minor release."""
 
-from veriphy.translations._catalog import main
+from veriphy.core._aliases import alias
 
-__all__ = ['main']
+alias(__name__, 'veriphy.packs.math.primitives.translations')

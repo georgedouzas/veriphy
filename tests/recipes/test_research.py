@@ -5,9 +5,11 @@ from pathlib import Path
 
 import pytest
 
-from veriphy.graph import COMMANDS, load_graph
-from veriphy.prompts import content_dir
-from veriphy.steps import STEPS
+from veriphy.agents import content_dir
+from veriphy.claims import COMMANDS, load_graph
+from veriphy.steps import load_steps
+
+STEPS = load_steps()
 
 ROOT = Path(__file__).resolve().parents[2]
 PROMPTS = content_dir()
@@ -68,6 +70,6 @@ def test_skill_copies_are_identical_and_read_the_package(skill: str) -> None:
     text = plugin.read_text()
     assert text == repository.read_text()
     assert text.startswith(f'---\nname: {skill}\n')
-    assert 'sage -python -m veriphy.prompts path' in text
+    assert 'sage -python -m veriphy.agents path' in text
     assert f'<prompts>/{skill}.md' in text
     assert 'VERIPHY_HOME' not in text

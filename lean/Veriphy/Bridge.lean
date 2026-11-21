@@ -1,6 +1,6 @@
 /-
 Veriphy bridge client: talks JSON-RPC to the Sage daemon (the `veriphy` Python package,
-started as `sage -python -m veriphy.sage_server`).
+started as `sage -python -m veriphy.packs.math.primitives.sage`).
 
 The daemon is an UNTRUSTED oracle. This module only transports data; soundness
 lives entirely in Lean, which checks every proof a script emits.
@@ -20,10 +20,10 @@ structure Config where
   /-- The Sage executable; `$VERIPHY_SAGE_CMD` overrides it. -/
   sageCmd : String := "sage"
   /-- The daemon module, installed into Sage with `sage -pip install veriphy`. -/
-  module : String := "veriphy.sage_server"
+  module : String := "veriphy.packs.math.primitives.sage"
   deriving Repr
 
-/-- The command line that starts the daemon: `<sage> -python -m veriphy.sage_server`, with
+/-- The command line that starts the daemon: `<sage> -python -m veriphy.packs.math.primitives.sage`, with
 `$VERIPHY_SAGE_CMD` replacing `<sage>`, or `<sage> -python <script>` when `$VERIPHY_SAGE_SERVER`
 names a development copy of the daemon. -/
 def Config.resolve (cfg : Config) : IO (String × Array String) := do

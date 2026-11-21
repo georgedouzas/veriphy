@@ -1,1 +1,1 @@
-"""Test the `veriphy.sage_server` package."""
+"""Test the `veriphy.packs.math.primitives.sage` package."""

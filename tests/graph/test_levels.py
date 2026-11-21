@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from veriphy.graph import LevelRow, claim_levels, level_report, load_graph, own_level, reason, source_iri
+from veriphy.claims import LevelRow, claim_levels, level_report, load_graph, own_level, reason, source_iri
 
 LEVELS = ('none', 'oracle-test', 'kernel-test', 'lean-proof', 'certificate')
 

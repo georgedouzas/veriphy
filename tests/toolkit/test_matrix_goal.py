@@ -3,7 +3,7 @@
 import pytest
 
 from veriphy.core import CertificateError
-from veriphy.toolkit import Problem, matrix_from_goal_proof, read_problem
+from veriphy.packs.math.script import Problem, matrix_from_goal_proof, read_problem
 
 BOOST = (
     '((matrix(SR, [[cosh(x0), sinh(x0)], [sinh(x0), cosh(x0)]])).transpose().__mul__(matrix(SR, [[1, 0], [0, -1]]))'

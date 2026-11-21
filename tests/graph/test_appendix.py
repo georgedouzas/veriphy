@@ -3,7 +3,7 @@
 from collections.abc import Callable
 from pathlib import Path
 
-from veriphy.graph import appendix, latex_escape, load_graph, reason
+from veriphy.claims import appendix, latex_escape, load_graph, reason
 
 
 def test_appendix_markdown_lists_every_claim(workspace: Path, fake_checker: Callable[[str], Path]) -> None:

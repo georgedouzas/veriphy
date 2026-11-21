@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from veriphy.graph import load_graph, reason, validate_shapes
-from veriphy.steps import REASON, REPORT, VALIDATE, main, run_step
+from veriphy.claims import REASON, REPORT, VALIDATE, load_graph, reason, validate_shapes
+from veriphy.steps import main, run_step
 
 
 def _run_dirs(workspace: Path) -> set[Path]:

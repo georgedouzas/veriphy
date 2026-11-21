@@ -20,7 +20,7 @@ def «α prop» : Prop := metric = 3 ∧ "a\"b" = "a\"b"
 
 end GraphTest
 
-set_option veriphy.graph.write false in
+set_option veriphy.claims.write false in
 /--
 info: 5 claims, 1 definitions, 2 dependencies
 <urn:veriphy:lean:GraphTest.certified> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <urn:veriphy:vocabulary#Claim> .

@@ -6,7 +6,7 @@ import pytest
 from sage.all import QQ, QuadraticField
 
 from veriphy.core import CertificateError
-from veriphy.toolkit import (
+from veriphy.packs.math.script import (
     Fusion,
     Lean,
     associativity_violations,

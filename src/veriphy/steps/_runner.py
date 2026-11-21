@@ -4,14 +4,8 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from veriphy.core import (
-    LEVELLED_KINDS,
-    Record,
-    RecordStore,
-    StepError,
-    config_digest,
-    input_digest,
-)
+from veriphy.core import StepError
+from veriphy.steps._records import LEVELLED_KINDS, Record, RecordStore, config_digest, input_digest
 
 Params = Mapping[str, object]
 # statuses that mean the tool refused, found a counterexample or did not run; anything else not listed accepts
@@ -57,6 +51,31 @@ class Outcome:
 
 
 @dataclass(frozen=True)
+class Argument:
+    """One argument of a step's command: a parameter, its help, and how the command line spells it.
+
+    Args:
+        name: The parameter's name.
+        help: One line on what it is.
+        option: Given as `--name` instead of positionally.
+        type: Converts the command-line text, `str` by default.
+        default: The value when an option is not given.
+        choices: The values allowed, when they are few.
+        flag: The option's spelling when it differs from `--name`, as `--prefix` for `prefixes`.
+        many: An option that may be repeated, collecting a list.
+    """
+
+    name: str
+    help: str = ''
+    option: bool = False
+    type: Callable[[str], object] = str
+    default: object = None
+    choices: tuple[str, ...] = ()
+    flag: str | None = None
+    many: bool = False
+
+
+@dataclass(frozen=True)
 class Step:
     """A step: its name, its kind, how it reads its inputs and how it runs.
 
@@ -65,12 +84,16 @@ class Step:
         kind: `agent`, `evidence`, `check` or `derived`.
         prepare: Reads the inputs from the workspace root and the parameters.
         execute: Runs the step on what `prepare` read.
+        help: One line on what the step does, for the command's help.
+        arguments: The step's parameters on the command line.
     """
 
     name: str
     kind: str
     prepare: Callable[[Path, Params], Prepared]
     execute: Callable[[Path, Params, Prepared], Outcome]
+    help: str = ''
+    arguments: tuple[Argument, ...] = ()
 
 
 @dataclass(frozen=True)

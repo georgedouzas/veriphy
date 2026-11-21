@@ -6,11 +6,11 @@ import Veriphy
 
 -- the boost generator along x lies in the Lorentz algebra
 example : Matrix.fromBlocks !![(0 : ℝ)] !![1, 0, 0] !![1; 0; 0] (0 : Matrix (Fin 3) (Fin 3) ℝ) ∈ lorentzAlgebra := by
-  sage_run file "../../src/veriphy/prompts/recipes/physlib/templates/lorentz_algebra.sage"
+  sage_run file "../../src/veriphy/packs/math/agents/recipes/physlib/templates/lorentz_algebra.sage"
 
 -- the rotation generator in the y-z plane
 example : Matrix.fromBlocks (0 : Matrix (Fin 1) (Fin 1) ℝ) 0 0 !![0, 0, 0; 0, 0, -1; 0, 1, 0] ∈ lorentzAlgebra := by
-  sage_run file "../../src/veriphy/prompts/recipes/physlib/templates/lorentz_algebra.sage"
+  sage_run file "../../src/veriphy/packs/math/agents/recipes/physlib/templates/lorentz_algebra.sage"
 
 namespace QuantumMechanics.HarmonicOscillator
 open Complex Constants SchwartzMap
@@ -21,7 +21,7 @@ variable {d : ℕ} (Q : HarmonicOscillator d) (i : Fin d)
 
 -- [aᵢ, xᵢ] = ξᵢ/√2, with the ladder template unedited
 example : ⁅Q.loweringCLM i, 𝐱 i⁆ = (((Q.ξ i : ℝ) : ℂ) / (Real.sqrt 2 : ℂ)) • ContinuousLinearMap.id ℂ 𝓢(Space d, ℂ) := by
-  sage_run file "../../src/veriphy/prompts/recipes/physlib/templates/ladder_operators.sage"
+  sage_run file "../../src/veriphy/packs/math/agents/recipes/physlib/templates/ladder_operators.sage"
 
 -- [aᵢ + aᵢ†, pᵢ] = 2iℏ/(√2 ξᵢ), the scalar computed by Sage first
 example : ⁅Q.loweringCLM i + Q.raisingCLM i, 𝐩 i⁆ =

@@ -6,7 +6,7 @@ from collections.abc import Callable
 import pytest
 
 from veriphy.core import JsonObject
-from veriphy.oracle import answer_request
+from veriphy.packs.math.primitives.sage.methods import answer_request
 
 Daemon = Callable[..., JsonObject]
 

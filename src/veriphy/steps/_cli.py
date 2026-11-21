@@ -6,48 +6,54 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from veriphy.core import RecordError, RecordStore, find_workspace_root, read_record
-from veriphy.steps._graph import REASON, REPORT, SUFFIXES, VALIDATE
-from veriphy.steps._lean import ELABORATE, LEVEL, MEANING
-from veriphy.steps._runner import USAGE_EXIT, Params, Result, Step, exit_code, run_step
-
-STEPS: dict[str, Step] = {step.name: step for step in (ELABORATE, LEVEL, MEANING, VALIDATE, REASON, REPORT)}
+from veriphy.core import RecordError, find_workspace_root
+from veriphy.steps._records import RecordStore, read_record
+from veriphy.steps._registry import load_steps
+from veriphy.steps._runner import USAGE_EXIT, Argument, Params, Result, Step, exit_code, run_step
 
 
-def _parser() -> argparse.ArgumentParser:
-    """Return the parser: one subcommand per step, and `records`."""
+def _add_argument(parser: argparse.ArgumentParser, argument: Argument) -> None:
+    """Add one step argument to its subcommand."""
+    shown = argument.help or None
+    choices = list(argument.choices) or None
+    if not argument.option:
+        parser.add_argument(argument.name, type=argument.type, help=shown, choices=choices)
+        return
+    flag = argument.flag or '--' + argument.name.replace('_', '-')
+    if argument.many:
+        parser.add_argument(flag, action='append', dest=argument.name, type=argument.type, help=shown, choices=choices)
+        return
+    parser.add_argument(
+        flag,
+        dest=argument.name,
+        type=argument.type,
+        default=argument.default,
+        help=shown,
+        choices=choices,
+    )
+
+
+def _parser(steps: dict[str, Step]) -> argparse.ArgumentParser:
+    """Return the parser: one subcommand per registered step, and `records`."""
     parser = argparse.ArgumentParser(prog='python -m veriphy', description='Run a Veriphy step and record it.')
     parser.add_argument('--root', type=Path, default=None, help='the workspace root (found by default)')
     commands = parser.add_subparsers(dest='command', required=True)
     shared = argparse.ArgumentParser(add_help=False)
     shared.add_argument('--json', action='store_true', help='print the record as JSON, and nothing else')
     shared.add_argument('--rerun', action='store_true', help='run even when a final record of the inputs exists')
-    elaborate = commands.add_parser('elaborate', parents=[shared], help='Lean checks a file, with each axiom set')
-    elaborate.add_argument('file')
-    level = commands.add_parser('level', parents=[shared], help='the levels of a module, from #veriphy_levels')
-    level.add_argument('module')
-    level.add_argument('--prefix', action='append', dest='prefixes', help='a name prefix (default: the module)')
-    meaning = commands.add_parser('meaning', parents=[shared], help='a statement tested at seeded values')
-    meaning.add_argument('file', help='the Lean file that states the declaration')
-    meaning.add_argument('declaration')
-    meaning.add_argument('--seed', type=int, default=0)
-    meaning.add_argument('--values', type=int, default=None, help='how many values must agree (default 10)')
-    meaning.add_argument('--points', help='values to evaluate at, as JSON: [{"x": "pi"}]')
-    meaning.add_argument('--informal', help="the agent's reading of the statement, kept in the record")
-    commands.add_parser('validate', parents=[shared], help='the graph against its shapes')
-    commands.add_parser('reason', parents=[shared], help='graph reasoning, checked by oo-horn')
-    report = commands.add_parser('report', parents=[shared], help='the verification appendix of a source')
-    report.add_argument('source')
-    report.add_argument('--format', choices=list(SUFFIXES), default='markdown')
+    for step in steps.values():
+        command = commands.add_parser(step.name, parents=[shared], help=step.help or None)
+        for argument in step.arguments:
+            _add_argument(command, argument)
     records = commands.add_parser('records', help='list the records, or show one by its digest')
     records.add_argument('digest', nargs='?', help='a digest, or its first characters')
     records.add_argument('--step', help='only this step')
     return parser
 
 
-def _params(args: argparse.Namespace) -> Params:
+def _params(step: Step, args: argparse.Namespace) -> Params:
     """Return a step's parameters from the parsed arguments."""
-    names = ('file', 'module', 'prefixes', 'source', 'format', 'declaration', 'seed', 'values', 'points', 'informal')
+    names = [argument.name for argument in step.arguments]
     return {name: getattr(args, name) for name in names if getattr(args, name, None) is not None}
 
 
@@ -86,13 +92,15 @@ def main(argv: Sequence[str] | None = None) -> None:
         SystemExit: With status 1 when the step refused, found a counterexample or failed, 2 on bad usage and 3 when
             its result is unchecked.
     """
-    args = _parser().parse_args(list(sys.argv[1:] if argv is None else argv))
+    steps = load_steps()
+    args = _parser(steps).parse_args(list(sys.argv[1:] if argv is None else argv))
     root = find_workspace_root(args.root)
     if args.command == 'records':
         _records(root, args.digest, args.step)
         return
     try:
-        result = run_step(STEPS[args.command], root, _params(args), rerun=args.rerun)
+        step = steps[args.command]
+        result = run_step(step, root, _params(step, args), rerun=args.rerun)
     except (RecordError, FileNotFoundError, KeyError, ValueError) as exc:
         sys.stderr.write(f'{args.command}: {exc}\n')
         raise SystemExit(USAGE_EXIT) from exc

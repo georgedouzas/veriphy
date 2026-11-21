@@ -30,8 +30,8 @@ and a recipe per technique. Each certificate is written for the goal in hand and
 
 `research` calls `prove` for each claim, and `prove` calls `certify` for each computational core. The skills are thin
 wrappers around plain markdown that ships with the Python package: `prove.md`, `certify.md`, `research.md` and
-`recipes/`, in the directory `sage -python -m veriphy.prompts path` prints. Any agent can follow them, and
-`sage -python -m veriphy.prompts list` names every playbook, recipe, template and asset.
+`recipes/`, in the directory `sage -python -m veriphy.agents path` prints. Any agent can follow them, and
+`sage -python -m veriphy.agents list` names every playbook, recipe, template and asset.
 
 ### `prove`: from a statement to a proof
 
@@ -107,7 +107,7 @@ Veriphy keeps its files under `.veriphy/` at the Lean workspace root. Commit it 
 Projects from Veriphy 0.1.0 keep scripts in a top-level `certificates/`. They still work, and the catalog prints the
 command that moves them.
 
-Some recipes need Lean assets. `sage -python -m veriphy.prompts copy assets/VeriphyAssets/<name>` copies one to
+Some recipes need Lean assets. `sage -python -m veriphy.agents copy assets/VeriphyAssets/<name>` copies one to
 `.veriphy/lean/VeriphyAssets/`, and the library is declared once in `lakefile.toml`:
 
 ```toml
@@ -178,9 +178,9 @@ The steps are the ones `certify` follows:
 
 1. **Inspect.** `sage_run "print(goal_kind, goal); print(hyps); print(atoms); proof = 'sorry'"` fails on purpose, and
    the error shows the problem.
-2. **Reuse.** `sage -python -m veriphy.certificates list` shows your saved scripts, and `show <name>` prints one. A
+2. **Reuse.** `sage -python -m veriphy.packs.math.steps.certificates list` shows your saved scripts, and `show <name>` prints one. A
    saved script runs unchanged on any goal of the same shape.
-3. **Adapt.** Otherwise copy a template with `sage -python -m veriphy.prompts copy recipes/templates/<name>` and edit
+3. **Adapt.** Otherwise copy a template with `sage -python -m veriphy.agents copy recipes/templates/<name>` and edit
    the lines marked `EDIT`.
 4. **Iterate.** A failure shows the script's output, the Lean text and Lean's error together.
 5. **Commit** the emitted replacement, and keep the script.
@@ -239,7 +239,7 @@ Veriphy translates Lean terms to Sage through tables in three namespaces, resolv
 3. your project's entries in `.veriphy/translations/*.json`.
 
 A later namespace never overrides an earlier one. `#veriphy_tables` prints the namespaces in force, `#veriphy_translate
-t` shows how a term translates, and `sage -python -m veriphy.translations list` lists your project's entries (`--all`
+t` shows how a term translates, and `sage -python -m veriphy.packs.math.primitives.translations list` lists your project's entries (`--all`
 adds the core and the packs).
 
 When a function stays an atom, add an entry. For `Real.arcosh`, which Sage calls `arccosh` and which needs `1 ≤ x`:
@@ -333,7 +333,7 @@ sage_test traceDouble file "trace_double_test.sage"
 The script picks values for every binder. The kernel checks each instance by computation, or Sage evaluates it exactly
 (or by intervals) when Lean can't state it. Instances come from the claim's statement, never its proof. A run needs
 three accepted instances, one of them an edge case. It writes `.veriphy/tests/<claim>.json`, which `sage -python -m
-veriphy.certificates tests` lists and `tests --rerun <claim>` reruns.
+veriphy.packs.math.steps.certificates tests` lists and `tests --rerun <claim>` reruns.
 
 Every claim has one of five levels, highest first:
 
@@ -373,7 +373,7 @@ it fetches or builds, and caches it in `~/.cache/veriphy/open-ontologies/v2.1.0`
   the hash the release lists, and only if it runs
 - elsewhere `oo-horn` is built once with the release's Lean toolchain through `elan`, which takes minutes
 
-`sage -python -m veriphy.graph checker build` does the same ahead of time. `VERIPHY_GRAPH_SETUP=off` forbids automatic
+`sage -python -m veriphy.claims checker build` does the same ahead of time. `VERIPHY_GRAPH_SETUP=off` forbids automatic
 setup, for offline machines and CI. Without a checker, every result is labelled `unchecked`, with the command that sets
 it up.
 
@@ -399,9 +399,9 @@ A claim from another paper is a node of that paper's source, named by its arXiv 
 sources mean the same concept.
 
 ```bash
-sage -python -m veriphy.graph vocabulary                            # print the vocabulary
-sage -python -m veriphy.graph validate                              # check the files and shapes
-sage -python -m veriphy.graph confirm chapter9 lemma-5.2 assumes half   # move one triple to the human file
+sage -python -m veriphy.claims vocabulary                            # print the vocabulary
+sage -python -m veriphy.claims validate                              # check the files and shapes
+sage -python -m veriphy.claims confirm chapter9 lemma-5.2 assumes half   # move one triple to the human file
 ```
 
 `validate`'s SHACL report is a measurement, not a checked conclusion.
@@ -414,7 +414,7 @@ prose claim to its Lean claim, and `realizedBy` to link a convention to the Lean
 
 ### Reasoning and verdicts
 
-`sage -python -m veriphy.graph reason` derives the consequences and writes a certificate under
+`sage -python -m veriphy.claims reason` derives the consequences and writes a certificate under
 `.veriphy/graph/runs/<digest>/`: the asserted triples, the rules, one derivation line per conclusion, and a digest.
 Veriphy states the meaning of its vocabulary as OWL axioms that the checker's built-in rules evaluate. So every run uses
 the built-in rule table unchanged, and an accepted run earns `entailed` through the theorem
@@ -427,7 +427,7 @@ the built-in rule table unchanged, and an accepted run earns `entailed` through 
 | `unchecked` | no checker was found or it didn't finish, and no conclusion is reported as checked |
 | `incomplete` | the run stopped before its fixpoint |
 
-`sage -python -m veriphy.graph recheck .veriphy/graph/runs/<digest>` checks a stored run again without the reasoner, and
+`sage -python -m veriphy.claims recheck .veriphy/graph/runs/<digest>` checks a stored run again without the reasoner, and
 says whether the current graph still asserts the same triples. The commands exit with status 3 when the checker didn't
 accept the run.
 
@@ -435,7 +435,7 @@ accept the run.
 ### Levels
 
 A claim's own level comes from the export or from the Lean claim that formalizes it, and is `none` otherwise. Its
-effective level is the lowest level among everything it uses, directly or not. `sage -python -m veriphy.graph levels
+effective level is the lowest level among everything it uses, directly or not. `sage -python -m veriphy.claims levels
 --source chapter9` prints:
 
 ```
@@ -448,12 +448,12 @@ effective level is the lowest level among everything it uses, directly or not. `
 
 ### Convention impact and plans
 
-`sage -python -m veriphy.graph impact chapter9 half` lists every claim that assumes the convention `half`, directly or
+`sage -python -m veriphy.claims impact chapter9 half` lists every claim that assumes the convention `half`, directly or
 through its dependencies, with the chain that reaches it and its Lean name. Before changing a convention, edit the
 source file and compare against the last commit:
 
 ```bash
-sage -python -m veriphy.graph plan --against HEAD
+sage -python -m veriphy.claims plan --against HEAD
 ```
 
 The plan reasons over both graphs, has both runs checked, and lists the assertions you changed and the consequences
@@ -462,21 +462,21 @@ assertion and no changed consequence.
 
 ### Clashes
 
-Conventions of the same aspect exclude each other. `sage -python -m veriphy.graph excludes` proposes the `excludes`
-triples, and `--confirm` writes them as human assertions. `sage -python -m veriphy.graph clashes` then reports every
+Conventions of the same aspect exclude each other. `sage -python -m veriphy.claims excludes` proposes the `excludes`
+triples, and `--confirm` writes them as human assertions. `sage -python -m veriphy.claims clashes` then reports every
 claim or concept with two checked `assumes` conclusions whose conventions exclude each other, including assumptions
 inherited across papers.
 
 ### Slices
 
-`sage -python -m veriphy.graph slice chapter9 thm-9.1` prints what an agent needs to formalize `thm-9.1`: its statement,
+`sage -python -m veriphy.claims slice chapter9 thm-9.1` prints what an agent needs to formalize `thm-9.1`: its statement,
 the statements and levels of the claims it uses, and each convention it assumes with the Lean definition behind it.
 Veriphy reasons over the slice alone, has that run checked, and offers the slice only if it keeps every consequence
 about the claim.
 
 ### The verification appendix
 
-`sage -python -m veriphy.graph appendix chapter9 --format latex` writes `.veriphy/graph/appendix/chapter9.tex`: a row
+`sage -python -m veriphy.claims appendix chapter9 --format latex` writes `.veriphy/graph/appendix/chapter9.tex`: a row
 per claim with its own and effective levels, what caps it, its Lean name and its clashes, and a paragraph with the run,
 the verdict, the provenance of the assertions and the command that rechecks it. An unchecked run says so in the
 paragraph and the table header. `--format markdown` writes the same as Markdown.

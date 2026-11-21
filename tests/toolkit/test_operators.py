@@ -6,7 +6,7 @@ import pytest
 from sage.all import I, QuadraticField, matrix, sqrt, var
 
 from veriphy.core import CertificateError
-from veriphy.toolkit import (
+from veriphy.packs.math.script import (
     Coordinates,
     Lean,
     canonical_commutator,

@@ -371,9 +371,9 @@ veriphy/
   workflows/       3  next, run                                             veriphy next | run
   agents/          4  the playbook loader                                   veriphy agents path
   packs/
-    core/          pack.yaml declaring the built-ins  agents (research)
+    core/          pack.yaml declaring the built-ins
     lean/          primitives/lean  steps
-    math/          primitives/sage  primitives/translations  script (helpers)  steps/certificates  agents
+    math/          primitives/sage  primitives/translations  script (helpers)  steps/certificates  agents (all playbooks)
     reproduction/  primitives/r  steps  claims  workflows  agents
 ```
 
@@ -411,7 +411,7 @@ modules, and the `core` pack only declares it. A step's code lives at the highes
 | `veriphy.oracle`, `veriphy.sage_server` | `veriphy.packs.math.primitives.sage` |
 | `veriphy.graph` | `veriphy.claims`, with the RDF engine and the reasoner and `oo-horn` adapters in `veriphy.primitives.graph` |
 | `veriphy.certificates`, `veriphy.translations` | `veriphy.packs.math.steps.certificates`, `veriphy.packs.math.primitives.translations` |
-| `veriphy.prompts` | `veriphy.agents`, with the playbooks in their packs |
+| `veriphy.prompts` | `veriphy.agents`, with the playbooks in the `math` pack, research included, since it proves in Lean |
 | the record store in `veriphy.core` | `veriphy.steps` |
 | Sage daemon and its JSON-lines protocol | the json-lines contract, with each daemon method a `sage.*` primitive |
 | `lake env lean` per Lean step | the `lean` session tool, loading imports once |

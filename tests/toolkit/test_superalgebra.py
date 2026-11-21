@@ -6,7 +6,7 @@ import pytest
 from sage.all import QQ, FractionField, identity_matrix, matrix
 
 from veriphy.core import CertificateError
-from veriphy.toolkit import (
+from veriphy.packs.math.script import (
     Lean,
     contragredient_superalgebra,
     d21_alpha,
@@ -24,7 +24,7 @@ from veriphy.toolkit import (
     supertrace,
     supertrace_form,
 )
-from veriphy.toolkit._superalgebra import EPSILON, SL2, _kron
+from veriphy.packs.math.script._superalgebra import EPSILON, SL2, _kron
 
 
 def _unit(i: int, j: int, n: int = 3) -> matrix:

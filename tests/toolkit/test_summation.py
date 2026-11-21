@@ -7,7 +7,7 @@ import pytest
 import sympy as sp
 
 from veriphy.core import CertificateError
-from veriphy.toolkit import (
+from veriphy.packs.math.script import (
     Lean,
     gosper_closed_form,
     gosper_proof,
@@ -18,7 +18,7 @@ from veriphy.toolkit import (
     wz_mate,
     wz_proof,
 )
-from veriphy.toolkit._summation import K, N
+from veriphy.packs.math.script._summation import K, N
 
 
 def test_wz_pair_satisfies_the_telescoping_identity() -> None:

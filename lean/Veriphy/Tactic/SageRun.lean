@@ -3,7 +3,7 @@
 
 The goal and every nameable hypothesis are extracted (leniently: anything without
 a polynomial form is passed as text) and bound in the script as `problem`, next
-to the `veriphy.toolkit` emitters and solvers. The script assigns `proof`, a Lean
+to the `veriphy.packs.math.script` emitters and solvers. The script assigns `proof`, a Lean
 tactic block. Lean parses and runs that block; the kernel decides. The block is
 emitted as the `Sage-free replacement:` — the script never reaches the committed
 proof. Scripts live in the caller's project, under `.veriphy/certificates/`.

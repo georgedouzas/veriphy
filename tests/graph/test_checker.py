@@ -6,8 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from veriphy.core import CheckerError, GraphExtraMissingError
-from veriphy.graph import (
+from veriphy.claims import (
     Release,
     build_checker,
     builtin_rules,
@@ -19,6 +18,7 @@ from veriphy.graph import (
     load_graph,
     reason,
 )
+from veriphy.core import CheckerError, GraphExtraMissingError
 
 
 def _environ(tmp_path: Path, **extra: str) -> dict[str, str]:

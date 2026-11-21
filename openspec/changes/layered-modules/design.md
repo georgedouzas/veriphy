@@ -44,7 +44,12 @@ import and both layers. A pack module's layer is the subpackage it sits in.
 `veriphy.steps` exposes `register(step)`. Each layer module and pack registers its steps when imported, and
 `veriphy.__main__` imports them all before running the command, so `veriphy.steps` itself imports no higher layer.
 
-### D5. `veriphy.script` is a facade
+### D5. The playbooks stay in the `math` pack
+
+The research playbook proves claims in Lean and certifies them with Sage, so it belongs to `math` with `prove` and
+`certify`. It moves to `core` when `workflows-as-data` separates its graph steps from its proving steps.
+
+### D6. `veriphy.script` is a facade
 
 Until `operation-api` defines the script contract, `veriphy.script` re-exports the `math` pack's script helpers, so
 `from veriphy.script import *` gives scripts what `veriphy.toolkit` gave them.

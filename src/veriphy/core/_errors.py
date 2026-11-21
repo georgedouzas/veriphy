@@ -80,7 +80,7 @@ class GraphExtraMissingError(GraphError):
     def __init__(self, module: str) -> None:
         message = (
             f"the research graph needs '{module}': install it with `sage -pip install 'veriphy[graph]'` and "
-            '`sage -python -m veriphy.graph checker build`'
+            '`sage -python -m veriphy.claims checker build`'
         )
         super().__init__(message)
         self.module = module

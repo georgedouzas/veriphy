@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from veriphy.prompts import content_dir, entries, main
+from veriphy.agents import content_dir, entries, main
 
 
 def _run(capsys: pytest.CaptureFixture[str], *argv: str) -> str:

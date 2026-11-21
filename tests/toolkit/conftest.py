@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from veriphy.toolkit import Lean
+from veriphy.packs.math.script import Lean
 
 REPO = Path(__file__).resolve().parents[2]
 

@@ -12,7 +12,7 @@ environment you can follow the next steps:
 - `uv sync` from the root of the project to install the main and development dependencies.
 
 - Install the Sage daemon from the checkout into SageMath with `sage -pip install -e .`, so the tactics use the working
-  tree's daemon. Point `VERIPHY_SAGE_SERVER` at `src/veriphy/sage_server/__main__.py` to try daemon changes without
+  tree's daemon. Point `VERIPHY_SAGE_SERVER` at `src/veriphy/packs/math/primitives/sage/__main__.py` to try daemon changes without
   reinstalling.
 
 - `lake exe cache get && lake build` to build the Lean library.
@@ -45,7 +45,7 @@ lean/assets/          Recipe assets projects copy into .veriphy/lean/
 lean/coverage/        Lake project measuring translation coverage on Physlib and mathlib
 .veriphy/             The workspace's certificate scripts, which the Lean tests run
 src/veriphy/          Python package: the Sage daemon, the toolkit, the catalog, the claim graph
-src/veriphy/prompts/  Playbooks and recipes with templates, as plain markdown, installed with the package
+src/veriphy/packs/math/agents/  Playbooks and recipes with templates, as plain markdown, installed with the package
 tests/                Python tests
 skills/               Claude Code wrappers for the playbooks
 ```
@@ -66,20 +66,20 @@ is the Lean kernel.
 
 A recipe is knowledge, not code in Veriphy.
 
-1. Write `src/veriphy/prompts/recipes/templates/<name>.sage` with the catalog header (`name`, `technique`, `goal`,
+1. Write `src/veriphy/packs/math/agents/recipes/templates/<name>.sage` with the catalog header (`name`, `technique`, `goal`,
    `description`). Make it generic: it reads `problem`, and marks the lines a user adapts with `EDIT`.
-2. Write `src/veriphy/prompts/recipes/<name>.md`, embedding the template verbatim and giving its decision rule, a
+2. Write `src/veriphy/packs/math/agents/recipes/<name>.md`, embedding the template verbatim and giving its decision rule, a
    worked example and its failure modes.
-3. Add a Lean example that runs the template with `sage_run file "src/veriphy/prompts/recipes/templates/<name>.sage"`
+3. Add a Lean example that runs the template with `sage_run file "src/veriphy/packs/math/agents/recipes/templates/<name>.sage"`
    (`lean/VeriphyTest/SageRun.lean`, or the benchmark if it replaces a former tactic).
-4. Add it to the index in `src/veriphy/prompts/prove.md` step 3c.
+4. Add it to the index in `src/veriphy/packs/math/agents/prove.md` step 3c.
 
 `tests/recipes/test_templates.py` checks that each recipe embeds its template, that the header is complete, and that
 every template runs in the Lean tests.
 
 ## Adding a toolkit building block
 
-Add to `veriphy.toolkit` only what is general and hard to get right in a few lines at proof time: an emitter that
+Add to `veriphy.packs.math.script` only what is general and hard to get right in a few lines at proof time: an emitter that
 writes a Lean construct correctly, or an exact solver. Technique-specific search (Farkas rows, ideal lifts, product
 search) belongs in a recipe template. Each public toolkit function needs a docstring with a runnable example, a test,
 and for emitters a case in the Lean parse check (`tests/toolkit/conftest.py`).
@@ -98,7 +98,7 @@ The core table (`mathlib` namespace) is `coreTable` in `lean/Veriphy/Kit/Table.l
 copy.
 
 1. Add the function, constant, coercion or rewrite entry, with its domain conditions and an example.
-2. Run `scripts/sync_tables.sh` to regenerate `src/veriphy/toolkit/core_table.json` and the pack copies. A
+2. Run `scripts/sync_tables.sh` to regenerate `src/veriphy/packs/math/script/core_table.json` and the pack copies. A
    Sage-free kit test fails until the copies match.
 3. Add a kit test in `lean/VeriphyTest/Kit.lean` showing the translation and its conditions, and a round trip in
    `lean/VeriphyTest/SageRun.lean` if Sage's name differs from the obvious one.
@@ -115,7 +115,7 @@ the pack activates.
    `conventions`, because scripts read them to state results in the library's own terms.
 2. Add it to `shippedPacks` in `lean/Veriphy/Kit/Packs.lean` and run `scripts/sync_tables.sh`.
 3. Test activation and translation in the coverage runner (`lean/coverage/PackCheck.lean`), which imports the library.
-   Library recipes go in `src/veriphy/prompts/recipes/<library>/`.
+   Library recipes go in `src/veriphy/packs/math/agents/recipes/<library>/`.
 
 ## Adding a checker
 
@@ -127,7 +127,7 @@ that do not depend on Veriphy.
    statement.
 2. Test it in `lean/VeriphyTest/Check.lean` on a small true case, a false case the kernel refuses, a large case, and
    `#print axioms` showing only `propext`, `Classical.choice` and `Quot.sound`.
-3. Add the emitter in `src/veriphy/toolkit/_reflect.py`, deciding by size between an entrywise proof and the
+3. Add the emitter in `src/veriphy/packs/math/script/_reflect.py`, deciding by size between an entrywise proof and the
    checker. Measure before adding: a kernel checker that is slower than mathlib's tactic on realistic inputs (as a
    polynomial normalizer is against `ring`) does not belong.
 

@@ -9,7 +9,7 @@ from types import ModuleType
 import pytest
 
 import veriphy
-from veriphy.sage_server import main
+from veriphy.packs.math.primitives.sage import main
 
 NOT_UNDER_SAGE = 2
 

@@ -6,7 +6,7 @@ import pytest
 from sage.all import QQ, matrix
 
 from veriphy.core import CertificateError
-from veriphy.toolkit import (
+from veriphy.packs.math.script import (
     Lean,
     clifford_facts,
     clifford_violations,

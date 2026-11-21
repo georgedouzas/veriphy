@@ -183,7 +183,7 @@ def tests(session: nox.Session) -> None:
     session.run(
         str(venv / 'bin' / 'python'),
         '-m',
-        'veriphy.graph',
+        'veriphy.claims',
         'checker',
         'build',
         '--reasoner-only',
