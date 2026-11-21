@@ -2,10 +2,13 @@
 
 from pathlib import Path
 
+import click
 import pytest
+from click.testing import CliRunner
 
 import veriphy
 from veriphy.__main__ import help_text, main
+from veriphy.__main__ import veriphy as group
 from veriphy.core import StepError
 from veriphy.steps import Argument, Outcome, Prepared, Step, register, resolve_verb
 
@@ -59,3 +62,16 @@ def test_deprecated_verb() -> None:
     """Accept `elaborate` as `check`, warning that it was renamed."""
     with pytest.warns(DeprecationWarning, match="'elaborate' is now 'check'"):
         assert resolve_verb('elaborate') == 'check'
+
+
+def test_one_click_group(tmp_path: Path) -> None:
+    """Run every program and operation through one click group, with help generated from each step."""
+    assert isinstance(group, click.Group)
+    runner = CliRunner()
+    shown = runner.invoke(group, ['--root', str(tmp_path), 'meaning', '--help'])
+    assert shown.exit_code == 0
+    assert all(option in shown.output for option in ('--seed', '--values', '--points', '--informal'))
+    (tmp_path / 'veriphy.yaml').write_text('version: 1\npacks: [core]\n')
+    missing = runner.invoke(group, ['--root', str(tmp_path), 'check', 'x.lean'])
+    assert missing.exit_code == 2
+    assert runner.invoke(group, ['--root', str(tmp_path), 'config', 'check']).exit_code == 0

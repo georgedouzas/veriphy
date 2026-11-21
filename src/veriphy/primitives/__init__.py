@@ -7,7 +7,6 @@ declares its primitives in its `pack.yaml`, and `veriphy primitive list`, `descr
 `veriphy.primitives.graph` reaches the claim graph's engines. This package imports only `veriphy.core`.
 """
 
-from veriphy.primitives._cli import main
 from veriphy.primitives._contracts import Found, Session, check_pin, run_files, start_session
 from veriphy.primitives._descriptors import TRUST_CLASSES, Pin, Primitive, Tool, VersionProbe, composite_trust
 from veriphy.primitives._registry import (
@@ -38,7 +37,6 @@ __all__ = [
     'composite_trust',
     'default_registry',
     'load_registry',
-    'main',
     'run_files',
     'start_session',
     'workspace_registry',

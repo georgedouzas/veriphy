@@ -1,8 +1,5 @@
 """Resolve a workspace's configuration: its packs in order, then `veriphy.yaml`, as JSON Merge Patches (RFC 7396)."""
 
-import argparse
-import json
-import sys
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -13,7 +10,6 @@ from jsonschema import Draft202012Validator
 from veriphy.core._digests import canonical_json, content_digest
 from veriphy.core._errors import PackError
 from veriphy.core._packs import PACK_FILE, pack_dir, pack_packages, read_pack
-from veriphy.core._project import find_workspace_root
 
 WORKSPACE_FILE = 'veriphy.yaml'
 DEFAULT_PACKS = ('math',)
@@ -322,40 +318,3 @@ def check(resolved: Resolved) -> list[str]:
         if tool and tool not in tools:
             problems.append(f"primitives.{name} names the tool '{tool}', which no pack or {WORKSPACE_FILE} declares")
     return problems
-
-
-def _parser() -> argparse.ArgumentParser:
-    """Return the parser of `veriphy config show|check`."""
-    parser = argparse.ArgumentParser(prog='veriphy config', description="The workspace's resolved configuration.")
-    parser.add_argument('--root', type=Path, default=None, help='the workspace root (found by default)')
-    commands = parser.add_subparsers(dest='command', required=True)
-    commands.add_parser('show', help='the resolved configuration, with the pack or file each entry comes from')
-    commands.add_parser('check', help='refuse collisions and references that do not resolve')
-    return parser
-
-
-def main(argv: Sequence[str] | None = None) -> None:
-    """Show or check the resolved configuration of a workspace.
-
-    Args:
-        argv: The command-line arguments, `sys.argv[1:]` when `None`.
-
-    Raises:
-        SystemExit: With status 1 when the check finds a problem or a file does not load.
-    """
-    args = _parser().parse_args(list(sys.argv[1:] if argv is None else argv))
-    try:
-        resolved = resolve(find_workspace_root(args.root))
-    except PackError as exc:
-        sys.stderr.write(f'config: {exc}\n')
-        raise SystemExit(1) from exc
-    if args.command == 'show':
-        shown = {'packs': [p.name for p in resolved.packs], 'config': resolved.config, 'sources': resolved.sources}
-        sys.stdout.write(json.dumps(shown, indent=2, sort_keys=True, ensure_ascii=False) + '\n')
-        return
-    problems = check(resolved)
-    for problem in problems:
-        sys.stderr.write(f'config: {problem}\n')
-    if problems:
-        raise SystemExit(1)
-    sys.stdout.write(f'config: {len(resolved.packs)} packs, no problems\n')

@@ -6,8 +6,9 @@ from pathlib import Path
 
 import pytest
 
+from veriphy.__main__ import main
 from veriphy.packs.lean.steps import CHECK, LEVEL
-from veriphy.steps import RecordStore, main, run_step
+from veriphy.steps import RecordStore, run_step
 
 ROOT = Path(__file__).resolve().parents[2]
 pytestmark = pytest.mark.skipif(

@@ -1,68 +1,91 @@
 """The step command: `veriphy <verb>`, and `records` to list and show what the steps recorded."""
 
-import argparse
 import json
 import sys
 from collections.abc import Sequence
 from pathlib import Path
 
+import click
+
 from veriphy.core import RecordError, find_workspace_root
+from veriphy.core._commands import run_command
 from veriphy.steps._records import RecordStore, read_record
 from veriphy.steps._registry import DEPRECATED_VERBS, load_steps
 from veriphy.steps._runner import USAGE_EXIT, Argument, Params, Result, Step, exit_code, run_step
 
 
-def _add_argument(parser: argparse.ArgumentParser, argument: Argument) -> None:
-    """Add one step argument to its subcommand."""
-    shown = argument.help or None
-    choices = list(argument.choices) or None
+def _parameter(argument: Argument) -> click.Parameter:
+    """Return the click parameter of one step argument: positional, an option, or a repeatable option."""
+    kind = click.Choice(list(argument.choices)) if argument.choices else click.types.convert_type(argument.type)
     if not argument.option:
-        parser.add_argument(argument.name, type=argument.type, help=shown, choices=choices)
-        return
+        return click.Argument([argument.name], type=kind)
     flag = argument.flag or '--' + argument.name.replace('_', '-')
-    if argument.many:
-        parser.add_argument(flag, action='append', dest=argument.name, type=argument.type, help=shown, choices=choices)
-        return
-    parser.add_argument(
-        flag,
-        dest=argument.name,
-        type=argument.type,
-        default=argument.default,
-        help=shown,
-        choices=choices,
+    return click.Option(
+        [flag, argument.name],
+        type=kind,
+        default=None if argument.many else argument.default,
+        multiple=argument.many,
+        help=argument.help or None,
     )
 
 
-def _root_parser() -> argparse.ArgumentParser:
-    """Return a parser of `--root` alone, read before the steps, since the workspace selects them."""
-    parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument('--root', type=Path, default=None)
-    return parser
-
-
-def _parser(steps: dict[str, Step]) -> argparse.ArgumentParser:
-    """Return the parser: one subcommand per registered step, and `records`."""
-    parser = argparse.ArgumentParser(prog='veriphy', description='Run a Veriphy operation and record it.')
-    parser.add_argument('--root', type=Path, default=None, help='the workspace root (found by default)')
-    commands = parser.add_subparsers(dest='command', required=True)
-    shared = argparse.ArgumentParser(add_help=False)
-    shared.add_argument('--json', action='store_true', help='print the record as JSON, and nothing else')
-    shared.add_argument('--rerun', action='store_true', help='run even when a final record of the inputs exists')
-    for step in steps.values():
-        old = [name for name, new in DEPRECATED_VERBS.items() if new == step.name]
-        command = commands.add_parser(step.name, parents=[shared], help=step.help or None, aliases=old)
-        for argument in step.arguments:
-            _add_argument(command, argument)
-    records = commands.add_parser('records', help='list the records, or show one by its digest')
-    records.add_argument('digest', nargs='?', help='a digest, or its first characters')
-    records.add_argument('--step', help='only this step')
-    return parser
-
-
-def _params(step: Step, args: argparse.Namespace) -> Params:
-    """Return a step's parameters from the parsed arguments."""
+def _params(step: Step, values: dict[str, object]) -> Params:
+    """Return a step's parameters from the command's values, leaving out those not given."""
     names = [argument.name for argument in step.arguments]
-    return {name: getattr(args, name) for name in names if getattr(args, name, None) is not None}
+    return {name: values[name] for name in names if values.get(name) not in (None, ())}
+
+
+def step_command(step: Step, root: Path) -> click.Command:
+    """Return the click command that runs a step in a workspace and prints its record.
+
+    Args:
+        step: The step.
+        root: The workspace root.
+
+    Returns:
+        The command, exiting with status 1 when the step refused, found a counterexample or failed, 2 on bad input,
+        and 3 when its result is unchecked or undecided.
+    """
+
+    def run(as_json: bool, rerun: bool, **values: object) -> None:
+        """Run the step and print its record."""
+        try:
+            result = run_step(step, root, _params(step, values), rerun=rerun)
+        except (RecordError, FileNotFoundError, KeyError, ValueError) as exc:
+            sys.stderr.write(f'{step.name}: {exc}\n')
+            raise SystemExit(USAGE_EXIT) from exc
+        _print(result, as_json)
+        code = exit_code(result.record.status)
+        if code:
+            raise SystemExit(code)
+
+    shared = [
+        click.Option(['--json', 'as_json'], is_flag=True, help='print the record as JSON, and nothing else'),
+        click.Option(['--rerun'], is_flag=True, help='run even when a final record of the inputs exists'),
+    ]
+    return click.Command(step.name, callback=run, params=[*map(_parameter, step.arguments), *shared], help=step.help)
+
+
+class StepGroup(click.Group):
+    """A command group with one command per step of the workspace that `--root` names, besides its own commands."""
+
+    def _steps(self, ctx: click.Context) -> tuple[Path, dict[str, Step]]:
+        """Return the workspace root and its steps."""
+        root = find_workspace_root(ctx.params.get('root'))
+        return root, load_steps(root)
+
+    def list_commands(self, ctx: click.Context) -> list[str]:
+        """List the group's own commands and the workspace's steps."""
+        return sorted({*super().list_commands(ctx), *self._steps(ctx)[1]})
+
+    def get_command(self, ctx: click.Context, cmd_name: str) -> click.Command | None:
+        """Return a command of the group, or the step of that name, accepting a deprecated step name."""
+        own = super().get_command(ctx, cmd_name)
+        if own is not None:
+            return own
+        root, steps = self._steps(ctx)
+        step = steps.get(_verb(cmd_name))
+        return None if step is None else step_command(step, root)
 
 
 def _verb(name: str) -> str:
@@ -84,8 +107,13 @@ def _print(result: Result, as_json: bool) -> None:
     sys.stdout.write(f'{result.record.step}: {result.record.status}{how}\n{result.path}{changed}\n')
 
 
-def _records(root: Path, digest: str | None, step: str | None) -> None:
+@click.command(name='records', help='list the records, or show one by its digest')
+@click.argument('digest', required=False)
+@click.option('--step', default=None, help='only this step')
+@click.pass_context
+def records(ctx: click.Context, digest: str | None, step: str | None) -> None:
     """List the records, or show the one a digest names."""
+    root = find_workspace_root(ctx.find_root().params.get('root'))
     paths = RecordStore(root).all(step)
     if digest is None:
         for path in paths:
@@ -99,31 +127,23 @@ def _records(root: Path, digest: str | None, step: str | None) -> None:
     sys.stdout.write(matches[0].read_text())
 
 
+ROOT = click.Option(
+    ['--root'],
+    type=click.Path(path_type=Path),
+    default=None,
+    help='the workspace root (found by default)',
+)
+steps_group = StepGroup(name='veriphy', params=[ROOT], help='Run a Veriphy operation and record it.')
+steps_group.add_command(records)
+
+
 def main(argv: Sequence[str] | None = None) -> None:
     """Run a step and print its record, or list and show records.
 
+    It exits with status 1 when the step refused, found a counterexample or failed, 2 on bad usage, and 3 when its
+    result is unchecked or undecided.
+
     Args:
         argv: The command-line arguments, `sys.argv[1:]` when `None`.
-
-    Raises:
-        SystemExit: With status 1 when the step refused, found a counterexample or failed, 2 on bad usage and 3 when
-            its result is unchecked.
     """
-    arguments = list(sys.argv[1:] if argv is None else argv)
-    known, _ = _root_parser().parse_known_args(arguments)
-    root = find_workspace_root(known.root)
-    steps = load_steps(root)
-    args = _parser(steps).parse_args(arguments)
-    if args.command == 'records':
-        _records(root, args.digest, args.step)
-        return
-    try:
-        step = steps[_verb(args.command)]
-        result = run_step(step, root, _params(step, args), rerun=args.rerun)
-    except (RecordError, FileNotFoundError, KeyError, ValueError) as exc:
-        sys.stderr.write(f'{args.command}: {exc}\n')
-        raise SystemExit(USAGE_EXIT) from exc
-    _print(result, args.json)
-    code = exit_code(result.record.status)
-    if code:
-        raise SystemExit(code)
+    run_command(steps_group, argv, 'veriphy')

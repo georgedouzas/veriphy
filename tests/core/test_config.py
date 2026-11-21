@@ -5,7 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from veriphy.core import PackError, check_config, config_main, merge_patch, resolve
+from veriphy.core import PackError, check_config, merge_patch, resolve
+from veriphy.core._config_cli import main as config_main
 from veriphy.primitives import load_registry
 from veriphy.steps import config_digest, load_steps
 

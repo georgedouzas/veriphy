@@ -1,12 +1,14 @@
 """List and show the certificate scripts saved in a project's `.veriphy/certificates/`."""
 
-import argparse
 import ast
 import sys
 from collections.abc import Sequence
 from pathlib import Path
 
+import click
+
 from veriphy.core import find_workspace_root, project_dir
+from veriphy.core._commands import run_command
 from veriphy.packs.math.steps.certificates import _tests as tests
 
 HEADER_KEYS = ('name', 'technique', 'goal', 'description')
@@ -89,17 +91,6 @@ def _warn_legacy(root: Path) -> None:
     sys.stderr.write(message)
 
 
-def _parser() -> argparse.ArgumentParser:
-    """Return the command-line parser: `list [--root DIR]` and `show <name> [--root DIR]`."""
-    parser = argparse.ArgumentParser(prog='veriphy certificates')
-    commands = parser.add_subparsers(dest='command', required=True)
-    for command in (commands.add_parser('list'), commands.add_parser('show'), commands.add_parser('tests')):
-        command.add_argument('--root', type=Path, default=None, help='the Lean workspace root (found by default)')
-    commands.choices['show'].add_argument('name')
-    commands.choices['tests'].add_argument('--rerun', metavar='TARGET', help='rerun the oracle part of a record')
-    return parser
-
-
 def _tests(root: Path, target: str | None) -> None:
     """List the test records with their levels, or rerun one record's oracle instances."""
     if target is None:
@@ -116,6 +107,58 @@ def _tests(root: Path, target: str | None) -> None:
     sys.stdout.write(f'{target}: the oracle instances hold as recorded\n')
 
 
+ROOT_OPTION = click.option(
+    '--root',
+    type=click.Path(path_type=Path),
+    default=None,
+    help='the Lean workspace root (found by default)',
+)
+
+
+@click.group(name='certificates', help="The project's saved certificate scripts, and its test records.")
+def certificates() -> None:
+    """Catalog the project's certificate scripts."""
+
+
+def _directory(root: Path) -> Path:
+    """Return the scripts' directory, warning when it is the 0.1.0 layout."""
+    directory, legacy = _scripts_dir(root)
+    if legacy:
+        _warn_legacy(root)
+    return directory
+
+
+@certificates.command(name='list', help='each script, with its header fields')
+@ROOT_OPTION
+def list_scripts(root: Path | None) -> None:
+    """List the scripts."""
+    workspace = find_workspace_root(root)
+    directory = _directory(workspace)
+    prefix = f'{LEGACY_DIR}/' if directory == workspace / LEGACY_DIR else ''
+    sys.stdout.write(''.join(f'{_describe(p, prefix + p.name)}\n' for p in _scripts(directory)))
+
+
+@certificates.command(help='print one script')
+@click.argument('name')
+@ROOT_OPTION
+def show(name: str, root: Path | None) -> None:
+    """Print one script, by its header name or file stem."""
+    directory = _directory(find_workspace_root(root))
+    found = _find(directory, name)
+    if found is None:
+        sys.stderr.write(f"no certificate script named '{name}' in {directory}/\n")
+        raise SystemExit(NOT_FOUND)
+    sys.stdout.write(found.read_text())
+
+
+@certificates.command(name='tests', help='the test records with their levels')
+@click.option('--rerun', metavar='TARGET', default=None, help='rerun the oracle part of a record')
+@ROOT_OPTION
+def tests_command(rerun: str | None, root: Path | None) -> None:
+    """List the test records, or rerun one record's oracle instances."""
+    _tests(find_workspace_root(root), rerun)
+
+
 def main(argv: Sequence[str] | None = None) -> None:
     """List or show the project's certificate scripts, or list its test records: `list`, `show <name>`, `tests`.
 
@@ -123,25 +166,5 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     Args:
         argv: The command-line arguments, `sys.argv[1:]` when `None`.
-
-    Raises:
-        SystemExit: With status 1 when `show` (or `tests --rerun`) finds nothing of that name, 2 on bad usage, and 3
-            when a rerun oracle instance changed.
     """
-    args = _parser().parse_args(list(sys.argv[1:] if argv is None else argv))
-    root = find_workspace_root(args.root)
-    if args.command == 'tests':
-        _tests(root, args.rerun)
-        return
-    directory, legacy = _scripts_dir(root)
-    if legacy:
-        _warn_legacy(root)
-    if args.command == 'list':
-        prefix = f'{LEGACY_DIR}/' if legacy else ''
-        sys.stdout.write(''.join(f'{_describe(p, prefix + p.name)}\n' for p in _scripts(directory)))
-        return
-    found = _find(directory, args.name)
-    if found is None:
-        sys.stderr.write(f"no certificate script named '{args.name}' in {directory}/\n")
-        raise SystemExit(NOT_FOUND)
-    sys.stdout.write(found.read_text())
+    run_command(certificates, argv, 'veriphy certificates')

@@ -97,7 +97,7 @@ def test_main_bad_usage(capsys: pytest.CaptureFixture[str]) -> None:
     with pytest.raises(SystemExit) as exit_info:
         main(['frobnicate'])
     assert exit_info.value.code == 2
-    assert 'usage' in capsys.readouterr().err
+    assert 'usage' in capsys.readouterr().err.lower()
 
 
 def test_script_declaration_is_read(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:

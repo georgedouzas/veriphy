@@ -1,9 +1,12 @@
 """Test the layering of the package: a module imports only `veriphy.core` and the layers below its own."""
 
 import ast
+import sys
 from pathlib import Path
 
 import pytest
+
+from veriphy.core import run_process
 
 SRC = Path(__file__).resolve().parents[1] / 'src'
 LAYERS = {'primitives': 0, 'steps': 1, 'claims': 2, 'workflows': 3, 'agents': 4}
@@ -94,3 +97,11 @@ def test_an_upward_import_is_named(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     (package / '_bad.py').write_text('from veriphy.claims import load_graph\n')
     monkeypatch.setattr(f'{__name__}.SRC', tmp_path)
     assert violations(tmp_path / 'veriphy') == ['veriphy.steps._bad (layer 1) imports veriphy.claims (layer 2)']
+
+
+def test_the_daemon_needs_no_command_line_library() -> None:
+    """Import what the Sage daemon imports without click, which Sage's own Python may lack."""
+    modules = 'veriphy, veriphy.steps, veriphy.primitives, veriphy.packs.math.primitives'
+    code = f'import sys, {modules}; print("click" in sys.modules)'
+    done, out, err = run_process([sys.executable, '-c', code], SRC.parent)
+    assert (done, out.strip()) == (0, 'False'), err
