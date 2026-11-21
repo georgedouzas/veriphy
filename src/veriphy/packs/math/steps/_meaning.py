@@ -42,7 +42,7 @@ def _meaning(root: Path, params: Params, prepared: Prepared) -> Outcome:
     }
     if params.get('points') is not None:
         inputs['points'] = json.loads(str(params['points']))
-    outcome = call_primitive('meaning', inputs, status='outcome')
+    outcome = call_primitive(root, 'meaning', inputs, status='outcome')
     outputs = {'declaration': str(params['declaration']), 'informal': params.get('informal'), **outcome.outputs}
     outputs.pop('sage_version', None)
     outputs.pop('statement', None)

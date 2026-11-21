@@ -177,6 +177,29 @@ The other programs run through the same command: `veriphy claims …` (the resea
 (the playbooks and templates), `veriphy certificates …` (your saved scripts) and `veriphy translations …` (the
 translation entries in force).
 
+### Configuration: `veriphy.yaml` and packs
+
+A workspace may hold `veriphy.yaml` at its root. Every key is optional, and without the file a workspace is
+`packs: [math]`, which brings `lean` and `core` with it:
+
+```yaml
+version: 1
+packs: [core, ./packs/econ]     # by name, or by path to a directory holding a pack.yaml; no Lean, no SageMath
+tools:
+  sage: {pin: {version: "10.9"}}
+```
+
+A pack is a `pack.yaml` in the same format, with `name` and `requires` added, beside its files. The packs are applied
+in order, each after the packs it requires, and then the workspace file, each as a JSON Merge Patch (RFC 7396): a
+mapping merges key by key, a later value replaces an earlier one, and `null` removes an entry, so
+`tools: {sage: null}` drops SageMath and every primitive that needs it. When two packs that do not require each other
+define the same entry, `veriphy config check` names both, and the workspace file settles it by defining the entry
+itself.
+
+`veriphy config show` prints the resolved configuration with the pack or file each entry comes from, and
+`veriphy config check` refuses collisions and references that do not resolve. The digest of the resolved
+configuration enters every record, so a changed pin runs the steps again, and a changed comment does not.
+
 ### Primitives
 
 Under every operation are primitives: deterministic operations, which record nothing. A primitive has an input

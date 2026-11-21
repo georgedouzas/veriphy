@@ -3,6 +3,9 @@
 import importlib
 import warnings
 
+from veriphy.core._config import WORKSPACE_FILE, Pack, Resolved, installed, merge_patch, resolve
+from veriphy.core._config import check as check_config
+from veriphy.core._config import main as config_main
 from veriphy.core._digests import canonical_json, content_digest
 from veriphy.core._errors import (
     CertificateError,
@@ -32,6 +35,7 @@ __all__ = [
     'PACK_FILE',
     'PROJECT_DIR_NAME',
     'RELATIONS',
+    'WORKSPACE_FILE',
     'CertificateError',
     'CheckerError',
     'Coercer',
@@ -42,24 +46,31 @@ __all__ = [
     'JsonValue',
     'Method',
     'MethodError',
+    'Pack',
     'PackError',
     'ParamError',
     'PinError',
     'PrimitiveError',
     'RecordError',
+    'Resolved',
     'ScriptError',
     'StepError',
     'TableError',
     'ToolError',
     'VeriphyError',
     'canonical_json',
+    'check_config',
+    'config_main',
     'content_digest',
     'find_tool',
     'find_workspace_root',
+    'installed',
+    'merge_patch',
     'pack_dir',
     'pack_packages',
     'project_dir',
     'read_pack',
+    'resolve',
     'run_process',
 ]
 

@@ -5,7 +5,9 @@ from pathlib import Path
 import pytest
 
 from veriphy.core import RecordError
-from veriphy.steps import Record, RecordStore, config_digest, input_digest, read_record
+from veriphy.steps import Record, RecordStore, input_digest, read_record
+
+CONFIG = 'c' * 64
 
 
 def _record(**fields: object) -> Record:
@@ -14,7 +16,7 @@ def _record(**fields: object) -> Record:
         'step': 'reason',
         'kind': 'check',
         'digest': 'd' * 64,
-        'config': config_digest(),
+        'config': 'c' * 64,
         'status': 'entailed',
     }
     values.update(fields)
@@ -27,10 +29,10 @@ def test_digest_follows_content_not_path(tmp_path: Path) -> None:
     second.parent.mkdir()
     first.write_text('x')
     second.write_text('x')
-    digest = input_digest('validate', {'graph': first.read_text()}, config_digest())
-    assert digest == input_digest('validate', {'graph': second.read_text()}, config_digest())
+    digest = input_digest('validate', {'graph': first.read_text()}, CONFIG)
+    assert digest == input_digest('validate', {'graph': second.read_text()}, CONFIG)
     second.write_text('y')
-    assert digest != input_digest('validate', {'graph': second.read_text()}, config_digest())
+    assert digest != input_digest('validate', {'graph': second.read_text()}, CONFIG)
 
 
 def test_digest_covers_the_seed_and_the_config() -> None:

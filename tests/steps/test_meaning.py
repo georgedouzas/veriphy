@@ -66,7 +66,7 @@ def test_meaning_digest_covers_the_reading_and_the_seed(tmp_path: Path) -> None:
     def digest(params: dict[str, object]) -> str:
         """Return the digest the step would record for the parameters."""
         prepared = MEANING.prepare(ROOT, params)
-        return input_digest(MEANING.name, prepared.contents, config_digest(), prepared.seed)
+        return input_digest(MEANING.name, prepared.contents, config_digest(ROOT), prepared.seed)
 
     assert digest(base) == digest(dict(base))
     assert digest(base) != digest({**base, 'informal': 'another reading'})

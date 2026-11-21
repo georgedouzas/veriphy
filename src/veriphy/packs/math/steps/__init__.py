@@ -3,6 +3,6 @@
 from veriphy.packs.math.steps._meaning import MEANING
 from veriphy.steps import register
 
-register(MEANING)
+register(MEANING, pack='math')
 
 __all__ = ['MEANING']

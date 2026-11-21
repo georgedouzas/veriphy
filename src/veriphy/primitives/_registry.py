@@ -5,9 +5,9 @@ import functools
 import importlib
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field, replace
-from typing import TypeVar
+from pathlib import Path
 
-from veriphy.core import PackError, PrimitiveError, pack_dir, pack_packages, read_pack
+from veriphy.core import PrimitiveError, Resolved, installed, resolve
 from veriphy.core._version import __version__
 from veriphy.primitives._contracts import (
     Found,
@@ -24,7 +24,6 @@ from veriphy.primitives._schema import check
 # the key under which an output names the tools that produced it
 TOOLS_KEY = 'tools'
 _COMPOSITES: dict[str, tuple[Primitive, tuple[str, ...], str | None, Body]] = {}
-Declared = TypeVar('Declared', Tool, Primitive)
 
 
 def composite(
@@ -202,33 +201,36 @@ def default_registry() -> Registry:
     return load_registry()
 
 
-def load_registry(packages: Mapping[str, str] | None = None) -> Registry:
-    """Return the registry of the packs' tools, primitives and composites.
+def load_registry(packages: Mapping[str, str] | None = None, resolved: Resolved | None = None) -> Registry:
+    """Return the registry of a configuration's tools, primitives and composites.
 
     Args:
-        packages: Each pack's name and package; every installed pack by default.
+        packages: Each pack's name and package, when `resolved` is not given; every installed pack by default.
+        resolved: A workspace's resolved configuration, whose packs and sections the registry holds.
 
     Returns:
         The registry. Its sessions stop when the process exits.
 
     Raises:
-        ModuleNotFoundError: If a pack's `primitives` subpackage imports a module that is not installed; a pack
-            without the subpackage, or two packs declaring one name (a `PackError`), are reported as such.
+        ModuleNotFoundError: If a pack's `primitives` subpackage imports a module that is not installed.
     """
+    config = resolved if resolved is not None else installed(packages)
     registry = Registry()
-    for pack, package in (packages or pack_packages()).items():
-        declared = read_pack(package)
-        base = pack_dir(package)
-        for name, spec in _mapping(declared.get('tools')).items():
-            _add(registry.tools, name, read_tool(name, _mapping(spec), pack), pack)
-        for name, spec in _mapping(declared.get('primitives')).items():
-            _add(registry.primitives, name, read_primitive(name, _mapping(spec), pack, base), pack)
+    for name, spec in config.section('tools').items():
+        registry.tools[name] = read_tool(name, _mapping(spec), config.sources.get(f'tools.{name}', ''))
+    for name, spec in config.section('primitives').items():
+        entry = f'primitives.{name}'
+        source = config.sources.get(entry, '')
+        registry.primitives[name] = read_primitive(name, _mapping(spec), source, config.directory(entry))
+    selected = {pack.name for pack in config.packs}
+    for pack in config.packs:
+        if pack.package is None:
+            continue
         try:
-            importlib.import_module(f'{package}.primitives')
+            importlib.import_module(f'{pack.package}.primitives')
         except ModuleNotFoundError as exc:
-            if exc.name not in {f'{package}.primitives', package}:
+            if exc.name not in {f'{pack.package}.primitives', pack.package}:
                 raise
-    selected = packages or pack_packages()
     for name, (stub, parts, decides, body) in _COMPOSITES.items():
         if stub.pack not in selected or not all(p in registry.primitives for p in parts):
             continue
@@ -238,15 +240,19 @@ def load_registry(packages: Mapping[str, str] | None = None) -> Registry:
     return registry
 
 
+@functools.cache
+def workspace_registry(root: Path) -> Registry:
+    """Return the registry of a workspace's resolved configuration, loaded once per process.
+
+    Args:
+        root: The workspace root.
+
+    Returns:
+        The registry.
+    """
+    return load_registry(resolved=resolve(root))
+
+
 def _mapping(value: object) -> dict[str, object]:
     """Return a declaration's mapping, empty when absent."""
     return {str(k): v for k, v in value.items()} if isinstance(value, dict) else {}
-
-
-def _add(table: dict[str, Declared], name: str, value: Declared, pack: str) -> None:
-    """Add a declaration, refusing a name another pack already declared."""
-    known = table.get(name)
-    if known is not None:
-        message = f"'{name}' is declared by {known.pack} and by {pack}: rename one"
-        raise PackError(message)
-    table[name] = value

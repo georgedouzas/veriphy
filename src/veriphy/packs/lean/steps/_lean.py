@@ -47,7 +47,7 @@ def _prepare_check(root: Path, params: Params) -> Prepared:
 def _check(root: Path, _params: Params, prepared: Prepared) -> Outcome:
     """Have Lean check the file, and report its errors and the axioms of each declaration (`lean.check`)."""
     path = prepared.context if isinstance(prepared.context, Path) else Path()
-    return call_primitive('lean.check', {'root': str(root), 'file': str(path)})
+    return call_primitive(root, 'lean.check', {'root': str(root), 'file': str(path)})
 
 
 def _prepare_level(root: Path, params: Params) -> Prepared:
@@ -62,7 +62,8 @@ def _prepare_level(root: Path, params: Params) -> Prepared:
 def _level(root: Path, params: Params, prepared: Prepared) -> Outcome:
     """Build the module, then report each declaration's level under the prefixes (`lean.level`)."""
     prefixes = prepared.context if isinstance(prepared.context, list) else [str(params['module'])]
-    return call_primitive('lean.level', {'root': str(root), 'module': str(params['module']), 'prefixes': prefixes})
+    inputs: dict[str, object] = {'root': str(root), 'module': str(params['module']), 'prefixes': prefixes}
+    return call_primitive(root, 'lean.level', inputs)
 
 
 CHECK = Step(

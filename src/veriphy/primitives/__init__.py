@@ -10,7 +10,14 @@ declares its primitives in its `pack.yaml`, and `veriphy primitive list`, `descr
 from veriphy.primitives._cli import main
 from veriphy.primitives._contracts import Found, Session, check_pin, run_files, start_session
 from veriphy.primitives._descriptors import TRUST_CLASSES, Pin, Primitive, Tool, VersionProbe, composite_trust
-from veriphy.primitives._registry import TOOLS_KEY, Registry, composite, default_registry, load_registry
+from veriphy.primitives._registry import (
+    TOOLS_KEY,
+    Registry,
+    composite,
+    default_registry,
+    load_registry,
+    workspace_registry,
+)
 from veriphy.primitives._schema import check
 from veriphy.primitives._testing import assert_deterministic
 
@@ -34,4 +41,5 @@ __all__ = [
     'main',
     'run_files',
     'start_session',
+    'workspace_registry',
 ]

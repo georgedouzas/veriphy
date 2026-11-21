@@ -33,6 +33,13 @@ def _add_argument(parser: argparse.ArgumentParser, argument: Argument) -> None:
     )
 
 
+def _root_parser() -> argparse.ArgumentParser:
+    """Return a parser of `--root` alone, read before the steps, since the workspace selects them."""
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument('--root', type=Path, default=None)
+    return parser
+
+
 def _parser(steps: dict[str, Step]) -> argparse.ArgumentParser:
     """Return the parser: one subcommand per registered step, and `records`."""
     parser = argparse.ArgumentParser(prog='veriphy', description='Run a Veriphy operation and record it.')
@@ -102,9 +109,11 @@ def main(argv: Sequence[str] | None = None) -> None:
         SystemExit: With status 1 when the step refused, found a counterexample or failed, 2 on bad usage and 3 when
             its result is unchecked.
     """
-    steps = load_steps()
-    args = _parser(steps).parse_args(list(sys.argv[1:] if argv is None else argv))
-    root = find_workspace_root(args.root)
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    known, _ = _root_parser().parse_known_args(arguments)
+    root = find_workspace_root(known.root)
+    steps = load_steps(root)
+    args = _parser(steps).parse_args(arguments)
     if args.command == 'records':
         _records(root, args.digest, args.step)
         return

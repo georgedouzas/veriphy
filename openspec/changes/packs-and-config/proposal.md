@@ -12,11 +12,10 @@ packs, add its own, and override any entry, with defaults that give today's beha
   `steps`, `levels`, `conventions`, `workflows` and `playbooks`. A missing file means `packs: [math]`.
 - `pack.yaml` uses the same schema, plus `name` and `requires`. A pack in `packs` is a name (an installed pack, through
   the `veriphy.packs` entry point) or a path to a directory.
-- The merge: core defaults, then each pack after the packs it requires, then the workspace file. A later value wins
-  key by key, and `null` removes an entry. Two packs that do not require each other and define the same entry are an
-  error that names both, and the workspace file decides.
-- One registry per layer, filled from the resolved config. Each layer reads only its own registry, and contributes
-  its own checks to `config check`.
+- The merge: each pack after the packs it requires, then the workspace file, applied as JSON Merge Patches (RFC
+  7396). Two packs that do not require each other and define the same entry are an error that names both, and the
+  workspace file decides.
+- One resolved mapping, of which each layer reads its own sections.
 - `veriphy config show` prints the resolved config with the source of each value, and `config check`
   validates it. The digest of the resolved config enters every step record.
 - The `primitive` command and the steps see only the selected packs' primitives.
@@ -27,8 +26,8 @@ Depends on `primitives`.
 
 ### New Capabilities
 
-- `core/workspace-config`: the two files, packs and their requirements, the merge, collisions, registries, the two
-  commands and the config digest.
+- `core/workspace-config`: the two files, packs and their requirements, the merge, collisions, the sections per
+  layer, the two commands and the config digest.
 
 ### Modified Capabilities
 
@@ -36,7 +35,6 @@ None.
 
 ## Impact
 
-- New: `veriphy.core.config` (schema, loading, merge, registries, commands).
-- `veriphy.primitives`: the registry comes from the resolved config instead of every installed pack.
+- New: `veriphy.core.config` (schema, loading, merge, commands).
+- `veriphy.primitives`: its registry is built from the resolved config's sections instead of every installed pack.
 - `veriphy.core`: the config digest in step records, a placeholder until now.
-- `pyproject.toml`: PyYAML.

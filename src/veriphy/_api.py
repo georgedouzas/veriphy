@@ -30,7 +30,8 @@ def run(
     Raises:
         StepError: If no step has the verb's name.
     """
-    steps = load_steps()
+    workspace = find_workspace_root(root)
+    steps = load_steps(workspace)
     name = resolve_verb(verb)
     step = steps.get(name)
     if step is None:
@@ -39,5 +40,5 @@ def run(
     params = dict(inputs)
     if target is not None and step.arguments:
         params[step.arguments[0].name] = target
-    result = run_step(step, find_workspace_root(root), params, rerun=rerun)
+    result = run_step(step, workspace, params, rerun=rerun)
     return replace(result, target=target)

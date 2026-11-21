@@ -5,10 +5,7 @@ from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from veriphy.core._digests import canonical_json, content_digest
-from veriphy.core._errors import RecordError
-from veriphy.core._project import project_dir
-from veriphy.core._version import __version__
+from veriphy.core import RecordError, canonical_json, content_digest, project_dir, resolve
 
 KINDS = ('agent', 'evidence', 'check', 'derived')
 LEVELLED_KINDS = frozenset({'check', 'derived'})
@@ -17,17 +14,16 @@ NOT_FINAL = frozenset({'unchecked', 'failed'})
 RUNS_DIR = 'runs'
 
 
-def config_digest() -> str:
-    """Return the digest of the configuration a step runs under: Veriphy's version, until a workspace file exists.
+def config_digest(root: Path) -> str:
+    """Return the digest of the configuration a step runs under: the workspace's resolved configuration.
+
+    Args:
+        root: The workspace root.
 
     Returns:
-        The digest.
-
-    Examples:
-        >>> len(config_digest())
-        64
+        The digest; a comment or a reordering in `veriphy.yaml` leaves it unchanged.
     """
-    return content_digest(canonical_json({'veriphy': __version__}))
+    return resolve(root).digest()
 
 
 def input_digest(step: str, inputs: Mapping[str, str | bytes], config: str, seed: int | None = None) -> str:
