@@ -1,9 +1,9 @@
 /-
-`sage_run`: close a goal with whatever proof a Sage script builds.
+`veriphy certify`: close a goal with whatever proof a Sage script builds; `sage_run` is its deprecated name.
 
 The goal and every nameable hypothesis are extracted (leniently: anything without
 a polynomial form is passed as text) and bound in the script as `problem`, next
-to the `veriphy.packs.math.script` emitters and solvers. The script assigns `proof`, a Lean
+to the `veriphy.script` emitters and solvers. The script's `run(goal, inputs)` returns `found(proof)`, a Lean
 tactic block. Lean parses and runs that block; the kernel decides. The block is
 emitted as the `Sage-free replacement:` — the script never reaches the committed
 proof. Scripts live in the caller's project, under `.veriphy/certificates/`.
@@ -11,6 +11,7 @@ proof. Scripts live in the caller's project, under `.veriphy/certificates/`.
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Linarith
 import Veriphy.Kit
+import Veriphy.Kit.Deprecation
 
 namespace Veriphy
 
@@ -20,16 +21,17 @@ open Lean Elab Tactic Meta
 private def combined (what : MessageData) (stdout lean : String) : MessageData :=
   let section_ (title body : String) : MessageData :=
     if body.trim.isEmpty then m!"" else m!"\n── {title} ──\n{body.trimRight}"
-  m!"sage_run: {what}{section_ "script output" stdout}{section_ "Lean text" lean}"
+  m!"veriphy certify: {what}{section_ "script output" stdout}{section_ "Lean text" lean}"
 
 /-- Run `script` on the main goal: build the problem, ask Sage for the proof block, then check and emit it. -/
 def sageRunCore (script : String) : TacticM Unit := do
-  let (lean, stdout, leavesGoals) ← withLenientProblem fun p => do
+  let (lean, stdout, leavesGoals, deprecated) ← withLenientProblem fun p => do
     let problem ← p.toJson
     Kit.run "run" (Bridge.run problem script)
+  unless deprecated.isEmpty do logWarning m!"veriphy certify: {deprecated}"
   -- one tactic sequence: `(t₁ ⏎ t₂ …)`, every line shifted one column to sit inside the parentheses
   let block := "(" ++ "\n ".intercalate (lean.splitOn "\n") ++ ")"
-  let stx ← match Parser.runParserCategory (← getEnv) `tactic block "<sage_run>" with
+  let stx ← match Parser.runParserCategory (← getEnv) `tactic block "<veriphy certify>" with
     | .ok stx => pure stx
     | .error e => throwError combined m!"the script's proof does not parse: {e}" stdout lean
   try
@@ -45,7 +47,11 @@ syntax (name := sageRun) "sage_run " str : tactic
 syntax (name := sageRunFile) "sage_run " &"file " str : tactic
 
 elab_rules : tactic
-  | `(tactic| sage_run $s:str) => sageRunCore s.getString
-  | `(tactic| sage_run file $p:str) => do sageRunCore (← readScript p.getString)
+  | `(tactic| sage_run%$tk $s:str) => do
+    warnDeprecated tk "sage_run \"…\"" "veriphy certify \"…\""
+    sageRunCore s.getString
+  | `(tactic| sage_run%$tk file $p:str) => do
+    warnDeprecated tk "sage_run file \"…\"" "veriphy certify \"….sage\""
+    sageRunCore (← readScript p.getString)
 
 end Veriphy

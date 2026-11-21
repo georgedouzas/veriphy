@@ -1,7 +1,7 @@
 /-
-`sage_test`: check a claim no recipe can certify, by testing it at instances.
+`#veriphy test`: check a claim no recipe can certify, by testing it at instances; `sage_test` is its deprecated name.
 
-`sage_test c file "<name>.sage"` (or `sage_test c "<script>"`) opens the universal binders of the claim `c` (a theorem,
+`#veriphy test c "<name>.sage"` (or `#veriphy test c "<script>"`) opens the universal binders of the claim `c` (a theorem,
 or a definition of type `Prop`), serializes them and the body as a problem, and runs the script, which assigns
 `instances`. A kernel instance gives a value for every binder and a tactic block; Lean states the claim at the values
 with `veriphy_instance%` (from the statement, never the proof), runs the block, and accepts it when it closes the goal
@@ -14,6 +14,7 @@ test record `.veriphy/tests/<c>.json`.
 -/
 import Veriphy.Kit
 import Veriphy.Kit.Levels
+import Veriphy.Kit.Deprecation
 
 namespace Veriphy
 
@@ -97,7 +98,8 @@ def testReplacement (target : Name) (level : String) (outcomes : Array Outcome) 
 def sageTestRun (ref : Syntax) (target : Ident) (script : String) : TermElabM (Name × String) := do
   let name ← realizeGlobalConstNoOverloadWithInfo target
   let (problem, binders) ← claimProblem name
-  let (instances, stdout, seed, sageVersion) ← Kit.run "test" (Bridge.test problem script)
+  let (instances, stdout, seed, sageVersion, deprecated) ← Kit.run "test" (Bridge.test problem script)
+  unless deprecated.isEmpty do logWarning m!"veriphy test: {deprecated}"
   let mut outcomes : Array Outcome := #[]
   for j in instances do
     let values := ((j.getObjValAs? (Array String) "values").toOption.getD #[])
@@ -108,7 +110,7 @@ def sageTestRun (ref : Syntax) (target : Ident) (script : String) : TermElabM (N
     else if kind == "oracle" then
       let evaluation := (j.getObjValAs? String "evaluation").toOption.getD ""
       unless (j.getObjValAs? Bool "verdict").toOption.getD false do
-        throwError "sage_test: Sage refutes `{name}` at {values}: {evaluation}"
+        throwError "veriphy test: Sage refutes `{name}` at {values}: {evaluation}"
       outcomes := outcomes.push { values, kind, edge, evaluation }
     else
       let proof := (j.getObjValAs? String "proof").toOption.getD ""
@@ -124,9 +126,9 @@ def sageTestRun (ref : Syntax) (target : Ident) (script : String) : TermElabM (N
       (if accepted.any (·.edge) then "" else " and no edge case")
     let details := if rejectedLines.isEmpty then "" else "\nrejected:\n" ++ "\n".intercalate rejectedLines
     let out := if stdout.all Char.isWhitespace then "" else s!"\n── script output ──\n{stdout}"
-    throwError "sage_test: {need}{details}{out}"
+    throwError "veriphy test: {need}{details}{out}"
   for line in rejectedLines do
-    logWarning s!"sage_test: an instance is rejected:\n{line}"
+    logWarning s!"veriphy test: an instance is rejected:\n{line}"
   let replacement := testReplacement name level outcomes
   Lean.Meta.Tactic.TryThis.addSuggestion ref (.string replacement : Lean.Meta.Tactic.TryThis.SuggestionText)
     (header := "Sage-free replacement: ")
@@ -138,7 +140,7 @@ def sageTestCore (ref : Syntax) (target : Ident) (script : String) : CommandElab
   let (_, attr) ← liftTermElabM (sageTestRun ref target script)
   match Parser.runParserCategory (← getEnv) `command attr with
   | .ok stx => elabCommand stx
-  | .error e => throwError "sage_test: the level attribute does not parse ({e}): {attr}"
+  | .error e => throwError "veriphy test: the level attribute does not parse ({e}): {attr}"
 
 /-- `sage_test c "<script>"`: test the claim `c` at the instances the script chooses. -/
 syntax (name := sageTest) "sage_test " ident ppSpace str : command
@@ -147,7 +149,11 @@ syntax (name := sageTest) "sage_test " ident ppSpace str : command
 syntax (name := sageTestFile) "sage_test " ident ppSpace &"file " str : command
 
 elab_rules : command
-  | `(sage_test $c:ident $s:str) => do sageTestCore (← getRef) c s.getString
-  | `(sage_test $c:ident file $p:str) => do sageTestCore (← getRef) c (← readScript p.getString)
+  | `(sage_test%$tk $c:ident $s:str) => do
+    warnDeprecated tk "sage_test c \"…\"" "#veriphy test c \"…\""
+    sageTestCore (← getRef) c s.getString
+  | `(sage_test%$tk $c:ident file $p:str) => do
+    warnDeprecated tk "sage_test c file \"…\"" "#veriphy test c \"….sage\""
+    sageTestCore (← getRef) c (← readScript p.getString)
 
 end Veriphy

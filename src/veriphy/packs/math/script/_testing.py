@@ -1,6 +1,6 @@
-"""Test instances for `sage_test`: values chosen by a script, checked by the kernel or evaluated by Sage.
+"""Test instances for `#veriphy test`: values chosen by a script, checked by the kernel or evaluated by Sage.
 
-When no recipe can build a certificate for a claim `∀ x, P x`, `sage_test` tests it: the script chooses instances, a
+When no recipe can build a certificate for a claim `∀ x, P x`, `#veriphy test` tests it: the script chooses instances, a
 kernel instance carries a proof of `P v` that Lean checks by computation alone, and an oracle instance carries Sage's
 exact (or interval, at least 53 bits) evaluation of `P v`. Floating-point comparisons are refused, since they prove
 nothing about the exact statement.

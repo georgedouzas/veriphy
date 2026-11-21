@@ -87,8 +87,9 @@ A pack adds verbs. A verb is a step's name, and `veriphy help` lists the verbs o
 
 ### Scripts
 
-Every script, in any language, has the same header and the same entry point. It receives the goal and its inputs,
-and returns `found(...)`, `refuted(...)` or `unknown(reason)`, which its verb turns into a status:
+Every script, in any language, has the same header and the same entry point. It receives the goal proposition and its
+inputs, with the whole problem bound as `problem`, and returns `found(...)`, `refuted(...)` or `unknown(reason)`, which
+its verb turns into a status:
 
 ```python
 """Chain intermediate forms from Sage, each step closed by its own tactic."""
@@ -98,8 +99,9 @@ SCRIPT = {"name": "calc_derivation", "serves": "certify", "inputs": {}}
 
 
 def run(goal: Goal, inputs: dict) -> Result:
-    middle = expand(goal.lhs.sage)
-    return found(calc_chain(goal.lhs, [("=", middle, "ring"), ("=", goal.rhs, "ring")]))
+    middle = expand(SR(str(lhs.poly)))
+    chain = [("=", R(str(middle)), tactic("ring")), ("=", term(rhs.text), tactic("ring"))]
+    return found(calc_chain(term(lhs.text), chain, problem))
 ```
 
 An R script has the same shape: `run <- function(data, inputs) result(estimate = ..., se = ...)`. The header is the
@@ -126,9 +128,9 @@ layer reads only its own registry.
 
 ![A primitive](diagrams/primitive.svg)
 
-A **tool** is a program Veriphy starts: Lean, SageMath, `oo-horn`, R. A **primitive** is one typed operation on a
-tool: `lean.check`, `lean.serialize`, `lean.level`, `sage.sample`, `sage.search`, `horn.check`, `r.run`. A tool is pinned, and a
-primitive declares its schemas and its trust class:
+A **tool** is a program Veriphy starts: Lean, SageMath, `oo-horn`, R. A **primitive** is one typed operation on a tool:
+`lean.check`, `lean.serialize`, `lean.level`, `sage.sample`, `sage.search`, `horn.check`, `r.run`. A tool is pinned, and
+a primitive declares its schemas and its trust class:
 
 ```yaml
 tools:
@@ -373,15 +375,16 @@ veriphy/
   packs/
     core/          pack.yaml declaring the built-ins
     lean/          primitives/lean  steps
-    math/          primitives/sage  primitives/translations  script (helpers)  steps/certificates  agents (all playbooks)
+    math/          primitives/sage  primitives/translations  script  steps/certificates  agents (all playbooks)
     reproduction/  primitives/r  steps  claims  workflows  agents
 ```
 
 A pack has a `pack.yaml` and the same layer subpackages, only those it needs. A pack's code at layer k imports only
 Veriphy's layers up to k. What every workspace needs (the claim graph, its reasoning, `oo-horn`) lives in the layer
 modules, and the `core` pack only declares it. A step's code lives at the highest layer it needs, `report` in
-`veriphy.claims` for instance, and registers itself, so the step runner never imports a layer above it. The Lean library in `lean/` holds the Lean side of the `lean` and `math` packs: the
-`veriphy` tactic, the `#veriphy` command and the bridge to the Sage daemon.
+`veriphy.claims` for instance, and registers itself, so the step runner never imports a layer above it. The Lean library
+in `lean/` holds the Lean side of the `lean` and `math` packs: the `veriphy` tactic, the `#veriphy` command and the
+bridge to the Sage daemon.
 
 | Module | Layer | Public surface |
 |---|---|---|
@@ -402,7 +405,7 @@ modules, and the `core` pack only declares it. A step's code lives at the highes
 | `sage_run "script"`, `sage_run file "…"` | `veriphy certify "…"` |
 | `sage_test …` | `veriphy test …` |
 | `#veriphy_meaning`, `#veriphy_levels`, `#veriphy_graph` | `#veriphy meaning`, `#veriphy level`, `#veriphy export` |
-| `#veriphy_translate`, `#veriphy_tables`, `#veriphy_coverage`, `#veriphy_check_translations` | `#veriphy translate`, `#veriphy translations`, `#veriphy coverage`, `#veriphy check-translations` |
+| `#veriphy_translate`, `#veriphy_tables`, `#veriphy_coverage`, `#veriphy_check_translations` | `#veriphy translate`, `#veriphy translations`, `#veriphy coverage`, `#veriphy translations check` |
 | `python -m veriphy elaborate`, `level`, `meaning` | `veriphy check`, `veriphy level`, `veriphy meaning` |
 | `python -m veriphy.graph …` | `veriphy claims …` |
 | `python -m veriphy.prompts path` | `veriphy agents path` |

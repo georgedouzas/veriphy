@@ -7,27 +7,35 @@
 
 ## Template
 
-Copy it to the project's `.veriphy/certificates/factor_rewrite.sage` (or a more specific name), adapt the lines marked `EDIT`, keep the header, and run it with `sage_run file "<name>.sage"`.
+Copy it to the project's `.veriphy/certificates/factor_rewrite.sage` (or a more specific name), adapt the lines marked `EDIT`, keep its `SCRIPT` declaration, and run it with `veriphy certify "<name>.sage"`.
 
 ```sage
-# name: factor_rewrite
-# technique: factorization rewrite
-# goal: lhs = rhs, to continue from the factored form of lhs
-# description: Rewrite lhs to its factored form (certified by ring1); leaves factored = rhs open, so follow it with a tactic.
-assert lhs is not None, 'the goal must be a polynomial equality lhs = rhs'
-unit, factors = QQ(lhs.poly.factor().unit()), list(lhs.poly.factor())
-parts = [f'({polynomial(f, problem)})' + (f' ^ {m}' if m > 1 else '') for f, m in factors]
-factored = ' * '.join(parts) or str(rational(unit))
-if parts and unit != 1:
-    factored = f'{rational(unit)} * ({factored})' if unit != -1 else f'-({factored})'
-proof = leaving_goals(tactic(f'refine Eq.trans (show {lhs.text} = {factored} by ring1) ?_'))
+SCRIPT = {
+    'name': 'factor_rewrite',
+    'serves': 'certify',
+    'technique': 'factorization rewrite',
+    'goal': 'lhs = rhs, to continue from the factored form of lhs',
+    'description': 'Rewrite lhs to its factored form (certified by ring1); leaves factored = rhs open, so follow it with a tactic.',
+    'inputs': {},
+}
+
+
+def run(goal, inputs):
+    assert lhs is not None, 'the goal must be a polynomial equality lhs = rhs'
+    unit, factors = QQ(lhs.poly.factor().unit()), list(lhs.poly.factor())
+    parts = [f'({polynomial(f, problem)})' + (f' ^ {m}' if m > 1 else '') for f, m in factors]
+    factored = ' * '.join(parts) or str(rational(unit))
+    if parts and unit != 1:
+        factored = f'{rational(unit)} * ({factored})' if unit != -1 else f'-({factored})'
+    proof = leaving_goals(tactic(f'refine Eq.trans (show {lhs.text} = {factored} by ring1) ?_'))
+    return found(proof)
 ```
 
 ## Worked example
 
 ```lean
 example (x : ℚ) : x ^ 4 - 1 = (x - 1) * (x + 1) * (x ^ 2 + 1) := by
-  sage_run file "factor_rewrite.sage"
+  veriphy certify "factor_rewrite.sage"
   ring
 ```
 

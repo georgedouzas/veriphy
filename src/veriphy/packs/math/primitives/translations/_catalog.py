@@ -93,7 +93,7 @@ def _find(tables: list[tuple[str, Table]], name: str) -> str | None:
 
 def _parser() -> argparse.ArgumentParser:
     """Return the command-line parser: `list [--all] [--root DIR]` and `show <name> [--root DIR]`."""
-    parser = argparse.ArgumentParser(prog='python -m veriphy.packs.math.primitives.translations')
+    parser = argparse.ArgumentParser(prog='veriphy translations')
     commands = parser.add_subparsers(dest='command', required=True)
     listing, showing = commands.add_parser('list'), commands.add_parser('show')
     for command in (listing, showing):

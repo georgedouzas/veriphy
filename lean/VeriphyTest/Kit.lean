@@ -295,11 +295,11 @@ opaque heads:
 -/
 #guard_msgs in
 set_option veriphy.coverage.write false in
-#veriphy_coverage [CoverageFixture]
+#veriphy coverage [CoverageFixture]
 
 -- the JSON report carries the same numbers and the ranked heads
 #guard_msgs (drop info) in
-#veriphy_coverage [CoverageFixture] ".lake/veriphy-coverage-test.json"
+#veriphy coverage [CoverageFixture] ".lake/veriphy-coverage-test.json"
 
 -- generated lemmas are not statements of the corpus
 /-- info: [true, true, true, false, false] -/
@@ -421,7 +421,7 @@ example (x : ℝ) : Real.Gamma x + Real.exp x = 0 := by kit_sym_fixture
 info: mathlib: 26 functions, 2 constants, 5 coercions, 16 rewrites
 -/
 #guard_msgs in
-#veriphy_tables
+#veriphy translations
 
 /-! ## Core coverage: functions -/
 
@@ -555,7 +555,7 @@ conditions:
 -/
 #guard_msgs in
 variable (a : ℝ) in
-#veriphy_translate deriv (fun x => Real.log x) a
+#veriphy translate deriv (fun x => Real.log x) a
 
 -- a vector's entries `v k` under the sum would be one Sage variable for every `k`: the sum is one atom
 /--
@@ -566,7 +566,7 @@ conditions:
 -/
 #guard_msgs in
 variable (v : Fin 3 → ℝ) in
-#veriphy_translate ∑ k, v k ^ 2 + ∑ k ∈ Finset.range 3, (k : ℝ) ^ 2
+#veriphy translate ∑ k, v k ^ 2 + ∑ k ∈ Finset.range 3, (k : ℝ) ^ 2
 
 -- the Lie bracket of matrices is their commutator
 /--
@@ -575,7 +575,7 @@ atoms:
 conditions:
 -/
 #guard_msgs in
-#veriphy_translate ⁅!![(0 : ℚ), 1; 0, 0], !![(0 : ℚ), 0; 1, 0]⁆ - !![(1 : ℚ), 0; 0, -1]
+#veriphy translate ⁅!![(0 : ℚ), 1; 0, 0], !![(0 : ℚ), 0; 1, 0]⁆ - !![(1 : ℚ), 0; 0, -1]
 
 -- elements of a matrix Lie subalgebra bracket through their matrices (mathlib's associative Lie ring is local)
 section
@@ -589,7 +589,7 @@ conditions:
 -/
 #guard_msgs in
 variable (L : LieSubalgebra ℚ (Matrix (Fin 2) (Fin 2) ℚ)) (x y : L) in
-#veriphy_translate ((⁅x, y⁆ : L) : Matrix (Fin 2) (Fin 2) ℚ)
+#veriphy translate ((⁅x, y⁆ : L) : Matrix (Fin 2) (Fin 2) ℚ)
 end
 
 -- a matrix indexed by `Fin 1 ⊕ Fin 3`, given by blocks, is one 4×4 Sage matrix; its index type is recorded
@@ -790,9 +790,9 @@ info: 'Veriphy.Linear.finrank_inf_of_bounds' depends on axioms: [propext, Classi
 #print axioms Veriphy.Linear.finrank_inf_of_bounds
 
 
-/-! ## Claims as problems (`sage_test`), and verification levels -/
+/-! ## Claims as problems (`#veriphy test`), and verification levels -/
 
-/-- Test command: print the problem `sage_test` builds for a claim. -/
+/-- Test command: print the problem `#veriphy test` builds for a claim. -/
 elab "#kit_claim " c:ident : command => Command.liftTermElabM do
   let (j, n) ← Veriphy.claimProblem (← realizeGlobalConstNoOverloadWithInfo c)
   logInfo m!"{n} binders: {j.compress}"
@@ -857,7 +857,7 @@ KitLevels.sorriedOne: none
 KitLevels.testedOne: kernel-test
 -/
 #guard_msgs in
-#veriphy_levels KitLevels
+#veriphy level KitLevels
 
 -- a stronger hypothesis discharges a condition through its projection: `0 < x` gives `x ≠ 0` as `(hx).ne'`
 /--

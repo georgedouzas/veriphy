@@ -110,7 +110,7 @@ def _copy(name: str, root: Path) -> None:
 
 def _parser() -> argparse.ArgumentParser:
     """Return the command-line parser: `path`, `list`, `show <name>` and `copy <name> [--root DIR]`."""
-    parser = argparse.ArgumentParser(prog='python -m veriphy.agents')
+    parser = argparse.ArgumentParser(prog='veriphy agents')
     commands = parser.add_subparsers(dest='command', required=True)
     commands.add_parser('path', help='print the directory holding the playbooks and recipes')
     commands.add_parser('list', help='list every playbook, recipe, template and asset')

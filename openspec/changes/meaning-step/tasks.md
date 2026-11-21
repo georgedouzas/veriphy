@@ -13,7 +13,7 @@
 ## 3. Playbooks and integration
 
 - [x] 3.1 Rewrite `prove.md` step 1 and `research/triage.md` to run the step and cite its record. Verify with the recipe and research document tests, extended to check that both playbooks name the step.
-- [ ] 3.2 Run the gate and CI. Verify that every session and job is green.
+- [x] 3.2 Run the gate and CI. Verify that every session and job is green.
 
 ## Workflow follow-up
 

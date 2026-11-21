@@ -1,4 +1,4 @@
-"""The step command: `python -m veriphy <step>`, and `records` to list and show what the steps recorded."""
+"""The step command: `veriphy <verb>`, and `records` to list and show what the steps recorded."""
 
 import argparse
 import json
@@ -8,7 +8,7 @@ from pathlib import Path
 
 from veriphy.core import RecordError, find_workspace_root
 from veriphy.steps._records import RecordStore, read_record
-from veriphy.steps._registry import load_steps
+from veriphy.steps._registry import DEPRECATED_VERBS, load_steps
 from veriphy.steps._runner import USAGE_EXIT, Argument, Params, Result, Step, exit_code, run_step
 
 
@@ -35,14 +35,15 @@ def _add_argument(parser: argparse.ArgumentParser, argument: Argument) -> None:
 
 def _parser(steps: dict[str, Step]) -> argparse.ArgumentParser:
     """Return the parser: one subcommand per registered step, and `records`."""
-    parser = argparse.ArgumentParser(prog='python -m veriphy', description='Run a Veriphy step and record it.')
+    parser = argparse.ArgumentParser(prog='veriphy', description='Run a Veriphy operation and record it.')
     parser.add_argument('--root', type=Path, default=None, help='the workspace root (found by default)')
     commands = parser.add_subparsers(dest='command', required=True)
     shared = argparse.ArgumentParser(add_help=False)
     shared.add_argument('--json', action='store_true', help='print the record as JSON, and nothing else')
     shared.add_argument('--rerun', action='store_true', help='run even when a final record of the inputs exists')
     for step in steps.values():
-        command = commands.add_parser(step.name, parents=[shared], help=step.help or None)
+        old = [name for name, new in DEPRECATED_VERBS.items() if new == step.name]
+        command = commands.add_parser(step.name, parents=[shared], help=step.help or None, aliases=old)
         for argument in step.arguments:
             _add_argument(command, argument)
     records = commands.add_parser('records', help='list the records, or show one by its digest')
@@ -55,6 +56,15 @@ def _params(step: Step, args: argparse.Namespace) -> Params:
     """Return a step's parameters from the parsed arguments."""
     names = [argument.name for argument in step.arguments]
     return {name: getattr(args, name) for name in names if getattr(args, name, None) is not None}
+
+
+def _verb(name: str) -> str:
+    """Return the step a command names, saying on standard error when the name is deprecated."""
+    new = DEPRECATED_VERBS.get(name)
+    if new is None:
+        return name
+    sys.stderr.write(f"'{name}' is now '{new}'; the old name goes in the next minor release\n")
+    return new
 
 
 def _print(result: Result, as_json: bool) -> None:
@@ -99,7 +109,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         _records(root, args.digest, args.step)
         return
     try:
-        step = steps[args.command]
+        step = steps[_verb(args.command)]
         result = run_step(step, root, _params(step, args), rerun=args.rerun)
     except (RecordError, FileNotFoundError, KeyError, ValueError) as exc:
         sys.stderr.write(f'{args.command}: {exc}\n')

@@ -1,6 +1,6 @@
 # Translation coverage
 
-This page records how much of real corpora Veriphy's symbolic translation covers, measured by `#veriphy_coverage`.
+This page records how much of real corpora Veriphy's symbolic translation covers, measured by `#veriphy coverage`.
 The command opens the binders of every theorem in the corpus, translates each relation (`=`, `≠`, `≤`, `<`, `≥`, `>`)
 in its hypotheses and conclusion, and classifies every atom the translation needed:
 

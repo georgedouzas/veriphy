@@ -16,7 +16,7 @@ called the same way everywhere.
 - **Lean: one tactic and one command.** `veriphy <verb> …` acts on the goal (`veriphy certify "sos.sage"`), and
   `#veriphy <verb> …` acts on a named claim or the project (`#veriphy meaning c`, `#veriphy test c "…"`,
   `#veriphy level`, `#veriphy export`, `#veriphy translate e`, `#veriphy translations`, `#veriphy coverage`,
-  `#veriphy check-translations`, `#veriphy help`).
+  `#veriphy translations check`, `#veriphy help`).
 - **Shell: one command.** `veriphy <verb> <target> [inputs]`, the same as `python -m veriphy <verb>`, with
   `veriphy help`, `veriphy claims …` (was `python -m veriphy.graph`), `veriphy agents …` (was
   `python -m veriphy.prompts`), `veriphy records`, `veriphy certificates` and `veriphy translations`. `elaborate`

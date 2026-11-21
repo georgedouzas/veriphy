@@ -1,6 +1,6 @@
 /-
 Translation tables as data. One schema serves the core (`mathlib` namespace), library packs and the project's
-`.veriphy/translations/`; the Python toolkit reads the same records from `veriphy/toolkit/core_table.json`, and a
+`.veriphy/translations/`; the Python toolkit reads the same records from `veriphy/packs/math/script/core_table.json`, and a
 Sage-free test keeps the two copies of the core equal.
 
 The function and constant entries follow LeanSage's `ExprToAST.lean` (Oliver Dressler, MIT License,

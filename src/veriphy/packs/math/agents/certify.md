@@ -1,10 +1,10 @@
-# Building a certificate with `sage_run`
+# Building a certificate with `veriphy certify`
 
 Use this when a goal's computational core needs Sage: coefficients, squares,
 multipliers, witnesses, closed forms, or intermediate expressions. Sage finds
 them, and Lean checks the proof you emit. Sage is never trusted.
 
-Paths in this playbook are relative to its directory, which `sage -python -m veriphy.agents path` prints. The
+Paths in this playbook are relative to its directory, which `sage -python -m veriphy agents path` prints. The
 playbooks ship with the installed `veriphy` package, at the version of its toolkit.
 
 ## The loop
@@ -12,7 +12,7 @@ playbooks ship with the installed `veriphy` package, at the version of its toolk
 1. **Inspect the problem.** A first script can just print what it sees:
 
    ```lean
-   sage_run "print(goal_kind, goal); print(hyps); print(atoms); proof = 'sorry'"
+   veriphy certify "print(goal_kind, goal); print(hyps); print(atoms); proof = 'sorry'"
    ```
 
    The run fails on purpose: the `sorry` is rejected. The error shows the
@@ -24,49 +24,49 @@ playbooks ship with the installed `veriphy` package, at the version of its toolk
    - A hypothesis with no polynomial form has `poly = None`, and keeps its
      `text`.
 
-   `#veriphy_translate <term>` shows the same translation without Sage: the
+   `#veriphy translate <term>` shows the same translation without Sage: the
    Sage form, the atoms it needed and the domain conditions.
    **An unknown function.** When an atom is a function Sage knows but Veriphy
    does not translate (say `Real.arcosh x` stays an atom), add an entry for it
    to the project's `.veriphy/translations/<name>.json` (format in the user
    guide), with its domain conditions and an `example`. Check it with
-   `#veriphy_check_translations` in a Lean file of the project, which
+   `#veriphy translations check` in a Lean file of the project, which
    translates the example, renders it back and proves the two equal. Rerun the
    inspection: the atom is now a Sage function. Never edit Veriphy's own tables
-   for this; `sage -python -m veriphy.packs.math.primitives.translations list` shows what the project
+   for this; `sage -python -m veriphy translations list` shows what the project
    adds.
-2. **Reuse before writing.** Run `sage -python -m veriphy.packs.math.steps.certificates list` in
+2. **Reuse before writing.** Run `sage -python -m veriphy certificates list` in
    the project. Each line starts with the script's path, which is what
-   `sage_run file` takes. `show <name>` prints a script, so you can read its
+   `veriphy certify file` takes. `show <name>` prints a script, so you can read its
    code when the header is not enough to judge a match. A saved script reads
    the bound `problem`, so it usually runs unchanged on a goal of the same
    shape.
 3. **Otherwise pick a recipe.** Use the index in `prove.md` step 3, then
    read `recipes/<name>.md`. Copy its template into the project with
-   `sage -python -m veriphy.agents copy recipes/templates/<name>`, rename it to
+   `sage -python -m veriphy agents copy recipes/templates/<name>`, rename it to
    `.veriphy/certificates/<specific_name>.sage`, adapt the `EDIT` lines,
    and update the header: `name` the same as the file name, plus an accurate
    `goal` and `description`. A script with goal-specific edits, such as
    hard-coded `HINTS`, gets a goal-specific name, so it is not mistaken for a
    general one. Never delete or rename a script someone else saved.
-4. **Run it:** `sage_run file "<specific_name>.sage"`.
+4. **Run it:** `veriphy certify "<specific_name>.sage"`.
 5. **Iterate on the feedback.** A failure shows the script's output, the Lean
    text it built, and Lean's error. The recipe's "Failure modes" section maps
    each symptom to the next step. A script that raises shows its traceback and
    output.
-6. **Commit the replacement.** Replace the `sage_run` call with the emitted
+6. **Commit the replacement.** Replace the `veriphy certify` call with the emitted
    `Try this:` block, parentheses included. The `[apply]` marker in the message
    is not part of the proof. That block is the proof, and it builds without
    Sage. Keep the script in `.veriphy/certificates/` with a complete header, for reuse.
 
 Shape the goal first. Introduce hypotheses (`intro`) and split conjunctions
-before calling `sage_run`, so the script sees a relation or `∃` it can work
+before calling `veriphy certify`, so the script sees a relation or `∃` it can work
 with, not an implication. An implication arrives as `goal_kind == 'other'`.
 
 ## Project layout
 
 Everything Veriphy-related in the project lives under `.veriphy/` at the workspace root: scripts in
-`.veriphy/certificates/` (run by bare name, `sage_run file "<name>.sage"`), translation entries in
+`.veriphy/certificates/` (run by bare name, `veriphy certify "<name>.sage"`), translation entries in
 `.veriphy/translations/`, copied Lean assets in `.veriphy/lean/`, coverage reports in `.veriphy/coverage/`. Never
 write Veriphy artifacts anywhere else, and never move the committed proofs into `.veriphy/`.
 
@@ -106,10 +106,10 @@ write Veriphy artifacts anywhere else, and never move the committed proofs into 
 
 - `proof` must be a Lean tactic block (text, or a toolkit `Lean` value).
 - `sorry`, `native_decide` and any non-standard axiom are rejected.
-- Never commit a `sage_run` call: commit the emitted replacement.
+- Never commit a `veriphy certify` call: commit the emitted replacement.
 - If no primitive or emitter can express the certificate, report
   `blocked-missing-building-block` and name what is missing.
 - When no certificate is feasible (every matching recipe failed, or the claim quantifies over a
-  dimension, a space or a function), test the claim with `sage_test` (`recipes/test_fallback.md`)
+  dimension, a space or a function), test the claim with `#veriphy test` (`recipes/test_fallback.md`)
   and name the level it reached, `kernel-test` or `oracle-test`. A test never replaces a certificate, and
   is never reported as a proof.

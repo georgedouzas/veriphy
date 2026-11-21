@@ -4,7 +4,7 @@ Verification levels: how a claim was checked through Veriphy.
 * `certificate`: a recipe built the proof. Its replacement runs inside `veriphy_certified`, which leaves the marker
   `Veriphy.certified` (the identity on proofs) in the proof term, so the level survives the replacement.
 * `lean-proof`: a complete Lean proof that no recipe built, on Lean's standard axioms alone.
-* `kernel-test` and `oracle-test`: `sage_test` checked the claim at instances, by the kernel or by Sage alone. The
+* `kernel-test` and `oracle-test`: `#veriphy test` checked the claim at instances, by the kernel or by Sage alone. The
   replacement carries the attribute `veriphy_tested` with the level and the instance counts.
 * `none`: a statement without a checked proof: a definition of type `Prop`, or a theorem that depends on `sorry` or on
   an axiom beyond the standard ones.
@@ -14,6 +14,7 @@ a tested instance cannot depend on the claim it tests. `#veriphy_levels p₁ …
 prefixes with their levels.
 -/
 import Lean
+import Veriphy.Kit.Deprecation
 
 namespace Veriphy
 
@@ -38,7 +39,7 @@ elab_rules : tactic
     replaceMainGoal [h.mvarId!]
     evalTactic tac
 
-/-- A claim's level and instance counts, recorded by `sage_test`. -/
+/-- A claim's level and instance counts, recorded by `#veriphy test`. -/
 structure Tested where
   /-- `kernel-test` or `oracle-test`. -/
   level : String
@@ -55,7 +56,7 @@ syntax (name := veriphyTested) "veriphy_tested " ident num num : attr
 initialize testedAttr : ParametricAttribute Tested ←
   registerParametricAttribute {
     name := `veriphyTested
-    descr := "a claim tested by sage_test, with its level and instance counts"
+    descr := "a claim tested by #veriphy test, with its level and instance counts"
     getParam := fun _ stx => do
       match stx with
       | `(attr| veriphy_tested $level:ident $kernel:num $oracle:num) =>
@@ -115,7 +116,8 @@ def levelOf [Monad m] [MonadEnv m] (name : Name) : m String := do
 syntax (name := veriphyLevels) "#veriphy_levels" (ppSpace ident)+ : command
 
 elab_rules : command
-  | `(#veriphy_levels $prefixes*) => do
+  | `(#veriphy_levels%$tk $prefixes*) => do
+    warnDeprecated tk "#veriphy_levels" "#veriphy level"
     let env ← getEnv
     let roots := prefixes.map (·.getId)
     let names := env.constants.fold (init := #[]) fun acc name info =>

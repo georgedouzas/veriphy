@@ -1,4 +1,4 @@
-"""The Lean steps, `elaborate` and `level`, and how a Lean step runs Lean on a generated file of the workspace."""
+"""The Lean steps, `check` and `level`, and how a Lean step runs Lean on a generated file of the workspace."""
 
 import json
 from pathlib import Path
@@ -9,7 +9,7 @@ from veriphy.steps import Argument, Outcome, Params, Prepared, Step
 
 TIMEOUT_S = 1800
 AXIOMS_MARKER = 'veriphy-axioms '
-# prepended to the copy `elaborate` runs; the appended script needs it, and line numbers are shifted back
+# prepended to the copy `check` runs; the appended script needs it, and line numbers are shifted back
 PRELUDE = 'import Lean\n'
 AXIOMS_SCRIPT = """
 
@@ -103,7 +103,7 @@ def message_line(message: dict[str, object], shift: int) -> int:
     return int(line) - shift
 
 
-def _prepare_elaborate(root: Path, params: Params) -> Prepared:
+def _prepare_check(root: Path, params: Params) -> Prepared:
     """Read the file and the workspace's Lean sources."""
     path = resolve(root, params['file'])
     return Prepared(
@@ -113,7 +113,7 @@ def _prepare_elaborate(root: Path, params: Params) -> Prepared:
     )
 
 
-def _elaborate(root: Path, _params: Params, prepared: Prepared) -> Outcome:
+def _check(root: Path, _params: Params, prepared: Prepared) -> Outcome:
     """Have Lean check the file, and report its errors and the axioms of each declaration."""
     path = prepared.context if isinstance(prepared.context, Path) else Path()
     shift = PRELUDE.count('\n')
@@ -122,7 +122,7 @@ def _elaborate(root: Path, _params: Params, prepared: Prepared) -> Outcome:
     source = PRELUDE + text + AXIOMS_SCRIPT
     tools = {'lean': toolchain(root), 'veriphy': __version__}
     try:
-        code, error, messages = run_lean(root, source, f'elaborate-{content_digest(source)[:12]}')
+        code, error, messages = run_lean(root, source, f'check-{content_digest(source)[:12]}')
     except ToolError as exc:
         return Outcome('failed', {'error': str(exc)}, tools)
     if not messages and code != 0:
@@ -153,7 +153,7 @@ def _prepare_level(root: Path, params: Params) -> Prepared:
 
 
 def _level(root: Path, params: Params, prepared: Prepared) -> Outcome:
-    """Build the module, then report the level `#veriphy_levels` gives every declaration under the prefixes."""
+    """Build the module, then report the level `#veriphy level` gives every declaration under the prefixes."""
     module = str(params['module'])
     prefixes = prepared.context if isinstance(prepared.context, list) else [module]
     tools = {'lean': toolchain(root), 'veriphy': __version__}
@@ -161,7 +161,7 @@ def _level(root: Path, params: Params, prepared: Prepared) -> Outcome:
         built, out, err = run_process([_lake(), 'build', module], root, TIMEOUT_S)
         if built != 0:
             return Outcome('refused', {'error': (out + err).strip()[-4000:]}, tools)
-        source = f'import {module}\nimport Veriphy.Kit.Levels\n#veriphy_levels {" ".join(prefixes)}\n'
+        source = f'import {module}\nimport Veriphy.Tactic.Operation\n#veriphy level {" ".join(prefixes)}\n'
         code, error, messages = run_lean(root, source, f'level-{content_digest(source)[:12]}')
     except ToolError as exc:
         return Outcome('failed', {'error': str(exc)}, tools)
@@ -177,11 +177,11 @@ def _level(root: Path, params: Params, prepared: Prepared) -> Outcome:
     return Outcome('reported', {'levels': levels}, tools)
 
 
-ELABORATE = Step(
-    'elaborate',
+CHECK = Step(
     'check',
-    _prepare_elaborate,
-    _elaborate,
+    'check',
+    _prepare_check,
+    _check,
     help='Lean checks a file, with each axiom set',
     arguments=(Argument('file'),),
 )
@@ -190,7 +190,7 @@ LEVEL = Step(
     'derived',
     _prepare_level,
     _level,
-    help='the levels of a module, from #veriphy_levels',
+    help='the levels of a module, from #veriphy level',
     arguments=(
         Argument('module'),
         Argument('prefixes', 'a name prefix (default: the module)', option=True, flag='--prefix', many=True),

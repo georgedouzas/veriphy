@@ -28,7 +28,7 @@ partial def workspaceRoot (start : Option FilePath := none) : IO FilePath := do
 def projectDir (start : Option FilePath := none) : IO FilePath :=
   return (← workspaceRoot start) / projectDirName
 
-/-- Resolve a `sage_run file` path: a bare file name lives in `.veriphy/certificates/`, any other relative path
+/-- Resolve a script file path: a bare file name lives in `.veriphy/certificates/`, any other relative path
 is taken from the workspace root, and an absolute path is kept. -/
 def resolveScriptPath (path : String) (start : Option FilePath := none) : IO FilePath := do
   let p : FilePath := path
@@ -40,7 +40,7 @@ def resolveScriptPath (path : String) (start : Option FilePath := none) : IO Fil
 def readScript (path : String) : IO String := do
   let resolved ← resolveScriptPath path
   unless ← resolved.pathExists do
-    throw <| IO.userError s!"sage_run: no script at '{resolved}'"
+    throw <| IO.userError s!"veriphy: no script at '{resolved}'"
   IO.FS.readFile resolved
 
 end Veriphy

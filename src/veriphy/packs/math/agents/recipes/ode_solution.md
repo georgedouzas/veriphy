@@ -6,7 +6,7 @@
   (iterated for higher orders), and either
   - a hypothesis `hx : x = fun s => …` gives `x` explicitly, or
   - the goal asks for a solution: `∃ x : ℝ → ℝ, (∀ t, ODE) ∧ x t₀ = y₀ ∧ deriv x t₀ = y₁ …`.
-- `#veriphy_translate` shows the equation with `F_x(t)` and `diff(F_x(s_), s_, k)`; a Physlib `∂ₜ` translates the
+- `#veriphy translate` shows the equation with `F_x(t)` and `diff(F_x(s_), s_, k)`; a Physlib `∂ₜ` translates the
   same way when the `physlib` pack is active.
 - Sage is not trusted with the solution. Its `desolve` (with the initial conditions) only proposes the witness. The
   proof states each derivative of the solution as a fact `dₖ : deriv (fun s => Bₖ₋₁) = fun s => Bₖ`, proved by
@@ -16,26 +16,35 @@
 ## Template
 
 Copy it to the project's `.veriphy/certificates/ode_solution.sage` (or a more specific name), adapt the lines marked
-`EDIT`, keep the header, and run it with `sage_run file "<name>.sage"`.
+`EDIT`, keep its `SCRIPT` declaration, and run it with `veriphy certify "<name>.sage"`.
 
 ```sage
-# name: ode_solution
-# technique: ODE solution checked by differentiation
-# goal: an equation in deriv x with x defined by a hypothesis `hx : x = fun s => …`, or ∃ x, (∀ t, ODE) ∧ conditions
-# description: Sage solves (desolve) or takes the stated x; derivative facts, rewriting and ring/field_simp check it.
+SCRIPT = {
+    'name': 'ode_solution',
+    'serves': 'certify',
+    'technique': 'ODE solution checked by differentiation',
+    'goal': 'an equation in deriv x with x defined by a hypothesis `hx : x = fun s => …`, or ∃ x, (∀ t, ODE) ∧ conditions',
+    'description': 'Sage solves (desolve) or takes the stated x; derivative facts, rewriting and ring/field_simp check it.',
+    'inputs': {},
+}
+
 PROOFS = {}  # EDIT: tactics proving the nonzero conditions no hypothesis states, by their Lean text
 SOLUTION = None  # EDIT: a solution body in s_ (e.g. 3 * exp(2 * SR.var('s_'))) when Sage finds none
-if problem.exists_function is not None:
-    proof = solve_exists(problem, proofs=PROOFS, solution=SOLUTION)
-else:
-    proof = verify_definition(problem, proofs=PROOFS)
+
+
+def run(goal, inputs):
+    if problem.exists_function is not None:
+        proof = solve_exists(problem, proofs=PROOFS, solution=SOLUTION)
+    else:
+        proof = verify_definition(problem, proofs=PROOFS)
+    return found(proof)
 ```
 
 ## Worked examples
 
 ```lean
 example : ∃ x : ℝ → ℝ, (∀ t, deriv x t = 2 * x t) ∧ x 0 = 3 := by
-  sage_run file "ode_solution.sage"
+  veriphy certify "ode_solution.sage"
 -- replacement:
 --   have d1 : deriv (fun s => 3 * (Real.exp (2 * s))) = fun s => 6 * (Real.exp (2 * s)) := by
 --     funext s
@@ -47,7 +56,7 @@ example : ∃ x : ℝ → ℝ, (∀ t, deriv x t = 2 * x t) ∧ x 0 = 3 := by
 
 example (ω x₀ v₀ : ℝ) (hω : ω ≠ 0) :
     ∃ x : ℝ → ℝ, (∀ t, deriv (deriv x) t + ω ^ 2 * x t = 0) ∧ x 0 = x₀ ∧ deriv x 0 = v₀ := by
-  sage_run file "ode_solution.sage"
+  veriphy certify "ode_solution.sage"
 -- the witness is fun s => x₀ * Real.cos (s * ω) + v₀ * Real.sin (s * ω) / ω; `hω` lets field_simp clear 1/ω
 ```
 

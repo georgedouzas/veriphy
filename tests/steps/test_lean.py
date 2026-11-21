@@ -1,4 +1,4 @@
-"""Test the Lean steps on this repository's workspace: `elaborate` reports errors and axioms, `level` the levels."""
+"""Test the Lean steps on this repository's workspace: `check` reports errors and axioms, `level` the levels."""
 
 import shutil
 from collections.abc import Iterator
@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from veriphy.packs.lean.steps import ELABORATE, LEVEL
+from veriphy.packs.lean.steps import CHECK, LEVEL
 from veriphy.steps import RecordStore, main, run_step
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -25,26 +25,26 @@ def _forget_new_records() -> Iterator[None]:
         path.unlink()
 
 
-def test_elaborate_reports_axioms(tmp_path: Path) -> None:
+def test_check_reports_axioms(tmp_path: Path) -> None:
     """Accept a file that type-checks, and give each declaration its axioms, `sorry` included."""
     path = tmp_path / 'Good.lean'
     path.write_text('theorem good : 1 + 1 = 2 := rfl\n\ntheorem gap : 1 = 1 := sorry\n')
-    record = run_step(ELABORATE, ROOT, {'file': str(path)}, rerun=True).record
+    record = run_step(CHECK, ROOT, {'file': str(path)}, rerun=True).record
     assert record.status == 'accepted'
     assert record.outputs['axioms'] == {'gap': ['sorryAx'], 'good': []}
 
 
-def test_elaborate_refuses_a_broken_file(tmp_path: Path) -> None:
+def test_check_refuses_a_broken_file(tmp_path: Path) -> None:
     """Refuse a file that does not type-check, with Lean's error at the file's own line, and exit with status 1."""
     path = tmp_path / 'Broken.lean'
     path.write_text('-- a false claim\ntheorem bad : 1 = 2 := rfl\n')
-    record = run_step(ELABORATE, ROOT, {'file': str(path)}, rerun=True).record
+    record = run_step(CHECK, ROOT, {'file': str(path)}, rerun=True).record
     errors = record.outputs['errors']
     assert record.status == 'refused'
     assert isinstance(errors, list)
     assert errors[0]['line'] == 2
     with pytest.raises(SystemExit) as raised:
-        main(['--root', str(ROOT), 'elaborate', str(path)])
+        main(['--root', str(ROOT), 'check', str(path)])
     assert raised.value.code == 1
 
 

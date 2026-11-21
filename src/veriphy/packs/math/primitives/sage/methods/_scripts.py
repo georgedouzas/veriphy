@@ -4,7 +4,7 @@ import contextlib
 import io
 import signal
 from collections.abc import Iterator
-from types import FrameType
+from types import CodeType, FrameType
 
 import sage.all as sage_all
 from sage.repl.preparse import preparse_file
@@ -17,10 +17,13 @@ from veriphy.packs.math.primitives.sage.methods._registry import (
     _coerce_str,
     _register_method,
 )
-from veriphy.packs.math.script import Lean, check_instances, read_problem
+from veriphy.packs.math.script import Found, Lean, Refuted, Unknown, check_instances, read_problem, show_values
 
 SCRIPT_METHODS: dict[str, Method] = {}
 STDOUT_LIMIT = 20000
+# the names a script's result is kept under, beside the script's own
+RESULT = '__veriphy_result__'
+LEGACY = '__veriphy_legacy__'
 DEFAULT_TIMEOUT_S = 120
 
 
@@ -49,16 +52,42 @@ def _alarm(timeout: int) -> Iterator[None]:
         signal.signal(signal.SIGALRM, previous)
 
 
+def _as_body(script: str) -> str:
+    """Return a script that `return`s outside any function as the body of `run(goal, inputs)`."""
+    lines = script.strip('\n').splitlines()
+    return 'def run(goal, inputs):\n' + '\n'.join('    ' + line for line in lines) + '\n'
+
+
+def _compile(script: str) -> CodeType:
+    """Compile a preparsed script, reading a top-level `return` as the body of `run(goal, inputs)`."""
+    try:
+        return compile(preparse_file(script), '<veriphy-script>', 'exec')
+    except SyntaxError as exc:
+        if 'outside function' not in str(exc):
+            raise
+    return compile(preparse_file(_as_body(script)), '<veriphy-script>', 'exec')
+
+
+def _execute(code: CodeType, namespace: dict[str, object]) -> None:
+    """Run a compiled script, then its `run(goal, inputs)` when it defines one, keeping the result."""
+    exec(code, namespace)  # noqa: S102 - running the caller's script is the method # nosec B102
+    entry = namespace.get('run')
+    if callable(entry):
+        namespace[RESULT] = entry(namespace.get('goal'), namespace.get('inputs') or {})
+    else:
+        namespace[LEGACY] = True
+
+
 def _run_sage(script: str, namespace: dict[str, object], timeout: int) -> str:
     """Run preparsed Sage source in `namespace` over `sage.all`, the caller's names shadowing Sage's."""
     prebound = dict(namespace)
     namespace.update({k: v for k, v in vars(sage_all).items() if not k.startswith('_')})
     namespace.update(prebound)
-    code = compile(preparse_file(script), '<veriphy-script>', 'exec')
+    code = _compile(script)
     buffer = io.StringIO()
     try:
         with _alarm(timeout), contextlib.redirect_stdout(buffer):
-            exec(code, namespace)  # noqa: S102 - running the caller's script is the method # nosec B102
+            _execute(code, namespace)
     except Exception as exc:
         reason = f'{type(exc).__name__}: {exc}'
         raise ScriptError(reason, _truncate(buffer.getvalue())) from exc
@@ -78,7 +107,9 @@ def _run_derivation(script: str, timeout_s: int) -> dict[str, object]:
     """Run a whole Sage derivation script and return its `results` and printed output, as guidance only."""
     namespace: dict[str, object] = {}
     out = _run_sage(script, namespace, timeout_s)
-    return {'results': namespace.get('results'), 'stdout': out, 'advisory': True}
+    result = namespace.get(RESULT)
+    results = result.value if isinstance(result, Found) else namespace.get('results')
+    return {'results': results, 'stdout': out, 'advisory': True}
 
 
 def _toolkit_names() -> dict[str, object]:
@@ -86,12 +117,33 @@ def _toolkit_names() -> dict[str, object]:
     return {name: getattr(veriphy.packs.math.script, name) for name in veriphy.packs.math.script.__all__}
 
 
-def _read_proof(namespace: dict[str, object], out: str) -> tuple[str, bool]:
-    """Return the Lean tactic block a script assigned to `proof`, and whether it leaves goals open on purpose."""
-    if namespace.get('proof') is None:
-        message = 'the script did not assign `proof` (a Lean tactic block, as text or a toolkit `Lean` value)'
+def _returned(namespace: dict[str, object], legacy: str, out: str) -> object:
+    """Return what a script found: the value of its `found(...)`, or of the variable a legacy script assigns.
+
+    A `refuted(...)` or `unknown(...)` result raises, naming the values or the reason.
+    """
+    result = namespace.get(RESULT)
+    if isinstance(result, Found):
+        return result.value
+    if isinstance(result, Refuted):
+        note = f': {result.note}' if result.note else ''
+        message = f'the goal is false at {show_values(result.values)}{note}'
         raise ScriptError(message, out)
-    proof = namespace['proof']
+    if isinstance(result, Unknown):
+        message = f'the script found nothing: {result.reason}'
+        raise ScriptError(message, out)
+    if namespace.get(RESULT) is not None or not namespace.get(LEGACY):
+        message = 'run(goal, inputs) must return found(...), refuted(...) or unknown(reason)'
+        raise ScriptError(message, out)
+    return namespace.get(legacy)
+
+
+def _read_proof(namespace: dict[str, object], out: str) -> tuple[str, bool]:
+    """Return the Lean tactic block a script found, and whether it leaves goals open on purpose."""
+    proof = _returned(namespace, 'proof', out)
+    if proof is None:
+        message = 'the script returned no proof: return found(proof) from run(goal, inputs), proof a Lean tactic'
+        raise ScriptError(message, out)
     if isinstance(proof, Lean):
         if proof.kind != 'tactic':
             message = f'`proof` must be a Lean tactic, got a {proof.kind}: {proof.text}'
@@ -101,6 +153,14 @@ def _read_proof(namespace: dict[str, object], out: str) -> tuple[str, bool]:
         return proof, False
     message = f'`proof` must be Lean text or a toolkit `Lean` value, got {type(proof).__name__}'
     raise ScriptError(message, out)
+
+
+def _deprecation(namespace: dict[str, object], legacy: str) -> dict[str, str]:
+    """Return a `deprecated` note when the script assigned `legacy` instead of returning from `run(goal, inputs)`."""
+    if not namespace.get(LEGACY):
+        return {}
+    note = f'assigning `{legacy}` is deprecated: return found({legacy}) from run(goal, inputs), or `return` inline'
+    return {'deprecated': note}
 
 
 @_register_method(
@@ -115,7 +175,7 @@ def _run_proof_script(problem: object, script: str, timeout_s: int) -> dict[str,
     namespace = {**_toolkit_names(), **read_problem(problem).to_namespace(), 'proof': None}
     out = _run_sage(script, namespace, timeout_s)
     lean, leaves_goals = _read_proof(namespace, out)
-    return {'lean': lean, 'stdout': out, 'leaves_goals': leaves_goals}
+    return {'lean': lean, 'stdout': out, 'leaves_goals': leaves_goals, **_deprecation(namespace, 'proof')}
 
 
 def run_test_script(problem: object, script: str, timeout_s: int) -> dict[str, object]:
@@ -137,10 +197,10 @@ def run_test_script(problem: object, script: str, timeout_s: int) -> dict[str, o
     read = read_problem(problem)
     namespace = {**_toolkit_names(), **read.to_namespace(), 'instances': None, 'SEED': 0}
     out = _run_sage(script, namespace, timeout_s)
-    if namespace.get('instances') is None:
-        message = 'the script did not assign `instances` (a list of kernel_instance and oracle_instance values)'
+    chosen = _returned(namespace, 'instances', out)
+    if chosen is None:
+        message = 'the script returned no instances: return found([...]) of kernel_instance and oracle_instance values'
         raise ScriptError(message, out)
-    chosen = namespace['instances']
     if not isinstance(chosen, list | tuple):
         message = '`instances` must be a list'
         raise ScriptError(message, out)
@@ -154,6 +214,7 @@ def run_test_script(problem: object, script: str, timeout_s: int) -> dict[str, o
         'stdout': out,
         'seed': int(seed) if isinstance(seed, int) else 0,
         'sage_version': str(sage_all.version()),
+        **_deprecation(namespace, 'instances'),
     }
 
 

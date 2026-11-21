@@ -17,6 +17,7 @@ A statement is fully covered when every atom is local. The report gives the shar
 -/
 import Veriphy.Kit.Problem
 import Veriphy.Kit.Project
+import Veriphy.Kit.Deprecation
 
 namespace Veriphy.Coverage
 
@@ -214,7 +215,8 @@ def measure (prefixes : Array Name) : MetaM Report := do
 syntax (name := veriphyCoverage) "#veriphy_coverage " "[" ident,* "]" (str)? : command
 
 elab_rules : command
-  | `(#veriphy_coverage [$ps,*] $[$out]?) => do
+  | `(#veriphy_coverage%$tk [$ps,*] $[$out]?) => do
+    warnDeprecated tk "#veriphy_coverage" "#veriphy coverage"
     let prefixes := ps.getElems.map (·.getId)
     let report ← liftTermElabM (measure prefixes)
     logInfo report.summary

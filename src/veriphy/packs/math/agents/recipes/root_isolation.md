@@ -12,20 +12,29 @@
 ## Template
 
 Copy it to the project's `.veriphy/certificates/root_isolation.sage` (or a more specific name), adapt the lines
-marked `EDIT`, keep the header, and run it with `sage_run file "<name>.sage"`.
+marked `EDIT`, keep its `SCRIPT` declaration, and run it with `veriphy certify "<name>.sage"`.
 
 ```sage
-# name: root_isolation
-# technique: isolated real roots by sign changes and monotonicity; eigenvalues through the characteristic polynomial
-# goal: ∃! x : ℝ, (a < x ∧ x < b) ∧ p x = 0, or an eigenvalue of an explicit 3 by 3 matrix in an interval
-# description: Sage isolates the roots; Lean applies the intermediate value theorem and strict monotonicity.
+SCRIPT = {
+    'name': 'root_isolation',
+    'serves': 'certify',
+    'technique': 'isolated real roots by sign changes and monotonicity; eigenvalues through the characteristic polynomial',
+    'goal': '∃! x : ℝ, (a < x ∧ x < b) ∧ p x = 0, or an eigenvalue of an explicit 3 by 3 matrix in an interval',
+    'description': 'Sage isolates the roots; Lean applies the intermediate value theorem and strict monotonicity.',
+    'inputs': {},
+}
+
 POLYNOMIAL = None  # EDIT: the polynomial (Sage), e.g. x**3 - 2*x - 1 with x = polygen(QQ, 'x')
 POLYNOMIAL_LEAN = None  # EDIT: the polynomial as the goal writes it in x, e.g. 'x ^ 3 - 2 * x - 1'
 INTERVAL = None  # EDIT: (a, b) from the goal; None prints the isolating intervals and stops
-assert POLYNOMIAL is not None, 'fill in POLYNOMIAL and POLYNOMIAL_LEAN in a copy'
-if INTERVAL is None:
-    raise AssertionError(f'isolating intervals: {isolate_roots(POLYNOMIAL)}; state the goal on one and set INTERVAL')
-proof = root_proof(POLYNOMIAL_LEAN, INTERVAL[0], INTERVAL[1], POLYNOMIAL)
+
+
+def run(goal, inputs):
+    assert POLYNOMIAL is not None, 'fill in POLYNOMIAL and POLYNOMIAL_LEAN in a copy'
+    if INTERVAL is None:
+        raise AssertionError(f'isolating intervals: {isolate_roots(POLYNOMIAL)}; state the goal on one and set INTERVAL')
+    proof = root_proof(POLYNOMIAL_LEAN, INTERVAL[0], INTERVAL[1], POLYNOMIAL)
+    return found(proof)
 ```
 
 ## Worked example
@@ -33,7 +42,7 @@ proof = root_proof(POLYNOMIAL_LEAN, INTERVAL[0], INTERVAL[1], POLYNOMIAL)
 ```lean
 -- with POLYNOMIAL = x**3 - 2*x - 1, POLYNOMIAL_LEAN = 'x ^ 3 - 2 * x - 1' and INTERVAL = (3/2, 3)
 example : ∃! x : ℝ, (3 / 2 < x ∧ x < 3) ∧ x ^ 3 - 2 * x - 1 = 0 := by
-  sage_run file "golden_root.sage"
+  veriphy certify "golden_root.sage"
 ```
 
 `lean/VeriphyTest/SageRun.lean` also certifies the largest eigenvalue of a symmetric 3 by 3 matrix in `(3, 4)`.

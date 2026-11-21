@@ -17,10 +17,10 @@ classic cases.
 
 Sage, the bridge, the translator and the agent are all outside the trusted base:
 
-- `sage_run` rejects `sorry` and any axiom beyond Lean's standard three, and replays the block from its printed text.
+- `veriphy certify` rejects `sorry` and any axiom beyond Lean's standard three, and replays the block from its printed text.
 - Polynomials cross the bridge as structured term lists rather than strings, so Lean rebuilds terms instead of parsing
   CAS output. A mistranslation fails the tactic. It can't prove the wrong thing.
-- Sage is needed only while writing proofs. `sage_run` offers a `Try this:` replacement, you commit that, and your
+- Sage is needed only while writing proofs. `veriphy certify` offers a `Try this:` replacement, you commit that, and your
   proofs and CI need only Lean and mathlib.
 
 Veriphy has no ready-made certificates. Real goals have a long tail, so it ships building blocks: the tactic, a toolkit
@@ -30,8 +30,8 @@ and a recipe per technique. Each certificate is written for the goal in hand and
 
 `research` calls `prove` for each claim, and `prove` calls `certify` for each computational core. The skills are thin
 wrappers around plain markdown that ships with the Python package: `prove.md`, `certify.md`, `research.md` and
-`recipes/`, in the directory `sage -python -m veriphy.agents path` prints. Any agent can follow them, and
-`sage -python -m veriphy.agents list` names every playbook, recipe, template and asset.
+`recipes/`, in the directory `sage -python -m veriphy agents path` prints. Any agent can follow them, and
+`sage -python -m veriphy agents list` names every playbook, recipe, template and asset.
 
 ### `prove`: from a statement to a proof
 
@@ -54,7 +54,7 @@ It ends with one of these, and leaves commits and PRs to you:
 | Report | Meaning |
 |---|---|
 | `proved` | a verified Lean proof, naming the recipes and scripts used |
-| `tested` | no certificate is feasible, and `sage_test` checked the claim at instances. The report gives the level and the counts |
+| `tested` | no certificate is feasible, and `#veriphy test` checked the claim at instances. The report gives the level and the counts |
 | `statement-suspect` | the numeric test contradicted the claim, and the report gives the counterexample |
 | `blocked-library-gap` | the statement needs theory that doesn't exist yet, named in the report |
 | `blocked-missing-building-block` | the toolkit lacks a Sage computation or a Lean emitter, named in the report |
@@ -63,7 +63,7 @@ It ends with one of these, and leaves commits and PRs to you:
 
 It inspects the goal, reuses a saved script if one fits, and otherwise adapts a recipe. It then iterates on Lean's
 errors until the block is accepted. Working scripts stay in `.veriphy/certificates/`, where any goal of the same shape
-can reuse them. See [Building proofs with `sage_run`](#building-proofs-with-sage_run).
+can reuse them. See [Building proofs with `veriphy certify`](#building-proofs-with-veriphy-certify).
 
 ### `research`: a paper or chapter as a whole
 
@@ -77,10 +77,10 @@ again after each substantial edit.
    that it is right.
 3. **Triage.** Each claim with a computable form is tested numerically under the conventions it assumes. A
    counterexample makes it `suspect`, and a convention clash is a common cause. The rest go to `recipe`, `test`
-   (`sage_test`) or `formalize` (needs definitions or theory you don't have yet).
+   (`#veriphy test`) or `formalize` (needs definitions or theory you don't have yet).
 4. **Prove.** In dependency order, each claim goes through `prove` with its graph slice as context, and is linked to its
    Lean claim with `formalizedBy`.
-5. **Export.** `#veriphy_graph <prefix>` writes the levels and dependencies Lean knows.
+5. **Export.** `#veriphy export <prefix>` writes the levels and dependencies Lean knows.
 6. **Reason.** `reason` derives the consequences and `oo-horn` checks the run. `excludes`, `clashes`, `levels` and
    `appendix` then build the report.
 7. **Report.** You get the appendix and, for each claim, its group and effective level, along with every clash, suspect
@@ -101,13 +101,13 @@ Veriphy keeps its files under `.veriphy/` at the Lean workspace root. Commit it 
 | `.veriphy/translations/` | your translation and rewrite entries |
 | `.veriphy/lean/` | Lean files copied from Veriphy, such as recipe assets |
 | `.veriphy/coverage/` | coverage reports |
-| `.veriphy/tests/` | records written by `sage_test` |
+| `.veriphy/tests/` | records written by `#veriphy test` |
 | `.veriphy/graph/` | the research claim graph: `sources/`, `lean/` and `runs/` |
 
 Projects from Veriphy 0.1.0 keep scripts in a top-level `certificates/`. They still work, and the catalog prints the
 command that moves them.
 
-Some recipes need Lean assets. `sage -python -m veriphy.agents copy assets/VeriphyAssets/<name>` copies one to
+Some recipes need Lean assets. `sage -python -m veriphy agents copy assets/VeriphyAssets/<name>` copies one to
 `.veriphy/lean/VeriphyAssets/`, and the library is declared once in `lakefile.toml`:
 
 ```toml
@@ -130,14 +130,17 @@ Environment variables:
 | `VERIPHY_GRAPH_SETUP` | `off` stops the graph fetching or building anything |
 | `VERIPHY_OO_HORN` | use this `oo-horn` binary |
 
-## Steps and records
+## Operations and records
 
-Veriphy's checks are steps, and every step writes a record. `python -m veriphy <step>` runs one:
+Everything Veriphy runs is an operation: a verb, the target it acts on, its inputs, and a result. The shell runs one
+as `veriphy <verb> <target> [inputs]` (or `python -m veriphy <verb>`), Python as
+`veriphy.run(verb, target, **inputs)`, and Lean as the tactic `veriphy <verb>` on the goal or the command
+`#veriphy <verb>` on a claim. `veriphy help` lists the verbs of the workspace, and `#veriphy help` those of Lean.
 
-| Step | Kind | Does |
+| Operation | Kind | Does |
 |---|---|---|
-| `elaborate <file>` | check | Lean checks the file, and the record gives each declaration's axioms |
-| `level <module> [--prefix P]` | derived | the level `#veriphy_levels` gives each declaration |
+| `check <file>` | check | Lean checks the file, and the record gives each declaration's axioms |
+| `level <module> [--prefix P]` | derived | the level `#veriphy level` gives each declaration |
 | `meaning <file> <declaration>` | evidence | the statement tested at seeded values satisfying its hypotheses: `agrees`, `counterexample` or `undecided` |
 | `validate` | evidence | the research graph against its shapes |
 | `reason` | check | graph reasoning, with `oo-horn`'s verdict |
@@ -156,34 +159,70 @@ values for the binders with `--seed` (default 0), keeps those at which every hyp
 holds, and evaluates the conclusion exactly, or in interval arithmetic of 128 bits. An equation is first tried
 symbolically. `--informal "<text>"` stores the agent's reading of the statement in the record, `--values N` sets how
 many values must agree (10 by default), and `--points '[{"x": "pi"}]'` evaluates at given values instead.
-`#veriphy_meaning c` runs the same check inside Lean. Agreement is evidence and grants no level.
+`#veriphy meaning c` runs the same check inside Lean. Agreement is evidence and grants no level.
 
-`python -m veriphy records` lists the records, and `records <digest>` shows one. The records stay out of git by
+`veriphy records` lists the records, and `records <digest>` shows one. The records stay out of git by
 default: delete `.veriphy/runs/` and the steps simply run again.
 
-## Building proofs with `sage_run`
+`veriphy.run` returns the result with its `verb`, `target`, `status`, `outputs`, `level` and `record`:
+
+```python
+import veriphy
+
+result = veriphy.run('meaning', 'Claim.lean', declaration='wrong', informal='the square root of x squared is -x')
+result.status, result.outputs['counterexample']['values']   # ('counterexample', {'x': '1'})
+```
+
+The other programs run through the same command: `veriphy claims …` (the research claim graph), `veriphy agents …`
+(the playbooks and templates), `veriphy certificates …` (your saved scripts) and `veriphy translations …` (the
+translation entries in force).
+
+The names before 0.8 keep working until the next minor release, each with a warning that names its replacement:
+`sage_run` is `veriphy certify`, `sage_test` is `#veriphy test`, `#veriphy_meaning`, `#veriphy_levels` and
+`#veriphy_graph` are `#veriphy meaning`, `#veriphy level` and `#veriphy export`, the translation commands are
+`#veriphy translate`, `#veriphy translations [check]` and `#veriphy coverage`, the step `elaborate` is `check`, and
+`python -m veriphy.graph` and `python -m veriphy.prompts` are `veriphy claims` and `veriphy agents`.
+
+## Building proofs with `veriphy certify`
 
 ```lean
--- the script sees the goal as `problem` (x0 = a, x1 = b) and returns a Lean tactic block
+-- the script sees the goal (x0 = a, x1 = b) and returns the Lean tactic block it found
 example (a b : ℝ) : 0 ≤ a ^ 2 * b ^ 2 - 2 * a * b + 1 := by
-  sage_run "proof = nlinarith([sq_nonneg(x0*x1 - 1, problem)])"
+  veriphy certify "return found(nlinarith([sq_nonneg(x0*x1 - 1, problem)]))"
 -- Try this: nlinarith [sq_nonneg (a * b - 1)]
 
 -- a saved script from the project, here a Farkas refutation found by an exact LP
 example (x y : ℚ) (h1 : x + y ≤ 1) (h2 : x - y = 3) (h3 : 0 ≤ y) : False := by
-  sage_run file "farkas.sage"
+  veriphy certify "farkas.sage"
 ```
 
 The steps are the ones `certify` follows:
 
-1. **Inspect.** `sage_run "print(goal_kind, goal); print(hyps); print(atoms); proof = 'sorry'"` fails on purpose, and
-   the error shows the problem.
-2. **Reuse.** `sage -python -m veriphy.packs.math.steps.certificates list` shows your saved scripts, and `show <name>` prints one. A
+1. **Inspect.** `veriphy search "print(goal_kind, goal.text); print(hyps); print(atoms); return unknown('inspecting')"`
+   shows the problem and closes nothing.
+2. **Reuse.** `sage -python -m veriphy certificates list` shows your saved scripts, and `show <name>` prints one. A
    saved script runs unchanged on any goal of the same shape.
-3. **Adapt.** Otherwise copy a template with `sage -python -m veriphy.agents copy recipes/templates/<name>` and edit
+3. **Adapt.** Otherwise copy a template with `sage -python -m veriphy agents copy recipes/templates/<name>` and edit
    the lines marked `EDIT`.
 4. **Iterate.** A failure shows the script's output, the Lean text and Lean's error together.
 5. **Commit** the emitted replacement, and keep the script.
+
+Every script, saved or inline, follows one contract. A saved script declares itself and defines `run`:
+
+```python
+SCRIPT = {'name': 'sos_pair', 'serves': 'certify', 'technique': 'one square', 'goal': '0 ≤ (a - b) ^ 2',
+          'description': 'The goal is a square.', 'inputs': {}}
+
+
+def run(goal, inputs):
+    return found(nlinarith([sq_nonneg(x0 - x1, problem)]))
+```
+
+`goal` is the goal proposition (`goal.poly`, `goal.rel`, `goal.text`, `goal.expr`), `inputs` the values the caller
+gave, and the whole problem is bound as `problem`, with its parts (`lhs`, `rhs`, `hyps`, `R`, the variables). `run` returns `found(…)` with what the verb needs
+(a proof for `certify`, instances for `test`), `refuted(values)` when the goal is false there, or `unknown(reason)`.
+An inline script is the body of `run`. Upper-case constants above `run` are the lines a copy edits. A script that
+assigns `proof` or `instances` instead still works, with a note, until the next minor release.
 
 | Goal shape | Recipe |
 |---|---|
@@ -220,7 +259,7 @@ The steps are the ones `certify` follows:
 | `Module.finrank K V = n` for spans, intersections, kernels, product spaces | `dimension` |
 | `¬ ∃ f : V →ₗ[K] W, …`: a map that is not linear or bilinear | `nonlinearity` |
 | the signature of an explicit symmetric matrix (`Veriphy.Linear.HasSignature`) | `signature` |
-| no certificate is feasible: test the claim at instances (`sage_test`) | `test_fallback` |
+| no certificate is feasible: test the claim at instances (`#veriphy test`) | `test_fallback` |
 | fusion or braided fusion data (pentagons, hexagons, gauges), naturality of an intertwiner | `fusion_category` |
 | graded brackets, super-Jacobi (`sl(m\|n)`, `osp`, `D(2,1;α)`, `G(3)`, `F(4)`) | `lie_superalgebra` |
 | (Physlib) an explicit matrix `∈ lorentzAlgebra` | `physlib/lorentz_algebra` |
@@ -238,8 +277,8 @@ Veriphy translates Lean terms to Sage through tables in three namespaces, resolv
 2. library packs shipped with Veriphy, such as `physlib`, active only when the library is imported;
 3. your project's entries in `.veriphy/translations/*.json`.
 
-A later namespace never overrides an earlier one. `#veriphy_tables` prints the namespaces in force, `#veriphy_translate
-t` shows how a term translates, and `sage -python -m veriphy.packs.math.primitives.translations list` lists your project's entries (`--all`
+A later namespace never overrides an earlier one. `#veriphy translations` prints the namespaces in force, `#veriphy translate
+t` shows how a term translates, and `sage -python -m veriphy translations list` lists your project's entries (`--all`
 adds the core and the packs).
 
 When a function stays an atom, add an entry. For `Real.arcosh`, which Sage calls `arccosh` and which needs `1 ≤ x`:
@@ -261,7 +300,7 @@ argument a Sage `pattern` binds to `wi`) and an example signature such as `(x : 
 * Real.Gamma x`. Check every entry with:
 
 ```lean
-#veriphy_check_translations
+#veriphy translations check
 ```
 
 It translates each function's example, renders it back, proves the two equal, and closes each rewrite's example with its
@@ -276,7 +315,7 @@ plain subtraction when a hypothesis gives `b ≤ a` and `max(a - b, 0)` otherwis
 divisor. `Nat.factorial`, `Nat.choose`, `Nat.gcd`, `Int.floor`, `Int.ceil`, `max` and `min` translate to Sage's
 `factorial`, `binomial`, `gcd`, `floor`, `ceil`, `max_symbolic` and `min_symbolic`.
 
-`#veriphy_coverage` measures which statements of a corpus translate without opaque atoms, and ranks the heads that
+`#veriphy coverage` measures which statements of a corpus translate without opaque atoms, and ranks the heads that
 don't. Use it to decide which entries to add.
 
 ## Unknown functions and differential equations
@@ -296,7 +335,7 @@ derivative lemmas, rewrites the equation with them and closes it by `ring` or `f
 ```lean
 example (ω x₀ v₀ : ℝ) (hω : ω ≠ 0) :
     ∃ x : ℝ → ℝ, (∀ t, deriv (deriv x) t + ω ^ 2 * x t = 0) ∧ x 0 = x₀ ∧ deriv x 0 = v₀ := by
-  sage_run file "ode_solution.sage"
+  veriphy certify "ode_solution.sage"
 ```
 
 A wrong solution fails with the equation Lean could not close, such as `Real.exp (t * 3) * 9 = Real.exp (t * 3) * 6`.
@@ -318,7 +357,7 @@ The toolkit picks entrywise proofs for small goals and checkers for large ones. 
 your project can't depend on Veriphy, as with a mathlib or Physlib contribution, copy in the bundle that `python3
 scripts/bundle_check.py` writes.
 
-## When no certificate exists: `sage_test` and verification levels
+## When no certificate exists: `#veriphy test` and verification levels
 
 Some claims have no certificate, such as a statement about every matrix or in every dimension. Their proofs are mathlib
 proofs, and Veriphy tests them instead:
@@ -327,7 +366,7 @@ proofs, and Veriphy tests them instead:
 theorem traceDouble (n : ℕ) (A : Matrix (Fin n) (Fin n) ℚ) : Matrix.trace (A + A) = 2 * Matrix.trace A := by
   rw [Matrix.trace_add]; ring
 
-sage_test traceDouble file "trace_double_test.sage"
+#veriphy test traceDouble "trace_double_test.sage"
 ```
 
 The script picks values for every binder. The kernel checks each instance by computation, or Sage evaluates it exactly
@@ -345,7 +384,7 @@ Every claim has one of five levels, highest first:
 | `oracle-test` | Sage evaluated the claim at some instances, exactly or by intervals of at least 53 bits | the record is kept |
 | `none` | no checked proof and no test: a stated proposition, or a proof that uses `sorry` or another axiom | |
 
-`#veriphy_levels MyProject` lists the level of every theorem under a prefix. A test is never reported as a proof.
+`#veriphy level MyProject` lists the level of every theorem under a prefix. A test is never reported as a proof.
 
 ## The research claim graph
 
@@ -373,7 +412,7 @@ it fetches or builds, and caches it in `~/.cache/veriphy/open-ontologies/v2.1.0`
   the hash the release lists, and only if it runs
 - elsewhere `oo-horn` is built once with the release's Lean toolchain through `elan`, which takes minutes
 
-`sage -python -m veriphy.claims checker build` does the same ahead of time. `VERIPHY_GRAPH_SETUP=off` forbids automatic
+`sage -python -m veriphy claims checker build` does the same ahead of time. `VERIPHY_GRAPH_SETUP=off` forbids automatic
 setup, for offline machines and CI. Without a checker, every result is labelled `unchecked`, with the command that sets
 it up.
 
@@ -399,22 +438,22 @@ A claim from another paper is a node of that paper's source, named by its arXiv 
 sources mean the same concept.
 
 ```bash
-sage -python -m veriphy.claims vocabulary                            # print the vocabulary
-sage -python -m veriphy.claims validate                              # check the files and shapes
-sage -python -m veriphy.claims confirm chapter9 lemma-5.2 assumes half   # move one triple to the human file
+sage -python -m veriphy claims vocabulary                            # print the vocabulary
+sage -python -m veriphy claims validate                              # check the files and shapes
+sage -python -m veriphy claims confirm chapter9 lemma-5.2 assumes half   # move one triple to the human file
 ```
 
 `validate`'s SHACL report is a measurement, not a checked conclusion.
 
 ### The Lean export
 
-`#veriphy_graph KK` writes every theorem and definition under `KK` to `.veriphy/graph/lean/KK.nt`, with their levels,
+`#veriphy export KK` writes every theorem and definition under `KK` to `.veriphy/graph/lean/KK.nt`, with their levels,
 statements and dependencies. These come from the Lean environment, not from extraction. Use `formalizedBy` to link a
 prose claim to its Lean claim, and `realizedBy` to link a convention to the Lean definition behind it.
 
 ### Reasoning and verdicts
 
-`sage -python -m veriphy.claims reason` derives the consequences and writes a certificate under
+`sage -python -m veriphy claims reason` derives the consequences and writes a certificate under
 `.veriphy/graph/runs/<digest>/`: the asserted triples, the rules, one derivation line per conclusion, and a digest.
 Veriphy states the meaning of its vocabulary as OWL axioms that the checker's built-in rules evaluate. So every run uses
 the built-in rule table unchanged, and an accepted run earns `entailed` through the theorem
@@ -427,7 +466,7 @@ the built-in rule table unchanged, and an accepted run earns `entailed` through 
 | `unchecked` | no checker was found or it didn't finish, and no conclusion is reported as checked |
 | `incomplete` | the run stopped before its fixpoint |
 
-`sage -python -m veriphy.claims recheck .veriphy/graph/runs/<digest>` checks a stored run again without the reasoner, and
+`sage -python -m veriphy claims recheck .veriphy/graph/runs/<digest>` checks a stored run again without the reasoner, and
 says whether the current graph still asserts the same triples. The commands exit with status 3 when the checker didn't
 accept the run.
 
@@ -435,7 +474,7 @@ accept the run.
 ### Levels
 
 A claim's own level comes from the export or from the Lean claim that formalizes it, and is `none` otherwise. Its
-effective level is the lowest level among everything it uses, directly or not. `sage -python -m veriphy.claims levels
+effective level is the lowest level among everything it uses, directly or not. `sage -python -m veriphy claims levels
 --source chapter9` prints:
 
 ```
@@ -448,12 +487,12 @@ effective level is the lowest level among everything it uses, directly or not. `
 
 ### Convention impact and plans
 
-`sage -python -m veriphy.claims impact chapter9 half` lists every claim that assumes the convention `half`, directly or
+`sage -python -m veriphy claims impact chapter9 half` lists every claim that assumes the convention `half`, directly or
 through its dependencies, with the chain that reaches it and its Lean name. Before changing a convention, edit the
 source file and compare against the last commit:
 
 ```bash
-sage -python -m veriphy.claims plan --against HEAD
+sage -python -m veriphy claims plan --against HEAD
 ```
 
 The plan reasons over both graphs, has both runs checked, and lists the assertions you changed and the consequences
@@ -462,21 +501,21 @@ assertion and no changed consequence.
 
 ### Clashes
 
-Conventions of the same aspect exclude each other. `sage -python -m veriphy.claims excludes` proposes the `excludes`
-triples, and `--confirm` writes them as human assertions. `sage -python -m veriphy.claims clashes` then reports every
+Conventions of the same aspect exclude each other. `sage -python -m veriphy claims excludes` proposes the `excludes`
+triples, and `--confirm` writes them as human assertions. `sage -python -m veriphy claims clashes` then reports every
 claim or concept with two checked `assumes` conclusions whose conventions exclude each other, including assumptions
 inherited across papers.
 
 ### Slices
 
-`sage -python -m veriphy.claims slice chapter9 thm-9.1` prints what an agent needs to formalize `thm-9.1`: its statement,
+`sage -python -m veriphy claims slice chapter9 thm-9.1` prints what an agent needs to formalize `thm-9.1`: its statement,
 the statements and levels of the claims it uses, and each convention it assumes with the Lean definition behind it.
 Veriphy reasons over the slice alone, has that run checked, and offers the slice only if it keeps every consequence
 about the claim.
 
 ### The verification appendix
 
-`sage -python -m veriphy.claims appendix chapter9 --format latex` writes `.veriphy/graph/appendix/chapter9.tex`: a row
+`sage -python -m veriphy claims appendix chapter9 --format latex` writes `.veriphy/graph/appendix/chapter9.tex`: a row
 per claim with its own and effective levels, what caps it, its Lean name and its clashes, and a paragraph with the run,
 the verdict, the provenance of the assertions and the command that rechecks it. An unchecked run says so in the
 paragraph and the table header. `--format markdown` writes the same as Markdown.

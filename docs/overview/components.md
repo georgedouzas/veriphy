@@ -6,7 +6,7 @@ standard tactic checks; the replacement Veriphy prints builds without Sage. Larg
 `VeriphyCheck` library (kernel evaluation with a soundness theorem); definitions mathlib lacks are recipe assets,
 mathlib-only Lean files a project copies to `.veriphy/lean/VeriphyAssets/`.
 
-The [user guide](user_guide.md#building-proofs-with-sage_run) indexes the recipes by goal shape; the
+The [user guide](user_guide.md#building-proofs-with-veriphy certify) indexes the recipes by goal shape; the
 [API reference](../api/) documents every toolkit function.
 
 ## Algebra
@@ -48,13 +48,13 @@ finite data.
 
 | Component | Sage computes | Lean checks | Recipes |
 |---|---|---|---|
-| Test fallback (`_testing`) | seeded instances with edge cases; exact or interval evaluations of instances Lean cannot state | each kernel instance, stated from the claim's statement and independent of its proof (`sage_test`, `veriphy_instance%`); the level attribute `veriphy_tested` | `test_fallback` |
+| Test fallback (`_testing`) | seeded instances with edge cases; exact or interval evaluations of instances Lean cannot state | each kernel instance, stated from the claim's statement and independent of its proof (`#veriphy test`, `veriphy_instance%`); the level attribute `veriphy_tested` | `test_fallback` |
 
 ## Research claim graph
 
 | Component | Computes | Checks | Entry points |
 |---|---|---|---|
-| Claim graph (`veriphy.claims`) | the consequences of a research graph of claims, conventions and sources, with the Horn reasoner of Open Ontologies under OWL axioms Veriphy generates; levels, convention impact, plans, clashes, slices, appendices | every run by `oo-horn`, a verified Lean checker from Open Ontologies built at a pinned release (verdict `entailed`); the Lean export `#veriphy_graph` for formalized claims; SHACL shapes as a measurement | `python -m veriphy.claims`, the `research` skill |
+| Claim graph (`veriphy.claims`) | the consequences of a research graph of claims, conventions and sources, with the Horn reasoner of Open Ontologies under OWL axioms Veriphy generates; levels, convention impact, plans, clashes, slices, appendices | every run by `oo-horn`, a verified Lean checker from Open Ontologies built at a pinned release (verdict `entailed`); the Lean export `#veriphy export` for formalized claims; SHACL shapes as a measurement | `veriphy claims`, the `research` skill |
 
 ## Checkers and assets
 

@@ -1,4 +1,4 @@
-"""Read the test records `sage_test` writes to `.veriphy/tests/`, and rerun their oracle instances."""
+"""Read the test records `#veriphy test` writes to `.veriphy/tests/`, and rerun their oracle instances."""
 
 import importlib
 import json

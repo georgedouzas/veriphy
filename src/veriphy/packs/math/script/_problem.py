@@ -364,7 +364,7 @@ class Problem:
         typed: The sub-expressions Lean computes at another type (`ℕ`, `ℤ`) than their context, with that type.
         derivatives: The derivatives the translation met, in the order it met them.
         integrals: The interval integrals the translation met, in the order it met them.
-        universal: For a tested claim (`sage_test`), its universal binders: name and Lean type, in order.
+        universal: For a tested claim (`#veriphy test`), its universal binders: name and Lean type, in order.
         functions: The unknown functions, by Sage name: their Lean name and arity.
         definitions: Explicit definitions of unknown functions from the hypotheses.
         exists_function: The goal's existential over an unknown function, when it is one.

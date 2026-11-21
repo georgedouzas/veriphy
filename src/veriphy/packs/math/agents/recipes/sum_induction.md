@@ -13,18 +13,27 @@
 
 ## Template
 
-Copy it to the project's `.veriphy/certificates/sum_induction.sage` (or a more specific name), adapt the lines marked `EDIT`, keep the header, and run it with `sage_run file "<name>.sage"`.
+Copy it to the project's `.veriphy/certificates/sum_induction.sage` (or a more specific name), adapt the lines marked `EDIT`, keep its `SCRIPT` declaration, and run it with `veriphy certify "<name>.sage"`.
 
 ```sage
-# name: sum_induction
-# technique: closed-form sum by induction
-# goal: ∑ k ∈ Finset.range n, f k = F n (or over Finset.Icc 1 n, Finset.Ico 1 n), with the closed form F stated
-# description: Induction on n; both cases close by push_cast and ring1. Sage only finds F (see the recipe).
+SCRIPT = {
+    'name': 'sum_induction',
+    'serves': 'certify',
+    'technique': 'closed-form sum by induction',
+    'goal': '∑ k ∈ Finset.range n, f k = F n (or over Finset.Icc 1 n, Finset.Ico 1 n), with the closed form F stated',
+    'description': 'Induction on n; both cases close by push_cast and ring1. Sage only finds F (see the recipe).',
+    'inputs': {},
+}
+
 import re
-found = re.search(r'Finset\.(range|Icc|Ico) (?:(\d+) )?(\w+)', goal.text if goal is not None else '')
-assert found, 'the goal must be a sum over Finset.range n, Finset.Icc a n or Finset.Ico a n'
-index_set, lower, n = found.group(1), int(found.group(2) or 0), found.group(3)
-proof = sum_by_induction(n, index_set, lower)
+
+
+def run(goal, inputs):
+    matched = re.search(r'Finset\.(range|Icc|Ico) (?:(\d+) )?(\w+)', goal.text if goal is not None else '')
+    assert matched, 'the goal must be a sum over Finset.range n, Finset.Icc a n or Finset.Ico a n'
+    index_set, lower, n = matched.group(1), int(matched.group(2) or 0), matched.group(3)
+    proof = sum_by_induction(n, index_set, lower)
+    return found(proof)
 ```
 
 ## Worked example
@@ -32,7 +41,7 @@ proof = sum_by_induction(n, index_set, lower)
 ```lean
 example (n : ℕ) :
     ∑ k ∈ Finset.range n, (k : ℚ) ^ 2 = (n : ℚ) ^ 3 / 3 - (n : ℚ) ^ 2 / 2 + (n : ℚ) / 6 := by
-  sage_run file "sum_induction.sage"
+  veriphy certify "sum_induction.sage"
 ```
 
 ## Failure modes

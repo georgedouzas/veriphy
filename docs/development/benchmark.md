@@ -7,7 +7,7 @@ The effectiveness gate for the move from ready-made certificate tactics to build
 
 `lean/VeriphyTest/Benchmark.lean` holds all 32 problems the removed tactics (`sage_factor`, `sage_sos`, `sage_lincomb`,
 `sage_witness`, `sage_sum`, `sage_farkas`, `sage_exists`, `sage_certify`) solved. Each one is closed by running a recipe
-template with `sage_run`, with replay on. **32/32 pass.**
+template with `veriphy certify`, with replay on. **32/32 pass.**
 
 ## Agent half
 
@@ -42,9 +42,9 @@ The extra iterations came from three causes:
 | Friction | Change |
 |---|---|
 | The Farkas negation emitted unused `simp` lemmas, which caused lint warnings | `negate_goal` emits `push Not at h` |
-| The catalog showed header names, not the path `sage_run file` needs | `list` prints the path first |
+| The catalog showed header names, not the path `veriphy certify file` needs | `list` prints the path first |
 | It was unclear whether the replacement's parentheses and `[apply]` marker belong in the proof | `certify.md` says to keep the parentheses and drop the marker |
-| Implication goals arrive as `other` | `certify.md` says to `intro` and split before `sage_run` |
+| Implication goals arrive as `other` | `certify.md` says to `intro` and split before `veriphy certify` |
 | Goal-specific scripts, such as hard-coded `HINTS`, looked general | `certify.md` says to name them specifically and keep `name` equal to the file name |
 | Agents deleted or renamed each other's scripts | `certify.md` says never to delete or rename another's script |
 | `factor_rewrite` leaves a goal open, but its output did not say so | its header and recipe now say a closing tactic must follow |

@@ -13,20 +13,29 @@
 ## Template
 
 Copy it to the project's `.veriphy/certificates/recurrence.sage` (or a more specific name), adapt the lines marked
-`EDIT`, keep the header, and run it with `sage_run file "<name>.sage"`.
+`EDIT`, keep its `SCRIPT` declaration, and run it with `veriphy certify "<name>.sage"`.
 
 ```sage
-# name: recurrence
-# technique: closed forms of linear recurrences, proved by strong induction
-# goal: a n = f n, with hypotheses a (n + d) = c₀ a n + … and the d initial values
-# description: Sympy solves the recurrence (ore_algebra guesses holonomic ones); Lean checks it by strong induction.
+SCRIPT = {
+    'name': 'recurrence',
+    'serves': 'certify',
+    'technique': 'closed forms of linear recurrences, proved by strong induction',
+    'goal': 'a n = f n, with hypotheses a (n + d) = c₀ a n + … and the d initial values',
+    'description': 'Sympy solves the recurrence (ore_algebra guesses holonomic ones); Lean checks it by strong induction.',
+    'inputs': {},
+}
+
 COEFFICIENTS = None  # EDIT: c₀, …, c_{d-1} with a(n + d) = c₀ a(n) + … + c_{d-1} a(n + d - 1)
 INITIAL = None  # EDIT: a(0), …, a(d - 1)
 RECURRENCE = 'hrec'  # EDIT: the name of the hypothesis ∀ n, a (n + d) = …
 INITIAL_NAMES = ['h0', 'h1']  # EDIT: the names of the hypotheses a 0 = …, a 1 = …
-assert COEFFICIENTS is not None, 'fill in COEFFICIENTS and INITIAL in a copy'
-print('closed form:', solve_recurrence(COEFFICIENTS, INITIAL))
-proof = recurrence_proof(len(COEFFICIENTS), RECURRENCE, INITIAL_NAMES)
+
+
+def run(goal, inputs):
+    assert COEFFICIENTS is not None, 'fill in COEFFICIENTS and INITIAL in a copy'
+    print('closed form:', solve_recurrence(COEFFICIENTS, INITIAL))
+    proof = recurrence_proof(len(COEFFICIENTS), RECURRENCE, INITIAL_NAMES)
+    return found(proof)
 ```
 
 ## Worked example
@@ -35,7 +44,7 @@ proof = recurrence_proof(len(COEFFICIENTS), RECURRENCE, INITIAL_NAMES)
 -- with COEFFICIENTS = [-6, 5] and INITIAL = [0, 1]: sympy finds 3^n - 2^n
 example (a : ℕ → ℤ) (h0 : a 0 = 0) (h1 : a 1 = 1) (hrec : ∀ n, a (n + 2) = 5 * a (n + 1) - 6 * a n) (n : ℕ) :
     a n = 3 ^ n - 2 ^ n := by
-  sage_run file "fibonacci_like.sage"
+  veriphy certify "fibonacci_like.sage"
 ```
 
 ## Failure modes

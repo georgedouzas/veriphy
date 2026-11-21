@@ -19,21 +19,30 @@ Applies to goals about Physlib's harmonic oscillator (`Physlib.QuantumMechanics.
 ## Template
 
 Copy it to the project's `.veriphy/certificates/ladder_operators.sage`, adapt the lines marked `EDIT`, keep the
-header, and run it with `sage_run file "<name>.sage"`.
+header, and run it with `veriphy certify "<name>.sage"`.
 
 ```sage
-# name: ladder_operators
-# technique: commutators of Physlib's ladder operators, positions and momenta, by bilinearity and [x, p] = iℏ
-# goal: ⁅A, B⁆ = c • ContinuousLinearMap.id ℂ 𝓢(Space d, ℂ), A and B combinations of Q.loweringCLM i, Q.raisingCLM i, 𝐱 i, 𝐩 i
-# description: Sage computes the scalar c; Lean unfolds the ladder operators and applies Physlib's commutation lemmas.
+SCRIPT = {
+    'name': 'ladder_operators',
+    'serves': 'certify',
+    'technique': "commutators of Physlib's ladder operators, positions and momenta, by bilinearity and [x, p] = iℏ",
+    'goal': '⁅A, B⁆ = c • ContinuousLinearMap.id ℂ 𝓢(Space d, ℂ), A and B combinations of Q.loweringCLM i, Q.raisingCLM i, 𝐱 i, 𝐩 i',
+    'description': "Sage computes the scalar c; Lean unfolds the ladder operators and applies Physlib's commutation lemmas.",
+    'inputs': {},
+}
+
 LEFT = None  # EDIT: A as coefficients of 'a', 'a†', 'x', 'p', as {'a': 1, 'a†': 1}, to compute c before Lean
 RIGHT = None  # EDIT: B likewise
 INDEX = 'i'  # EDIT: the coordinate index of the goal
 OSCILLATOR = 'Q'  # EDIT: the HarmonicOscillator of the goal
-if LEFT is not None and RIGHT is not None:
-    # the scalar in Physlib's symbols: xi for Q.ξ i, hbar for ℏ
-    print('c =', canonical_commutator(ladder_combination(LEFT), ladder_combination(RIGHT)))
-proof = ladder_commutator_proof(index=INDEX, oscillator=OSCILLATOR)
+
+
+def run(goal, inputs):
+    if LEFT is not None and RIGHT is not None:
+        # the scalar in Physlib's symbols: xi for Q.ξ i, hbar for ℏ
+        print('c =', canonical_commutator(ladder_combination(LEFT), ladder_combination(RIGHT)))
+    proof = ladder_commutator_proof(index=INDEX, oscillator=OSCILLATOR)
+    return found(proof)
 ```
 
 ## Worked examples
@@ -48,12 +57,12 @@ variable {d : ℕ} (Q : HarmonicOscillator d) (i : Fin d)
 
 -- [aᵢ, xᵢ] = ξᵢ/√2, with the template unedited
 example : ⁅Q.loweringCLM i, 𝐱 i⁆ = (((Q.ξ i : ℝ) : ℂ) / (Real.sqrt 2 : ℂ)) • ContinuousLinearMap.id ℂ 𝓢(Space d, ℂ) := by
-  sage_run file "ladder_operators.sage"
+  veriphy certify "ladder_operators.sage"
 
 -- [aᵢ + aᵢ†, pᵢ], the scalar computed first (LEFT = {'a': 1, 'a†': 1}, RIGHT = {'p': 1} prints 2iℏ/(√2 ξ))
 example : ⁅Q.loweringCLM i + Q.raisingCLM i, 𝐩 i⁆ =
     (2 * I * (ℏ : ℂ) / ((Real.sqrt 2 : ℂ) * ((Q.ξ i : ℝ) : ℂ))) • ContinuousLinearMap.id ℂ 𝓢(Space d, ℂ) := by
-  sage_run file "ladder_operators.sage"
+  veriphy certify "ladder_operators.sage"
 ```
 
 ## Failure modes

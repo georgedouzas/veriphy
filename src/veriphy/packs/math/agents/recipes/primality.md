@@ -11,26 +11,35 @@
 ## Template
 
 Copy it to the project's `.veriphy/certificates/primality.sage` (or a more specific name), adapt the lines marked `EDIT`,
-keep the header, and run it with `sage_run file "<name>.sage"`.
+keep its `SCRIPT` declaration, and run it with `veriphy certify "<name>.sage"`.
 
 ```sage
-# name: primality
-# technique: Pratt certificate, checked by the kernel
-# goal: Nat.Prime p for an explicit p, beyond norm_num's primality extension
-# description: Sage factors p - 1 recursively; VeriphyCheck.prime_of_pratt checks the certificate by decide +kernel.
+SCRIPT = {
+    'name': 'primality',
+    'serves': 'certify',
+    'technique': 'Pratt certificate, checked by the kernel',
+    'goal': "Nat.Prime p for an explicit p, beyond norm_num's primality extension",
+    'description': 'Sage factors p - 1 recursively; VeriphyCheck.prime_of_pratt checks the certificate by decide +kernel.',
+    'inputs': {},
+}
+
 import re
-found = re.search(r'Nat\.Prime (\d+)', goal.text if goal is not None else '')
-assert found, 'the goal must be Nat.Prime p for an explicit numeral p'
-p = Integer(found.group(1))
-assert p.is_prime(), f'{p} is not prime: {p.factor()}'
-proof = tactic('exact ' + str(prime_certificate(p)))
+
+
+def run(goal, inputs):
+    matched = re.search(r'Nat\.Prime (\d+)', goal.text if goal is not None else '')
+    assert matched, 'the goal must be Nat.Prime p for an explicit numeral p'
+    p = Integer(matched.group(1))
+    assert p.is_prime(), f'{p} is not prime: {p.factor()}'
+    proof = tactic('exact ' + str(prime_certificate(p)))
+    return found(proof)
 ```
 
 ## Worked examples
 
 ```lean
 example : Nat.Prime 1000000000000000000000000000000000012397 := by
-  sage_run file "primality.sage"
+  veriphy certify "primality.sage"
 -- replacement: exact VeriphyCheck.prime_of_pratt (cert := [(3, 2, [(2, 1)]), …]) (by decide +kernel)
 ```
 

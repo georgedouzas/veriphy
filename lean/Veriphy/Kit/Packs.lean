@@ -7,6 +7,7 @@ and any problem found while resolving them (missing constants, conflicts).
 import Veriphy.Kit.Table
 import Veriphy.Kit.Project
 import Veriphy.Packs.Physlib
+import Veriphy.Kit.Deprecation
 
 namespace Veriphy
 
@@ -28,7 +29,8 @@ def describeTables (ts : Tables) : List String :=
 syntax (name := veriphyTables) "#veriphy_tables" : command
 
 elab_rules : command
-  | `(#veriphy_tables) => do
+  | `(#veriphy_tables%$tk) => do
+    warnDeprecated tk "#veriphy_tables" "#veriphy translations"
     let (ts, problems) ← liftCoreM (activeTables)
     logInfo ("\n".intercalate (describeTables ts ++ problems.toList.map ("problem: " ++ ·)))
 
