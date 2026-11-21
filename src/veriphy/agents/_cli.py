@@ -1,13 +1,15 @@
 """Find, show and copy the playbooks, recipes, templates and recipe assets the package installs."""
 
-import argparse
 import difflib
 import shutil
 import sys
 from collections.abc import Sequence
 from pathlib import Path
 
+import click
+
 from veriphy.core import find_workspace_root, project_dir
+from veriphy.core._commands import run_command
 
 SUFFIXES = ('.md', '.sage', '.lean')
 ASSETS = 'assets'
@@ -108,17 +110,41 @@ def _copy(name: str, root: Path) -> None:
     sys.stdout.write(f'{target}\n')
 
 
-def _parser() -> argparse.ArgumentParser:
-    """Return the command-line parser: `path`, `list`, `show <name>` and `copy <name> [--root DIR]`."""
-    parser = argparse.ArgumentParser(prog='veriphy agents')
-    commands = parser.add_subparsers(dest='command', required=True)
-    commands.add_parser('path', help='print the directory holding the playbooks and recipes')
-    commands.add_parser('list', help='list every playbook, recipe, template and asset')
-    commands.add_parser('show', help='print one file').add_argument('name')
-    copy = commands.add_parser('copy', help='copy a template or an asset into the workspace')
-    copy.add_argument('name')
-    copy.add_argument('--root', type=Path, default=None, help='the Lean workspace root (found by default)')
-    return parser
+@click.group(name='agents', help='The playbooks, recipes, templates and recipe assets the package installs.')
+def agents() -> None:
+    """Give an agent the installed playbooks."""
+
+
+@agents.command(help='print the directory holding the playbooks and recipes')
+def path() -> None:
+    """Print the content directory."""
+    sys.stdout.write(f'{content_dir()}\n')
+
+
+@agents.command(name='list', help='list every playbook, recipe, template and asset')
+def list_entries() -> None:
+    """List every entry by name."""
+    sys.stdout.write(''.join(f'{key}\n' for key in entries()))
+
+
+@agents.command(help='print one file')
+@click.argument('name')
+def show(name: str) -> None:
+    """Print one entry."""
+    sys.stdout.write(_resolve(name)[1].read_text())
+
+
+@agents.command(help='copy a template or an asset into the workspace')
+@click.argument('name')
+@click.option(
+    '--root',
+    type=click.Path(path_type=Path),
+    default=None,
+    help='the Lean workspace root (found by default)',
+)
+def copy(name: str, root: Path | None) -> None:
+    """Copy a template or an asset into the workspace."""
+    _copy(name, find_workspace_root(root))
 
 
 def main(argv: Sequence[str] | None = None) -> None:
@@ -134,12 +160,4 @@ def main(argv: Sequence[str] | None = None) -> None:
         >>> main(['show', 'recipes/sos'])  # doctest: +ELLIPSIS
         # ...
     """
-    args = _parser().parse_args(list(sys.argv[1:] if argv is None else argv))
-    if args.command == 'path':
-        sys.stdout.write(f'{content_dir()}\n')
-    elif args.command == 'list':
-        sys.stdout.write(''.join(f'{key}\n' for key in entries()))
-    elif args.command == 'show':
-        sys.stdout.write(_resolve(args.name)[1].read_text())
-    else:
-        _copy(args.name, find_workspace_root(args.root))
+    run_command(agents, argv, 'veriphy agents')

@@ -5,7 +5,6 @@ packs register `check` and `level` (`lean`), `meaning` (`math`), and `validate`,
 through `veriphy.claims`). This package imports only `veriphy.core` and `veriphy.primitives`.
 """
 
-from veriphy.steps._cli import main
 from veriphy.steps._primitives import call_primitive
 from veriphy.steps._records import (
     KINDS,
@@ -44,7 +43,6 @@ __all__ = [
     'exit_code',
     'input_digest',
     'load_steps',
-    'main',
     'read_record',
     'register',
     'registered',

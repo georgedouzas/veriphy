@@ -1,12 +1,14 @@
 """List and show the translation and rewrite entries in force for a project, by namespace."""
 
-import argparse
 import json
 import sys
 from collections.abc import Sequence
 from pathlib import Path
 
+import click
+
 from veriphy.core import TableError, find_workspace_root, project_dir
+from veriphy.core._commands import run_command
 from veriphy.packs.math.script import SHIPPED_PACKS, Table, load_core_table, load_pack, parse_table
 
 TRANSLATIONS_DIR = 'translations'
@@ -91,16 +93,46 @@ def _find(tables: list[tuple[str, Table]], name: str) -> str | None:
     return None
 
 
-def _parser() -> argparse.ArgumentParser:
-    """Return the command-line parser: `list [--all] [--root DIR]` and `show <name> [--root DIR]`."""
-    parser = argparse.ArgumentParser(prog='veriphy translations')
-    commands = parser.add_subparsers(dest='command', required=True)
-    listing, showing = commands.add_parser('list'), commands.add_parser('show')
-    for command in (listing, showing):
-        command.add_argument('--root', type=Path, default=None, help='the Lean workspace root (found by default)')
-        command.add_argument('--all', action='store_true', help='include the core table and the shipped packs')
-    showing.add_argument('name', help='a Lean constant or lemma name')
-    return parser
+ROOT_OPTION = click.option(
+    '--root',
+    type=click.Path(path_type=Path),
+    default=None,
+    help='the Lean workspace root (found by default)',
+)
+ALL_OPTION = click.option('--all', 'everything', is_flag=True, help='include the core table and the shipped packs')
+
+
+@click.group(name='translations', help='The Lean ↔ Sage translation entries in force for the project.')
+def translations() -> None:
+    """Catalog the translation entries."""
+
+
+def _tables(root: Path | None, everything: bool) -> list[tuple[str, Table]]:
+    """Return the tables in force, reporting the invalid ones."""
+    tables, errors = _sources(find_workspace_root(root), everything=everything)
+    for error in errors:
+        sys.stderr.write(f'invalid: {error}\n')
+    return tables
+
+
+@translations.command(name='list', help='each entry in force')
+@ROOT_OPTION
+@ALL_OPTION
+def list_entries(root: Path | None, everything: bool) -> None:
+    """List the entries."""
+    sys.stdout.write(''.join(f'{line}\n' for line in _lines(_tables(root, everything))))
+
+
+@translations.command(help='the entry for a Lean constant or lemma')
+@click.argument('name')
+@ROOT_OPTION
+def show(name: str, root: Path | None) -> None:
+    """Print the entry of one name."""
+    found = _find(_tables(root, everything=True), name)
+    if found is None:
+        sys.stderr.write(f"no translation entry for '{name}'\n")
+        raise SystemExit(NOT_FOUND)
+    sys.stdout.write(found)
 
 
 def main(argv: Sequence[str] | None = None) -> None:
@@ -108,19 +140,5 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     Args:
         argv: The command-line arguments, `sys.argv[1:]` when `None`.
-
-    Raises:
-        SystemExit: With status 1 when `show` finds no entry of that name, and 2 on bad usage.
     """
-    args = _parser().parse_args(list(sys.argv[1:] if argv is None else argv))
-    tables, errors = _sources(find_workspace_root(args.root), everything=args.all or args.command == 'show')
-    for error in errors:
-        sys.stderr.write(f'invalid: {error}\n')
-    if args.command == 'list':
-        sys.stdout.write(''.join(f'{line}\n' for line in _lines(tables)))
-        return
-    found = _find(tables, args.name)
-    if found is None:
-        sys.stderr.write(f"no translation entry for '{args.name}'\n")
-        raise SystemExit(NOT_FOUND)
-    sys.stdout.write(found)
+    run_command(translations, argv, 'veriphy translations')

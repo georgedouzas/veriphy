@@ -2638,6 +2638,7 @@ wheels = [
 name = "veriphy"
 source = { editable = "." }
 dependencies = [
+    { name = "click" },
     { name = "jsonschema" },
     { name = "pyyaml" },
 ]
@@ -2684,6 +2685,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "click", specifier = ">=8.1" },
     { name = "jsonschema", specifier = ">=4.17" },
     { name = "pyoxigraph", marker = "extra == 'graph'", specifier = ">=0.5,<0.6" },
     { name = "pyshacl", marker = "extra == 'graph'", specifier = ">=0.26" },

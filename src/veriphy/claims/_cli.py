@@ -1,9 +1,11 @@
 """Run the research graph from the command line: `python -m veriphy.claims <command>`."""
 
-import argparse
 import sys
 from collections.abc import Callable, Sequence
 from pathlib import Path
+from types import SimpleNamespace
+
+import click
 
 from veriphy.claims._appendix import FORMATS, appendix
 from veriphy.claims._checks import clash_report, clashes, propose_excludes, shape_report, validate_shapes
@@ -14,6 +16,7 @@ from veriphy.claims._slices import render_slice, slice_claim
 from veriphy.claims._store import add_triples, confirm, graph_dir, load_graph, resolve_term
 from veriphy.claims._vocabulary import AXIOM, label_of, source_of, vocabulary_text
 from veriphy.core import GraphError, find_workspace_root
+from veriphy.core._commands import run_command
 from veriphy.primitives.graph._checker import CHECKER_VARIABLE, build_checker, find_checker
 
 FAILED, NOT_ACCEPTED = 1, 3
@@ -66,7 +69,7 @@ def _run_summary(run: Run) -> str:
     return '\n'.join(lines) + '\n'
 
 
-def _cmd_validate(args: argparse.Namespace) -> None:
+def _cmd_validate(args: SimpleNamespace) -> None:
     """Load the graph, report its files, and validate it against the shapes."""
     graph = load_graph(args.root)
     _out(''.join(f'{path}: {count} triples\n' for path, count in graph.files))
@@ -76,14 +79,14 @@ def _cmd_validate(args: argparse.Namespace) -> None:
         raise SystemExit(NOT_ACCEPTED)
 
 
-def _cmd_reason(args: argparse.Namespace) -> None:
+def _cmd_reason(args: SimpleNamespace) -> None:
     """Reason over the graph and report the checked run."""
     run = reason(load_graph(args.root))
     _out(_run_summary(run))
     _exit_for(run)
 
 
-def _cmd_recheck(args: argparse.Namespace) -> None:
+def _cmd_recheck(args: SimpleNamespace) -> None:
     """Check a stored run again and compare its digest with the current graph."""
     run, matches = recheck(Path(args.run), load_graph(args.root))
     _out(_run_summary(run))
@@ -91,14 +94,14 @@ def _cmd_recheck(args: argparse.Namespace) -> None:
     _exit_for(run)
 
 
-def _cmd_levels(args: argparse.Namespace) -> None:
+def _cmd_levels(args: SimpleNamespace) -> None:
     """Report the levels of every claim, or of one source."""
     graph = load_graph(args.root)
     run = reason(graph)
     _out(level_report(claim_levels(graph, run, args.source), run))
 
 
-def _cmd_impact(args: argparse.Namespace) -> None:
+def _cmd_impact(args: SimpleNamespace) -> None:
     """Report the nodes that assume a convention."""
     graph = load_graph(args.root)
     run = reason(graph)
@@ -106,7 +109,7 @@ def _cmd_impact(args: argparse.Namespace) -> None:
     _out(impact_report(convention_impact(graph, run, convention), run, convention))
 
 
-def _cmd_plan(args: argparse.Namespace) -> None:
+def _cmd_plan(args: SimpleNamespace) -> None:
     """Report what the working graph changes against a git revision."""
     result = plan(load_graph(args.root), args.against)
     _out(plan_report(result))
@@ -114,7 +117,7 @@ def _cmd_plan(args: argparse.Namespace) -> None:
         raise SystemExit(NOT_ACCEPTED)
 
 
-def _cmd_slice(args: argparse.Namespace) -> None:
+def _cmd_slice(args: SimpleNamespace) -> None:
     """Print a claim's slice as agent context, refusing a slice that loses a consequence."""
     graph = load_graph(args.root)
     run = reason(graph)
@@ -128,14 +131,14 @@ def _cmd_slice(args: argparse.Namespace) -> None:
     _out(render_slice(graph, piece))
 
 
-def _cmd_clashes(args: argparse.Namespace) -> None:
+def _cmd_clashes(args: SimpleNamespace) -> None:
     """Report the clashes of the graph."""
     graph = load_graph(args.root)
     run = reason(graph)
     _out(clash_report(clashes(graph, run), run))
 
 
-def _cmd_excludes(args: argparse.Namespace) -> None:
+def _cmd_excludes(args: SimpleNamespace) -> None:
     """Propose `excludes` triples, and write them as human assertions with `--confirm`."""
     graph = load_graph(args.root)
     proposed = propose_excludes(graph)
@@ -147,7 +150,7 @@ def _cmd_excludes(args: argparse.Namespace) -> None:
     _out(f'wrote {len(proposed)} triples as human assertions\n')
 
 
-def _cmd_confirm(args: argparse.Namespace) -> None:
+def _cmd_confirm(args: SimpleNamespace) -> None:
     """Move one triple from a source's agent file to its human file."""
     root = find_workspace_root(args.root)
     triple = (
@@ -158,7 +161,7 @@ def _cmd_confirm(args: argparse.Namespace) -> None:
     _out(f'confirmed in {confirm(root, args.source, triple)}\n')
 
 
-def _cmd_appendix(args: argparse.Namespace) -> None:
+def _cmd_appendix(args: SimpleNamespace) -> None:
     """Write the verification appendix of a source."""
     graph = load_graph(args.root)
     run = reason(graph)
@@ -173,18 +176,18 @@ def _cmd_appendix(args: argparse.Namespace) -> None:
     _out(f'wrote {path} ({run.label})\n')
 
 
-def _cmd_axioms(args: argparse.Namespace) -> None:
+def _cmd_axioms(args: SimpleNamespace) -> None:
     """Print the generated axioms of the graph."""
     triples = reasoning_input(load_graph(args.root))
     _out(''.join(f'{s} {p} {o} .\n' for s, p, o in triples if s.startswith(f'<{AXIOM}') or o.endswith('#none>')))
 
 
-def _cmd_vocabulary(_: argparse.Namespace) -> None:
+def _cmd_vocabulary(_: SimpleNamespace) -> None:
     """Print the vocabulary."""
     _out(vocabulary_text())
 
 
-def _cmd_checker(args: argparse.Namespace) -> None:
+def _cmd_checker(args: SimpleNamespace) -> None:
     """Set up the checker and the reasoner ahead of first use, or print where the checker is."""
     if args.action == 'path':
         lookup = find_checker()
@@ -197,7 +200,7 @@ def _cmd_checker(args: argparse.Namespace) -> None:
     _out(f'checker: {report.checker}\n' if report.checker else 'checker: not set up (--reasoner-only)\n')
 
 
-HANDLERS: dict[str, Callable[[argparse.Namespace], None]] = {
+HANDLERS: dict[str, Callable[[SimpleNamespace], None]] = {
     'validate': _cmd_validate,
     'reason': _cmd_reason,
     'recheck': _cmd_recheck,
@@ -215,55 +218,62 @@ HANDLERS: dict[str, Callable[[argparse.Namespace], None]] = {
 }
 
 
-def _add_commands(commands: argparse._SubParsersAction) -> None:
-    """Add every subcommand with its arguments."""
-    for name in ('validate', 'reason', 'clashes', 'excludes', 'axioms', 'vocabulary'):
-        commands.add_parser(name, help=HANDLERS[name].__doc__)
-    commands.choices['excludes'].add_argument('--confirm', action='store_true', help='write the proposed triples')
-    commands.add_parser('recheck', help=HANDLERS['recheck'].__doc__).add_argument('run', help='the run directory')
-    commands.add_parser('levels', help=HANDLERS['levels'].__doc__).add_argument('--source', help='one source only')
-    for name, term in (('impact', 'convention'), ('slice', 'claim')):
-        sub = commands.add_parser(name, help=HANDLERS[name].__doc__)
-        sub.add_argument('source', help='the source a bare label belongs to')
-        sub.add_argument(term, help=f'the {term}: a label, <source>#<label>, lean:<name> or <iri>')
-    commands.add_parser('plan', help=HANDLERS['plan'].__doc__).add_argument('--against', default='HEAD')
-    sub = commands.add_parser('confirm', help=HANDLERS['confirm'].__doc__)
-    for field in ('source', 'subject', 'predicate', 'object'):
-        sub.add_argument(field)
-    sub = commands.add_parser('appendix', help=HANDLERS['appendix'].__doc__)
-    sub.add_argument('source')
-    sub.add_argument('--format', choices=FORMATS, default='markdown')
-    sub.add_argument('--output', help='the file to write, under .veriphy/graph/appendix/ by default')
-    sub = commands.add_parser('checker', help=HANDLERS['checker'].__doc__)
-    sub.add_argument('action', choices=('build', 'path'))
-    sub.add_argument(
-        '--reasoner-only',
-        action='store_true',
-        help='fetch the release (the reasoner) only',
-    )
+@click.group(name='claims', help='The research claim graph.')
+@click.option('--root', type=click.Path(path_type=Path), default=None, help='the Lean workspace root')
+@click.pass_context
+def claims(ctx: click.Context, root: Path | None) -> None:
+    """Hold the workspace root for the subcommand."""
+    ctx.obj = root
 
 
-def _parser() -> argparse.ArgumentParser:
-    """Return the command-line parser."""
-    parser = argparse.ArgumentParser(prog='veriphy claims', description='The research claim graph.')
-    parser.add_argument('--root', type=Path, default=None, help='the Lean workspace root')
-    _add_commands(parser.add_subparsers(dest='command', required=True))
-    return parser
+def _command(name: str, *params: Callable[[Callable[..., None]], Callable[..., None]]) -> None:
+    """Add one subcommand, its handler called with the workspace root and the subcommand's parameters."""
+    handler = HANDLERS[name]
+
+    @click.pass_obj
+    def command(root: Path | None, **values: object) -> None:
+        """Run the handler, turning a graph error into status 1."""
+        try:
+            handler(SimpleNamespace(root=root, **values))
+        except GraphError as exc:
+            sys.stderr.write(f'{exc}\n')
+            raise SystemExit(FAILED) from exc
+
+    for param in reversed(params):
+        command = param(command)
+    claims.command(name=name, help=handler.__doc__)(command)
+
+
+TERM = 'a label, <source>#<label>, lean:<name> or <iri>'
+for _name in ('validate', 'reason', 'clashes', 'axioms', 'vocabulary'):
+    _command(_name)
+_command('excludes', click.option('--confirm', is_flag=True, help='write the proposed triples'))
+_command('recheck', click.argument('run'))
+_command('levels', click.option('--source', default=None, help='one source only'))
+_command('impact', click.argument('source'), click.argument('convention'))
+_command('slice', click.argument('source'), click.argument('claim'))
+_command('plan', click.option('--against', default='HEAD', help='the git revision to compare with'))
+_command('confirm', *(click.argument(field) for field in ('source', 'subject', 'predicate', 'object')))
+_command(
+    'appendix',
+    click.argument('source'),
+    click.option('--format', type=click.Choice(FORMATS), default='markdown'),
+    click.option('--output', default=None, help='the file to write, under .veriphy/graph/appendix/ by default'),
+)
+_command(
+    'checker',
+    click.argument('action', type=click.Choice(['build', 'path'])),
+    click.option('--reasoner-only', is_flag=True, help='fetch the release (the reasoner) only'),
+)
 
 
 def main(argv: Sequence[str] | None = None) -> None:
     """Run one command of the research graph.
 
+    It exits with status 1 on a graph error, 2 on bad usage, and 3 when a run is not accepted by the checker,
+    validation finds a violation, or a slice loses a consequence.
+
     Args:
         argv: The command-line arguments, `sys.argv[1:]` when `None`.
-
-    Raises:
-        SystemExit: With status 1 on a graph error, 2 on bad usage, and 3 when a run is not accepted by the checker,
-            validation finds a violation, or a slice loses a consequence.
     """
-    args = _parser().parse_args(list(sys.argv[1:] if argv is None else argv))
-    try:
-        HANDLERS[args.command](args)
-    except GraphError as exc:
-        sys.stderr.write(f'{exc}\n')
-        raise SystemExit(FAILED) from exc
+    run_command(claims, argv, 'veriphy claims')

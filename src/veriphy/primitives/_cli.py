@@ -1,29 +1,18 @@
 """The primitive command: `veriphy primitive list`, `describe <primitive>` and `run <primitive> --input <file>`."""
 
-import argparse
 import json
 import sys
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
+import click
+
 from veriphy.core import VeriphyError, find_workspace_root, resolve
+from veriphy.core._commands import run_command
 from veriphy.primitives._registry import Registry, load_registry
 
 USAGE_EXIT = 2
 FAILED_EXIT = 1
-
-
-def _parser() -> argparse.ArgumentParser:
-    """Return the parser of the three subcommands."""
-    parser = argparse.ArgumentParser(prog='veriphy primitive', description='Run a primitive, with no record.')
-    commands = parser.add_subparsers(dest='command', required=True)
-    commands.add_parser('list', help='every primitive, with its trust class, its pack, and whether it can run here')
-    describe = commands.add_parser('describe', help="a primitive's tool, pin, trust class and schemas")
-    describe.add_argument('name')
-    run = commands.add_parser('run', help='run a primitive on a JSON input and print its output')
-    run.add_argument('name')
-    run.add_argument('--input', type=Path, help='a JSON file holding the input (default: standard input)')
-    return parser
 
 
 def _workspace() -> Registry:
@@ -79,26 +68,48 @@ def _run(name: str, source: Path | None) -> str:
     return json.dumps(output, indent=2, sort_keys=True, ensure_ascii=False) + '\n'
 
 
-def main(argv: Sequence[str] | None = None) -> None:
-    """List, describe or run primitives.
+@click.group(name='primitive', help='Run a primitive by hand, with no record.')
+def primitive() -> None:
+    """List, describe or run primitives."""
 
-    Args:
-        argv: The command-line arguments, `sys.argv[1:]` when `None`.
 
-    Raises:
-        SystemExit: With status 1 when the primitive fails, and 2 on bad usage.
-    """
-    args = _parser().parse_args(list(sys.argv[1:] if argv is None else argv))
+def _guarded(write: Callable[[], str]) -> None:
+    """Write what a subcommand returns, exiting with status 1 on a primitive's error and 2 on input that is not JSON."""
     try:
-        if args.command == 'list':
-            sys.stdout.write(_list())
-        elif args.command == 'describe':
-            sys.stdout.write(_describe(args.name))
-        else:
-            sys.stdout.write(_run(args.name, args.input))
+        sys.stdout.write(write())
     except json.JSONDecodeError as exc:
         sys.stderr.write(f'primitive: the input is not JSON: {exc}\n')
         raise SystemExit(USAGE_EXIT) from exc
     except VeriphyError as exc:
         sys.stderr.write(f'primitive: {exc}\n')
         raise SystemExit(FAILED_EXIT) from exc
+
+
+@primitive.command(name='list', help='every primitive, with its trust class, its pack, and whether it can run here')
+def list_primitives() -> None:
+    """List the workspace's primitives."""
+    _guarded(_list)
+
+
+@primitive.command(help="a primitive's tool, pin, trust class and schemas")
+@click.argument('name')
+def describe(name: str) -> None:
+    """Describe one primitive, as JSON."""
+    _guarded(lambda: _describe(name))
+
+
+@primitive.command(help='run a primitive on a JSON input and print its output')
+@click.argument('name')
+@click.option('--input', 'source', type=click.Path(path_type=Path), default=None, help='a JSON file (default: stdin)')
+def run(name: str, source: Path | None) -> None:
+    """Run one primitive, as JSON in and out."""
+    _guarded(lambda: _run(name, source))
+
+
+def main(argv: Sequence[str] | None = None) -> None:
+    """List, describe or run primitives.
+
+    Args:
+        argv: The command-line arguments, `sys.argv[1:]` when `None`.
+    """
+    run_command(primitive, argv, 'veriphy primitive')
