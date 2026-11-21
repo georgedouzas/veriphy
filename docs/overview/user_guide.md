@@ -395,11 +395,7 @@ every run, and Veriphy reports a conclusion of the graph only with the verdict t
 
 ### Setup
 
-```sh
-pip install 'veriphy[graph]'
-```
-
-The first command that needs them sets up the reasoner and `oo-horn` from the pinned Open Ontologies release, says
+The claim graph comes with every install. The first command that needs them sets up the reasoner and `oo-horn` from the pinned Open Ontologies release, says
 what it fetches or builds, and caches it in `~/.cache/veriphy/open-ontologies/v2.1.0`:
 
 - the release is cloned with `git`, and refused unless its commit is the pinned one;

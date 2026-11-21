@@ -10,7 +10,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
-from veriphy.core import CheckerError, GraphExtraMissingError
+from veriphy.core import CheckerError, ReasonerMissingError
 from veriphy.primitives.graph._process import fetch_url, find_tool, run_process
 
 CHECKER_VARIABLE = 'VERIPHY_OO_HORN'
@@ -230,18 +230,18 @@ def ensure_reasoner(
         The directory to import `open_ontologies_lite` from.
 
     Raises:
-        GraphExtraMissingError: When the reasoner is missing and automatic setup is off or fails.
+        ReasonerMissingError: When the reasoner is missing and automatic setup is off or fails.
     """
     source = cache_dir(environ, release) / REASONER_SOURCE
     if (source / 'open_ontologies_lite' / 'horn').is_dir():
         return source
     module = 'open_ontologies_lite'
     if not setup_enabled(environ):
-        raise GraphExtraMissingError(module)
+        raise ReasonerMissingError(module)
     try:
         ensure_release(environ=environ, release=release, notify=notify)
     except CheckerError as exc:
-        raise GraphExtraMissingError(module) from exc
+        raise ReasonerMissingError(module) from exc
     return source
 
 

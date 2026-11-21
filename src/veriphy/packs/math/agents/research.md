@@ -11,8 +11,8 @@ playbooks ship with the installed `veriphy` package, at the version of its toolk
 
 ## Preconditions
 
-- The graph extra is installed: `sage -pip install 'veriphy[graph]'`. The first `reason` sets up the reasoner and the
-  checker by itself and says so. When `VERIPHY_GRAPH_SETUP=off` forbids that, run
+- The claim graph comes with every install. The first `reason` sets up the reasoner and the checker by itself and says
+  so. When `VERIPHY_GRAPH_SETUP=off` forbids that, run
   `sage -python -m veriphy layers claims checker build` first.
 - The workspace is a Lean workspace that requires Veriphy. Every graph command runs from inside it.
 - Only step 4 needs Sage. Without a checker the playbook still runs, and every graph result is reported `unchecked`.

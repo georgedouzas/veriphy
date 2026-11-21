@@ -8,10 +8,9 @@ the directory, written `<prompts>` below. They ship with the installed `veriphy`
 package, so they always match its toolkit. If the command fails, ask the user to
 run `sage -pip install veriphy` and stop.
 
-Verify the graph once per session: `sage -python -m veriphy layers claims --help` runs.
-If it does not, ask the user to run `sage -pip install 'veriphy[graph]'`. The
-first `reason` sets up the reasoner and the checker by itself and says so, which
-takes minutes where the checker is built.
+The claim graph comes with every install. The first `reason` sets up the
+reasoner and the checker by itself and says so, which takes minutes where the
+checker is built.
 
 Sequence the work with the `verify-paper` workflow: `veriphy layers workflow next verify-paper <source>` names the next step, and
 `veriphy layers workflow run verify-paper <source>` runs the steps that are not yours until it needs you.

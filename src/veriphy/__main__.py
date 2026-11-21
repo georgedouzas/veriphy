@@ -12,7 +12,7 @@ from veriphy.core._commands import run_command
 from veriphy.core._config_cli import config
 from veriphy.steps import load_steps
 
-# the layers' groups, in layer order, each loaded only when named (`claims` needs the graph extra)
+# the layers' groups, in layer order, each loaded only when named, so `--help` imports none of them
 LAYERS = {
     'primitive': ('veriphy.primitives._cli', 'primitive', 'layer 0: list, describe or run a primitive, with no record'),
     'step': ('veriphy.steps._cli', 'step_group', 'layer 1: run a step and record it, list the steps and records'),

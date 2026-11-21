@@ -70,8 +70,8 @@ class GraphError(VeriphyError):
     """Signal a research graph that cannot be loaded, reasoned over or written."""
 
 
-class GraphExtraMissingError(GraphError):
-    """Signal that the research graph's dependencies are not installed.
+class ReasonerMissingError(GraphError):
+    """Signal that the claim graph's reasoner is not set up, and automatic setup is off or failed.
 
     Args:
         module: The module that could not be imported.
@@ -79,8 +79,8 @@ class GraphExtraMissingError(GraphError):
 
     def __init__(self, module: str) -> None:
         message = (
-            f"the research graph needs '{module}': install it with `sage -pip install 'veriphy[graph]'` and "
-            '`sage -python -m veriphy.claims checker build`'
+            f"the claim graph's reasoner ('{module}') is not set up: run `veriphy layers claims checker build`, "
+            'or unset VERIPHY_GRAPH_SETUP so the first command that needs it sets it up'
         )
         super().__init__(message)
         self.module = module

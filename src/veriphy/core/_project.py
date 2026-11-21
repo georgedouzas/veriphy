@@ -4,16 +4,18 @@ from pathlib import Path
 
 PROJECT_DIR_NAME = '.veriphy'
 LAKEFILES = ('lakefile.toml', 'lakefile.lean')
+# what marks a workspace root: a Lean workspace's lakefile, or a workspace file, as a workspace without Lean has
+MARKERS = ('veriphy.yaml', *LAKEFILES)
 
 
 def find_workspace_root(start: Path | None = None) -> Path:
-    """Return the Lean workspace root: the nearest directory, from `start` upwards, that holds a lakefile.
+    """Return the workspace root: the nearest directory, from `start` upwards, holding `veriphy.yaml` or a lakefile.
 
     Args:
         start: The directory to search from, the working directory when `None`.
 
     Returns:
-        The workspace root, or `start` itself when no ancestor holds a lakefile.
+        The workspace root, or `start` itself when no ancestor holds either.
 
     Examples:
         >>> import tempfile
@@ -26,7 +28,7 @@ def find_workspace_root(start: Path | None = None) -> Path:
     """
     origin = (start or Path.cwd()).resolve()
     for directory in (origin, *origin.parents):
-        if any((directory / name).is_file() for name in LAKEFILES):
+        if any((directory / name).is_file() for name in MARKERS):
             return directory
     return origin
 
