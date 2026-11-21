@@ -10,9 +10,9 @@ workflows as data makes that function explicit, and lets the skills shrink to th
 
 - A workflow schema in the config: an ordered list of steps, each with optional transitions on its status
   (`{counterexample: stop}`, `{rejected: search}`), an attempt limit and a condition.
-- `python -m veriphy next <workflow> <target>` prints the next step from the records, the same every time for the
+- `veriphy next <workflow> <target>` prints the next step from the records, the same every time for the
   same records.
-- `python -m veriphy run <workflow> <target>` runs steps until one needs the agent, then stops and says which.
+- `veriphy run <workflow> <target>` runs steps until one needs the agent, then stops and says which.
 - The `math` pack defines `prove-claim` and `verify-paper`, the `reproduction` pack `reproduce-analysis`.
 - A pack adds workflows in its `pack.yaml`, and a workspace can override or add one in `veriphy.yaml`.
 - The skills (layer 4) follow `next`, and the playbooks keep only the guidance for agent steps: formalizing,

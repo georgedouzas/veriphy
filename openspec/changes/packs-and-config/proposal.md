@@ -17,7 +17,7 @@ packs, add its own, and override any entry, with defaults that give today's beha
   error that names both, and the workspace file decides.
 - One registry per layer, filled from the resolved config. Each layer reads only its own registry, and contributes
   its own checks to `config check`.
-- `python -m veriphy config show` prints the resolved config with the source of each value, and `config check`
+- `veriphy config show` prints the resolved config with the source of each value, and `config check`
   validates it. The digest of the resolved config enters every step record.
 - The `primitive` command and the steps see only the selected packs' primitives.
 
@@ -36,7 +36,7 @@ None.
 
 ## Impact
 
-- New: `veriphy.config` (schema, loading, merge, registries, commands).
+- New: `veriphy.core.config` (schema, loading, merge, registries, commands).
 - `veriphy.primitives`: the registry comes from the resolved config instead of every installed pack.
 - `veriphy.core`: the config digest in step records, a placeholder until now.
 - `pyproject.toml`: PyYAML.

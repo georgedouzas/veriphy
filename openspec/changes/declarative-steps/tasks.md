@@ -9,8 +9,8 @@
 
 ## 2. Packs and command
 
-- [ ] 2.1 Declare `elaborate`, `level`, `meaning`, `validate`, `reason` and `report` in their packs and delete their Python definitions, keeping only scopes and composites. Verify with the step tests unchanged apart from digests.
-- [ ] 2.2 Generate `python -m veriphy <step>` from declarations, and add `python -m veriphy steps` (D5). Verify with pytest on the parser: required inputs are positional, others options, and `steps` lists each with its pack.
+- [ ] 2.1 Declare `check`, `level`, `meaning`, `validate`, `reason` and `report` in their packs and delete their Python definitions, keeping only scopes and composites. Verify with the step tests unchanged apart from digests.
+- [ ] 2.2 Generate `veriphy <step>` from declarations, and add `veriphy steps` (D5). Verify with pytest on the parser: required inputs are positional, others options, and `steps` lists each with its pack.
 
 ## 3. Integration
 

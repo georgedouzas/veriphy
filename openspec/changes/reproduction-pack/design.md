@@ -30,10 +30,10 @@ So a reproduction is always of the data the claim names, whoever calls the primi
 The analysis script writes `{"estimate": …, "se": …}` to `{out}`. The `reproduce` step compares `estimate` with the
 claim's value by the generic `compare`, and records both values in every outcome.
 
-### D3. Robustness is a declared list, run by a composite
+### D3. Vary is a declared list, run by a composite
 
-The variations (other controls, another period) are listed with the claim before `robustness` runs, so an agent cannot
-pick variations after seeing results. `r.robustness` runs `r.run` once per variation, and its output says whether the
+The variations (other controls, another period) are listed with the claim before `vary` runs, so an agent cannot
+pick variations after seeing results. `r.vary` runs `r.run` once per variation, and its output says whether the
 estimate's sign and significance hold under each. Its deciding part is `r.run`, so its class is `reproduction`.
 
 ### D4. Identification is a convention

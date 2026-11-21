@@ -9,7 +9,7 @@ SHALL behave as with `packs: [math]`. Unknown keys SHALL be errors naming the ke
 
 #### Scenario: No file
 - **WHEN** a workspace has no `veriphy.yaml`
-- **THEN** `python -m veriphy config show` lists the packs `core`, `lean` and `math` and their primitives
+- **THEN** `veriphy config show` lists the packs `core`, `lean` and `math` and their primitives
 
 #### Scenario: A typo
 - **WHEN** the file has the key `tool:` instead of `tools:`
@@ -50,10 +50,10 @@ SHALL receive only its own registry, and the `primitive` command and the steps S
 
 #### Scenario: Unselected pack
 - **WHEN** a workspace lists `packs: [core]` and the `math` pack is installed
-- **THEN** `python -m veriphy primitive list` shows no `sage.*` primitive
+- **THEN** `veriphy primitive list` shows no `sage.*` primitive
 
 ### Requirement: Config commands and digest
-`python -m veriphy config show` SHALL print the resolved config with the pack or file each value comes from, and
+`veriphy config show` SHALL print the resolved config with the pack or file each value comes from, and
 `config check` SHALL run every layer's checks. The digest of the resolved config as canonical JSON SHALL enter every
 step record's input digest.
 

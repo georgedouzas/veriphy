@@ -12,10 +12,10 @@ empirical claim, a tool that is not Sage, and a level that is not a proof.
 A pack, `reproduction`, shipped with Veriphy, requiring only `core`, and adding to every layer:
 
 - **Primitives:** an `r` tool (files contract, pinned by container image), `r.run` (class `reproduction`), which runs
-  an analysis script on data whose SHA-256 it checks, with a seed, and the composite `r.robustness`, which runs
+  an analysis script on data whose SHA-256 it checks, with a seed, and the composite `r.vary`, which runs
   declared variations.
 - **Steps:** `reproduce`, declared in YAML over `r.run` with `compare` against the claimed estimate, granting
-  `reproduced`; and `robustness` over `r.robustness`, granting `robust`.
+  `reproduced`; and `vary` over `r.vary`, granting `robust`.
 - **Claims:** the levels `reproduced` and `robust` of class `reproduction`, and the convention aspect
   `identification` with `parallel-trends` and `no-parallel-trends`.
 - **Workflow:** `reproduce-analysis`.

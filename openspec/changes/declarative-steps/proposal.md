@@ -18,8 +18,8 @@ editing any file invalidates every Lean record.
 - **Agent steps are recorded.** An agent step (`formalize`, `extract`) records the artifact it names, by digest, with
   who wrote it, so later steps and workflows can refer to it.
 - **One runner, one command.** The step runner builds every step from the steps registry, and
-  `python -m veriphy <step>` takes one argument or option per declared input. `python -m veriphy steps` lists them.
-- **Today's steps move to their packs.** `elaborate` and `level` to `lean`, `meaning` to `math`, `validate`, `reason`
+  `veriphy <step>` takes one argument or option per declared input. `veriphy steps` lists them.
+- **Today's steps move to their packs.** `check` and `level` to `lean`, `meaning` to `math`, `validate`, `reason`
   and `report` to `core`, with the same records apart from the narrower Lean digests.
 
 Depends on `packs-and-config`.
@@ -36,6 +36,7 @@ Depends on `packs-and-config`.
 
 ## Impact
 
-- `veriphy.steps`: the runner reads declarations; `_lean.py` and the graph steps shrink to scopes and nothing else.
+- `veriphy.steps`: the runner reads declarations. The Lean steps in `veriphy.packs.lean.steps`, `meaning` in
+  `veriphy.packs.math.steps` and the graph steps in `veriphy.claims` shrink to scopes and composites.
 - Packs: step entries in `core`, `lean` and `math`; `lean-imports` in the `lean` pack's module.
 - Records: Lean steps get new digests once, when this change lands.

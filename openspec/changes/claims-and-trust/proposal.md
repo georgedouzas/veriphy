@@ -39,7 +39,7 @@ Depends on `declarative-steps`.
 
 ## Impact
 
-- `veriphy.graph`: levels, the vocabulary and the report read the claims registry.
+- `veriphy.claims`: levels, the vocabulary and the report read the claims registry.
 - `veriphy.steps`: the runner checks the grant rule before writing a record.
 - Packs: `levels` in `core`, `lean` and `math`.
-- Lean: a test keeps `#veriphy_levels`'s names equal to the `lean` and `math` packs' levels.
+- Lean: a test keeps `#veriphy level`'s names equal to the `lean` and `math` packs' levels.

@@ -17,7 +17,7 @@ steps declare `grants`, and nothing yet checks it.
 **Non-Goals:**
 
 - Partial orders of levels. One order keeps effective levels a minimum, which `oo-horn` already checks.
-- Changing how Lean computes its levels. `#veriphy_levels` keeps computing them, and the packs declare their names.
+- Changing how Lean computes its levels. `#veriphy level` keeps computing them, and the packs declare their names.
 
 ## Decisions
 
@@ -37,7 +37,7 @@ rule of `packs-and-config` applied to positions.
 
 `config check` refuses a step whose `grants` names a level of another class than its primitive's. The runner checks
 again before writing a record, so a record never carries a level its primitive could not grant, whatever the config.
-Derived steps grant the class of the primitive they derive from: `level` reads `lean.levels`, which is `kernel`.
+Derived steps grant the class of the primitive they derive from: `level` reads `lean.level`, which is `kernel`.
 
 ### D4. Own levels from records
 
@@ -53,7 +53,7 @@ never mistakes a reproduction or an oracle test for a proof.
 ## Risks / Trade-offs
 
 - [Three sources of Lean level names: Lean, the packs, old graphs] → A test keeps the packs equal to
-  `#veriphy_levels`, and graphs written before this change load, since the names do not change.
+  `#veriphy level`, and graphs written before this change load, since the names do not change.
 - [Workspaces combining fields must order levels] → Only when two packs claim the same position, and the error names
   the key to set.
 

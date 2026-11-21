@@ -12,7 +12,7 @@ a workflow that names an undefined step.
 - **THEN** `config check` fails and names the workflow and the step
 
 ### Requirement: Next step from records
-`python -m veriphy next <workflow> <target>` SHALL compute the next step from the target's records alone, and SHALL
+`veriphy next <workflow> <target>` SHALL compute the next step from the target's records alone, and SHALL
 give the same answer for the same records.
 
 #### Scenario: After a counterexample
@@ -24,7 +24,7 @@ give the same answer for the same records.
 - **THEN** `next` moves to the entry the workflow gives for that case
 
 ### Requirement: Run until the agent
-`python -m veriphy run <workflow> <target>` SHALL run every non-agent step in order until the next step is an agent
+`veriphy run <workflow> <target>` SHALL run every non-agent step in order until the next step is an agent
 step or the workflow stops, and SHALL say what the agent must provide.
 
 #### Scenario: Waiting for a script

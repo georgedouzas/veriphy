@@ -2,7 +2,7 @@
 
 ## 1. Files and packs
 
-- [ ] 1.1 Add `veriphy.config` with the schema, loading and validation of `veriphy.yaml` and `pack.yaml` (D1). Verify with pytest: no file resolves to `packs: [math]`, an unknown key fails with its line, and a wrong type fails with its path.
+- [ ] 1.1 Add `veriphy.core.config` with the schema, loading and validation of `veriphy.yaml` and `pack.yaml` (D1). Verify with pytest: no file resolves to `packs: [math]`, an unknown key fails with its line, and a wrong type fails with its path.
 - [ ] 1.2 Add packs by name and by path, ordered by `requires` (D2, D3). Verify with pytest on fixture packs: requirements are loaded first, an unknown pack name is an error, and a pack requiring a missing pack names it.
 - [ ] 1.3 Add the merge with `null` removal and the collision check (D3, D4). Verify with pytest on layered fixtures: later values win, `null` removes, unrelated packs defining one entry fail with both names, and the workspace file settles it.
 

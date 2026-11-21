@@ -13,11 +13,11 @@ and the fallback SHALL apply only when no recipe applies.
 
 #### Scenario: A recipe exists
 - **WHEN** the goal is `Matrix.rank !![(1 : ℚ), 2, 3; 2, 4, 6] = 1` and the `matrix_rank` recipe closes it
-- **THEN** the claim's level is `certificate`, and `sage_test` is not used
+- **THEN** the claim's level is `certificate`, and `#veriphy test` is not used
 
 #### Scenario: No certificate is feasible
 - **WHEN** the claim is rank-nullity for an arbitrary `A : Matrix (Fin m) (Fin n) ℚ`
-- **THEN** its proof is a mathlib proof, and its Veriphy check is a `sage_test` at level `kernel-test`
+- **THEN** its proof is a mathlib proof, and its Veriphy check is a `#veriphy test` at level `kernel-test`
 
 #### Scenario: A plain mathlib proof
 - **WHEN** a theorem has a complete proof that no recipe built, on the standard axioms
@@ -28,6 +28,6 @@ and the fallback SHALL apply only when no recipe applies.
 - **THEN** its level is `none`
 
 #### Scenario: Levels from the packs
-- **WHEN** `python -m veriphy config show` runs with the default config
-- **THEN** it lists the five levels with their classes and packs, and their names equal those `#veriphy_levels`
+- **WHEN** `veriphy config show` runs with the default config
+- **THEN** it lists the five levels with their classes and packs, and their names equal those `#veriphy level`
   reports
