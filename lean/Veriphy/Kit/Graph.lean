@@ -2,8 +2,8 @@
 `#veriphy_graph p₁ … pₙ`: the project's formalized claims for Veriphy's research claim graph. Each theorem and each
 definition of type `Prop` under the prefixes is a claim, with the level `#veriphy_levels` reports and its statement;
 each other definition is a definition; each declaration `uses` every other exported declaration its type or value
-mentions. The export is N-Triples under `.veriphy/graph/lean/`, which `python -m veriphy.graph` reads with
-provenance `lean`. With `veriphy.graph.write` off, the command prints the triples instead of writing them.
+mentions. The export is N-Triples under `.veriphy/graph/lean/`, which `python -m veriphy.claims` reads with
+provenance `lean`. With `veriphy.claims.write` off, the command prints the triples instead of writing them.
 -/
 import Veriphy.Kit.Levels
 import Veriphy.Kit.Project
@@ -12,7 +12,7 @@ namespace Veriphy.Graph
 
 open Lean Elab Command Meta
 
-register_option veriphy.graph.write : Bool := {
+register_option veriphy.claims.write : Bool := {
   defValue := true
   descr := "write #veriphy_graph exports under .veriphy/graph/lean/ (off: print the triples)"
 }
@@ -121,7 +121,7 @@ elab_rules : command
     let result ← liftTermElabM (build prefixes)
     let text := "\n".intercalate result.lines.toList ++ "\n"
     let summary := s!"{result.claims} claims, {result.definitions} definitions, {result.uses} dependencies"
-    unless veriphy.graph.write.get (← getOptions) do
+    unless veriphy.claims.write.get (← getOptions) do
       logInfo m!"{summary}\n{text}"
       return
     let file ← match out with

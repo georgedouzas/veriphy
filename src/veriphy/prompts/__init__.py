@@ -1,5 +1,5 @@
-"""The playbooks, recipes, templates and recipe assets, installed with the package: `python -m veriphy.prompts`."""
+"""Deprecated alias of `veriphy.agents`, kept for one minor release."""
 
-from veriphy.prompts._cli import assets_dir, content_dir, entries, main
+from veriphy.core._aliases import alias
 
-__all__ = ['assets_dir', 'content_dir', 'entries', 'main']
+alias(__name__, 'veriphy.agents')

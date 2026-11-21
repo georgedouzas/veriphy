@@ -54,7 +54,7 @@ finite data.
 
 | Component | Computes | Checks | Entry points |
 |---|---|---|---|
-| Claim graph (`veriphy.graph`) | the consequences of a research graph of claims, conventions and sources, with the Horn reasoner of Open Ontologies under OWL axioms Veriphy generates; levels, convention impact, plans, clashes, slices, appendices | every run by `oo-horn`, a verified Lean checker from Open Ontologies built at a pinned release (verdict `entailed`); the Lean export `#veriphy_graph` for formalized claims; SHACL shapes as a measurement | `python -m veriphy.graph`, the `research` skill |
+| Claim graph (`veriphy.claims`) | the consequences of a research graph of claims, conventions and sources, with the Horn reasoner of Open Ontologies under OWL axioms Veriphy generates; levels, convention impact, plans, clashes, slices, appendices | every run by `oo-horn`, a verified Lean checker from Open Ontologies built at a pinned release (verdict `entailed`); the Lean export `#veriphy_graph` for formalized claims; SHACL shapes as a measurement | `python -m veriphy.claims`, the `research` skill |
 
 ## Checkers and assets
 

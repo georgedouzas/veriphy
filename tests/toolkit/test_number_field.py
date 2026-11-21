@@ -6,7 +6,7 @@ import pytest
 from sage.all import QQ, CyclotomicField, FractionField, PolynomialRing, QuadraticField, matrix
 
 from veriphy.core import CertificateError
-from veriphy.toolkit import (
+from veriphy.packs.math.script import (
     Lean,
     check_matrix_identity,
     cyclotomic_context,

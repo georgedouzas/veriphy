@@ -77,12 +77,12 @@ that goal. It is also the route for `sage_run` by hand, described in the
 | Piece | What it does |
 |---|---|
 | `sage_run` | runs a proof script against the goal, checks the emitted block, and emits a Sage-free replacement |
-| Toolkit (`veriphy.toolkit`) | binds the goal as a `problem`, emits Lean (`linear_combination`, `nlinarith`, `calc`, witnesses, refutations and more), and has exact solvers (rational LP, SOS from an SDP) |
-| Playbooks and recipes (`veriphy.prompts`) | one per technique: when to use it, a tested template, a worked example and its failure modes |
+| Toolkit (`veriphy.packs.math.script`) | binds the goal as a `problem`, emits Lean (`linear_combination`, `nlinarith`, `calc`, witnesses, refutations and more), and has exact solvers (rational LP, SOS from an SDP) |
+| Playbooks and recipes (`veriphy.agents`) | one per technique: when to use it, a tested template, a worked example and its failure modes |
 | Translation tables | map Lean terms to Sage, for mathlib, library packs such as `physlib`, and your project's own entries, each checked by `#veriphy_check_translations` |
 | `VeriphyCheck` | mathlib-only kernel checkers (`decide +kernel`) with soundness theorems, for matrix products, structure constants and primality too large for entrywise proofs |
 | `sage_test` and levels | test claims with no feasible certificate at instances. `#veriphy_levels` reports `certificate`, `lean-proof`, `kernel-test`, `oracle-test` or `none` |
-| Claim graph (`veriphy.graph`) | effective levels, convention impact, clashes across papers, context slices and appendices, with each conclusion checked by `oo-horn` |
+| Claim graph (`veriphy.claims`) | effective levels, convention impact, clashes across papers, context slices and appendices, with each conclusion checked by `oo-horn` |
 | Coverage | `#veriphy_coverage` measures which statements of a corpus translate without opaque atoms |
 
 ## Install
@@ -116,7 +116,7 @@ prebuilt binary. Elsewhere it is built once with `elan`, which takes a few minut
 Install the plugin from the git URL. A local clone would copy its 8 GB `.lake/` into the plugin cache.
 
 **Other agents.** The playbooks are plain markdown, installed with the Python package.
-`sage -python -m veriphy.prompts path` prints their directory: point your agent at `prove.md`, `certify.md` or
+`sage -python -m veriphy.agents path` prints their directory: point your agent at `prove.md`, `certify.md` or
 `research.md` there.
 
 **Claude Code without the plugin:** the skills read the playbooks from the installed package, so copying the three

@@ -77,7 +77,7 @@ example (x y : ℚ) (h : (x - 1) * (x + 1) = y) : x ^ 2 - 1 = y := by
 
 -- a saved script from the project, here the Farkas refutation of a linear system
 example (x y : ℚ) (h1 : x + y ≤ 1) (h2 : x - y = 3) (h3 : 0 ≤ y) : False := by
-  sage_run file "src/veriphy/prompts/recipes/templates/farkas.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/farkas.sage"
 
 /-! ## Failures carry the script output, the Lean text and the error -/
 
@@ -128,42 +128,42 @@ example (x : ℚ) : x = x := by
 /-! ## Recipe templates on their worked examples -/
 
 example (a b : ℝ) : 0 ≤ a ^ 2 * b ^ 2 - 2 * a * b + 1 := by
-  sage_run file "src/veriphy/prompts/recipes/templates/hint_search.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/hint_search.sage"
 
 example (x : ℚ) : (x + 1) ^ 2 - 1 = x * (x + 2) := by
-  sage_run file "src/veriphy/prompts/recipes/templates/calc_derivation.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/calc_derivation.sage"
 
 example (x : ℚ) : 0 ≤ x * x := by
-  sage_run file "src/veriphy/prompts/recipes/templates/case_split.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/case_split.sage"
 
 example : !![(0 : ℚ), 1; 1, 0] * !![1, 0; 0, -1] + !![1, 0; 0, -1] * !![(0 : ℚ), 1; 1, 0] = 0 := by
-  sage_run file "src/veriphy/prompts/recipes/templates/matrix_identity.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/matrix_identity.sage"
 
 /-! ## Recipe regressions -/
 
 -- farkas: more equalities than unknowns (the equality multipliers are free, so they are not minimized)
 example (x y : ℚ) (h1 : x + y = 1) (h2 : x - y = 0) (h3 : 2 * x = 3) : False := by
-  sage_run file "src/veriphy/prompts/recipes/templates/farkas.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/farkas.sage"
 
 /-! ## Symbolic recipes -/
 
 -- sums over intervals
 example (n : ℕ) : ∑ k ∈ Finset.Icc 1 n, (k : ℚ) = n * (n + 1) / 2 := by
-  sage_run file "src/veriphy/prompts/recipes/templates/sum_induction.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/sum_induction.sage"
 example (n : ℕ) : ∑ k ∈ Finset.Ico 1 n, (2 * k : ℚ) = n * (n - 1) := by
-  sage_run file "src/veriphy/prompts/recipes/templates/sum_induction.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/sum_induction.sage"
 example (n : ℕ) : ∑ k ∈ Finset.Ico 0 n, (k : ℚ) ^ 3 = (n * (n - 1) / 2) ^ 2 := by
-  sage_run file "src/veriphy/prompts/recipes/templates/sum_induction.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/sum_induction.sage"
 
 -- ODEs: a stated solution, and solutions Sage finds
 example (ω A B : ℝ) (x : ℝ → ℝ) (hx : x = fun s => A * Real.cos (ω * s) + B * Real.sin (ω * s)) (t : ℝ) :
     deriv (deriv x) t + ω ^ 2 * x t = 0 := by
   sage_run "proof = verify_definition(problem)"
 example : ∃ x : ℝ → ℝ, (∀ t, deriv x t = 2 * x t) ∧ x 0 = 3 := by
-  sage_run file "src/veriphy/prompts/recipes/templates/ode_solution.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/ode_solution.sage"
 example (ω x₀ v₀ : ℝ) (hω : ω ≠ 0) :
     ∃ x : ℝ → ℝ, (∀ t, deriv (deriv x) t + ω ^ 2 * x t = 0) ∧ x 0 = x₀ ∧ deriv x 0 = v₀ := by
-  sage_run file "src/veriphy/prompts/recipes/templates/ode_solution.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/ode_solution.sage"
 -- a wrong solution fails with the residual Lean could not close
 /--
 error: sage_run: the script's proof does not close the goal:
@@ -187,37 +187,37 @@ example : ∃ x : ℝ → ℝ, ∀ t, deriv x t = 2 * x t := by
 
 -- derivative
 example : deriv (fun x : ℝ => x ^ 2 * Real.exp x) 1 = 3 * Real.exp 1 := by
-  sage_run file "src/veriphy/prompts/recipes/templates/derivative.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/derivative.sage"
 example (a : ℝ) (ha : a ≠ 0) : deriv (fun x : ℝ => Real.log x * Real.sin x) a =
     Real.sin a / a + Real.log a * Real.cos a := by
-  sage_run file "src/veriphy/prompts/recipes/templates/derivative.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/derivative.sage"
 
 -- rational_inequality
 example (x : ℝ) : x / (x ^ 2 + 1) ≤ 1 / 2 := by
-  sage_run file "src/veriphy/prompts/recipes/templates/rational_inequality.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/rational_inequality.sage"
 
 -- transcendental_rewrite
 example (a b : ℝ) : Real.exp a * Real.exp b = Real.exp (a + b) := by
-  sage_run file "src/veriphy/prompts/recipes/templates/transcendental_rewrite.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/transcendental_rewrite.sage"
 example (x : ℝ) : Real.sin x ^ 2 + Real.cos x ^ 2 = 1 := by
-  sage_run file "src/veriphy/prompts/recipes/templates/transcendental_rewrite.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/transcendental_rewrite.sage"
 -- a rewrite entry from the project's own tables, picked by the template unedited
 set_option veriphy.translationsDir "lean/VeriphyTest/fixtures/project_translations" in
 example (x : ℝ) (hx : x ≠ 0) : Real.Gamma (x + 1) = x * Real.Gamma x := by
-  sage_run file "src/veriphy/prompts/recipes/templates/transcendental_rewrite.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/transcendental_rewrite.sage"
 -- a pattern entry: the tables bind `log_mul`'s arguments and its side conditions come from the hypotheses
 example (x y : ℝ) (hx : x ≠ 0) (hy : y ≠ 0) : Real.log (x * y) = Real.log x + Real.log y := by
-  sage_run file "src/veriphy/prompts/recipes/templates/transcendental_rewrite.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/transcendental_rewrite.sage"
 example (x : ℝ) : Real.cosh x ^ 2 = Real.sinh x ^ 2 + 1 := by
-  sage_run file "src/veriphy/prompts/recipes/templates/transcendental_rewrite.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/transcendental_rewrite.sage"
 
 -- matrix_from_goal
 example : !![(2 : ℚ), 1; 1, 1] * !![1, -1; -1, 2] = 1 := by
-  sage_run file "src/veriphy/prompts/recipes/templates/matrix_from_goal.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/matrix_from_goal.sage"
 example : !![(0 : ℚ), 1; 1, 0] * !![1, 0; 0, -1] + !![1, 0; 0, -1] * !![0, 1; 1, 0] = 0 := by
-  sage_run file "src/veriphy/prompts/recipes/templates/matrix_from_goal.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/matrix_from_goal.sage"
 example (c : ℚ) : Matrix.det !![(1 : ℚ), c; 0, 1] = 1 := by
-  sage_run file "src/veriphy/prompts/recipes/templates/matrix_from_goal.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/matrix_from_goal.sage"
 
 /-! ## Symbolic translation round trips
 
@@ -357,7 +357,7 @@ proof = tactic('exact ⟨by decide, by decide, by decide, by decide, by decide�
 
 -- a bracket of explicit matrices, with the template unedited
 example : ⁅!![(0 : ℚ), 1; 0, 0], !![(0 : ℚ), 0; 1, 0]⁆ = !![(1 : ℚ), 0; 0, -1] := by
-  sage_run file "src/veriphy/prompts/recipes/templates/lie_structure.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/lie_structure.sage"
 
 -- the bracket table of 𝔰𝔩₂ by name, from a copy of the template with BASIS and NAMES filled in
 example : ⁅LieTest.h, LieTest.e⁆ = 2 • LieTest.e ∧ ⁅LieTest.e, LieTest.f⁆ = LieTest.h := by
@@ -453,7 +453,7 @@ error: sage daemon error: run: AssertionError: fill in REPRESENTATION (and TABLE
 -/
 #guard_msgs in
 example : True := by
-  sage_run file "src/veriphy/prompts/recipes/templates/representation.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/representation.sage"
 
 -- a copy for two spin-½: projectors onto spin 1 and spin 0
 example : True := by
@@ -518,7 +518,7 @@ error: sage daemon error: run: AssertionError: fill in SUPERMATRICES (with EVEN_
 -/
 #guard_msgs in
 example : True := by
-  sage_run file "src/veriphy/prompts/recipes/templates/lie_superalgebra.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/lie_superalgebra.sage"
 
 -- a copy for osp(1|2) by name
 example : SuperTest.qp * SuperTest.qm + SuperTest.qm * SuperTest.qp = -SuperTest.h ∧
@@ -561,22 +561,22 @@ example (φ : ℝ) : NormedSpace.exp (φ • !![(0 : ℝ), 1, 0, 0; 1, 0, 0, 0; 
 /-! ## Algebraic recipes -/
 
 example (x y : ℝ) (h1 : x ^ 2 + y ^ 2 < 1) (h2 : x + y ≥ 2) : False := by
-  sage_run file "src/veriphy/prompts/recipes/templates/infeasibility.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/infeasibility.sage"
 example (x y : ℚ) (hxy : x * y = 1) (hx : x = 0) : False := by
-  sage_run file "src/veriphy/prompts/recipes/templates/infeasibility.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/infeasibility.sage"
 example (x : ℝ) (h : x ^ 2 = 0) : x = 0 := by
-  sage_run file "src/veriphy/prompts/recipes/templates/infeasibility.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/infeasibility.sage"
 
 -- a 40-digit prime
 example : Nat.Prime 1000000000000000000000000000000000012397 := by
-  sage_run file "src/veriphy/prompts/recipes/templates/primality.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/primality.sage"
 
 /--
 error: sage daemon error: run: AssertionError: fill in MATRIX (and FORM) in a copy
 -/
 #guard_msgs in
 example : True := by
-  sage_run file "src/veriphy/prompts/recipes/templates/matrix_normal_form.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/matrix_normal_form.sage"
 example : True := by
   sage_run file "smith_example.sage"
 
@@ -585,7 +585,7 @@ error: sage daemon error: run: AssertionError: fill in MATRIX (and PARAMETER) in
 -/
 #guard_msgs in
 example : True := by
-  sage_run file "src/veriphy/prompts/recipes/templates/matrix_exponential.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/matrix_exponential.sage"
 example (φ : ℝ) : NormedSpace.exp (φ • !![(0 : ℝ), 1, 0, 0; 1, 0, 0, 0; 0, 0, 0, 0; 0, 0, 0, 0]) =
     !![Real.cosh φ, Real.sinh φ, 0, 0; Real.sinh φ, Real.cosh φ, 0, 0; 0, 0, 1, 0; 0, 0, 0, 1] := by
   sage_run file "boost.sage"
@@ -668,7 +668,7 @@ error: sage daemon error: run: AssertionError: fill in MATRICES and NAMES, or CO
 -/
 #guard_msgs in
 example : True := by
-  sage_run file "src/veriphy/prompts/recipes/templates/operator_identity.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/operator_identity.sage"
 
 example (ψ : ℝ → ℝ) (hψ : ContDiff ℝ 1 ψ) (x : ℝ) : deriv (fun y => y * ψ y) x - x * deriv ψ x = ψ x := by
   sage_run file "canonical_commutator.sage"
@@ -688,7 +688,7 @@ error: sage daemon error: run: AssertionError: fill in METRIC and NAME, or FORM,
 -/
 #guard_msgs in
 example : True := by
-  sage_run file "src/veriphy/prompts/recipes/templates/coordinate_geometry.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/coordinate_geometry.sage"
 
 -- Γ^θ_φφ = -sin θ cos θ on the 2-sphere, where sin θ ≠ 0
 example (x : Fin 2 → ℝ) (h : Real.sin (x 0) ≠ 0) :
@@ -732,7 +732,7 @@ error: sage daemon error: run: AssertionError: fill in SUMMAND (and CLOSED_FORM,
 -/
 #guard_msgs in
 example : True := by
-  sage_run file "src/veriphy/prompts/recipes/templates/wz_certificate.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/wz_certificate.sage"
 
 -- a WZ pair: Σ C(n, k) = 2ⁿ
 example (n : ℕ) : ∑ k ∈ Finset.range (n + 1), (n.choose k : ℚ) = 2 ^ n := by
@@ -747,7 +747,7 @@ error: sage daemon error: run: AssertionError: fill in COEFFICIENTS and INITIAL 
 -/
 #guard_msgs in
 example : True := by
-  sage_run file "src/veriphy/prompts/recipes/templates/recurrence.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/recurrence.sage"
 
 -- a linear recurrence and its closed form, by strong induction
 example (a : ℕ → ℤ) (h0 : a 0 = 0) (h1 : a 1 = 1) (hrec : ∀ n, a (n + 2) = 5 * a (n + 1) - 6 * a n) (n : ℕ) :
@@ -757,13 +757,13 @@ example (a : ℕ → ℤ) (h0 : a 0 = 0) (h1 : a 1 = 1) (hrec : ∀ n, a (n + 2)
 /-! ## Certified numerics -/
 
 example : Real.exp 1 < 2.7183 := by
-  sage_run file "src/veriphy/prompts/recipes/templates/certified_bound.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/certified_bound.sage"
 example : 3.14159 < Real.pi := by
-  sage_run file "src/veriphy/prompts/recipes/templates/certified_bound.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/certified_bound.sage"
 example : Real.exp (1 / 2) < 1.6488 := by
-  sage_run file "src/veriphy/prompts/recipes/templates/certified_bound.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/certified_bound.sage"
 example : Real.log (3 / 2) < 0.4055 := by
-  sage_run file "src/veriphy/prompts/recipes/templates/certified_bound.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/certified_bound.sage"
 
 -- Gamma has no remainder bound in mathlib: refused, not emitted unchecked
 /--
@@ -771,14 +771,14 @@ error: sage daemon error: run: CertificateError: no remainder bound is available
 -/
 #guard_msgs in
 example : Real.Gamma (1 / 3) < 3 := by
-  sage_run file "src/veriphy/prompts/recipes/templates/certified_bound.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/certified_bound.sage"
 
 /--
 error: sage daemon error: run: AssertionError: fill in POLYNOMIAL and POLYNOMIAL_LEAN in a copy
 -/
 #guard_msgs in
 example : True := by
-  sage_run file "src/veriphy/prompts/recipes/templates/root_isolation.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/root_isolation.sage"
 
 example : ∃! x : ℝ, (3 / 2 < x ∧ x < 3) ∧ x ^ 3 - 2 * x - 1 = 0 := by
   sage_run file "golden_root.sage"
@@ -849,7 +849,7 @@ error: sage daemon error: run: AssertionError: fill in REFERENCE in a copy
 -/
 #guard_msgs in
 example : True := by
-  sage_run file "src/veriphy/prompts/recipes/templates/fusion_category.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/fusion_category.sage"
 
 -- SU(3) at level 3 has a fusion multiplicity 2: outside the multiplicity-free asset, refused
 /--
@@ -949,21 +949,21 @@ proof = tactic('simp [Polynomial.derivative_X_pow]; norm_num [map_ofNat]')"
 
 -- a 4 × 4 determinant, by Laplace expansion
 example : Matrix.det !![(1 : ℚ), 0, 0, 0; 0, -1, 0, 0; 0, 0, -1, 0; 0, 0, 0, -1] = -1 := by
-  sage_run file "src/veriphy/prompts/recipes/templates/matrix_from_goal.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/matrix_from_goal.sage"
 example : Matrix.det !![(1 : ℚ), 2, 0, 1; 0, 1, 3, 0; 2, 0, 1, 1; 0, 1, 0, 2] = 23 := by
-  sage_run file "src/veriphy/prompts/recipes/templates/matrix_from_goal.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/matrix_from_goal.sage"
 
 -- a product with a transpose, symbolic entries
 open Matrix in
 example (a b : ℝ) : !![a, b; 0, 1] * (!![a, b; 0, 1])ᵀ = !![a ^ 2 + b ^ 2, b; b, 1] := by
-  sage_run file "src/veriphy/prompts/recipes/templates/matrix_from_goal.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/matrix_from_goal.sage"
 
 -- the field-strength invariant F_μν F^μν = trace (Fᵀ η F η)
 open Matrix in
 example (E B : ℝ) : Matrix.trace ((!![0, -E, 0, 0; E, 0, -B, 0; 0, B, 0, 0; 0, 0, 0, 0] : Matrix (Fin 4) (Fin 4) ℝ)ᵀ *
     !![(1 : ℝ), 0, 0, 0; 0, -1, 0, 0; 0, 0, -1, 0; 0, 0, 0, -1] * !![0, -E, 0, 0; E, 0, -B, 0; 0, B, 0, 0; 0, 0, 0, 0] *
     !![(1 : ℝ), 0, 0, 0; 0, -1, 0, 0; 0, 0, -1, 0; 0, 0, 0, -1]) = 2 * (B ^ 2 - E ^ 2) := by
-  sage_run file "src/veriphy/prompts/recipes/templates/matrix_from_goal.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/matrix_from_goal.sage"
 
 -- a Lorentz boost preserves the metric, modulo cosh² - sinh² = 1
 open Matrix in
@@ -1001,38 +1001,38 @@ example (u : ℝ) : (!![Real.cosh u, Real.sinh u; Real.sinh u, Real.cosh u])ᵀ 
 
 -- power reduction
 example (x : ℝ) : Real.cos x ^ 2 = 1 / 2 + 1 / 2 * Real.cos (2 * x) := by
-  sage_run file "src/veriphy/prompts/recipes/templates/transcendental_rewrite.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/transcendental_rewrite.sage"
 example (x : ℝ) : Real.sin x ^ 2 = 1 / 2 - Real.cos (2 * x) / 2 := by
-  sage_run file "src/veriphy/prompts/recipes/templates/transcendental_rewrite.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/transcendental_rewrite.sage"
 -- triple and double angles
 example (x : ℝ) : Real.sin (3 * x) = 3 * Real.sin x - 4 * Real.sin x ^ 3 := by
-  sage_run file "src/veriphy/prompts/recipes/templates/transcendental_rewrite.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/transcendental_rewrite.sage"
 example (x : ℝ) : Real.cos (3 * x) + 3 * Real.cos x = 4 * Real.cos x ^ 3 := by
-  sage_run file "src/veriphy/prompts/recipes/templates/transcendental_rewrite.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/transcendental_rewrite.sage"
 example (x : ℝ) : Real.sin (2 * x) = 2 * Real.sin x * Real.cos x := by
-  sage_run file "src/veriphy/prompts/recipes/templates/transcendental_rewrite.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/transcendental_rewrite.sage"
 -- the Pythagorean identity
 example (x : ℝ) : Real.cos x ^ 2 + Real.sin x ^ 2 = 1 := by
-  sage_run file "src/veriphy/prompts/recipes/templates/transcendental_rewrite.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/transcendental_rewrite.sage"
 
 /-! ## Definite integrals -/
 
 -- the mean of the squared cosine over a period
 example : ∫ φ in (0 : ℝ)..(2 * Real.pi), Real.cos φ ^ 2 = Real.pi := by
-  sage_run file "src/veriphy/prompts/recipes/templates/definite_integral.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/definite_integral.sage"
 -- a full period of sin 2φ
 example : ∫ φ in (0 : ℝ)..(2 * Real.pi), Real.sin (2 * φ) = 0 := by
-  sage_run file "src/veriphy/prompts/recipes/templates/definite_integral.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/definite_integral.sage"
 -- a polynomial over [0, 1]
 example : ∫ x in (0 : ℝ)..1, (x ^ 2 + 2 * x) = 4 / 3 := by
-  sage_run file "src/veriphy/prompts/recipes/templates/definite_integral.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/definite_integral.sage"
 -- a wrong value is refused with the integral Sage computes
 /--
 error: sage daemon error: run: CertificateError: the integral is 4/3, not the goal's value
 -/
 #guard_msgs in
 example : ∫ x in (0 : ℝ)..1, (x ^ 2 + 2 * x) = 1 := by
-  sage_run file "src/veriphy/prompts/recipes/templates/definite_integral.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/definite_integral.sage"
 
 /-! ## Linear algebra: independence, rank, dimension, non-linearity, signature -/
 
@@ -1101,45 +1101,45 @@ error: sage daemon error: run: AssertionError: fill in VECTORS (and OTHER or KER
 -/
 #guard_msgs in
 example : LinearIndependent ℚ ![![(1 : ℚ), 0], ![0, 1]] := by
-  sage_run file "src/veriphy/prompts/recipes/templates/independence.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/independence.sage"
 /--
 error: sage daemon error: run: AssertionError: fill in MATRIX in a copy
 -/
 #guard_msgs in
 example : Matrix.rank !![(1 : ℚ), 0; 0, 1] = 2 := by
-  sage_run file "src/veriphy/prompts/recipes/templates/matrix_rank.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/matrix_rank.sage"
 /--
 error: sage daemon error: run: AssertionError: fill in VECTORS in a copy
 -/
 #guard_msgs in
 example : Module.finrank ℚ ↥(Submodule.span ℚ (Set.range ![![(1 : ℚ), 0]])) = 1 := by
-  sage_run file "src/veriphy/prompts/recipes/templates/dimension.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/dimension.sage"
 /--
 error: sage daemon error: run: AssertionError: fill in MAP in a copy
 -/
 #guard_msgs in
 example : ¬ ∃ f : ℝ →ₗ[ℝ] ℝ, ∀ x, f x = x ^ 2 := by
-  sage_run file "src/veriphy/prompts/recipes/templates/nonlinearity.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/nonlinearity.sage"
 /--
 error: sage daemon error: run: AssertionError: fill in MATRIX in a copy
 -/
 #guard_msgs in
 example : Veriphy.Linear.HasSignature !![(1 : ℚ), 0; 0, 1] 2 0 0 := by
-  sage_run file "src/veriphy/prompts/recipes/templates/signature.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/signature.sage"
 
 /-! ## Pilot shapes (the book's missing building blocks) -/
 
 -- power reduction of sin³ through the triple angle
 example (x : ℝ) : Real.sin x ^ 3 = 3 / 4 * Real.sin x - 1 / 4 * Real.sin (3 * x) := by
-  sage_run file "src/veriphy/prompts/recipes/templates/transcendental_rewrite.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/transcendental_rewrite.sage"
 -- a bilinear form shifted by a constant is not bilinear
 example : ¬ ∃ B : LinearMap.BilinForm ℝ (Fin 2 → ℝ), ∀ v w, B v w = v ⬝ᵥ w + 1 := by
   sage_run "proof = tactic(nonlinearity_proof(lambda v, w: 1, 2))"
 -- integrals of affine combinations
 example : ∫ φ in (0 : ℝ)..(2 * Real.pi), (3 + 2 * Real.cos φ) = 6 * Real.pi := by
-  sage_run file "src/veriphy/prompts/recipes/templates/definite_integral.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/definite_integral.sage"
 example : ∫ φ in (0 : ℝ)..(2 * Real.pi), (1 - Real.sin (2 * φ)) = 2 * Real.pi := by
-  sage_run file "src/veriphy/prompts/recipes/templates/definite_integral.sage"
+  sage_run file "src/veriphy/packs/math/agents/recipes/templates/definite_integral.sage"
 
 /-! ## `#veriphy_meaning`: does a statement say what it was meant to? -/
 

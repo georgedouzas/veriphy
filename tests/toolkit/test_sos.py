@@ -4,7 +4,7 @@ import pytest
 from sage.all import QQ
 
 from veriphy.core import CertificateError
-from veriphy.toolkit import create_ring, sos_decomposition
+from veriphy.packs.math.script import create_ring, sos_decomposition
 
 X, Y = create_ring(['x', 'y']).gens()
 

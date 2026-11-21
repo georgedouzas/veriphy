@@ -4,7 +4,7 @@ import pytest
 from sage.all import SR, exp, function, sqrt
 
 from veriphy.core import CertificateError, ParamError, TableError
-from veriphy.toolkit import Hyp, parse_symbolic, read_problem
+from veriphy.packs.math.script import Hyp, parse_symbolic, read_problem
 
 PROBLEM = {
     'vars': ['x0', 'x1'],

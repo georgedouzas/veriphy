@@ -1,10 +1,5 @@
-"""Provide the Sage-backed daemon: its protocol entry point and the exact building blocks of its methods.
+"""Deprecated alias of `veriphy.packs.math.primitives.sage.methods`, kept for one minor release."""
 
-Importing this package imports SageMath.
-"""
+from veriphy.core._aliases import alias
 
-from veriphy.oracle._encoding import encode
-from veriphy.oracle._protocol import answer_request
-from veriphy.oracle._scripts import run_test_script
-
-__all__ = ['answer_request', 'encode', 'run_test_script']
+alias(__name__, 'veriphy.packs.math.primitives.sage.methods')

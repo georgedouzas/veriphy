@@ -4,7 +4,7 @@ import pytest
 from sage.all import AA, QQ, RDF, I, QQbar, RealIntervalField, pi
 
 from veriphy.core import CertificateError
-from veriphy.toolkit import Sampler, check_instances, default_cases, kernel_instance, oracle_instance
+from veriphy.packs.math.script import Sampler, check_instances, default_cases, kernel_instance, oracle_instance
 
 
 def test_oracle_instances_compare_exactly_or_by_intervals() -> None:

@@ -14,7 +14,7 @@ template with `sage_run`, with replay on. **32/32 pass.**
 The setup:
 
 - **Agents:** four fresh agents, each given 8 of the 32 statements with the proofs blanked.
-- **Allowed reading:** only `certify.md`, step 3 of `prove.md`, and the recipes (`veriphy.prompts`). The test files, the
+- **Allowed reading:** only `certify.md`, step 3 of `prove.md`, and the recipes (`veriphy.agents`). The test files, the
   OpenSpec artifacts and the git history were off limits.
 - **Project:** a scratch Lake project that requires Veriphy, with a shared `certificates/` directory, so the agents
   could reuse each other's scripts.

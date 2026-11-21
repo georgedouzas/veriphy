@@ -5,7 +5,7 @@
 - [ ] 1.1 Create the layer subpackages and the `core`, `lean` and `math` pack directories, move the record store into `veriphy.steps`, and add step registration (D1, D4). Verify with the step tests, and that `python -m veriphy report` runs through registration.
 - [ ] 1.2 Move `oracle`, `sage_server`, `toolkit` and `translations` into `veriphy.packs.math`, add the `veriphy.script` facade, and start the daemon from its new path in the Lean bridge (D1, D5). Verify with the oracle, toolkit and translation tests, and the Lean bridge tests.
 - [ ] 1.3 Move `graph` into `veriphy.primitives.graph` (engine, process runner, checker) and `veriphy.claims` (the rest), with the graph steps, and the Lean steps and `certificates` into their packs (D1, D4). Verify with the graph, step and certificate tests.
-- [ ] 1.4 Move `prompts` into `veriphy.agents`, with the playbooks and assets in the `math` and `core` packs, and update the package data. Verify with the recipe and research document tests, and a wheel build whose contents list the playbooks and assets.
+- [ ] 1.4 Move `prompts` into `veriphy.agents`, with the playbooks and assets in the `math` pack, and update the package data. Verify with the recipe and research document tests, and a wheel build whose contents list the playbooks and assets.
 
 ## 2. Rule and aliases
 

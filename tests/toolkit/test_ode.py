@@ -8,7 +8,7 @@ import pytest
 from sage.all import SR, cos, diff, exp, function, sin
 
 from veriphy.core import CertificateError
-from veriphy.toolkit import Lean, derivative_order, read_problem, solve_exists, verify_definition
+from veriphy.packs.math.script import Lean, derivative_order, read_problem, solve_exists, verify_definition
 
 FIXTURES = Path(__file__).parent / 'fixtures'
 DEFINITION = read_problem(json.loads((FIXTURES / 'ode_definition.json').read_text()))

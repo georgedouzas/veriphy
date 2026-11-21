@@ -4,7 +4,7 @@ import pytest
 from sage.all import ZZ, matrix
 
 from veriphy.core import CertificateError
-from veriphy.toolkit import matrix_goal_proof, packed_product_certificate, prime_certificate
+from veriphy.packs.math.script import matrix_goal_proof, packed_product_certificate, prime_certificate
 
 
 def test_matrix_goal_proof_switches_on_size_and_carrier() -> None:

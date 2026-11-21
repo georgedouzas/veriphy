@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from veriphy.certificates import main
+from veriphy.packs.math.steps.certificates import main
 
 COMPLETE = (
     '# name: farkas_anomaly\n# technique: farkas\n# goal: False from linear hypotheses\n# description: Refute.\nx = 1\n'

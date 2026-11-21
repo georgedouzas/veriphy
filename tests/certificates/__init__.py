@@ -1,1 +1,1 @@
-"""Test the `veriphy.certificates` package."""
+"""Test the `veriphy.packs.math.steps.certificates` package."""

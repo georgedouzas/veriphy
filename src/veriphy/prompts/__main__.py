@@ -1,5 +1,5 @@
-"""Run the prompts command when called as `python -m veriphy.prompts`."""
+"""Deprecated program, kept for one minor release: run `python -m veriphy.agents` instead."""
 
-from veriphy.prompts import main
+from veriphy.core._aliases import run_alias
 
-main()
+run_alias('veriphy.agents')

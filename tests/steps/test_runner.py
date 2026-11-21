@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from veriphy.core import RecordStore, StepError
-from veriphy.steps import Outcome, Params, Prepared, Step, exit_code, run_step
+from veriphy.core import StepError
+from veriphy.steps import Outcome, Params, Prepared, RecordStore, Step, exit_code, run_step
 
 
 def _counting_step(statuses: list[str], kind: str = 'check', level: str | None = None) -> tuple[Step, list[int]]:

@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from veriphy.graph import (
+from veriphy.claims import (
     Release,
     Setup,
     builtin_rules,

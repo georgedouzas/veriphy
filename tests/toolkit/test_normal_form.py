@@ -6,7 +6,7 @@ import pytest
 from sage.all import QQ, ZZ, matrix
 
 from veriphy.core import CertificateError
-from veriphy.toolkit import (
+from veriphy.packs.math.script import (
     Lean,
     diagonalizable_exponential,
     jordan_certificate,

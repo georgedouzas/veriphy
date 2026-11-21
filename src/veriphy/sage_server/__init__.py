@@ -1,5 +1,5 @@
-"""Run the veriphy daemon: `sage -python -m veriphy.sage_server` or the `veriphy-sage-server` script."""
+"""Deprecated alias of `veriphy.packs.math.primitives.sage`, kept for one minor release."""
 
-from veriphy.sage_server._main import main
+from veriphy.core._aliases import alias
 
-__all__ = ['main']
+alias(__name__, 'veriphy.packs.math.primitives.sage')

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from veriphy.prompts import content_dir
+from veriphy.agents import content_dir
 
 ROOT = Path(__file__).resolve().parents[2]
 RECIPES = content_dir() / 'recipes'
@@ -28,7 +28,7 @@ def test_recipe_embeds_template(template: Path) -> None:
 @pytest.mark.parametrize('template', TEMPLATES, ids=lambda p: p.stem)
 def test_template_runs_in_lean_tests(template: Path) -> None:
     """Run every template on a worked example in the Lean test suite."""
-    assert f'src/veriphy/prompts/recipes/templates/{template.name}' in LEAN_TESTS
+    assert f'src/veriphy/packs/math/agents/recipes/templates/{template.name}' in LEAN_TESTS
 
 
 @pytest.mark.parametrize('template', TEMPLATES, ids=lambda p: p.stem)
@@ -51,7 +51,7 @@ def test_library_recipe_embeds_template_and_runs(template: Path) -> None:
     assert re.findall(r'```sage\n(.*?)\n```', recipe, re.S) == [template.read_text().rstrip()]
     head = template.read_text().splitlines()[: len(HEADER_KEYS)]
     assert [line.split(':')[0].lstrip('# ') for line in head] == list(HEADER_KEYS)
-    assert f'src/veriphy/prompts/recipes/{library.name}/templates/{template.name}' in RUNNER_TESTS
+    assert f'src/veriphy/packs/math/agents/recipes/{library.name}/templates/{template.name}' in RUNNER_TESTS
 
 
 def test_templates_exist() -> None:

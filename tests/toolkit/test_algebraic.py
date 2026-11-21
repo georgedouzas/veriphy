@@ -5,7 +5,7 @@ from collections.abc import Callable
 import pytest
 
 from veriphy.core import CertificateError
-from veriphy.toolkit import (
+from veriphy.packs.math.script import (
     Lean,
     nullstellensatz_proof,
     positivstellensatz_proof,

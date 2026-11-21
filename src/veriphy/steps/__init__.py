@@ -1,29 +1,44 @@
-"""Run Veriphy's steps: each hashes its inputs, replays a final record of the same inputs, or runs and records.
+"""Layer 1, steps: each hashes its inputs, replays a final record of the same inputs, or runs and records.
 
-`python -m veriphy <step>` runs one from the command line. The steps are `elaborate`, `level` and `meaning` (Lean), and
-`validate`, `reason` and `report` (the research claim graph).
+A step is registered by the layer or pack that defines it, and `python -m veriphy <step>` runs one. Veriphy's own
+packs register `elaborate` and `level` (`lean`), `meaning` (`math`), and `validate`, `reason` and `report` (`core`,
+through `veriphy.claims`). This package imports only `veriphy.core` and `veriphy.primitives`.
 """
 
-from veriphy.steps._cli import STEPS, main
-from veriphy.steps._graph import REASON, REPORT, VALIDATE
-from veriphy.steps._lean import ELABORATE, LEVEL, MEANING, lean_sources
-from veriphy.steps._runner import Outcome, Params, Prepared, Result, Step, exit_code, run_step
+from veriphy.steps._cli import main
+from veriphy.steps._records import (
+    KINDS,
+    LEVELLED_KINDS,
+    Record,
+    RecordStore,
+    config_digest,
+    input_digest,
+    read_record,
+)
+from veriphy.steps._registry import BUILTIN_PACKS, LAYERS, load_steps, pack_packages, register, registered
+from veriphy.steps._runner import Argument, Outcome, Params, Prepared, Result, Step, exit_code, run_step
 
 __all__ = [
-    'ELABORATE',
-    'LEVEL',
-    'MEANING',
-    'REASON',
-    'REPORT',
-    'STEPS',
-    'VALIDATE',
+    'BUILTIN_PACKS',
+    'KINDS',
+    'LAYERS',
+    'LEVELLED_KINDS',
+    'Argument',
     'Outcome',
     'Params',
     'Prepared',
+    'Record',
+    'RecordStore',
     'Result',
     'Step',
+    'config_digest',
     'exit_code',
-    'lean_sources',
+    'input_digest',
+    'load_steps',
     'main',
+    'pack_packages',
+    'read_record',
+    'register',
+    'registered',
     'run_step',
 ]

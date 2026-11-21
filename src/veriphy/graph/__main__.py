@@ -1,5 +1,5 @@
-"""Run the research graph when called as `python -m veriphy.graph`."""
+"""Deprecated program, kept for one minor release: run `python -m veriphy.claims` instead."""
 
-from veriphy.graph import main
+from veriphy.core._aliases import run_alias
 
-main()
+run_alias('veriphy.claims')

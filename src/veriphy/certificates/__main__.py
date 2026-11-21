@@ -1,5 +1,5 @@
-"""Run the catalog when called as `python -m veriphy.certificates`."""
+"""Deprecated program, kept for one minor release: run `python -m veriphy.packs.math.steps.certificates` instead."""
 
-from veriphy.certificates import main
+from veriphy.core._aliases import run_alias
 
-main()
+run_alias('veriphy.packs.math.steps.certificates')

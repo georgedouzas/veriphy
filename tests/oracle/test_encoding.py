@@ -4,7 +4,7 @@ import pytest
 from sage.all import QQ, PolynomialRing, RealField
 
 from veriphy.core import EncodingError
-from veriphy.oracle import encode
+from veriphy.packs.math.primitives.sage.methods import encode
 
 
 def test_encode_rationals_and_polynomials_exactly() -> None:

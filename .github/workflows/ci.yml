@@ -118,10 +118,10 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.cache/veriphy/open-ontologies
-        key: oo-horn-${{ hashFiles('src/veriphy/graph/_checker.py') }}
+        key: oo-horn-${{ hashFiles('src/veriphy/primitives/graph/_checker.py') }}
 
     - name: Set up the checker and the reasoner of the pinned Open Ontologies release
-      run: uv run --extra graph python -m veriphy.graph checker build
+      run: uv run --extra graph python -m veriphy.claims checker build
 
     - name: Install the built wheel into SageMath
       run: |

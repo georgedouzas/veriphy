@@ -258,8 +258,8 @@ example (x : ℚ) : (Polynomial.X ^ 2 + Polynomial.C 1 : Polynomial ℚ).eval x 
     (← Veriphy.resolveScriptPath "anomaly.sage" (some sub)) == root / ".veriphy" / "certificates" / "anomaly.sage",
     (← Veriphy.resolveScriptPath ".veriphy/certificates/anomaly.sage" (some sub)) ==
       root / ".veriphy/certificates/anomaly.sage",
-    (← Veriphy.resolveScriptPath "src/veriphy/prompts/recipes/templates/sos.sage") ==
-      root / "src/veriphy/prompts/recipes/templates/sos.sage"]
+    (← Veriphy.resolveScriptPath "src/veriphy/packs/math/agents/recipes/templates/sos.sage") ==
+      root / "src/veriphy/packs/math/agents/recipes/templates/sos.sage"]
 
 -- a missing script is reported with its resolved path, before any daemon call
 /-- info: true -/
@@ -324,7 +324,7 @@ info: [7, 6, 1, 4, 5, 0] Real.Gamma
 /-- info: true -/
 #guard_msgs in
 #eval show IO Bool from do
-  let j ← IO.ofExcept (Lean.Json.parse (← IO.FS.readFile "src/veriphy/toolkit/core_table.json"))
+  let j ← IO.ofExcept (Lean.Json.parse (← IO.FS.readFile "src/veriphy/packs/math/script/core_table.json"))
   let t ← IO.ofExcept (Lean.fromJson? (α := Veriphy.Table) j)
   return t == Veriphy.coreTable
 
@@ -332,7 +332,7 @@ info: [7, 6, 1, 4, 5, 0] Real.Gamma
 /-- info: true -/
 #guard_msgs in
 #eval show IO Bool from do
-  let j ← IO.ofExcept (Lean.Json.parse (← IO.FS.readFile "src/veriphy/toolkit/packs/physlib.json"))
+  let j ← IO.ofExcept (Lean.Json.parse (← IO.FS.readFile "src/veriphy/packs/math/script/packs/physlib.json"))
   let t ← IO.ofExcept (Lean.fromJson? (α := Veriphy.Table) j)
   return t == Veriphy.Packs.physlib.table
 

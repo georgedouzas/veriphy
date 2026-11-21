@@ -5,9 +5,9 @@ from pathlib import Path
 
 import pytest
 
-from veriphy.certificates import main
 from veriphy.core import ScriptError
-from veriphy.oracle import run_test_script
+from veriphy.packs.math.primitives.sage.methods import run_test_script
+from veriphy.packs.math.steps.certificates import main
 
 PROBLEM = {'vars': [], 'atoms': [], 'goal': {'kind': 'false'}, 'universal': [{'name': 'x', 'type': 'ℝ'}]}
 SCRIPT = """

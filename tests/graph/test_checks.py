@@ -3,7 +3,7 @@
 from collections.abc import Callable
 from pathlib import Path
 
-from veriphy.graph import (
+from veriphy.claims import (
     add_triples,
     clash_report,
     clashes,

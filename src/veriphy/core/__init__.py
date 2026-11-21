@@ -1,5 +1,9 @@
 """Provide the shared leaves of veriphy: its named exceptions, the protocol's type vocabulary, the project layout."""
 
+import importlib
+import warnings
+
+from veriphy.core._digests import canonical_json, content_digest
 from veriphy.core._errors import (
     CertificateError,
     CheckerError,
@@ -17,22 +21,9 @@ from veriphy.core._errors import (
 )
 from veriphy.core._process import find_tool, run_process
 from veriphy.core._project import PROJECT_DIR_NAME, find_workspace_root, project_dir
-from veriphy.core._records import (
-    KINDS,
-    LEVELLED_KINDS,
-    Record,
-    RecordStore,
-    canonical_json,
-    config_digest,
-    content_digest,
-    input_digest,
-    read_record,
-)
 from veriphy.core._types import RELATIONS, Coercer, JsonObject, JsonValue, Method
 
 __all__ = [
-    'KINDS',
-    'LEVELLED_KINDS',
     'PROJECT_DIR_NAME',
     'RELATIONS',
     'CertificateError',
@@ -46,21 +37,30 @@ __all__ = [
     'Method',
     'MethodError',
     'ParamError',
-    'Record',
     'RecordError',
-    'RecordStore',
     'ScriptError',
     'StepError',
     'TableError',
     'ToolError',
     'VeriphyError',
     'canonical_json',
-    'config_digest',
     'content_digest',
     'find_tool',
     'find_workspace_root',
-    'input_digest',
     'project_dir',
-    'read_record',
     'run_process',
 ]
+
+# deprecated: the record store moved to `veriphy.steps`, the layer that writes records
+_MOVED_TO_STEPS = frozenset(
+    {'KINDS', 'LEVELLED_KINDS', 'Record', 'RecordStore', 'config_digest', 'input_digest', 'read_record'},
+)
+
+
+def __getattr__(name: str) -> object:
+    """Return a name that moved to `veriphy.steps`, warning that it moved."""
+    if name not in _MOVED_TO_STEPS:
+        message = f"module 'veriphy.core' has no attribute '{name}'"
+        raise AttributeError(message)
+    warnings.warn(f'veriphy.core.{name} moved to veriphy.steps.{name}', DeprecationWarning, stacklevel=2)
+    return getattr(importlib.import_module('veriphy.steps'), name)

@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from veriphy.graph import PINNED_RELEASE, Release, cache_dir, find_checker
+from veriphy.claims import PINNED_RELEASE, Release, cache_dir, find_checker
 
 PREFIXES = '@prefix vp: <urn:veriphy:vocabulary#> .\n@prefix owl: <http://www.w3.org/2002/07/owl#> .\n'
 CHAPTER = """@prefix : <urn:veriphy:source:chapter9#> .
@@ -87,7 +87,7 @@ def checker() -> Path:
     if path is None:
         if os.environ.get('VERIPHY_REQUIRE_CHECKER'):
             pytest.fail('VERIPHY_REQUIRE_CHECKER is set and oo-horn was not found')
-        pytest.skip('oo-horn is not built: python -m veriphy.graph checker build')
+        pytest.skip('oo-horn is not built: python -m veriphy.claims checker build')
     return path
 
 
@@ -175,7 +175,7 @@ def real_reasoner() -> Path:
     """Return the pinned release's reasoner source, resolved before any test changes the environment."""
     source = cache_dir(release=PINNED_RELEASE) / 'python' / 'src'
     if not (source / 'open_ontologies_lite' / 'horn').is_dir():
-        pytest.skip('the pinned release is not fetched: python -m veriphy.graph checker build --reasoner-only')
+        pytest.skip('the pinned release is not fetched: python -m veriphy.claims checker build --reasoner-only')
     return source
 
 

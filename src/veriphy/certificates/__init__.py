@@ -1,5 +1,5 @@
-"""Catalog a project's `.veriphy/certificates/`: `python -m veriphy.certificates list` or `show <name>`."""
+"""Deprecated alias of `veriphy.packs.math.steps.certificates`, kept for one minor release."""
 
-from veriphy.certificates._catalog import main
+from veriphy.core._aliases import alias
 
-__all__ = ['main']
+alias(__name__, 'veriphy.packs.math.steps.certificates')

@@ -3,7 +3,7 @@
 from collections.abc import Callable
 from pathlib import Path
 
-from veriphy.graph import convention_impact, impact_report, load_graph, plan, plan_report, reason, source_iri, vp
+from veriphy.claims import convention_impact, impact_report, load_graph, plan, plan_report, reason, source_iri, vp
 
 HALF, ONE = source_iri('chapter9', 'half'), source_iri('chapter9', 'one')
 

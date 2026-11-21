@@ -5,14 +5,14 @@ from pathlib import Path
 
 import pytest
 
-import veriphy.graph
-from veriphy.graph import COMMANDS, main
+import veriphy.claims
+from veriphy.claims import COMMANDS, main
 
 
 def test_main_commands_reach_the_api() -> None:
     """Map every command to a function of the public API."""
     assert set(COMMANDS) >= {'validate', 'reason', 'levels', 'impact', 'plan', 'slice', 'appendix', 'checker'}
-    assert all(name in veriphy.graph.__all__ for name in COMMANDS.values())
+    assert all(name in veriphy.claims.__all__ for name in COMMANDS.values())
 
 
 def test_main_reason_exits_three_when_unchecked(

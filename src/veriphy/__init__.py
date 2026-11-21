@@ -1,13 +1,14 @@
 """Machine-verified physics and math proofs in Lean 4 with SageMath as an untrusted oracle.
 
-The Python package is the Sage side of Veriphy. It is a daemon that speaks one JSON request per line on stdin and one
-JSON response per line on stdout. The Lean bridge starts it as `sage -python -m veriphy.sage_server`. Every answer is
-a certificate that a Lean checker re-verifies, so nothing here is trusted.
+The package is built in layers, each importing only the layers below it and `veriphy.core`:
 
-- `veriphy.oracle` holds the daemon methods and their building blocks. It requires SageMath.
-- `veriphy.sage_server` is the runner that serves the protocol.
-- `veriphy.core` holds the named exceptions, the workspace layout and the step records.
-- `veriphy.steps` runs the steps, from the command line as `python -m veriphy <step>`.
+- `veriphy.primitives` (0): deterministic operations on tools, and the claim graph's engines.
+- `veriphy.steps` (1): every step hashes its inputs and records its result; `python -m veriphy <step>`.
+- `veriphy.claims` (2): the research claim graph, its levels, reasoning and reports.
+- `veriphy.workflows` (3): sequences of steps.
+- `veriphy.agents` (4): the playbooks agents follow.
+- `veriphy.packs`: `core`, `lean` and `math`, each with its `pack.yaml` and the layer subpackages it needs.
+- `veriphy.script`: what Sage scripts import.
 
 Importing `veriphy` itself does not import Sage:
 

@@ -4,7 +4,7 @@ from collections.abc import Callable
 
 import veriphy
 from veriphy.core import JsonObject
-from veriphy.oracle import answer_request
+from veriphy.packs.math.primitives.sage.methods import answer_request
 
 
 def test_answer_request_unknown_method(daemon: Callable[..., JsonObject]) -> None:

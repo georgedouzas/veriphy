@@ -26,7 +26,7 @@ and `core` sit side by side, mathematics is mixed into the core, and `steps` (la
   | the graph steps in `veriphy.steps` | `veriphy.claims`, registered as steps |
   | the Lean steps in `veriphy.steps` | `veriphy.packs.lean.steps`, `meaning` in `veriphy.packs.math.steps` |
   | the record store in `veriphy.core` | `veriphy.steps` |
-  | `veriphy.prompts` | `veriphy.agents`, with the playbooks in `veriphy.packs.math.agents` and `veriphy.packs.core.agents` |
+  | `veriphy.prompts` | `veriphy.agents`, with the playbooks in `veriphy.packs.math.agents` |
 
 - **The import rule, enforced:** a test fails when a module imports a higher layer, or when a pack's layer-k code
   imports a Veriphy layer above k.

@@ -1,5 +1,5 @@
-"""Start the daemon when run as `python -m veriphy.sage_server`."""
+"""Deprecated program, kept for one minor release: run `python -m veriphy.packs.math.primitives.sage` instead."""
 
-from veriphy.sage_server import main
+from veriphy.core._aliases import run_alias
 
-main()
+run_alias('veriphy.packs.math.primitives.sage')
