@@ -1,13 +1,12 @@
 """Test the Lean steps on this repository's workspace: `check` reports errors and axioms, `level` the levels."""
 
 import shutil
-from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
 
 from veriphy.__main__ import main
-from veriphy.steps import RecordStore, load_steps, run_step
+from veriphy.steps import load_steps, run_step
 
 ROOT = Path(__file__).resolve().parents[2]
 CHECK = load_steps(ROOT)['check']
@@ -19,12 +18,9 @@ pytestmark = pytest.mark.skipif(
 
 
 @pytest.fixture(autouse=True)
-def _forget_new_records() -> Iterator[None]:
-    """Delete the records a test writes into the repository's workspace."""
-    before = set(RecordStore(ROOT).all())
-    yield
-    for path in set(RecordStore(ROOT).all()) - before:
-        path.unlink()
+def _forget_new_records(forget_own_records: list[Path]) -> list[Path]:
+    """Delete the records the test writes into the repository's workspace."""
+    return forget_own_records
 
 
 def test_check_reports_axioms(tmp_path: Path) -> None:

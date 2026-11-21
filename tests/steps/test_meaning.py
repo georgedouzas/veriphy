@@ -1,13 +1,12 @@
 """Test the `meaning` step on this repository's workspace: a seeded check of a statement, recorded as evidence."""
 
 import shutil
-from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
 
 from veriphy.__main__ import main
-from veriphy.steps import RecordStore, config_digest, input_digest, load_steps, run_step
+from veriphy.steps import config_digest, input_digest, load_steps, run_step
 
 ROOT = Path(__file__).resolve().parents[2]
 MEANING = load_steps(ROOT)['meaning']
@@ -22,14 +21,14 @@ def wrong : Prop := ∀ x : ℝ, 0 ≤ x → Real.sqrt (x ^ 2) = -x
 
 
 @pytest.fixture(autouse=True)
-def _daemon_and_records(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
-    """Serve Lean's requests with this tree's daemon, and delete the records a test writes into the workspace."""
-    monkeypatch.setenv('VERIPHY_SAGE_SERVER', str(ROOT / 'src' / 'veriphy' / 'sage_server' / '__main__.py'))
+def _daemon_and_records(monkeypatch: pytest.MonkeyPatch, forget_own_records: list[Path]) -> list[Path]:
+    """Serve Lean's requests with this tree's daemon, and delete the records the test writes into the workspace."""
+    monkeypatch.setenv(
+        'VERIPHY_SAGE_SERVER',
+        str(ROOT / 'src' / 'veriphy' / 'packs' / 'math' / 'primitives' / 'sage' / '__main__.py'),
+    )
     monkeypatch.setenv('PYTHONPATH', str(ROOT / 'src'))
-    before = set(RecordStore(ROOT).all())
-    yield
-    for path in set(RecordStore(ROOT).all()) - before:
-        path.unlink()
+    return forget_own_records
 
 
 def test_meaning_records_a_counterexample_as_evidence(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
