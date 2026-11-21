@@ -224,11 +224,12 @@ This section instantiates the body above for this repository.
   methods (`veriphy.packs.math.primitives.sage.methods`) and script helpers (`veriphy.packs.math.script`) import it,
   and the Sage session `veriphy.packs.math.primitives.sage` reaches it through the one allowed lazy import. Modules that
   ship with Sage (`sympy`, `cvxopt`) are part of that runtime and MUST NOT be declared as dependencies.
-- Research graph: `veriphy.claims` and `veriphy.primitives.graph` MUST NOT import Sage. Its dependencies (`pyoxigraph`, `pyshacl`, `rdflib`) live in
-  the optional extra `graph`, and the Horn reasoner `open_ontologies_lite` is installed by
-  `veriphy layers claims checker build` from the Open Ontologies release pinned in `veriphy.primitives.graph._checker`,
-  because its PyPI release lacks the reasoner. All of them MUST be reached only through the deferred imports of
-  `veriphy.primitives.graph._engine`, so `import veriphy.claims` works without the extra. Every external program the
+- Research graph: `veriphy.claims` and `veriphy.primitives.graph` MUST NOT import Sage. Its dependencies (`pyoxigraph`,
+  `pyshacl`, `rdflib`) are dependencies of every install, and the Horn reasoner `open_ontologies_lite` is set up on
+  first use (or by `veriphy layers claims checker build`) from the Open Ontologies release pinned in
+  `veriphy.primitives.graph._checker`, because its PyPI release lacks the reasoner. All of them MUST be reached only
+  through the deferred imports of `veriphy.primitives.graph._engine`, so a command that doesn't use the graph doesn't
+  pay for loading them. Every external program the
   graph runs goes through `veriphy.primitives.graph._process`.
 - Surface packages: `veriphy.packs.math.primitives.sage` runs the Sage session (`python -m` on it, under Sage's
   interpreter) and re-exports `main` alone. `veriphy.script` is the surface proof scripts see: every

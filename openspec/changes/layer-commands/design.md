@@ -13,7 +13,7 @@
 - **Steps under `step`.** `StepGroup` becomes the `step` group, with `list` and `records` as its own commands. Its
   commands still come from the workspace that the top-level `--root` names, read from the click context's parent.
 - **Layer groups stay lazy.** The `layers` group keeps a table of the five layer groups and `config`, imported when
-  named, since `claims` needs the graph extra and pack programs may import Sage; `--help` lists them without importing.
+  named, since pack programs may import Sage; `--help` lists them without importing.
 - **Pack programs from `pack.yaml`.** A pack declares `commands: {certificates: {command: module:attr, help: …}}`. The
   `pack` group adds one group per selected pack that declares commands, named as the pack, whose subcommands are
   imported when named. The resolved configuration already records which pack gave each entry, so the commands are

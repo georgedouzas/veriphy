@@ -39,7 +39,6 @@ def test_run_by_hand_records_nothing(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     """Run a primitive on an input file, print its output, and write no record."""
-    pytest.importorskip('pyshacl')
     monkeypatch.chdir(tmp_path)
     (tmp_path / 'data.nt').write_text('<urn:c1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <urn:Claim> .\n')
     (tmp_path / 'shapes.ttl').write_text(SHAPES)

@@ -18,7 +18,7 @@ from veriphy.claims import (
     load_graph,
     reason,
 )
-from veriphy.core import CheckerError, GraphExtraMissingError
+from veriphy.core import CheckerError, ReasonerMissingError
 
 
 def _environ(tmp_path: Path, **extra: str) -> dict[str, str]:
@@ -70,7 +70,7 @@ def test_ensure_reasoner_returns_the_cached_source(tmp_path: Path, fake_release:
 def test_ensure_reasoner_with_setup_off_names_the_command(tmp_path: Path, fake_release: Release) -> None:
     """Refuse to fetch when setup is off, and name the setup command."""
     environ = _environ(tmp_path, VERIPHY_GRAPH_SETUP='off')
-    with pytest.raises(GraphExtraMissingError, match='checker build'):
+    with pytest.raises(ReasonerMissingError, match='checker build'):
         ensure_reasoner(environ=environ, release=fake_release, notify=lambda _: None)
     assert not cache_dir(environ, fake_release).exists()
 

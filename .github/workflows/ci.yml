@@ -148,7 +148,7 @@ jobs:
         key: oo-horn-${{ hashFiles('src/veriphy/primitives/graph/_checker.py') }}
 
     - name: Set up the checker and the reasoner of the pinned Open Ontologies release
-      run: uv run --extra graph veriphy layers claims checker build
+      run: uv run veriphy layers claims checker build
 
     - name: Install the built wheel into SageMath
       run: |
@@ -178,7 +178,7 @@ jobs:
       run: |
         printf 'import VeriphyTest.Graph\n#veriphy export GraphTest\n' > Export.lean
         lake env lean Export.lean
-        XDG_CACHE_HOME="$(mktemp -d)" tests/graph/fixtures/workflow/run.sh "$(uv run --extra graph which python)"
+        XDG_CACHE_HOME="$(mktemp -d)" tests/graph/fixtures/workflow/run.sh "$(uv run which python)"
 
   doc:
 

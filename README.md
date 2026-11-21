@@ -101,8 +101,7 @@ The skills follow these workflows:
 ## Install
 
 ```sh
-pip install veriphy                  # the framework, the core and reproduction packs
-pip install 'veriphy[graph]'         # with the claim graph's reasoner and checker
+pip install veriphy                  # the framework, the claim graph, the core and reproduction packs
 ```
 
 The `reproduction` pack needs podman or docker for its pinned image.
@@ -112,7 +111,7 @@ The `math` pack needs [SageMath](https://doc.sagemath.org/html/en/installation/)
 your project's `lakefile.toml`:
 
 ```sh
-sage -pip install 'veriphy[graph]'
+sage -pip install veriphy
 ```
 
 ```toml

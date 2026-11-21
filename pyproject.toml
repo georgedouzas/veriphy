@@ -27,12 +27,16 @@ classifiers = [
     "Topic :: Utilities",
     "Typing :: Typed",
 ]
-dependencies = ["click>=8.1", "jsonschema>=4.17", "pyyaml>=6"]
-
-[project.optional-dependencies]
-# The research claim graph. The Horn reasoner of open-ontologies-lite is installed from the pinned Open Ontologies
-# release by `python -m veriphy.claims checker build`, because its PyPI release lacks it. These are its dependencies.
-graph = ["pyoxigraph>=0.5,<0.6", "pyshacl>=0.26", "rdflib>=7"]
+# The claim graph is part of every install: pyoxigraph, pyshacl and rdflib. Its Horn reasoner, open-ontologies-lite,
+# comes from the pinned Open Ontologies release on first use, because its PyPI release lacks the reasoner.
+dependencies = [
+    "click>=8.1",
+    "jsonschema>=4.17",
+    "pyoxigraph>=0.5,<0.6",
+    "pyshacl>=0.26",
+    "pyyaml>=6",
+    "rdflib>=7",
+]
 
 [project.scripts]
 veriphy = "veriphy.__main__:main"

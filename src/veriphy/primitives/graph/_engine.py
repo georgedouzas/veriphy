@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
 
-from veriphy.core import GraphError, GraphExtraMissingError
+from veriphy.core import GraphError, ReasonerMissingError
 
 Triple = tuple[str, str, str]
 
@@ -14,12 +14,9 @@ FORMATS = {'turtle': 'TURTLE', 'ntriples': 'N_TRIPLES'}
 
 
 def _oxigraph() -> ModuleType:
-    """Return `pyoxigraph`, or raise the error that says how to install it."""
-    try:
-        import pyoxigraph  # noqa: PLC0415 - optional dependency, from the graph extra
-    except ModuleNotFoundError as exc:
-        module = 'pyoxigraph'
-        raise GraphExtraMissingError(module) from exc
+    """Return `pyoxigraph`, imported on first use: it takes half a second, which every command would pay."""
+    import pyoxigraph  # noqa: PLC0415 - imported on first use, for the start-up time of every command
+
     return pyoxigraph
 
 
@@ -35,21 +32,18 @@ def _horn(source: Path) -> ModuleType:
         for name in [n for n in sys.modules if n == 'open_ontologies_lite' or n.startswith('open_ontologies_lite.')]:
             del sys.modules[name]
     try:
-        from open_ontologies_lite import horn  # noqa: PLC0415 - optional dependency, from the cached release
+        from open_ontologies_lite import horn  # noqa: PLC0415 - from the release cached on first use
     except ModuleNotFoundError as exc:
         module = 'open_ontologies_lite'
-        raise GraphExtraMissingError(module) from exc
+        raise ReasonerMissingError(module) from exc
     return horn
 
 
 def _shacl() -> tuple[ModuleType, ModuleType]:
-    """Return `rdflib` and `pyshacl`, or raise the error that says how to install them."""
-    try:
-        import pyshacl  # noqa: PLC0415 - optional dependency, from the graph extra
-        import rdflib  # noqa: PLC0415 - optional dependency, installed with pyshacl
-    except ModuleNotFoundError as exc:
-        module = exc.name or 'pyshacl'
-        raise GraphExtraMissingError(module) from exc
+    """Return `rdflib` and `pyshacl`, imported on first use, for the start-up time of every command."""
+    import pyshacl  # noqa: PLC0415 - imported on first use, for the start-up time of every command
+    import rdflib  # noqa: PLC0415 - imported on first use, for the start-up time of every command
+
     return rdflib, pyshacl
 
 
