@@ -14,7 +14,7 @@
 ## 3. Playbook and integration
 
 - [x] 3.1 Write the `reproduce` playbook and skill. Verify with the document tests: every command named exists, and the skill's two copies are identical.
-- [ ] 3.2 Add a CI job that runs the example in the pinned image, and run the gate. Verify that every session and job is green.
+- [x] 3.2 Add a CI job that runs the example in the pinned image, and run the gate. Verify that every session and job is green.
 
 ## Workflow follow-up
 
