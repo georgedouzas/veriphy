@@ -18,12 +18,27 @@ any particular field: its packs bring the tools, the checks and the levels. This
 | agent | writes what Veriphy cannot (a formal statement, a proof, an extraction), and records it with an agent step |
 | pack | a directory with a `pack.yaml` that adds to any of the above |
 
-Veriphy is built in five layers, each using only the ones below it: primitives (0), steps (1), claims (2), workflows (3)
-and agents (4). A pack can add to every layer. The [architecture](../architecture/index.md) explains the design.
-
 Agents and computer algebra systems are untrusted. A step's trust class comes from the primitive that decides it, so
 an agent's artifact counts only once a checking step accepts it, and a search tool's answer counts only through the
 checker that verifies it.
+
+## The layers
+
+![The layers](../architecture/diagrams/layers.svg)
+
+Veriphy is built in five layers, each using only the ones below it, and each with its own group of commands. A pack can
+add to every layer, so a field is added without changing Veriphy.
+
+| Layer | Holds | Command | A pack adds |
+|---|---|---|---|
+| 4. Agents | playbooks and skills: what an agent writes, and in which workflow | `veriphy layers agents` | playbooks, recipes, skills |
+| 3. Workflows | step sequences as data; the records decide the next step | `veriphy layers workflow` | workflows |
+| 2. Claims | the claim graph: each claim's level from the records, effective levels, clashes | `veriphy layers claims` | levels, conventions |
+| 1. Steps | a primitive with declared inputs, replayed by their digest, and recorded | `veriphy layers step` | steps, digest scopes |
+| 0. Primitives | deterministic operations, typed, pinned, of one trust class, recording nothing | `veriphy layers primitive` | primitives, tools |
+
+Under them all, `veriphy.yaml` selects the packs (`veriphy pack list`) and can override any entry they declare
+(`veriphy config show`). The [architecture](../architecture/index.md) explains the design.
 
 ## The workspace
 
@@ -75,6 +90,156 @@ veriphy help
 
 `veriphy help` lists the workspace's steps, its packs' programs and Lean's verbs. Every command takes `--help`. Python
 runs a step as `veriphy.run(step, target, **inputs)`.
+
+## Scenarios by layer
+
+Each scenario runs in a workspace with no `veriphy.yaml`, so it has the default packs (`core`, `lean`, `math`), unless
+it says otherwise. The output shown is what the command prints.
+
+### Layer 0: run a primitive by hand
+
+A primitive is the smallest thing Veriphy runs. Running one by hand writes no record, which makes it the way to see
+what a tool does with an input:
+
+```sh
+veriphy layers primitive list                      # name, trust class, pack, whether it can run here
+veriphy layers primitive describe sage.sample      # its tool, its pin, its input and output schemas
+echo '{"data": "claims.nt", "shapes": "shapes.ttl"}' > input.json
+veriphy layers primitive run shacl.validate --input input.json
+# {"conforms": false, "violations": [{"focus": "<urn:c1>", …}], "tools": [{"name": "veriphy", …}]}
+```
+
+An input that breaks the schema is refused before the tool starts, naming the field. A tool whose version differs from
+its pin is refused, naming both versions.
+
+### Layer 1: run a step, and replay it
+
+A step runs a primitive on declared inputs and records the result:
+
+```sh
+veriphy layers step check Claim.lean
+# check: accepted
+# .veriphy/runs/check/3f9c….json
+veriphy layers step check Claim.lean                # nothing that Claim.lean imports changed
+# check: accepted (replayed)
+veriphy layers step check Claim.lean --json         # the record itself: each declaration's axioms, the tools
+veriphy layers step records                         # every record: step, status, digest
+```
+
+The second run starts no Lean: the digest of the inputs matches a record, which is returned as it is. `--rerun` runs
+anyway. The exit status is 0 when the step accepted, 1 when it refused, 2 on bad usage and 3 when the result is
+unchecked.
+
+### Layer 2: read what the records establish
+
+Claims sit in the claim graph, and each claim's level comes from the records that name it:
+
+```sh
+veriphy layers claims validate                      # the extracted claims against the shapes
+veriphy layers claims reason                        # the consequences, checked by oo-horn: entailed
+veriphy layers claims levels --source chapter3      # each claim's own level, effective level, what caps it
+veriphy layers claims impact chapter3 parallel      # every claim that rests on the convention `parallel`
+```
+
+A claim's effective level is the lowest level among everything it rests on, and every level is shown with its trust
+class, such as `reproduced (reproduction)` or `certificate (kernel)`.
+
+### Layer 3: let the workflow choose the next step
+
+A workflow reads the target's records and names the next step, the same way every time for the same records:
+
+```sh
+veriphy layers workflow list
+# prove-claim    formalize, meaning, check, prove, check
+# verify-paper   extract, validate, reason, report
+veriphy layers workflow next prove-claim Claim.lean
+# formalize (an agent step): an artifact to record
+veriphy layers step formalize Claim.lean --by agent
+veriphy layers workflow run prove-claim Claim.lean --input declaration=t
+# meaning: agrees
+# check: accepted
+# prove-claim: waiting for prove: record the artifact, as veriphy layers step prove Claim.lean
+```
+
+`run` runs every step that needs no agent and stops at the first that does. A counterexample from `meaning` stops the
+workflow, and a refused `check` goes back to `formalize`, up to its `attempts`.
+
+### Layer 4: give an agent its playbook
+
+Agents follow playbooks that ship with the packs:
+
+```sh
+veriphy layers agents list                          # every playbook, recipe, template and asset
+veriphy layers agents path                          # their directory, for any agent
+veriphy layers agents show recipes/sos              # one recipe
+veriphy layers agents copy recipes/templates/sos    # a template into the workspace, to edit
+```
+
+In Claude Code, the skills do the same: `/veriphy:prove`, `/veriphy:research` and `/veriphy:reproduce` ask
+`veriphy layers workflow next` for the step, write the artifact when it is theirs, record it, and run the rest.
+
+## Scenarios by pack
+
+### `core`: check how a chapter's claims fit together
+
+The `core` pack needs neither Lean nor SageMath. With `packs: [core]` in `veriphy.yaml`, an agent extracts a chapter's
+claims, conventions and dependencies to `.veriphy/graph/sources/chapter3.agent.ttl`, and:
+
+```sh
+veriphy layers step extract .veriphy/graph/sources/chapter3.agent.ttl --by agent
+veriphy layers step validate                        # validate: conforms
+veriphy layers step reason                          # reason: entailed
+veriphy layers claims clashes                       # a claim resting on parallel and on no-parallel trends
+veriphy layers step report chapter3 --format latex  # report: written, .veriphy/graph/appendix/chapter3.tex
+```
+
+Every claim's level is `none` here, since `core` grants none: the graph reports structure, clashes and impact, and the
+other packs add the evidence.
+
+### `lean`: check a Lean file and read its levels
+
+```sh
+veriphy layers step check Claim.lean                # accepted, with each declaration's axioms
+veriphy layers step level MyProject.Basic           # each declaration under the module, with its level
+```
+
+A complete proof on the standard axioms reads `lean-proof`; one that uses `sorry` or another axiom reads `none`. See
+[the `lean` pack](../packs/lean.md).
+
+### `math`: test a statement, certify a goal, prove a claim
+
+Test that a formal statement says what was meant, before proving it:
+
+```sh
+veriphy layers step meaning Claim.lean wrong --informal "the square root of x squared is -x"
+# meaning: counterexample                           (the record holds x = 1, lhs 1, rhs -1)
+```
+
+Close a computational goal with a certificate Sage finds and the kernel checks, inside the Lean file:
+
+```lean
+example (a b : ℝ) : 0 ≤ a ^ 2 * b ^ 2 - 2 * a * b + 1 := by
+  veriphy certify "return found(nlinarith([sq_nonneg(x0*x1 - 1, problem)]))"
+-- Try this: nlinarith [sq_nonneg (a * b - 1)]
+```
+
+Commit the Sage-free replacement. `veriphy pack math certificates list` shows the scripts saved in the project for
+reuse, and the `prove-claim` workflow (above) runs the whole proof. See [the `math` pack](../packs/math.md).
+
+### `reproduction`: reproduce a published estimate
+
+With `packs: [reproduction]` in `veriphy.yaml`, podman or docker, and the paper's script and data:
+
+```sh
+veriphy layers step reproduce analysis.R mtcars.csv <sha256> --claimed -5.344472 --claim mpg-weight
+# reproduce: agrees                                 (the record grants reproduced)
+veriphy layers step vary analysis.R mtcars.csv <sha256> '["mpg ~ wt + hp", "mpg ~ wt + cyl"]' --claim mpg-weight
+# vary: robust                                      (the record grants robust)
+veriphy layers claims levels                        # mpg-weight: robust (reproduction)
+```
+
+Data whose SHA-256 differs from the claim's is refused before anything runs, and an estimate that differs is recorded
+as `differs`, with both values. See [the `reproduction` pack](../packs/reproduction.md).
 
 ## Primitives
 
