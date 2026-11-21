@@ -177,6 +177,28 @@ The other programs run through the same command: `veriphy claims …` (the resea
 (the playbooks and templates), `veriphy certificates …` (your saved scripts) and `veriphy translations …` (the
 translation entries in force).
 
+### Primitives
+
+Under every operation are primitives: deterministic operations, which record nothing. A primitive has an input
+schema, an output schema and a trust class (`kernel`, `checker`, `reproduction`, `oracle`, `measurement` or
+`search`), and runs one of three ways: as a Python function in-process (SHACL validation, `oo-horn`'s verdict, Lean
+through the community REPL), as a method of a JSON-RPC 2.0 tool over stdio (the Sage daemon, which lives in Sage's own
+Python), or as a command writing one JSON result (foreign tools). A composite combines primitives: `certify` has Sage
+search for a proof and Lean check it, so its class is Lean's, `kernel`; `meaning` has Lean serialize a claim and Sage
+sample it, so its class is `oracle`.
+
+```
+veriphy primitive list                       # every primitive, its class, its pack, whether it can run here
+veriphy primitive describe certify           # its parts, its deciding part, its schemas
+veriphy primitive run sage.sample --input problem.json
+```
+
+The input is checked against its schema before anything runs, a tool against its pin (an exact version, a commit with
+its hash, or a container image), and the output against its schema. Every output names the tools that produced it,
+with their versions. The Lean REPL keeps one environment per import header, so a file's imports load once for every
+check that shares them; `VERIPHY_LEAN_REPL=off` runs `lake env lean` each time instead, with the same output. Each
+pack declares its primitives in its `pack.yaml`.
+
 The names before 0.8 keep working until the next minor release, each with a warning that names its replacement:
 `sage_run` is `veriphy certify`, `sage_test` is `#veriphy test`, `#veriphy_meaning`, `#veriphy_levels` and
 `#veriphy_graph` are `#veriphy meaning`, `#veriphy level` and `#veriphy export`, the translation commands are

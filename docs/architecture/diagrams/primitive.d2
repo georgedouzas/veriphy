@@ -4,8 +4,8 @@ direction: down
 callers: "Callers" {
   class: open
   grid-columns: 3
-  person: "a person\npython -m veriphy primitive run"
-  lean: "a Lean file\n#veriphy_meaning · sage_run"
+  person: "a person\nveriphy primitive run"
+  lean: "a Lean file\n#veriphy meaning · veriphy certify"
   step: "a step\n(layer 1)"
 }
 
@@ -17,7 +17,7 @@ primitive: "Primitive: sage.sample" {
   trust: "trust class\noracle"
   pin: "pin\nversion 10.9"
   seed: "seed\nhow the tool takes it"
-  contract: "contract\njson-lines"
+  contract: "contract\njsonrpc"
 }
 
 valid: "input valid?" {shape: diamond}

@@ -28,7 +28,8 @@ register_option veriphy.meaning.json : Bool := {
 def meaningDefaultValues : Nat := 10
 
 /-- The problem of a claim for the meaning check: its body as the goal, its universal binders as locals, and every
-hypothesis binder with no name that can be written (an arrow's) renamed `hyp₀ …`, so it serializes as a hypothesis. -/
+hypothesis binder with no name that can be written (an arrow's) renamed `hyp₀ …`, so it serializes as a hypothesis;
+`intros` lists every binder's name in order, for a proof that introduces them. -/
 def meaningProblem (name : Name) : TermElabM Json := do
   let statement ← instantiateMVars (← claimStatement name)
   forallTelescope statement fun xs body => do
@@ -50,7 +51,8 @@ def meaningProblem (name : Name) : TermElabM Json := do
       let out ← IO.mkRef Json.null
       discard <| Tactic.run goal.mvarId! do
         out.set (← withLenientProblem fun p => p.toJson)
-      return (← out.get).setObjVal! "universal" (Json.arr binders)
+      let intros ← xs.mapM fun x => return Json.str (toString (← x.fvarId!.getUserName))
+      return ((← out.get).setObjVal! "universal" (Json.arr binders)).setObjVal! "intros" (Json.arr intros)
 
 /-- The values of one point, as `x := 1, y := 1/2`. -/
 private def showPoint (j : Json) : String :=
@@ -92,6 +94,21 @@ def meaningCore (target : Ident) (seed values : Nat) (points : Option String) : 
   logInfo (meaningSummary name result)
   if veriphy.meaning.json.get (← getOptions) then
     logInfo m!"veriphy-meaning {result.compress}"
+
+/-- `#veriphy serialize c`: log the problem of the claim `c` for the meaning check, with its statement, as
+`veriphy-problem <json>`; the `lean.serialize` primitive reads it. -/
+syntax (name := veriphySerialize) "#veriphy " &"serialize " ident : command
+
+elab_rules : command
+  | `(#veriphy serialize $c:ident) => do
+    let json ← liftTermElabM do
+      let name ← realizeGlobalConstNoOverloadWithInfo c
+      let problem ← meaningProblem name
+      let statement := toString (← ppExpr (← instantiateMVars (← claimStatement name)))
+      let kind := if (← getConstInfo name) matches .thmInfo _ then "theorem" else "definition"
+      return Json.mkObj [("declaration", Json.str name.toString), ("kind", Json.str kind),
+        ("statement", Json.str statement), ("problem", problem)]
+    logInfo m!"veriphy-problem {json.compress}"
 
 /-- `#veriphy_meaning c [seed s] [values n] [points "<json>"]`: test whether the statement of `c` means what it was
 meant to, at seeded values satisfying its hypotheses. -/

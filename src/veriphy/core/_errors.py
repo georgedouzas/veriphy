@@ -100,3 +100,15 @@ class StepError(VeriphyError):
 
 class ToolError(VeriphyError):
     """Signal an external program that is not installed, could not start or did not finish in time."""
+
+
+class PrimitiveError(VeriphyError):
+    """Signal a primitive that cannot run as asked: unknown, refused by a schema, or its tool missing or failing."""
+
+
+class PinError(PrimitiveError):
+    """Signal a tool that does not match its pin, so the primitive does not run."""
+
+
+class PackError(VeriphyError):
+    """Signal a pack that cannot be loaded: no such pack, or a `pack.yaml` that does not read."""

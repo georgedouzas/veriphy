@@ -9,9 +9,12 @@ from pathlib import Path
 
 from veriphy.claims._store import ProjectGraph, graph_dir
 from veriphy.claims._vocabulary import generate_axioms, vp
-from veriphy.core import CheckerError, GraphError
+from veriphy.core import CheckerError, GraphError, PrimitiveError
+from veriphy.primitives import TOOLS_KEY, default_registry
 from veriphy.primitives.graph._checker import (
     BUILD_COMMAND,
+    PINNED_RELEASE,
+    CheckerLookup,
     Setup,
     check_certificate,
     ensure_checker,
@@ -204,21 +207,34 @@ def _unchecked(status: str, searched: tuple[Path, ...], error: str) -> dict[str,
     return {'status': status, 'searched': [str(p) for p in searched], 'build': BUILD_COMMAND, 'error': error}
 
 
-def _check(directory: Path, checker: Path | None, setup: Setup) -> dict[str, object]:
-    """Return the checker's report on a certificate, setting the checker up on first use, or say why there is none."""
-    if checker is not None:
-        return check_certificate(directory, checker)
-    lookup = find_checker(release=setup.release)
+def _check_release(directory: Path, lookup: CheckerLookup, setup: Setup) -> dict[str, object]:
+    """Return the report of a checker of another release than the pinned one, setting it up on first use."""
     if lookup.path is not None:
         return check_certificate(directory, lookup.path)
-    if lookup.explicit or not setup_enabled():
-        reason = 'the explicit checker is missing' if lookup.explicit else 'VERIPHY_GRAPH_SETUP is off'
-        return _unchecked('unchecked_no_checker', lookup.searched, reason)
     try:
         path = ensure_checker(release=setup.release, notify=setup.notify)
     except CheckerError as exc:
         return _unchecked('unchecked_error', lookup.searched, f'setting up the checker failed: {exc}')
     return check_certificate(directory, path)
+
+
+def _check(directory: Path, checker: Path | None, setup: Setup) -> dict[str, object]:
+    """Return the checker's report on a certificate, setting the checker up on first use, or say why there is none."""
+    if checker is not None:
+        return check_certificate(directory, checker)
+    lookup = find_checker(release=setup.release)
+    if lookup.path is None and (lookup.explicit or not setup_enabled()):
+        reason = 'the explicit checker is missing' if lookup.explicit else 'VERIPHY_GRAPH_SETUP is off'
+        return _unchecked('unchecked_no_checker', lookup.searched, reason)
+    if setup.release != PINNED_RELEASE:
+        return _check_release(directory, lookup, setup)
+    # the pinned checker runs as the `horn.check` primitive, which sets it up on first use
+    try:
+        report = default_registry().call('horn.check', {'certificate': str(directory)})
+    except PrimitiveError as exc:
+        return _unchecked('unchecked_error', lookup.searched, f'the checker did not run: {exc}')
+    report.pop(TOOLS_KEY, None)
+    return report
 
 
 def check_run(directory: Path, checker: Path | None = None, setup: Setup | None = None) -> Run:

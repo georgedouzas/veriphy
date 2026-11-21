@@ -1,3 +1,29 @@
 version: 1
 name: core
 requires: []
+
+primitives:
+  horn.check:
+    # oo-horn from the pinned Open Ontologies release, set up on first use; the output names its commit
+    function: veriphy.primitives.graph._primitives:horn_check
+    trust: checker
+    input:
+      type: object
+      required: [certificate]
+      properties: {certificate: {type: string, description: the certificate directory}}
+    output:
+      type: object
+      required: [status]
+      properties: {status: {enum: [accepted, rejected, unreadable, unchecked_error]}}
+
+  shacl.validate:
+    function: veriphy.primitives.graph._primitives:shacl_validate
+    trust: measurement
+    input:
+      type: object
+      required: [data, shapes]
+      properties: {data: {type: string}, shapes: {type: string}}
+    output:
+      type: object
+      required: [conforms, violations]
+      properties: {conforms: {type: boolean}, violations: {type: array, items: {type: object}}}
