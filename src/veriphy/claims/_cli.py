@@ -98,7 +98,7 @@ def _cmd_levels(args: SimpleNamespace) -> None:
     """Report the levels of every claim, or of one source."""
     graph = load_graph(args.root)
     run = reason(graph)
-    _out(level_report(claim_levels(graph, run, args.source), run))
+    _out(level_report(claim_levels(graph, run, args.source), run, graph))
 
 
 def _cmd_impact(args: SimpleNamespace) -> None:

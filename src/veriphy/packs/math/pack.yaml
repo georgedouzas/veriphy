@@ -2,6 +2,12 @@ version: 1
 name: math
 requires: [lean]
 
+levels:
+  oracle-test: {trust: oracle, above: none, description: Sage evaluated the claim at instances.}
+  kernel-test: {trust: kernel, above: oracle-test, description: The kernel checked the claim at instances.}
+  lean-proof: {above: kernel-test}
+  certificate: {trust: kernel, above: lean-proof, description: 'A recipe built the proof, which the kernel checked.'}
+
 steps:
   meaning:
     kind: evidence

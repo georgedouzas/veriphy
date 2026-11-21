@@ -17,6 +17,8 @@ def estimate(inputs):
 PACK = """version: 1
 name: econ
 requires: [core]
+levels:
+  reproduced: {trust: reproduction, above: none}
 primitives:
   econ.estimate:
     function: econ_functions:estimate

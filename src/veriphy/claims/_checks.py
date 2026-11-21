@@ -85,7 +85,7 @@ def validate_shapes(graph: ProjectGraph) -> ShapeReport:
     Returns:
         The report.
     """
-    data = graph.triples() | set(vocabulary_triples())
+    data = graph.triples() | set(vocabulary_triples(graph.root))
     violations = []
     for row in _shacl_violations(data):
         focus = row['focus']

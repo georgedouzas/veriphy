@@ -2,6 +2,10 @@ version: 1
 name: core
 requires: []
 
+levels:
+  # the bottom of the chain: neither proved nor tested
+  none: {description: Neither proved in Lean nor tested by Veriphy.}
+
 steps:
   formalize:
     kind: agent

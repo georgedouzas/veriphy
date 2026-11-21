@@ -2,6 +2,9 @@ version: 1
 name: lean
 requires: [core]
 
+levels:
+  lean-proof: {trust: kernel, above: none, description: 'A complete Lean proof on the standard axioms, which no recipe built.'}
+
 scopes:
   lean-imports: {function: 'veriphy.packs.lean.steps._scopes:lean_imports'}
   lean-workspace: {function: 'veriphy.packs.lean.steps._scopes:lean_workspace'}

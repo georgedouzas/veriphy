@@ -5,10 +5,8 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from veriphy.core import PrimitiveError
+from veriphy.core import TRUST_CLASSES, PrimitiveError
 
-# lowest first: a composite with no deciding part takes the lowest class of its parts
-TRUST_CLASSES = ('search', 'measurement', 'oracle', 'reproduction', 'checker', 'kernel')
 CONTRACTS = ('jsonrpc', 'files')
 PIN_KINDS = ('image', 'commit', 'version')
 # a composite's code: it receives the input and a function calling a part by name

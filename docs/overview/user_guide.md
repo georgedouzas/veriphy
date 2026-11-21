@@ -544,17 +544,25 @@ accept the run.
 
 ### Levels
 
-A claim's own level comes from the export or from the Lean claim that formalizes it, and is `none` otherwise. Its
-effective level is the lowest level among everything it uses, directly or not. `sage -python -m veriphy claims levels
---source chapter9` prints:
+A claim's own level is the highest it earns: from the export or the Lean claim that formalizes it, or from a step's
+record whose inputs name it, as a reproduction does; it is `none` otherwise. Its effective level is the lowest level
+among everything it uses, directly or not. Every report shows a level with its trust class, so a reproduction or an
+oracle test never reads as a proof. `sage -python -m veriphy claims levels --source chapter9` prints:
 
 ```
 | claim | own | effective | capped by | Lean |
 |---|---|---|---|---|
-| lemma-5.2 | certificate | certificate |  | KK.killing_form_value |
-| lemma-8.4 | oracle-test | oracle-test |  | KK.curvature_pos |
-| thm-9.1 | certificate | oracle-test | lemma-8.4 | KK.vacuum |
+| lemma-5.2 | certificate (kernel) | certificate (kernel) |  | KK.killing_form_value |
+| lemma-8.4 | oracle-test (oracle) | oracle-test (oracle) |  | KK.curvature_pos |
+| thm-9.1 | certificate (kernel) | oracle-test (oracle) | lemma-8.4 | KK.vacuum |
 ```
+
+The levels come from the packs: `core` declares `none`, `lean` declares `lean-proof`, and `math` declares
+`oracle-test`, `kernel-test` and `certificate`. Each level names its trust class (`kernel`, `checker`,
+`reproduction` or `oracle`; `measurement` and `search` grant nothing) and the level directly below it, and the levels
+of a workspace form one order. When two packs place a level in the same position, `veriphy config check` names both,
+and `veriphy.yaml` orders them by overriding their `above`. A step grants only levels of its primitive's class:
+`config check` refuses a step that would, and so does the step itself when it writes its record.
 
 ### Convention impact and plans
 

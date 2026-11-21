@@ -11,7 +11,7 @@ def test_appendix_markdown_lists_every_claim(workspace: Path, fake_checker: Call
     graph = load_graph(workspace)
     run = reason(graph, fake_checker('accepted'))
     text = appendix(graph, run, 'chapter9')
-    assert '| thm-9.1 | certificate | oracle-test | lemma-8.4 | KK.vacuum |  |' in text
+    assert '| thm-9.1 | certificate (kernel) | oracle-test (oracle) | lemma-8.4 | KK.vacuum |  |' in text
     assert 'accepted the run with the verdict entailed (OOCert.entails_of_builtin_horn)' in text
     assert f'recheck .veriphy/graph/runs/{run.directory.name}' in text
     assert 'agent' in text
