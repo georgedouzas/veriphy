@@ -9,7 +9,7 @@ check and derived steps. `config check` SHALL refuse a step whose primitive or s
 
 #### Scenario: A step from YAML alone
 - **WHEN** a local pack declares a step over an existing primitive, with no Python
-- **THEN** `python -m veriphy <step>` runs it and writes a record
+- **THEN** `veriphy <step>` runs it and writes a record
 
 #### Scenario: An unknown primitive
 - **WHEN** a step names the primitive `lean.chek`
@@ -22,11 +22,11 @@ the manifest.
 
 #### Scenario: Unrelated edit
 - **WHEN** a Lean file that `Claim.lean` does not import changes
-- **THEN** `python -m veriphy elaborate Claim.lean` replays its record
+- **THEN** `veriphy check Claim.lean` replays its record
 
 #### Scenario: Imported edit
 - **WHEN** a workspace file that `Claim.lean` imports changes
-- **THEN** `elaborate Claim.lean` gets a new digest and runs
+- **THEN** `check Claim.lean` gets a new digest and runs
 
 ### Requirement: Comparison
 A step MAY declare `compare` with an output `field`, an input `against` and a `tolerance`, and its status SHALL then be
@@ -41,14 +41,14 @@ An agent step SHALL record the artifact it names, by digest, with its author and
 no primitive.
 
 #### Scenario: A formalization
-- **WHEN** `python -m veriphy formalize Claim.lean --by agent` runs
+- **WHEN** `veriphy formalize Claim.lean --by agent` runs
 - **THEN** a record under `.veriphy/runs/formalize/` holds the file's digest and the author `agent`
 
 ### Requirement: Steps command
-`python -m veriphy steps` SHALL list the workspace's steps with their kind, primitive and pack, and
-`python -m veriphy <step>` SHALL take one argument or option per declared input.
+`veriphy steps` SHALL list the workspace's steps with their kind, primitive and pack, and
+`veriphy <step>` SHALL take one argument or option per declared input.
 
 #### Scenario: Listing
-- **WHEN** `python -m veriphy steps` runs with the default config
-- **THEN** it lists `elaborate` and `level` from `lean`, `meaning` from `math`, and `validate`, `reason` and `report`
+- **WHEN** `veriphy steps` runs with the default config
+- **THEN** it lists `check` and `level` from `lean`, `meaning` from `math`, and `validate`, `reason` and `report`
   from `core`

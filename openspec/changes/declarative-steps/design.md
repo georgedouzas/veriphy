@@ -26,7 +26,7 @@
 
 ```yaml
 steps:
-  elaborate:
+  check:
     kind: check
     primitive: lean.check
     inputs:
@@ -54,7 +54,7 @@ needs no pack code.
 
 ### D4. Agent steps record artifacts
 
-An agent step declares one input, its artifact, and `python -m veriphy <step> <artifact> --by <name>` records the
+An agent step declares one input, its artifact, and `veriphy <step> <artifact> --by <name>` records the
 artifact's digest and author with status `written`. Running nothing, it is still a record, so workflows can see that
 the artifact exists and which version later steps used.
 

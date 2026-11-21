@@ -3,7 +3,7 @@
 ## 1. Classes and levels
 
 - [ ] 1.1 Add the six trust classes to the schema and the level chain to the claims registry, with the checks for unknown classes, branching and cycles (D1, D2). Verify with pytest: an invented class, two levels above one, and a cycle are each refused naming them, and a workspace override settles a branch.
-- [ ] 1.2 Declare `none` in `core`, `lean-proof` in `lean`, and `certificate`, `kernel-test` and `oracle-test` in `math`, and remove the fixed lists from the graph package. Verify with the graph tests unchanged, and a test that the packs' level names equal `#veriphy_levels`'s.
+- [ ] 1.2 Declare `none` in `core`, `lean-proof` in `lean`, and `certificate`, `kernel-test` and `oracle-test` in `math`, and remove the fixed lists from the graph package. Verify with the graph tests unchanged, and a test that the packs' level names equal `#veriphy level`'s.
 
 ## 2. Granting and claims
 

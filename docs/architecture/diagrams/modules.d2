@@ -1,28 +1,29 @@
 ...@_style
 direction: down
 
-stack: "Each module imports only the modules below it and the shared ones" {
+stack: "Each module imports only lower layers and veriphy.core" {
   style: {stroke-width: 0; fill: transparent}
   grid-columns: 1
   vertical-gap: 24
-  agents: "4 · skills/ and the packs' playbooks" {class: open}
+  facade: "veriphy.run(verb, target, **inputs) → Result    ·    veriphy.script (Goal, found, refuted, unknown)" {
+    class: open
+  }
+  agents: "4 · veriphy.agents · playbooks · veriphy agents path" {class: open}
   workflows: "3 · veriphy.workflows · next · run" {class: deterministic}
-  claims: "2 · veriphy.graph · claims · levels · reasoning · reports" {class: deterministic}
-  stepper: "1 · veriphy.steps · the step runner · python -m veriphy <step>" {class: deterministic}
-  primitives: "0 · veriphy.primitives · descriptors · contracts · pins · python -m veriphy primitive" {
+  claims: "2 · veriphy.claims · claim graph · levels · trust · reasoning · reports · veriphy claims" {class: deterministic}
+  stepper: "1 · veriphy.steps · runner · digest scopes · records · veriphy <verb>" {class: deterministic}
+  primitives: "0 · veriphy.primitives · descriptors · contracts · pins · composites · graph · veriphy primitive" {
     class: deterministic
   }
-  shared: "shared by every layer" {
-    grid-columns: 2
-    config: "veriphy.config\nschema · packs · merge · registries" {class: deterministic}
-    core: "veriphy.core\nerrors · digests · canonical JSON · record store" {class: deterministic}
+  shared: "veriphy.core · errors · digests · canonical JSON · processes · packs and the merge · veriphy config" {
+    class: deterministic
   }
-  packs: "packs: data in pack.yaml, code in their own modules" {
+  packs: "veriphy.packs.<name>: pack.yaml + the same layer subpackages" {
     class: open
     grid-columns: 4
-    core: "veriphy.packs.core\noo-horn · claim graph steps"
-    lean: "veriphy.packs.lean\nLean primitives · Lean library"
-    math: "veriphy.packs.math\nSage daemon · toolkit ·\nrecipes · translations"
-    reproduction: "veriphy.packs.reproduction\nR · example"
+    core: "core\npack.yaml (the built-ins)\nagents (research)"
+    lean: "lean\nprimitives/lean · steps"
+    math: "math\nprimitives/sage · primitives/translations\nscript · steps/certificates · agents"
+    reproduction: "reproduction\nprimitives/r · steps · claims\nworkflows · agents"
   }
 }

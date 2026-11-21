@@ -4,7 +4,7 @@
 
 ### Requirement: Reproduction pack
 Veriphy SHALL ship the pack `reproduction`, requiring only `core`, with the `r` tool pinned by container image, the
-primitives `r.run` and `r.robustness` of class `reproduction`, the steps `reproduce` and `robustness`, the levels
+primitives `r.run` and `r.vary` of class `reproduction`, the steps `reproduce` and `vary`, the levels
 `reproduced` and `robust`, the convention aspect `identification`, the workflow `reproduce-analysis` and the
 `reproduce` playbook. Using it SHALL need no change to the core.
 
@@ -33,8 +33,8 @@ and return the estimate the script reports. A hash mismatch SHALL refuse to star
 - **WHEN** the script's estimate is beyond the tolerance
 - **THEN** the status is `differs`, no level is granted, and both estimates are recorded
 
-### Requirement: Robustness step
-`robustness` SHALL run each variation declared with the claim and grant `robust` when the estimate keeps its sign and
+### Requirement: Vary step
+`vary` SHALL run each variation declared with the claim and grant `robust` when the estimate keeps its sign and
 significance under every variation. The record SHALL list the variations and their estimates.
 
 #### Scenario: A fragile result

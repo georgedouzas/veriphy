@@ -67,13 +67,13 @@ the installed packs and passed in. A primitive that uses randomness must declare
 
 The `lean` tool runs `leanprover-community/repl`, pinned to the commit matching the workspace's toolchain, under
 `lake env`. It keeps one environment per import header: a request whose header matches an open environment reuses it,
-and another header starts a new one. `lean.check`, `lean.serialize` and `lean.levels` send commands to that
+and another header starts a new one. `lean.check`, `lean.serialize` and `lean.level` send commands to that
 environment. Building our own server on Lean's frontend stays possible behind the same tool entry.
 
 ### D8. Lean is a pack
 
 The `lean` pack holds the Lean tool and primitives, and points at the Lean library in `lean/` for its assets. The
-`math` pack needs `lean`, because `sage_run`, `sage_test` and `certify` emit Lean proofs. The `core` pack does not
+`math` pack needs `lean`, because `veriphy certify`, `#veriphy test` and `certify` emit Lean proofs. The `core` pack does not
 need Lean: `oo-horn` is a pinned binary, built with Lean only when no prebuilt release fits the platform.
 
 ## Risks / Trade-offs
