@@ -59,7 +59,7 @@ def test_main_reports_a_graph_error(workspace: Path, capsys: pytest.CaptureFixtu
 @pytest.mark.parametrize(
     'case',
     [
-        (['levels', '--source', 'chapter9'], '| thm-9.1 | certificate | oracle-test |'),
+        (['levels', '--source', 'chapter9'], '| thm-9.1 | certificate (kernel) | oracle-test (oracle) |'),
         (['impact', 'chapter9', 'half'], '- eq-7.3 via lemma-5.2'),
         (['slice', 'chapter9', 'thm-9.1'], '# Context for thm-9.1'),
         (['clashes'], 'No clash'),

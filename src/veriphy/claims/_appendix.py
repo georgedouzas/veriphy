@@ -3,10 +3,11 @@
 from collections import Counter
 
 from veriphy.claims._checks import clashes
-from veriphy.claims._levels import claim_levels
+from veriphy.claims._levels import claim_levels, shown_level
 from veriphy.claims._reasoning import Run
 from veriphy.claims._store import ProjectGraph
-from veriphy.claims._vocabulary import label_of, source_of
+from veriphy.claims._vocabulary import label_of, source_of, workspace_config
+from veriphy.core import level_trust
 
 FORMATS = ('markdown', 'latex')
 LATEX_SPECIAL = {
@@ -49,14 +50,15 @@ def _provenance_counts(graph: ProjectGraph, run: Run, source: str) -> dict[str, 
 
 def _rows(graph: ProjectGraph, run: Run, source: str) -> list[tuple[str, ...]]:
     """Return the table rows of a source: one per claim, as plain text."""
+    trusts = level_trust(workspace_config(graph.root))
     clashing: dict[str, list[str]] = {}
     for clash in clashes(graph, run):
         clashing.setdefault(clash.node, []).append(f'{label_of(clash.first)}/{label_of(clash.second)}')
     return [
         (
             label_of(row.claim),
-            row.own,
-            row.effective,
+            shown_level(row.own, trusts),
+            shown_level(row.effective, trusts),
             label_of(row.capped_by) if row.capped_by else '',
             row.lean_name or '',
             ', '.join(clashing.get(row.claim, [])),

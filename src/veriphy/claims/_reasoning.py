@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from veriphy.claims._store import ProjectGraph, graph_dir
-from veriphy.claims._vocabulary import generate_axioms, vp
+from veriphy.claims._vocabulary import generate_axioms, graph_levels, vp
 from veriphy.core import CheckerError, GraphError, PrimitiveError
 from veriphy.primitives import TOOLS_KEY, default_registry
 from veriphy.primitives.graph._checker import (
@@ -64,7 +64,7 @@ def reasoning_input(graph: ProjectGraph) -> list[Triple]:
         The asserted triples of the run, sorted.
     """
     triples = {t for t in graph.triples() if _is_iri_triple(t)}
-    triples |= set(_unlevelled_claims(graph)) | set(generate_axioms(_conventions(graph)))
+    triples |= set(_unlevelled_claims(graph)) | set(generate_axioms(_conventions(graph), graph_levels(graph.root)))
     return sorted(triples)
 
 

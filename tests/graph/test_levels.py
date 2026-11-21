@@ -60,7 +60,7 @@ def test_level_report_counts_each_level(workspace: Path, fake_checker: Callable[
     graph = load_graph(workspace)
     run = reason(graph, fake_checker('accepted'))
     report = level_report(claim_levels(graph, run, 'chapter9'), run)
-    assert '| thm-9.1 | certificate | oracle-test | lemma-8.4 | KK.vacuum |' in report
+    assert '| thm-9.1 | certificate (kernel) | oracle-test (oracle) | lemma-8.4 | KK.vacuum |' in report
     assert report.rstrip().endswith('certificate: 1, lean-proof: 0, kernel-test: 0, oracle-test: 2, none: 2')
 
 

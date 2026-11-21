@@ -14,6 +14,10 @@ from veriphy.core._packs import PACK_FILE, pack_dir, pack_packages, read_pack
 WORKSPACE_FILE = 'veriphy.yaml'
 DEFAULT_PACKS = ('math',)
 DEFAULT = {'version': 1, 'packs': list(DEFAULT_PACKS)}
+# trust classes, lowest first; `measurement` and `search` grant no level, and no pack can add a class
+TRUST_CLASSES = ('search', 'measurement', 'oracle', 'reproduction', 'checker', 'kernel')
+GRANTING = frozenset({'oracle', 'reproduction', 'checker', 'kernel'})
+BOTTOM = 'none'
 # the digest scopes every workspace has; a pack adds others under `scopes`
 BUILTIN_SCOPES = ('value', 'file', 'files')
 SECTIONS = ('tools', 'primitives', 'scopes', 'steps', 'levels', 'conventions', 'workflows', 'playbooks')
@@ -319,7 +323,7 @@ def check(resolved: Resolved) -> list[str]:
         tool = spec.get('tool') if isinstance(spec, dict) else None
         if tool and tool not in tools:
             problems.append(f"primitives.{name} names the tool '{tool}', which no pack or {WORKSPACE_FILE} declares")
-    return problems + _step_problems(resolved)
+    return problems + _step_problems(resolved) + _trust_problems(resolved)
 
 
 def _step_problems(resolved: Resolved) -> list[str]:
@@ -338,4 +342,69 @@ def _step_problems(resolved: Resolved) -> list[str]:
             scope = raw.get('scope', 'value') if isinstance(raw, dict) else 'value'
             if scope not in scopes:
                 problems.append(f"steps.{name}.inputs.{given} names the scope '{scope}', which no pack declares")
+    return problems
+
+
+def level_order(resolved: Resolved) -> tuple[str, ...]:
+    """Return a configuration's levels from the lowest, `none`, following each level's `above`.
+
+    Args:
+        resolved: The configuration.
+
+    Returns:
+        The levels in order; a level the chain does not reach is left out, and `check` names it.
+    """
+    levels = resolved.section('levels')
+    above = {name: spec.get('above') for name, spec in levels.items() if isinstance(spec, dict)}
+    order = [BOTTOM] if BOTTOM in levels else []
+    while order:
+        following = [name for name, below in above.items() if below == order[-1] and name not in order]
+        if len(following) != 1:
+            break
+        order.append(following[0])
+    return tuple(order)
+
+
+def level_trust(resolved: Resolved) -> dict[str, str]:
+    """Return each level's trust class; `none` has none.
+
+    Args:
+        resolved: The configuration.
+
+    Returns:
+        The classes, by level.
+    """
+    return {
+        name: str(spec.get('trust', '')) for name, spec in resolved.section('levels').items() if isinstance(spec, dict)
+    }
+
+
+def _trust_problems(resolved: Resolved) -> list[str]:
+    """Return the classes no schema allows, levels outside one chain, and steps granting another class's level."""
+    problems = []
+    for name, spec in resolved.section('primitives').items():
+        trust = spec.get('trust') if isinstance(spec, dict) else None
+        if trust is not None and trust not in TRUST_CLASSES:
+            problems.append(f"primitives.{name} has the trust class '{trust}', not one of {', '.join(TRUST_CLASSES)}")
+    trusts = level_trust(resolved)
+    for name, trust in trusts.items():
+        if name != BOTTOM and trust not in GRANTING:
+            problems.append(f"levels.{name} has the trust class '{trust}', which grants no level")
+    levels = resolved.section('levels')
+    for below in {spec.get('above') for spec in levels.values() if isinstance(spec, dict)}:
+        siblings = sorted(n for n, s in levels.items() if isinstance(s, dict) and s.get('above') == below)
+        if len(siblings) > 1:
+            problems.append(f"levels {' and '.join(siblings)} are both directly above '{below}': set one's `above`")
+    reached = set(level_order(resolved))
+    problems += [f'levels.{name} is not on the chain from none' for name in levels if name not in reached]
+    primitives = resolved.section('primitives')
+    for name, spec in resolved.section('steps').items():
+        granted = spec.get('grants') if isinstance(spec, dict) else None
+        primitive = primitives.get(str(spec.get('primitive'))) if isinstance(spec, dict) else None
+        trust = primitive.get('trust') if isinstance(primitive, dict) else None
+        if isinstance(granted, str) and trust is not None and trusts.get(granted) != trust:
+            problems.append(
+                f"steps.{name} grants {granted} ({trusts.get(granted) or 'unknown'}), which its primitive's class "
+                f'({trust}) cannot grant',
+            )
     return problems

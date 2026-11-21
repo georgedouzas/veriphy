@@ -6,7 +6,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
-from veriphy.core import BUILTIN_SCOPES, StepError, canonical_json, content_digest
+from veriphy.core import BUILTIN_SCOPES, StepError, canonical_json, content_digest, level_trust, resolve
 from veriphy.primitives import workspace_registry
 from veriphy.steps._primitives import call_primitive
 from veriphy.steps._runner import Argument, Outcome, Params, Prepared, Step, exit_code
@@ -154,6 +154,17 @@ def _compare(outputs: dict[str, object], values: Mapping[str, object], rule: Map
     return 'agrees' if abs(found - claimed) <= tolerance else 'differs'
 
 
+def _check_grant(root: Path, step: str, primitive: str, level: str) -> None:
+    """Refuse a level that the primitive's trust class cannot grant, whatever the configuration says."""
+    trust = workspace_registry(root.resolve()).get(primitive).trust
+    granted = level_trust(resolve(root)).get(level)
+    if granted != trust:
+        message = (
+            f'step {step} would grant {level} ({granted or "an unknown level"}), which {primitive} ({trust}) cannot'
+        )
+        raise StepError(message)
+
+
 def declared_step(name: str, spec: Mapping[str, object], scopes: Mapping[str, object]) -> Step:
     """Return the step a declaration describes.
 
@@ -203,6 +214,8 @@ def declared_step(name: str, spec: Mapping[str, object], scopes: Mapping[str, ob
         outputs = {**kept, **outcome.outputs}
         result = _compare(outputs, values, rule) if rule is not None else outcome.status
         level = grants if grants is not None and exit_code(result) == 0 else None
+        if level is not None:
+            _check_grant(root, name, primitive, level)
         return Outcome(result, outputs, outcome.tools, level)
 
     arguments = tuple(i.argument() for i in inputs)

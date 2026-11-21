@@ -3,7 +3,18 @@
 import importlib
 import warnings
 
-from veriphy.core._config import BUILTIN_SCOPES, WORKSPACE_FILE, Pack, Resolved, installed, merge_patch, resolve
+from veriphy.core._config import (
+    BUILTIN_SCOPES,
+    TRUST_CLASSES,
+    WORKSPACE_FILE,
+    Pack,
+    Resolved,
+    installed,
+    level_order,
+    level_trust,
+    merge_patch,
+    resolve,
+)
 from veriphy.core._config import check as check_config
 from veriphy.core._digests import canonical_json, content_digest
 from veriphy.core._errors import (
@@ -35,6 +46,7 @@ __all__ = [
     'PACK_FILE',
     'PROJECT_DIR_NAME',
     'RELATIONS',
+    'TRUST_CLASSES',
     'WORKSPACE_FILE',
     'CertificateError',
     'CheckerError',
@@ -64,6 +76,8 @@ __all__ = [
     'find_tool',
     'find_workspace_root',
     'installed',
+    'level_order',
+    'level_trust',
     'merge_patch',
     'pack_dir',
     'pack_packages',

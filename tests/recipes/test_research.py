@@ -36,7 +36,7 @@ def test_research_documents_name_real_commands(document: Path) -> None:
 def test_documents_name_real_steps(document: Path) -> None:
     """Name only operations, programs and Lean verbs `veriphy` has."""
     steps = set(re.findall(r'(?<![#\w.-])veriphy (?:--root \S+ )?([a-z]+)', document.read_text()))
-    assert steps <= {*STEPS, *PROGRAMS, *LEAN_VERBS, 'records', 'help'}
+    assert steps <= {*STEPS, *PROGRAMS, *LEAN_VERBS, 'records', 'steps', 'help'}
 
 
 @pytest.mark.parametrize('playbook', ['prove.md', 'research/triage.md'])

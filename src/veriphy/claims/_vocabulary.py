@@ -1,10 +1,14 @@
 """State the research graph's vocabulary, its node IRIs, and the OWL axioms that give the vocabulary its meaning."""
 
+import itertools
+import json
 import re
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from importlib.resources import files
+from pathlib import Path
 from urllib.parse import quote, unquote
 
+from veriphy.core import Resolved, installed, level_order, level_trust, resolve
 from veriphy.primitives.graph._engine import Triple, parse_rdf
 
 VOCABULARY = 'urn:veriphy:vocabulary#'
@@ -16,7 +20,6 @@ RDF_TYPE = '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>'
 SUBCLASS = '<http://www.w3.org/2000/01/rdf-schema#subClassOf>'
 SUBPROPERTY = '<http://www.w3.org/2000/01/rdf-schema#subPropertyOf>'
 SAME_AS = f'<{OWL}sameAs>'
-LEVELS = ('none', 'oracle-test', 'kernel-test', 'lean-proof', 'certificate')
 PROVENANCES = ('agent', 'human', 'lean', 'veriphy')
 LEAN_SAFE = "._-'"
 LITERAL = re.compile(r'^"(?P<body>.*)"(?:@[A-Za-z0-9-]+|\^\^<[^>]*>)?$', re.DOTALL)
@@ -142,8 +145,53 @@ def source_of(iri: str) -> str:
     return 'lean' if body.startswith(LEAN) else ''
 
 
-def vocabulary_text() -> str:
-    """Return the vocabulary as Turtle.
+def workspace_config(root: Path | None = None) -> Resolved:
+    """Return a workspace's resolved configuration, or that of every installed pack when there is no workspace."""
+    return resolve(root) if root is not None else installed()
+
+
+def graph_levels(root: Path | None = None) -> tuple[str, ...]:
+    """Return the levels of a workspace's packs, from the lowest, `none`.
+
+    Args:
+        root: The workspace root; every installed pack when `None`.
+
+    Returns:
+        The levels in order.
+
+    Examples:
+        >>> graph_levels()
+        ('none', 'oracle-test', 'kernel-test', 'lean-proof', 'certificate')
+    """
+    return level_order(workspace_config(root))
+
+
+def level_turtle(root: Path | None = None) -> str:
+    """Return the vocabulary's level individuals, their trust classes and their order, as Turtle.
+
+    Args:
+        root: The workspace root; every installed pack when `None`.
+
+    Returns:
+        The Turtle lines.
+    """
+    config = workspace_config(root)
+    order, trusts, levels = level_order(config), level_trust(config), config.section('levels')
+    lines = []
+    for name in order:
+        spec = levels.get(name)
+        comment = json.dumps(str(spec.get('description', '')) if isinstance(spec, dict) else '')
+        trust = f' ; vp:trust "{trusts[name]}"' if trusts.get(name) else ''
+        lines.append(f'vp:{name} a vp:Level ; rdfs:comment {comment}{trust} .')
+    lines += [f'vp:{low} vp:below vp:{high} .' for low, high in itertools.pairwise(order)]
+    return '\n'.join(lines) + '\n'
+
+
+def vocabulary_text(root: Path | None = None) -> str:
+    """Return the vocabulary as Turtle, with the levels of the workspace's packs.
+
+    Args:
+        root: The workspace root; every installed pack when `None`.
 
     Returns:
         The vocabulary document.
@@ -152,16 +200,19 @@ def vocabulary_text() -> str:
         >>> 'vp:none vp:below vp:oracle-test' in vocabulary_text()
         True
     """
-    return files('veriphy.claims').joinpath('vocabulary.ttl').read_text()
+    return files('veriphy.claims').joinpath('vocabulary.ttl').read_text() + '\n' + level_turtle(root)
 
 
-def vocabulary_triples() -> list[Triple]:
-    """Return the vocabulary's triples.
+def vocabulary_triples(root: Path | None = None) -> list[Triple]:
+    """Return the vocabulary's triples, with the levels of the workspace's packs.
+
+    Args:
+        root: The workspace root; every installed pack when `None`.
 
     Returns:
         The triples of the vocabulary document.
     """
-    return parse_rdf(vocabulary_text(), 'turtle')
+    return parse_rdf(vocabulary_text(root), 'turtle')
 
 
 def vocabulary_terms() -> frozenset[str]:
@@ -192,7 +243,7 @@ def _propagation(target: str, name: str, links: Iterable[tuple[str, str]]) -> li
     return triples
 
 
-def generate_axioms(conventions: Iterable[str]) -> list[Triple]:
+def generate_axioms(conventions: Iterable[str], levels: Sequence[str] | None = None) -> list[Triple]:
     """Return the OWL axioms that make `assumes` and level caps follow the graph's links under the built-in rules.
 
     For each convention `k`, the class of nodes that assume `k` is a `hasValue` restriction, and the nodes that use,
@@ -201,6 +252,7 @@ def generate_axioms(conventions: Iterable[str]) -> list[Triple]:
 
     Args:
         conventions: The conventions of the graph, in N-Triples spelling.
+        levels: The levels in order, from the lowest; those of every installed pack by default.
 
     Returns:
         The axioms, whose generated classes are IRIs under `urn:veriphy:axiom:`.
@@ -223,11 +275,12 @@ def generate_axioms(conventions: Iterable[str]) -> list[Triple]:
         target = _axiom(name)
         triples += _restriction(target, vp('assumes'), 'hasValue', convention)
         triples += _propagation(target, name, [('uses', vp('uses')), ('same', SAME_AS), ('formal', vp('formalizedBy'))])
-    for index, level in enumerate(LEVELS):
+    order = tuple(levels) if levels is not None else graph_levels()
+    for index, level in enumerate(order):
         name = f'capped/{level}'
         target = _axiom(name)
         triples += _restriction(target, vp('cappedAt'), 'hasValue', vp(level))
         triples += _propagation(target, name, [('uses', vp('uses')), ('formal', vp('formalizedBy'))])
-        if index + 1 < len(LEVELS):
-            triples.append((target, SUBCLASS, _axiom(f'capped/{LEVELS[index + 1]}')))
+        if index + 1 < len(order):
+            triples.append((target, SUBCLASS, _axiom(f'capped/{order[index + 1]}')))
     return triples
