@@ -49,13 +49,12 @@ def test_files_tool_timeout(fake: Registry) -> None:
         fake.call('fake.echo', {'fail': 'sleep'})
 
 
-def test_json_lines_tool_and_its_pin(fake: Registry) -> None:
-    """Start a JSON-RPC tool once, check its pinned version, and name it in every output."""
+def test_a_tool_per_call_and_its_pin(fake: Registry) -> None:
+    """Run a tool once per call, check its pinned version, and name it in every output."""
     first = fake.call('fake.draw', {'seed': 3})
     second = fake.call('fake.draw', {'seed': 3})
     assert first == second
     assert first['tools'] == [{'name': 'server', 'version': '2.5.0', 'pin': 'version'}]
-    assert len(fake.sessions) == 1
 
 
 def test_python_function(fake: Registry) -> None:
@@ -63,17 +62,16 @@ def test_python_function(fake: Registry) -> None:
     output = fake.call('fake.square', {'x': 7})
     assert output['square'] == 49
     assert [t['name'] for t in output['tools']] == ['veriphy']
-    assert fake.sessions == {}
 
 
-def test_json_rpc_error(fake: Registry) -> None:
-    """Report a JSON-RPC error object by its message."""
+def test_tool_error(fake: Registry) -> None:
+    """Report a tool that fails by its standard error."""
     with pytest.raises(PrimitiveError, match='fails: on purpose'):
         fake.call('fake.fails', {})
 
 
-def test_malformed_line(fake: Registry) -> None:
-    """Fail on a response line that is not JSON."""
+def test_malformed_result(fake: Registry) -> None:
+    """Fail on a result that is not JSON."""
     with pytest.raises(PrimitiveError, match='not JSON'):
         fake.call('fake.broken', {})
 
@@ -122,10 +120,10 @@ def test_primitives_write_no_records(fake: Registry, tmp_path: Path) -> None:
     assert not (tmp_path / '.veriphy').exists()
 
 
-def test_shipped_packs_declare_every_daemon_method() -> None:
-    """Give every Sage daemon method a `sage.*` primitive with both schemas, and the shipped packs their primitives."""
+def test_shipped_packs_declare_every_sage_method() -> None:
+    """Give every Sage session method a `sage.*` primitive with both schemas, and the shipped packs their primitives."""
     registry = load_registry({'core': 'veriphy.packs.core', 'lean': 'veriphy.packs.lean', 'math': 'veriphy.packs.math'})
-    methods = {p.method for p in registry.primitives.values() if p.tool == 'sage'}
+    methods = {p.command[1] for p in registry.primitives.values() if p.tool == 'sage'}
     assert methods == {'ping', 'run', 'run_script', 'meaning', 'test', 'solve', 'symbolic_check', 'matrix_check'}
     assert {'horn.check', 'shacl.validate', 'lean.check', 'lean.serialize', 'lean.level', 'meaning', 'certify'} <= set(
         registry.primitives,
@@ -139,8 +137,8 @@ def test_shipped_packs_declare_every_daemon_method() -> None:
     assert registry.get('horn.check').function == 'veriphy.primitives.graph._primitives:horn_check'
 
 
-def test_lean_bridge_starts_the_packs_daemon() -> None:
-    """Keep the Lean bridge's default daemon command equal to the `math` pack's `sage` tool."""
+def test_lean_bridge_starts_the_packs_sage_session() -> None:
+    """Keep the Lean bridge's default Sage session command equal to the `math` pack's `sage` tool."""
     run = load_registry().tools['sage'].run
     bridge = (Path(__file__).resolve().parents[2] / 'lean' / 'Veriphy' / 'Bridge.lean').read_text()
     module = run[2].split('|', 1)[1].rstrip('}').split()[1]

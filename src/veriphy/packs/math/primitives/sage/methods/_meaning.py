@@ -1,6 +1,6 @@
 """Test whether a claim's statement means what it was meant to: evaluate it at seeded values satisfying its hypotheses.
 
-The daemon's `meaning` method draws values for the claim's universal binders with the toolkit's seeded `Sampler`,
+The Sage session's `meaning` method draws values for the claim's universal binders with the toolkit's seeded `Sampler`,
 keeps those at which every hypothesis and every domain condition holds, and decides the conclusion at each exactly,
 or in interval arithmetic of `PRECISION` bits when Sage cannot. A value at which an interval cannot decide counts as
 undecided, never as agreement. An equation is first tried symbolically, under the hypotheses, and only when every

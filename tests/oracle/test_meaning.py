@@ -1,4 +1,4 @@
-"""Test the daemon's meaning check on claims serialized by `#veriphy_meaning`."""
+"""Test the Sage session's meaning check on claims serialized by `#veriphy meaning`."""
 
 import json
 from collections.abc import Callable

@@ -11,7 +11,7 @@ The package SHALL hold `veriphy.primitives` (layer 0), `veriphy.steps` (1), `ver
 above them. Each pack SHALL be `veriphy.packs.<name>` with a `pack.yaml` and only the layer subpackages it needs.
 
 #### Scenario: Mathematics is a pack
-- **WHEN** a reader looks for the Sage daemon, the script helpers and the translation tables
+- **WHEN** a reader looks for the Sage session, the script helpers and the translation tables
 - **THEN** they are under `veriphy.packs.math`, and no module outside `veriphy.packs.math` imports SageMath
 
 ### Requirement: Import rule
@@ -27,7 +27,7 @@ layer-k subpackage SHALL import only Veriphy's layers up to k. A test SHALL enfo
 load every registration before it runs.
 
 #### Scenario: A step from a higher layer
-- **WHEN** `python -m veriphy report` runs
+- **WHEN** `python -m veriphy layers step report` runs
 - **THEN** the `report` step registered by `veriphy.claims` runs, and `veriphy.steps` imports no higher layer
 
 ### Requirement: Deprecated aliases
@@ -41,7 +41,7 @@ names as its new module and warning once with `DeprecationWarning`. Old programs
 - **THEN** it gets the same `Lean` as `veriphy.script`, and a deprecation warning names the new path
 
 ### Requirement: Behaviour unchanged
-Every command, daemon method, Lean tactic and step SHALL behave as before this change.
+Every command, Sage method, Lean tactic and step SHALL behave as before this change.
 
 #### Scenario: The suite
 - **WHEN** the test suite runs with only its imports updated

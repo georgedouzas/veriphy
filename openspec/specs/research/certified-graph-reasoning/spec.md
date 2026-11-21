@@ -102,7 +102,7 @@ before it runs, print what it fetches or builds and where, and cache it, so inst
 installation step. A later command SHALL find the cache and set up nothing.
 
 #### Scenario: First reasoning run after installation
-- **WHEN** `python -m veriphy.graph reason` runs right after `sage -pip install 'veriphy[graph]'`
+- **WHEN** `veriphy layers claims reason` runs right after `sage -pip install 'veriphy[graph]'`
 - **THEN** it reports that it is setting up the reasoner and the checker, sets them up, and reports the run with the
   checker's verdict
 

@@ -1,23 +1,24 @@
 # certificates/oracle-methods Specification
 
 ## Purpose
-Defines the contract every Sage daemon method follows: how it is registered, how its parameters are parsed, how exact results are encoded and how errors are reported. Also covers the shared exact solvers that certificate methods build on.
+Defines the contract every Sage session method follows: how it is registered, how its parameters are parsed, how exact results are encoded and how errors are reported. Also covers the shared exact solvers that certificate methods build on.
 
 ## Requirements
 
 ### Requirement: Declarative method registration
-Each daemon method SHALL be registered by declaration alongside its implementation, with its name and whether it is advisory. The daemon SHALL dispatch only to registered methods. An unknown method SHALL produce an error response naming the method.
+Each Sage method SHALL be registered by declaration alongside its implementation, with its name and whether it is advisory. The Sage session SHALL dispatch only to registered methods. An unknown method SHALL produce an error response naming the method.
 
 #### Scenario: Unknown method
 - **WHEN** a request has `"method": "nosuch"`
-- **THEN** the response is `{"id": <id>, "error": "..."}` and the error text contains `nosuch`
+- **THEN** the response is `{"jsonrpc": "2.0", "id": <id>, "error": {"code": -32601, "message": "..."}}` and the
+  message contains `nosuch`
 
 ### Requirement: Validated polynomial parameters
 Variable lists SHALL be non-empty valid identifiers. Polynomial strings SHALL be parsed in `QQ[vars]` before the method body runs. A parameter that fails validation SHALL produce an error response that names the parameter. It SHALL NOT produce a Python traceback.
 
 #### Scenario: Invalid variable name
 - **WHEN** a certificate method receives `"vars": ["x0", "1y"]`
-- **THEN** the error response names `vars` and the daemon keeps serving the next request
+- **THEN** the error response names `vars` and the Sage session keeps serving the next request
 
 #### Scenario: Polynomial outside the ring
 - **WHEN** `"poly"` mentions a variable that is not in `vars`
@@ -31,11 +32,11 @@ Certificate methods SHALL encode rationals as exact strings (`"n"` or `"n/d"`) a
 - **THEN** the result encodes it as `"1/3"`
 
 ### Requirement: Uniform error reporting
-Every failure inside a method SHALL become one error response of the form `<method>: <reason>`, on the same line protocol. The daemon SHALL keep serving after an error.
+Every failure inside a method SHALL become one JSON-RPC 2.0 error response whose message is `<method>: <reason>`. The Sage session SHALL keep serving after an error.
 
 #### Scenario: Infeasible certificate search
 - **WHEN** `farkas` is called on a consistent linear system
-- **THEN** the error response starts with `farkas:` and states that no certificate exists
+- **THEN** the error message starts with `farkas:` and states that no certificate exists
 
 ### Requirement: Exact LP helper with empty-problem guards
 The shared exact LP helper SHALL solve over the rationals and return either an exact solution or "infeasible". It SHALL NOT raise on an LP with no variables or no constraints: an empty system SHALL be treated as trivially feasible with the empty or zero solution.
@@ -49,12 +50,12 @@ The shared exact LP helper SHALL solve over the rationals and return either an e
 - **THEN** the helper reports infeasible, and the calling method turns that into its own error message
 
 ### Requirement: Method behavior is preserved
-The daemon methods SHALL be `ping`, `run`, `run_script`, `symbolic_check`, `matrix_check` and `solve`. The certificate-search methods of the removed tactics (`factor`, `sos`, `roots`, `lincomb`, `farkas`, `exists`, `sum`) SHALL be removed, their algorithms living on as toolkit primitives. Remaining methods keep their parameters and result shapes; results MAY gain fields, and existing fields SHALL NOT be renamed, removed or change type.
+The Sage methods SHALL be `ping`, `run`, `run_script`, `symbolic_check`, `matrix_check` and `solve`. The certificate-search methods of the removed tactics (`factor`, `sos`, `roots`, `lincomb`, `farkas`, `exists`, `sum`) SHALL be removed, their algorithms living on as toolkit primitives. Remaining methods keep their parameters and result shapes; results MAY gain fields, and existing fields SHALL NOT be renamed, removed or change type.
 
 #### Scenario: Ping after the restructure
-- **WHEN** a client sends `{"id":1,"method":"ping"}`
-- **THEN** the response is `{"id": 1, "result": {"ok": true, "sage": <version>, ...}}`, where `ok` and `sage` keep their meaning and any further fields (such as `veriphy`) are additive
+- **WHEN** a client sends `{"jsonrpc":"2.0","id":1,"method":"ping"}`
+- **THEN** the response is `{"jsonrpc": "2.0", "id": 1, "result": {"ok": true, "sage": <version>, ...}}`, where `ok` and `sage` keep their meaning and any further fields (such as `veriphy`) are additive
 
 #### Scenario: Removed method
-- **WHEN** a client sends `{"id":2,"method":"farkas","params":{}}`
+- **WHEN** a client sends `{"jsonrpc":"2.0","id":2,"method":"farkas","params":{}}`
 - **THEN** the response is an unknown-method error naming `farkas`

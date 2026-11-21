@@ -112,7 +112,7 @@ return found(proof)"
   nlinarith [sq_nonneg (a - b)]
 
 /--
-error: sage daemon error: run: ZeroDivisionError: rational division by zero
+error: Sage session error: run: ZeroDivisionError: rational division by zero
 --- script stdout ---
 step 1
 -/
@@ -279,7 +279,7 @@ return found(proof)"
 /--
 error: passed: Real.Gamma ↔ gamma
 passed: rw [Real.Gamma_add_one]
-failed: Real.arsinh ↔ asinhh: sage daemon error: run: AssertionError: Sage could not read the translation: check the sage name
+failed: Real.arsinh ↔ asinhh: Sage session error: run: AssertionError: Sage could not read the translation: check the sage name
 -/
 #guard_msgs in
 #veriphy translations check "lean/VeriphyTest/fixtures/check"
@@ -480,7 +480,7 @@ return found(proof)"
 
 -- the template unedited asks for the matrices
 /--
-error: sage daemon error: run: AssertionError: fill in REPRESENTATION (and TABLE, CASIMIR, SUMMANDS or TARGET) in a copy
+error: Sage session error: run: AssertionError: fill in REPRESENTATION (and TABLE, CASIMIR, SUMMANDS or TARGET) in a copy
 -/
 #guard_msgs in
 example : True := by
@@ -549,7 +549,7 @@ return found(proof)"
 
 -- the template unedited asks what to prove
 /--
-error: sage daemon error: run: AssertionError: fill in SUPERMATRICES (with EVEN_DIM and NAMES) or ALGEBRA in a copy
+error: Sage session error: run: AssertionError: fill in SUPERMATRICES (with EVEN_DIM and NAMES) or ALGEBRA in a copy
 -/
 #guard_msgs in
 example : True := by
@@ -611,7 +611,7 @@ example : Nat.Prime 1000000000000000000000000000000000012397 := by
   veriphy certify "src/veriphy/packs/math/agents/recipes/templates/primality.sage"
 
 /--
-error: sage daemon error: run: AssertionError: fill in MATRIX (and FORM) in a copy
+error: Sage session error: run: AssertionError: fill in MATRIX (and FORM) in a copy
 -/
 #guard_msgs in
 example : True := by
@@ -620,7 +620,7 @@ example : True := by
   veriphy certify "smith_example.sage"
 
 /--
-error: sage daemon error: run: AssertionError: fill in MATRIX (and PARAMETER) in a copy
+error: Sage session error: run: AssertionError: fill in MATRIX (and PARAMETER) in a copy
 -/
 #guard_msgs in
 example : True := by
@@ -710,7 +710,7 @@ return found(proof)"
 /-! ## The `operator_identity` recipe -/
 
 /--
-error: sage daemon error: run: AssertionError: fill in MATRICES and NAMES, or COORDINATES, LHS and RHS, in a copy
+error: Sage session error: run: AssertionError: fill in MATRICES and NAMES, or COORDINATES, LHS and RHS, in a copy
 -/
 #guard_msgs in
 example : True := by
@@ -730,7 +730,7 @@ def minkowski : Fin 4 → Fin 4 → (Fin 4 → ℝ) → ℝ := fun i j _ => if i
 end GeometryTest
 
 /--
-error: sage daemon error: run: AssertionError: fill in METRIC and NAME, or FORM, in a copy
+error: Sage session error: run: AssertionError: fill in METRIC and NAME, or FORM, in a copy
 -/
 #guard_msgs in
 example : True := by
@@ -778,7 +778,7 @@ return found(proof)"
 /-! ## Summation certificates -/
 
 /--
-error: sage daemon error: run: AssertionError: fill in SUMMAND (and CLOSED_FORM, CLOSED_FORM_LEAN for a definite sum) in a copy
+error: Sage session error: run: AssertionError: fill in SUMMAND (and CLOSED_FORM, CLOSED_FORM_LEAN for a definite sum) in a copy
 -/
 #guard_msgs in
 example : True := by
@@ -793,7 +793,7 @@ example (n : ℕ) : ∑ k ∈ Finset.range n, (k * k.factorial : ℚ) = n.factor
   veriphy certify "gosper_factorial.sage"
 
 /--
-error: sage daemon error: run: AssertionError: fill in COEFFICIENTS and INITIAL in a copy
+error: Sage session error: run: AssertionError: fill in COEFFICIENTS and INITIAL in a copy
 -/
 #guard_msgs in
 example : True := by
@@ -817,14 +817,14 @@ example : Real.log (3 / 2) < 0.4055 := by
 
 -- Gamma has no remainder bound in mathlib: refused, not emitted unchecked
 /--
-error: sage daemon error: run: CertificateError: no remainder bound is available for gamma in mathlib; supported: exp, log, sin, cos, pi
+error: Sage session error: run: CertificateError: no remainder bound is available for gamma in mathlib; supported: exp, log, sin, cos, pi
 -/
 #guard_msgs in
 example : Real.Gamma (1 / 3) < 3 := by
   veriphy certify "src/veriphy/packs/math/agents/recipes/templates/certified_bound.sage"
 
 /--
-error: sage daemon error: run: AssertionError: fill in POLYNOMIAL and POLYNOMIAL_LEAN in a copy
+error: Sage session error: run: AssertionError: fill in POLYNOMIAL and POLYNOMIAL_LEAN in a copy
 -/
 #guard_msgs in
 example : True := by
@@ -900,7 +900,7 @@ example : FusionData.GaugeRelated (FusionData.RepData.toData FusionTest.fib (Rea
   veriphy certify "fibonacci_gauge.sage"
 
 /--
-error: sage daemon error: run: AssertionError: fill in REFERENCE in a copy
+error: Sage session error: run: AssertionError: fill in REFERENCE in a copy
 -/
 #guard_msgs in
 example : True := by
@@ -908,7 +908,7 @@ example : True := by
 
 -- SU(3) at level 3 has a fusion multiplicity 2: outside the multiplicity-free asset, refused
 /--
-error: sage daemon error: run: CertificateError: A23(1,1) ⊗ A23(1,1) has a fusion multiplicity above 1: A2 at level 3 is not multiplicity free, outside the FusionData asset (F-symbols would be matrices on multiplicity spaces)
+error: Sage session error: run: CertificateError: A23(1,1) ⊗ A23(1,1) has a fusion multiplicity above 1: A2 at level 3 is not multiplicity free, outside the FusionData asset (F-symbols would be matrices on multiplicity spaces)
 -/
 #guard_msgs in
 example : True := by
@@ -917,7 +917,7 @@ return found(proof)"
 
 -- F-symbols all 1 on the Fibonacci rules fail the pentagon: refused in Sage with the count
 /--
-error: sage daemon error: run: CertificateError: 8 pentagon equations fail
+error: Sage session error: run: CertificateError: 8 pentagon equations fail
 -/
 #guard_msgs in
 example : True := by
@@ -966,7 +966,7 @@ return found(proof)")
 
 -- a square that fails is named
 /--
-error: sage daemon error: run: CertificateError: the naturality square fails at generator 0: T ρ(g0) ≠ σ(g0) T
+error: Sage session error: run: CertificateError: the naturality square fails at generator 0: T ρ(g0) ≠ σ(g0) T
 -/
 #guard_msgs in
 example : ∀ g, (!![1, 0, 0] : Matrix (Fin 1) (Fin 3) ℚ) * perm g = triv g * (!![1, 0, 0] : Matrix (Fin 1) (Fin 3) ℚ) := by
@@ -1054,7 +1054,7 @@ return found(proof)"
 
 -- an identity that fails modulo the relations is refused
 /--
-error: sage daemon error: run: CertificateError: the identity is false: lhs - rhs = [       2*sinh(x2)^2 2*cosh(x2)*sinh(x2)]
+error: Sage session error: run: CertificateError: the identity is false: lhs - rhs = [       2*sinh(x2)^2 2*cosh(x2)*sinh(x2)]
 [2*cosh(x2)*sinh(x2)        2*sinh(x2)^2]
 -/
 #guard_msgs in
@@ -1095,7 +1095,7 @@ example : ∫ x in (0 : ℝ)..1, (x ^ 2 + 2 * x) = 4 / 3 := by
   veriphy certify "src/veriphy/packs/math/agents/recipes/templates/definite_integral.sage"
 -- a wrong value is refused with the integral Sage computes
 /--
-error: sage daemon error: run: CertificateError: the integral is 4/3, not the goal's value
+error: Sage session error: run: CertificateError: the integral is 4/3, not the goal's value
 -/
 #guard_msgs in
 example : ∫ x in (0 : ℝ)..1, (x ^ 2 + 2 * x) = 1 := by
@@ -1178,31 +1178,31 @@ return found(proof)"
 
 -- the templates, unedited, ask for their data
 /--
-error: sage daemon error: run: AssertionError: fill in VECTORS (and OTHER or KERNEL for a span equality) in a copy
+error: Sage session error: run: AssertionError: fill in VECTORS (and OTHER or KERNEL for a span equality) in a copy
 -/
 #guard_msgs in
 example : LinearIndependent ℚ ![![(1 : ℚ), 0], ![0, 1]] := by
   veriphy certify "src/veriphy/packs/math/agents/recipes/templates/independence.sage"
 /--
-error: sage daemon error: run: AssertionError: fill in MATRIX in a copy
+error: Sage session error: run: AssertionError: fill in MATRIX in a copy
 -/
 #guard_msgs in
 example : Matrix.rank !![(1 : ℚ), 0; 0, 1] = 2 := by
   veriphy certify "src/veriphy/packs/math/agents/recipes/templates/matrix_rank.sage"
 /--
-error: sage daemon error: run: AssertionError: fill in VECTORS in a copy
+error: Sage session error: run: AssertionError: fill in VECTORS in a copy
 -/
 #guard_msgs in
 example : Module.finrank ℚ ↥(Submodule.span ℚ (Set.range ![![(1 : ℚ), 0]])) = 1 := by
   veriphy certify "src/veriphy/packs/math/agents/recipes/templates/dimension.sage"
 /--
-error: sage daemon error: run: AssertionError: fill in MAP in a copy
+error: Sage session error: run: AssertionError: fill in MAP in a copy
 -/
 #guard_msgs in
 example : ¬ ∃ f : ℝ →ₗ[ℝ] ℝ, ∀ x, f x = x ^ 2 := by
   veriphy certify "src/veriphy/packs/math/agents/recipes/templates/nonlinearity.sage"
 /--
-error: sage daemon error: run: AssertionError: fill in MATRIX in a copy
+error: Sage session error: run: AssertionError: fill in MATRIX in a copy
 -/
 #guard_msgs in
 example : Veriphy.Linear.HasSignature !![(1 : ℚ), 0; 0, 1] 2 0 0 := by

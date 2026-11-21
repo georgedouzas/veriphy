@@ -76,7 +76,7 @@ example : True := by
 t, spins = clebsch_gordan(2, 1)
 product = tensor_representation(spin_representation(2), spin_representation(1))
 blocks = [block_diagonal_matrix([spin_representation(s)[k] for s in spins]) for k in range(3)]
-proof = steps(intertwining_facts(t, product, blocks), tactic('trivial'))"
+return found(steps(intertwining_facts(t, product, blocks), tactic('trivial')))"
 ```
 
 `lean/VeriphyTest/SageRun.lean` also runs the adjoint of 𝔰𝔩₃ (28 bracket relations of 8×8 matrices) and the branching of

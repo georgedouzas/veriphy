@@ -1,6 +1,5 @@
 """Hold the tools and primitives of the installed packs, and call a primitive with its checks around it."""
 
-import atexit
 import functools
 import importlib
 from collections.abc import Callable, Mapping
@@ -11,12 +10,10 @@ from veriphy.core import PrimitiveError, Resolved, installed, resolve
 from veriphy.core._version import __version__
 from veriphy.primitives._contracts import (
     Found,
-    Session,
     check_pin,
     command_line,
     probe_files,
     run_files,
-    start_session,
 )
 from veriphy.primitives._descriptors import Body, Primitive, Tool, composite_trust, read_primitive, read_tool
 from veriphy.primitives._schema import check
@@ -66,7 +63,7 @@ def composite(
 
 @dataclass
 class Registry:
-    """The tools and primitives Veriphy can run, and the sessions of the JSON-RPC tools it started.
+    """The tools and primitives Veriphy can run.
 
     Args:
         tools: The tools, by name.
@@ -75,7 +72,6 @@ class Registry:
 
     tools: dict[str, Tool] = field(default_factory=dict)
     primitives: dict[str, Primitive] = field(default_factory=dict)
-    sessions: dict[str, Session] = field(default_factory=dict)
 
     def get(self, name: str) -> Primitive:
         """Return a primitive by name, or raise naming those there are.
@@ -155,15 +151,9 @@ class Registry:
         if tool is None:
             message = f"primitive {primitive.name}: its tool '{primitive.tool}' is not declared"
             raise PrimitiveError(message)
-        if tool.contract == 'files':
-            found = check_pin(tool, probe_files(tool))
-            seed = inputs.get('seed') if primitive.seed == 'placeholder' else None
-            return found, run_files(tool, primitive.command, inputs, seed if isinstance(seed, int) else None)
-        session = self.sessions.get(tool.name)
-        if session is None:
-            session = start_session(tool)
-            self.sessions[tool.name] = session
-        return session.found, session.request(primitive.method, inputs)
+        found = check_pin(tool, probe_files(tool))
+        seed = inputs.get('seed') if primitive.seed == 'placeholder' else None
+        return found, run_files(tool, primitive.command, inputs, seed if isinstance(seed, int) else None)
 
     def _call_composite(self, primitive: Primitive, inputs: dict[str, object]) -> dict[str, object]:
         """Run a composite, calling its parts through the same checks, and gather their tools."""
@@ -184,12 +174,6 @@ class Registry:
         unique = [t for i, t in enumerate(used) if t not in used[:i]]
         return {**output, TOOLS_KEY: unique}
 
-    def close(self) -> None:
-        """Stop every session this registry started."""
-        for session in self.sessions.values():
-            session.close()
-        self.sessions.clear()
-
 
 @functools.cache
 def default_registry() -> Registry:
@@ -209,7 +193,7 @@ def load_registry(packages: Mapping[str, str] | None = None, resolved: Resolved 
         resolved: A workspace's resolved configuration, whose packs and sections the registry holds.
 
     Returns:
-        The registry. Its sessions stop when the process exits.
+        The registry.
 
     Raises:
         ModuleNotFoundError: If a pack's `primitives` subpackage imports a module that is not installed.
@@ -238,7 +222,6 @@ def load_registry(packages: Mapping[str, str] | None = None, resolved: Resolved 
             continue
         trust = composite_trust({p: registry.primitives[p].trust for p in parts}, decides)
         registry.primitives[name] = replace(stub, trust=trust, body=body)
-    atexit.register(registry.close)
     return registry
 
 

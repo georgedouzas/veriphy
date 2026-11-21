@@ -46,4 +46,4 @@
     vp:statement "The vacuum is stable." ; vp:uses :eq-9.2, <urn:veriphy:source:arXiv:0808.3236#thm-2> .
 ```
 
-Then run `sage -python -m veriphy claims validate`.
+Then run `sage -python -m veriphy layers claims validate`.

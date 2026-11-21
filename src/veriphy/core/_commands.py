@@ -12,7 +12,7 @@ def run_command(command: click.Command, argv: Sequence[str] | None, prog_name: s
     Args:
         command: The command or group.
         argv: The arguments, `sys.argv[1:]` when `None`.
-        prog_name: The program's name in usage and help, as `veriphy claims`.
+        prog_name: The program's name in usage and help, as `veriphy layers claims`.
 
     Raises:
         SystemExit: With the command's status when it is not 0, and 2 on bad usage.

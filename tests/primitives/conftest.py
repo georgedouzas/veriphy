@@ -23,23 +23,22 @@ json.dump(out, open(sys.argv[2], 'w'))
 """
 SERVER = """
 import json, random, sys
-for line in sys.stdin:
-    request = json.loads(line)
-    params = request.get('params') or {}
-    if request['method'] == 'version':
-        result = {'version': 'fake 2.5.0'}
-    elif request['method'] == 'draw':
-        result = {'value': random.Random(params.get('seed', 0)).random()}
-    elif request['method'] == 'noise':
-        result = {'value': random.random()}
-    elif request['method'] == 'fails':
-        error = {'code': -32000, 'message': 'fails: on purpose'}
-        print(json.dumps({'jsonrpc': '2.0', 'id': request['id'], 'error': error}), flush=True)
-        continue
-    else:
-        print('this is not json', flush=True)
-        continue
-    print(json.dumps({'jsonrpc': '2.0', 'id': request['id'], 'result': result}), flush=True)
+if sys.argv[1:] == ['version']:
+    print('fake 2.5.0')
+    sys.exit(0)
+method, source, target = sys.argv[1:]
+params = json.load(open(source))
+if method == 'draw':
+    result = {'value': random.Random(params.get('seed', 0)).random()}
+elif method == 'noise':
+    result = {'value': random.random()}
+elif method == 'fails':
+    print('fails: on purpose', file=sys.stderr)
+    sys.exit(1)
+else:
+    open(target, 'w').write('this is not json')
+    sys.exit(0)
+json.dump(result, open(target, 'w'))
 """
 PACK = """
 version: 1
@@ -51,14 +50,14 @@ tools:
     run: ['{python}', '{tools}/echo.py', '{input}', '{out}', '{seed}']
     timeout: 2
   server:
-    contract: jsonrpc
+    contract: files
     run: ['{python}', '{tools}/server.py']
-    version: {method: version, field: version}
+    version: {command: [version]}
     pin: {version: 2.5.0}
   drifted:
-    contract: jsonrpc
+    contract: files
     run: ['{python}', '{tools}/server.py']
-    version: {method: version, field: version}
+    version: {command: [version]}
     pin: {version: 2.4.0}
   absent:
     contract: files
@@ -72,32 +71,32 @@ primitives:
     output: {type: object, required: [echo, seed]}
   fake.draw:
     tool: server
-    method: draw
+    command: [draw, '{input}', '{out}']
     trust: oracle
     seed: param
     input: {type: object, required: [seed], properties: {seed: {type: integer}}}
     output: {type: object, required: [value]}
   fake.noise:
     tool: server
-    method: noise
+    command: [noise, '{input}', '{out}']
     trust: oracle
     input: {type: object}
     output: {type: object, required: [value]}
   fake.broken:
     tool: server
-    method: broken
+    command: [broken, '{input}', '{out}']
     trust: oracle
     input: {type: object}
     output: {type: object}
   fake.drifted:
     tool: drifted
-    method: draw
+    command: [draw, '{input}', '{out}']
     trust: oracle
     input: {type: object}
     output: {type: object}
   fake.fails:
     tool: server
-    method: fails
+    command: [fails, '{input}', '{out}']
     trust: oracle
     input: {type: object}
     output: {type: object}
@@ -129,7 +128,7 @@ def pair(inputs, call):
 
 @pytest.fixture
 def fake(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Registry]:
-    """Return a registry of the fake pack alone, its tools in `tmp_path/tools`, and stop its sessions after."""
+    """Return a registry of the fake pack alone, with its tools in `tmp_path/tools`."""
     tools = tmp_path / 'tools'
     tools.mkdir()
     (tools / 'echo.py').write_text(textwrap.dedent(ECHO))
@@ -144,6 +143,5 @@ def fake(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Registry]:
     monkeypatch.chdir(tmp_path)
     registry = load_registry({'fake': 'fakepack'})
     yield registry
-    registry.close()
     for name in ('fakepack.primitives', 'fakepack.functions', 'fakepack'):
         sys.modules.pop(name, None)

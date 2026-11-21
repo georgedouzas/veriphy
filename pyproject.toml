@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "veriphy"
-description = "Machine-verified physics and math proofs in Lean 4 with SageMath as an untrusted oracle"
+description = "An extensible verification framework: deterministic steps, recorded evidence, trust classes and levels, with packs for Lean and mathematics, reproduction of empirical analyses, and more"
 authors = [{name = "Georgios Douzas", email = "georgios.douzas@gmail.com"}]
 license = "Apache-2.0"
 readme = "README.md"
@@ -36,7 +36,6 @@ graph = ["pyoxigraph>=0.5,<0.6", "pyshacl>=0.26", "rdflib>=7"]
 
 [project.scripts]
 veriphy = "veriphy.__main__:main"
-veriphy-sage-server = "veriphy.packs.math.primitives.sage:main"
 
 [project.urls]
 Homepage = "https://georgedouzas.github.io/veriphy"

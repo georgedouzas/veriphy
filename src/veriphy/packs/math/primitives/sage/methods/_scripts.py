@@ -23,7 +23,6 @@ SCRIPT_METHODS: dict[str, Method] = {}
 STDOUT_LIMIT = 20000
 # the names a script's result is kept under, beside the script's own
 RESULT = '__veriphy_result__'
-LEGACY = '__veriphy_legacy__'
 DEFAULT_TIMEOUT_S = 120
 
 
@@ -74,8 +73,6 @@ def _execute(code: CodeType, namespace: dict[str, object]) -> None:
     entry = namespace.get('run')
     if callable(entry):
         namespace[RESULT] = entry(namespace.get('goal'), namespace.get('inputs') or {})
-    else:
-        namespace[LEGACY] = True
 
 
 def _run_sage(script: str, namespace: dict[str, object], timeout: int) -> str:
@@ -117,11 +114,8 @@ def _toolkit_names() -> dict[str, object]:
     return {name: getattr(veriphy.packs.math.script, name) for name in veriphy.packs.math.script.__all__}
 
 
-def _returned(namespace: dict[str, object], legacy: str, out: str) -> object:
-    """Return what a script found: the value of its `found(...)`, or of the variable a legacy script assigns.
-
-    A `refuted(...)` or `unknown(...)` result raises, naming the values or the reason.
-    """
+def _returned(namespace: dict[str, object], name: str, out: str) -> object:
+    """Return the value of a script's `found(...)`; a `refuted(...)` or `unknown(...)` result raises, naming why."""
     result = namespace.get(RESULT)
     if isinstance(result, Found):
         return result.value
@@ -132,10 +126,11 @@ def _returned(namespace: dict[str, object], legacy: str, out: str) -> object:
     if isinstance(result, Unknown):
         message = f'the script found nothing: {result.reason}'
         raise ScriptError(message, out)
-    if namespace.get(RESULT) is not None or not namespace.get(LEGACY):
-        message = 'run(goal, inputs) must return found(...), refuted(...) or unknown(reason)'
+    if result is None and not callable(namespace.get('run')):
+        message = f'the script returned nothing: return found({name}) from run(goal, inputs), or `return` inline'
         raise ScriptError(message, out)
-    return namespace.get(legacy)
+    message = 'run(goal, inputs) must return found(...), refuted(...) or unknown(reason)'
+    raise ScriptError(message, out)
 
 
 def _read_proof(namespace: dict[str, object], out: str) -> tuple[str, bool]:
@@ -155,14 +150,6 @@ def _read_proof(namespace: dict[str, object], out: str) -> tuple[str, bool]:
     raise ScriptError(message, out)
 
 
-def _deprecation(namespace: dict[str, object], legacy: str) -> dict[str, str]:
-    """Return a `deprecated` note when the script assigned `legacy` instead of returning from `run(goal, inputs)`."""
-    if not namespace.get(LEGACY):
-        return {}
-    note = f'assigning `{legacy}` is deprecated: return found({legacy}) from run(goal, inputs), or `return` inline'
-    return {'deprecated': note}
-
-
 @_register_method(
     SCRIPT_METHODS,
     'run',
@@ -172,16 +159,16 @@ def _deprecation(namespace: dict[str, object], legacy: str) -> dict[str, str]:
 )
 def _run_proof_script(problem: object, script: str, timeout_s: int) -> dict[str, object]:
     """Return the Lean tactic block a proof script builds, with the problem and the toolkit pre-bound."""
-    namespace = {**_toolkit_names(), **read_problem(problem).to_namespace(), 'proof': None}
+    namespace = {**_toolkit_names(), **read_problem(problem).to_namespace()}
     out = _run_sage(script, namespace, timeout_s)
     lean, leaves_goals = _read_proof(namespace, out)
-    return {'lean': lean, 'stdout': out, 'leaves_goals': leaves_goals, **_deprecation(namespace, 'proof')}
+    return {'lean': lean, 'stdout': out, 'leaves_goals': leaves_goals}
 
 
 def run_test_script(problem: object, script: str, timeout_s: int) -> dict[str, object]:
     """Return the instances a test script chooses for a claim's universal binders, with its seed and Sage's version.
 
-    This is the daemon's `test` method; the test catalog calls it to rerun a record's oracle instances.
+    This is the Sage session's `test` method; the test catalog calls it to rerun a record's oracle instances.
 
     Args:
         problem: The serialized problem of the claim.
@@ -192,10 +179,10 @@ def run_test_script(problem: object, script: str, timeout_s: int) -> dict[str, o
         The instances, the script's output, its seed and Sage's version.
 
     Raises:
-        ScriptError: If the script fails, assigns no `instances`, or an instance is malformed.
+        ScriptError: If the script fails, returns no instances, or an instance is malformed.
     """
     read = read_problem(problem)
-    namespace = {**_toolkit_names(), **read.to_namespace(), 'instances': None, 'SEED': 0}
+    namespace = {**_toolkit_names(), **read.to_namespace(), 'SEED': 0}
     out = _run_sage(script, namespace, timeout_s)
     chosen = _returned(namespace, 'instances', out)
     if chosen is None:
@@ -214,11 +201,10 @@ def run_test_script(problem: object, script: str, timeout_s: int) -> dict[str, o
         'stdout': out,
         'seed': int(seed) if isinstance(seed, int) else 0,
         'sage_version': str(sage_all.version()),
-        **_deprecation(namespace, 'instances'),
     }
 
 
-# the daemon method wraps the plain function, which the test catalog also calls
+# the Sage method wraps the plain function, which the test catalog also calls
 _register_method(
     SCRIPT_METHODS,
     'test',

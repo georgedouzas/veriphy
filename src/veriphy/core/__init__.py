@@ -1,8 +1,5 @@
 """Provide the shared leaves of veriphy: its named exceptions, the protocol's type vocabulary, the project layout."""
 
-import importlib
-import warnings
-
 from veriphy.core._config import (
     BUILTIN_SCOPES,
     TRUST_CLASSES,
@@ -13,6 +10,7 @@ from veriphy.core._config import (
     level_order,
     level_trust,
     merge_patch,
+    pack_commands,
     resolve,
     workflow_entries,
 )
@@ -80,6 +78,7 @@ __all__ = [
     'level_order',
     'level_trust',
     'merge_patch',
+    'pack_commands',
     'pack_dir',
     'pack_packages',
     'project_dir',
@@ -88,17 +87,3 @@ __all__ = [
     'run_process',
     'workflow_entries',
 ]
-
-# deprecated: the record store moved to `veriphy.steps`, the layer that writes records
-_MOVED_TO_STEPS = frozenset(
-    {'KINDS', 'LEVELLED_KINDS', 'Record', 'RecordStore', 'config_digest', 'input_digest', 'read_record'},
-)
-
-
-def __getattr__(name: str) -> object:
-    """Return a name that moved to `veriphy.steps`, warning that it moved."""
-    if name not in _MOVED_TO_STEPS:
-        message = f"module 'veriphy.core' has no attribute '{name}'"
-        raise AttributeError(message)
-    warnings.warn(f'veriphy.core.{name} moved to veriphy.steps.{name}', DeprecationWarning, stacklevel=2)
-    return getattr(importlib.import_module('veriphy.steps'), name)

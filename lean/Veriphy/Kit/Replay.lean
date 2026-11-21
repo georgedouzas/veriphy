@@ -1,5 +1,5 @@
 /-
-Replay check and the guarded daemon entry point.
+Replay check and the guarded Sage session entry point.
 
 `set_option veriphy.checkReplay true` makes every replacement emitted through a
 checker family prove itself the way a user would use it: pretty-printed to text,
@@ -33,7 +33,7 @@ def guardBridge (what : String) : CoreM Unit := do
     throwError "veriphy: the Sage bridge is disabled during replay, but the replacement called \
       Sage ({what}); a committed proof must not need Sage"
 
-/-- Run a daemon request (a `Bridge` call) from a tactic. Tactics reach Sage only through here. -/
+/-- Run a Sage session request (a `Bridge` call) from a tactic. Tactics reach Sage only through here. -/
 def run {α : Type} (what : String) (x : IO α) : CoreM α := do
   guardBridge what
   x

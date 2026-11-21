@@ -7,7 +7,7 @@ from pathlib import Path
 
 from veriphy.core import TRUST_CLASSES, PrimitiveError
 
-CONTRACTS = ('jsonrpc', 'files')
+CONTRACTS = ('files',)
 PIN_KINDS = ('image', 'commit', 'version')
 # a composite's code: it receives the input and a function calling a part by name
 Body = Callable[[dict[str, object], Callable[[str, dict[str, object]], dict[str, object]]], dict[str, object]]
@@ -34,15 +34,11 @@ class VersionProbe:
     """How a tool reports its version.
 
     Args:
-        command: The arguments that print it, for a files tool (after the tool's command).
-        method: The request method whose response holds it, for a JSON-RPC tool.
-        field: The response field holding it.
+        command: The arguments that print it, after the tool's command.
         pattern: A regular expression whose first group is the version, in what the tool printed.
     """
 
     command: tuple[str, ...] = ()
-    method: str = ''
-    field: str = ''
     pattern: str = r'(\d+(?:\.\d+)+)'
 
 
@@ -52,7 +48,7 @@ class Tool:
 
     Args:
         name: The tool's name.
-        contract: `jsonrpc` (JSON-RPC 2.0 over stdio) or `files` (a command writing one JSON result).
+        contract: `files`: a command, run once per call, writing one JSON result.
         run: The command, as an argument list; placeholders such as `{out}` are paths Veriphy writes.
         pin: What the tool must be, or `None` for a tool its pack does not pin yet.
         version: How the tool reports its version.
@@ -79,7 +75,6 @@ class Primitive:
         input_schema: The JSON Schema its input must satisfy.
         output_schema: The JSON Schema its output must satisfy.
         tool: The tool it runs on, empty for a composite.
-        method: The request method, for a JSON-RPC tool.
         function: A Python `module:function`, called in-process, instead of a tool.
         command: The arguments after the tool's command, for a files tool.
         seed: How a random primitive takes its seed: `param` (the input's `seed`) or `placeholder` (`{seed}`).
@@ -94,7 +89,6 @@ class Primitive:
     input_schema: Mapping[str, object]
     output_schema: Mapping[str, object]
     tool: str = ''
-    method: str = ''
     function: str = ''
     command: tuple[str, ...] = ()
     seed: str | None = None
@@ -178,8 +172,6 @@ def read_tool(name: str, spec: Mapping[str, object], pack: str) -> Tool:
     version = raw if isinstance(raw, dict) else {}
     probe = VersionProbe(
         command=_strings(version.get('command', []), 'version.command', where),
-        method=str(version.get('method', '')),
-        field=str(version.get('field', '')),
         pattern=str(version.get('pattern', VersionProbe.pattern)),
     )
     timeout = spec.get('timeout', 600)
@@ -245,7 +237,6 @@ def read_primitive(name: str, spec: Mapping[str, object], pack: str, base: Path)
         input_schema=read_schema(base, spec.get('input'), where + ' input'),
         output_schema=read_schema(base, spec.get('output'), where + ' output'),
         tool=str(spec.get('tool', '')),
-        method=str(spec.get('method', '')),
         function=str(spec.get('function', '')),
         command=_strings(spec.get('command', []), 'command', where),
         seed=None if seed is None else _choice(seed, SEED_KINDS, 'seed', where),

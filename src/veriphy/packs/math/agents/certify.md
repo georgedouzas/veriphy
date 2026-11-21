@@ -4,7 +4,7 @@ Use this when a goal's computational core needs Sage: coefficients, squares,
 multipliers, witnesses, closed forms, or intermediate expressions. Sage finds
 them, and Lean checks the proof you emit. Sage is never trusted.
 
-Paths in this playbook are relative to its directory, which `sage -python -m veriphy agents path` prints. The
+Paths in this playbook are relative to its directory, which `sage -python -m veriphy layers agents path` prints. The
 playbooks ship with the installed `veriphy` package, at the version of its toolkit.
 
 ## The loop
@@ -33,9 +33,9 @@ playbooks ship with the installed `veriphy` package, at the version of its toolk
    `#veriphy translations check` in a Lean file of the project, which
    translates the example, renders it back and proves the two equal. Rerun the
    inspection: the atom is now a Sage function. Never edit Veriphy's own tables
-   for this; `sage -python -m veriphy translations list` shows what the project
+   for this; `sage -python -m veriphy pack math translations list` shows what the project
    adds.
-2. **Reuse before writing.** Run `sage -python -m veriphy certificates list` in
+2. **Reuse before writing.** Run `sage -python -m veriphy pack math certificates list` in
    the project. Each line starts with the script's path, which is what
    `veriphy certify file` takes. `show <name>` prints a script, so you can read its
    code when the header is not enough to judge a match. A saved script reads
@@ -43,7 +43,7 @@ playbooks ship with the installed `veriphy` package, at the version of its toolk
    shape.
 3. **Otherwise pick a recipe.** Use the index in `prove.md` step 3, then
    read `recipes/<name>.md`. Copy its template into the project with
-   `sage -python -m veriphy agents copy recipes/templates/<name>`, rename it to
+   `sage -python -m veriphy layers agents copy recipes/templates/<name>`, rename it to
    `.veriphy/certificates/<specific_name>.sage`, adapt the `EDIT` lines,
    and update the header: `name` the same as the file name, plus an accurate
    `goal` and `description`. A script with goal-specific edits, such as

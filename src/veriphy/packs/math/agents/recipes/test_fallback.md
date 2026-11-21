@@ -63,7 +63,7 @@ theorem traceDouble (n : ℕ) (A : Matrix (Fin n) (Fin n) ℚ) : Matrix.trace (A
 
 Commit the replacement in place of the `#veriphy test` command: it builds without Sage, rechecks every kernel instance,
 and records the level. The run also writes `.veriphy/tests/<claim>.json` (the instances, the seed, Sage's version);
-commit it too. `sage -python -m veriphy certificates tests` lists the records, and `tests --rerun <claim>` reruns
+commit it too. `sage -python -m veriphy pack math certificates tests` lists the records, and `tests --rerun <claim>` reruns
 their oracle instances.
 
 ## Failure modes

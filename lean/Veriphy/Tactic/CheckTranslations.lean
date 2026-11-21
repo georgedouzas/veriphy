@@ -1,5 +1,5 @@
 /-
-`#veriphy_check_translations` checks every entry of the project's translation tables against Sage and Lean:
+`#veriphy translations check` checks every entry of the project's translation tables against Sage and Lean:
 
 * a function entry's `example` is translated to Sage, rendered back by the toolkit, and the rendering is proved
   equal to the original by `linear_combination` (through `veriphy certify`, so Sage must be installed);
@@ -8,7 +8,6 @@
 Each entry is reported as passed or failed, with Lean's error.
 -/
 import Veriphy.Tactic.SageRun
-import Veriphy.Kit.Deprecation
 
 namespace Veriphy
 
@@ -61,31 +60,26 @@ def runCheck (source : String) : CommandElabM (List String) := do
   modify fun st => { st with messages := saved }
   return errors
 
-/-- `#veriphy_check_translations` (or with a directory) — check every project entry; see the module doc. -/
-syntax (name := veriphyCheckTranslations) "#veriphy_check_translations" (str)? : command
-
-elab_rules : command
-  | `(#veriphy_check_translations%$tk $[$dir]?) => do
-    warnDeprecated tk "#veriphy_check_translations" "#veriphy translations check"
-    let dir := match dir with | some d => d.getString | none => ""
-    let (tables, problems) ← liftIO (projectTables dir)
-    for p in problems do logError m!"invalid: {p}"
-    let mut report := #[]
-    let mut failed := 0
-    for t in tables do
-      for f in t.functions do
-        let errors ← runCheck (functionCheck dir f)
-        if errors.isEmpty then report := report.push s!"passed: {f.lean} ↔ {f.sage}"
-        else
-          failed := failed + 1
-          report := report.push s!"failed: {f.lean} ↔ {f.sage}: {errors.headD ""}"
-      for r in t.rewrites do
-        let errors ← runCheck (rewriteCheck r)
-        if errors.isEmpty then report := report.push s!"passed: rw [{r.«lemma»}]"
-        else
-          failed := failed + 1
-          report := report.push s!"failed: rw [{r.«lemma»}]: {errors.headD ""}"
-    let text := "\n".intercalate report.toList
-    if failed == 0 then logInfo text else logError text
+/-- Check every project translation entry under `dir` (the project's directory when empty); see the module doc. -/
+def checkTranslationsCore (dir : String) : CommandElabM Unit := do
+  let (tables, problems) ← liftIO (projectTables dir)
+  for p in problems do logError m!"invalid: {p}"
+  let mut report := #[]
+  let mut failed := 0
+  for t in tables do
+    for f in t.functions do
+      let errors ← runCheck (functionCheck dir f)
+      if errors.isEmpty then report := report.push s!"passed: {f.lean} ↔ {f.sage}"
+      else
+        failed := failed + 1
+        report := report.push s!"failed: {f.lean} ↔ {f.sage}: {errors.headD ""}"
+    for r in t.rewrites do
+      let errors ← runCheck (rewriteCheck r)
+      if errors.isEmpty then report := report.push s!"passed: rw [{r.«lemma»}]"
+      else
+        failed := failed + 1
+        report := report.push s!"failed: rw [{r.«lemma»}]: {errors.headD ""}"
+  let text := "\n".intercalate report.toList
+  if failed == 0 then logInfo text else logError text
 
 end Veriphy

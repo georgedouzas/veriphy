@@ -1,10 +1,10 @@
-"""The operation API: `veriphy.run(verb, target, **inputs)`, the same operation the shell runs as `veriphy <verb>`."""
+"""The operation API: `veriphy.run(verb, target, **inputs)`, which the shell runs as `veriphy layers step <verb>`."""
 
 from dataclasses import replace
 from pathlib import Path
 
 from veriphy.core import StepError, find_workspace_root
-from veriphy.steps import Result, load_steps, resolve_verb, run_step
+from veriphy.steps import Result, load_steps, run_step
 
 
 def run(
@@ -32,8 +32,7 @@ def run(
     """
     workspace = find_workspace_root(root)
     steps = load_steps(workspace)
-    name = resolve_verb(verb)
-    step = steps.get(name)
+    step = steps.get(verb)
     if step is None:
         message = f"no operation is named '{verb}': the operations are {', '.join(sorted(steps))}"
         raise StepError(message)

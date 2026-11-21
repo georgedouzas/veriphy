@@ -16,7 +16,7 @@ namespace Veriphy
 
 open Lean Meta
 
-/-- A symbolic expression over the problem's atoms, rendered to Sage syntax for the daemon. -/
+/-- A symbolic expression over the problem's atoms, rendered to Sage syntax for the Sage session. -/
 inductive SymExpr
   | num (n : Int) (d : Nat)
   | atom (i : Nat)

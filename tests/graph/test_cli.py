@@ -6,7 +6,13 @@ from pathlib import Path
 import pytest
 
 import veriphy.claims
-from veriphy.claims import COMMANDS, main
+from veriphy.__main__ import main as veriphy_main
+from veriphy.claims import COMMANDS
+
+
+def main(argv: list[str]) -> None:
+    """Run `veriphy layers claims` with the arguments."""
+    veriphy_main(['layers', 'claims', *argv])
 
 
 def test_main_commands_reach_the_api() -> None:

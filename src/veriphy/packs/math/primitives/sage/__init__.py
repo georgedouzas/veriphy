@@ -1,5 +1,5 @@
-"""Run the veriphy daemon: `sage -python -m veriphy.packs.math.primitives.sage` or the `veriphy-sage-server` script."""
+"""Run Sage's methods: one call per process for the primitives, or the session Lean keeps while compiling a file."""
 
-from veriphy.packs.math.primitives.sage._server import main
+from veriphy.packs.math.primitives.sage._session import main
 
 __all__ = ['main']

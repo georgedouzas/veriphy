@@ -53,7 +53,7 @@ see only the selected packs' primitives and steps.
 
 #### Scenario: Unselected pack
 - **WHEN** a workspace lists `packs: [core]` and the `math` pack is installed
-- **THEN** `veriphy primitive list` shows no `sage.*` primitive
+- **THEN** `veriphy layers primitive list` shows no `sage.*` primitive
 
 ### Requirement: Config commands and digest
 `veriphy config show` SHALL print the resolved config with the pack or file each value comes from, and

@@ -1,5 +1,5 @@
 /-
-`#veriphy test`: check a claim no recipe can certify, by testing it at instances; `sage_test` is its deprecated name.
+`#veriphy test`: check a claim no recipe can certify, by testing it at instances.
 
 `#veriphy test c "<name>.sage"` (or `#veriphy test c "<script>"`) opens the universal binders of the claim `c` (a theorem,
 or a definition of type `Prop`), serializes them and the body as a problem, and runs the script, which assigns
@@ -14,7 +14,6 @@ test record `.veriphy/tests/<c>.json`.
 -/
 import Veriphy.Kit
 import Veriphy.Kit.Levels
-import Veriphy.Kit.Deprecation
 
 namespace Veriphy
 
@@ -60,7 +59,7 @@ def checkInstance (target : Name) (values : Array String) (proof : String) : Ter
     saved.restore
     return some reason
 
-/-- One instance as Lean reads it from the daemon, with its outcome. -/
+/-- One instance as Lean reads it from the Sage session, with its outcome. -/
 structure Outcome where
   values : Array String
   kind : String
@@ -98,8 +97,7 @@ def testReplacement (target : Name) (level : String) (outcomes : Array Outcome) 
 def sageTestRun (ref : Syntax) (target : Ident) (script : String) : TermElabM (Name × String) := do
   let name ← realizeGlobalConstNoOverloadWithInfo target
   let (problem, binders) ← claimProblem name
-  let (instances, stdout, seed, sageVersion, deprecated) ← Kit.run "test" (Bridge.test problem script)
-  unless deprecated.isEmpty do logWarning m!"veriphy test: {deprecated}"
+  let (instances, stdout, seed, sageVersion) ← Kit.run "test" (Bridge.test problem script)
   let mut outcomes : Array Outcome := #[]
   for j in instances do
     let values := ((j.getObjValAs? (Array String) "values").toOption.getD #[])
@@ -141,19 +139,5 @@ def sageTestCore (ref : Syntax) (target : Ident) (script : String) : CommandElab
   match Parser.runParserCategory (← getEnv) `command attr with
   | .ok stx => elabCommand stx
   | .error e => throwError "veriphy test: the level attribute does not parse ({e}): {attr}"
-
-/-- `sage_test c "<script>"`: test the claim `c` at the instances the script chooses. -/
-syntax (name := sageTest) "sage_test " ident ppSpace str : command
-
-/-- `sage_test c file "<name>.sage"`: test the claim `c` with a saved script from `.veriphy/certificates/`. -/
-syntax (name := sageTestFile) "sage_test " ident ppSpace &"file " str : command
-
-elab_rules : command
-  | `(sage_test%$tk $c:ident $s:str) => do
-    warnDeprecated tk "sage_test c \"…\"" "#veriphy test c \"…\""
-    sageTestCore (← getRef) c s.getString
-  | `(sage_test%$tk $c:ident file $p:str) => do
-    warnDeprecated tk "sage_test c file \"…\"" "#veriphy test c \"….sage\""
-    sageTestCore (← getRef) c (← readScript p.getString)
 
 end Veriphy

@@ -3,11 +3,11 @@
 A primitive is one typed operation, with input and output schemas and a trust class: a Python function called
 in-process, a method of a tool speaking JSON-RPC 2.0 over stdio (SageMath, in its own interpreter), or a command that
 writes one JSON result (a foreign tool). Tools are pinned. A composite is a primitive built from others. Every pack
-declares its primitives in its `pack.yaml`, and `veriphy primitive list`, `describe` and `run` use them by hand.
+declares its primitives in its `pack.yaml`, and `veriphy layers primitive list`, `describe` and `run` use them by hand.
 `veriphy.primitives.graph` reaches the claim graph's engines. This package imports only `veriphy.core`.
 """
 
-from veriphy.primitives._contracts import Found, Session, check_pin, run_files, start_session
+from veriphy.primitives._contracts import Found, check_pin, run_files
 from veriphy.primitives._descriptors import TRUST_CLASSES, Pin, Primitive, Tool, VersionProbe, composite_trust
 from veriphy.primitives._registry import (
     TOOLS_KEY,
@@ -27,7 +27,6 @@ __all__ = [
     'Pin',
     'Primitive',
     'Registry',
-    'Session',
     'Tool',
     'VersionProbe',
     'assert_deterministic',
@@ -38,6 +37,5 @@ __all__ = [
     'default_registry',
     'load_registry',
     'run_files',
-    'start_session',
     'workspace_registry',
 ]

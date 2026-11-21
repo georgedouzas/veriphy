@@ -2,7 +2,7 @@ SCRIPT = {
     'name': 'trace_double_test',
     'serves': 'test',
     'technique': 'test a claim no recipe certifies, at instances the kernel checks by computation (or Sage evaluates)',
-    'goal': 'sage_test c file "<copy>.sage", for a theorem or a definition of type Prop with universal binders',
+    'goal': '#veriphy test c "<copy>.sage", for a theorem or a definition of type Prop with universal binders',
     'description': 'the script picks seeded instances with edge cases; Lean checks each one, independently of the claim.',
     'inputs': {},
 }

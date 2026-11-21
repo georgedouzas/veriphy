@@ -1,13 +1,12 @@
 /-
-`#veriphy_graph p₁ … pₙ`: the project's formalized claims for Veriphy's research claim graph. Each theorem and each
-definition of type `Prop` under the prefixes is a claim, with the level `#veriphy_levels` reports and its statement;
+`#veriphy export p₁ … pₙ`: the project's formalized claims for Veriphy's research claim graph. Each theorem and each
+definition of type `Prop` under the prefixes is a claim, with the level `#veriphy level` reports and its statement;
 each other definition is a definition; each declaration `uses` every other exported declaration its type or value
 mentions. The export is N-Triples under `.veriphy/graph/lean/`, which `python -m veriphy.claims` reads with
 provenance `lean`. With `veriphy.claims.write` off, the command prints the triples instead of writing them.
 -/
 import Veriphy.Kit.Levels
 import Veriphy.Kit.Project
-import Veriphy.Kit.Deprecation
 
 namespace Veriphy.Graph
 
@@ -15,7 +14,7 @@ open Lean Elab Command Meta
 
 register_option veriphy.claims.write : Bool := {
   defValue := true
-  descr := "write #veriphy_graph exports under .veriphy/graph/lean/ (off: print the triples)"
+  descr := "write #veriphy export exports under .veriphy/graph/lean/ (off: print the triples)"
 }
 
 /-- A term of Veriphy's vocabulary, in N-Triples spelling. -/
@@ -113,12 +112,11 @@ def build (prefixes : Array Name) : MetaM Export := do
       out := { out with uses := out.uses + 1, lines := out.lines.push s!"{iri} {vocab "uses"} {leanIri n} ." }
   return out
 
-/-- `#veriphy_graph p₁ … pₙ ["file.nt"]` exports the formalized claims under the prefixes; see the module doc. -/
-syntax (name := veriphyGraph) "#veriphy_graph" (ppSpace ident)+ (ppSpace str)? : command
+/-- `#veriphy export p₁ … pₙ ["file.nt"]` exports the formalized claims under the prefixes; see the module doc. -/
+syntax (name := veriphyExportCommand) "#veriphy " &"export" (ppSpace ident)+ (ppSpace str)? : command
 
 elab_rules : command
-  | `(#veriphy_graph%$tk $ps* $[$out]?) => do
-    warnDeprecated tk "#veriphy_graph" "#veriphy export"
+  | `(#veriphy export $ps* $[$out]?) => do
     let prefixes := ps.map (·.getId)
     let result ← liftTermElabM (build prefixes)
     let text := "\n".intercalate result.lines.toList ++ "\n"

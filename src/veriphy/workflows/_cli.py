@@ -1,11 +1,11 @@
-"""The workflow commands: `veriphy next <workflow> <target>` and `veriphy run <workflow> <target>`."""
+"""The `workflow` group: `veriphy layers workflow list`, `next <workflow> <target>` and `run <workflow> <target>`."""
 
 import sys
 from pathlib import Path
 
 import click
 
-from veriphy.core import StepError, find_workspace_root
+from veriphy.core import StepError, find_workspace_root, resolve, workflow_entries
 from veriphy.workflows._engine import next_step, run_workflow
 
 FAILED = 1
@@ -16,7 +16,21 @@ def _root(ctx: click.Context) -> Path:
     return find_workspace_root(ctx.find_root().params.get('root'))
 
 
-@click.command(name='next', help="the workflow's next step for a target, from its records")
+@click.group(name='workflow', help="The workspace's workflows: list them, and compute or run a target's next steps.")
+def workflow() -> None:
+    """Group the workflow commands."""
+
+
+@workflow.command(name='list', help="the workspace's workflows, with their steps in order")
+@click.pass_context
+def list_command(ctx: click.Context) -> None:
+    """List each workflow with its steps."""
+    for name, declared in sorted(resolve(_root(ctx)).section('workflows').items()):
+        steps = ', '.join(step for step, _ in workflow_entries(declared))
+        sys.stdout.write(f'{name}\t{steps}\n')
+
+
+@workflow.command(name='next', help="the workflow's next step for a target, from its records")
 @click.argument('workflow')
 @click.argument('target')
 @click.pass_context
@@ -31,7 +45,7 @@ def next_command(ctx: click.Context, workflow: str, target: str) -> None:
     sys.stdout.write(f'{planned.step}{who}: {planned.reason}\n' if planned.step else f'{planned.reason}\n')
 
 
-@click.command(name='run', help="run a workflow's steps for a target until an agent step or its end")
+@workflow.command(name='run', help="run a workflow's steps for a target until an agent step or its end")
 @click.argument('workflow')
 @click.argument('target')
 @click.option('--input', 'given', multiple=True, help='a step input, as name=value; repeat for several')

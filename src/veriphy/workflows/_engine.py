@@ -153,7 +153,10 @@ def run_workflow(root: Path, workflow: str, target: str, inputs: Mapping[str, ob
         step = steps[planned.step]
         if planned.agent:
             first = step.arguments[0].name if step.arguments else 'artifact'
-            return [*lines, f'{workflow}: waiting for {step.name}: record the {first}, as veriphy {step.name} {target}']
+            return [
+                *lines,
+                f'{workflow}: waiting for {step.name}: record the {first}, as veriphy layers step {step.name} {target}',
+            ]
         names = [argument.name for argument in step.arguments]
         params = {name: inputs[name] for name in names if name in inputs}
         if names and names[0] not in params:

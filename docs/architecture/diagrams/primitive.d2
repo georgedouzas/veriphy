@@ -17,12 +17,12 @@ primitive: "Primitive: sage.sample" {
   trust: "trust class\noracle"
   pin: "pin\nversion 10.9"
   seed: "seed\nhow the tool takes it"
-  contract: "contract\njsonrpc"
+  contract: "contract\nfiles: one process per call"
 }
 
 valid: "input valid?" {shape: diamond}
 pinned: "pin matches?" {shape: diamond}
-tool: "the tool's process\nSageMath daemon"
+tool: "the tool, run once\nsage -python … call meaning"
 out: "output\nsame input and seed, same output" {class: derived}
 refused: "refused\nnames the field or both versions" {shape: oval}
 

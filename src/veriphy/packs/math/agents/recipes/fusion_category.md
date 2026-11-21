@@ -6,7 +6,7 @@
   fusion or braided fusion category, with the `FusionData` asset: `FusionData.IsFusion (RepData.toData E ζ)` (fusion
   ring axioms and every pentagon equation) or `FusionData.IsBraidedFusion` (also both hexagons), or that two data
   differ by a gauge transformation (`FusionData.GaugeRelated`).
-- Copy the asset into the project with `sage -python -m veriphy agents copy assets/VeriphyAssets/FusionData`
+- Copy the asset into the project with `sage -python -m veriphy layers agents copy assets/VeriphyAssets/FusionData`
   and declare the `VeriphyAssets` library (see the user guide). It imports mathlib only.
 - Values live in a number field `ℚ(ζ)` with `ζ ^ m = r`: `ℚ(√5)` (`ζ² = 5`) for Fibonacci, `ℚ(ζ₁₆)` (`ζ⁸ = -1`) for
   Ising. A `RepData` stores them as rational coefficients on `1, ζ, ζ², …`; `RepData.toData E ζ` evaluates them at
@@ -86,8 +86,8 @@ example : ∀ g, (!![1, 1, 1] : Matrix (Fin 1) (Fin 3) ℚ) * perm g = triv g * 
 cycle = matrix(QQ, [[0, 0, 1], [1, 0, 0], [0, 1, 0]])
 swap = matrix(QQ, [[0, 1, 0], [1, 0, 0], [0, 0, 1]])
 one = identity_matrix(QQ, 1)
-proof = naturality_proof(matrix(QQ, [[1, 1, 1]]), [cycle, swap], [one, one], rho='perm', sigma='triv',
-    closure='generators')"
+return found(naturality_proof(matrix(QQ, [[1, 1, 1]]), [cycle, swap], [one, one], rho='perm', sigma='triv',
+    closure='generators'))"
 ```
 
 `lean/VeriphyTest/SageRun.lean` also proves the Fibonacci pentagons over `ℝ`, states the `SU(2)` level 2 fusion rules as

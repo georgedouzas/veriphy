@@ -79,10 +79,10 @@ def test_command_prints_only_the_record(
 ) -> None:
     """Print the full record as JSON with `--json`, and nothing else."""
     monkeypatch.setenv('VERIPHY_OO_HORN', str(fake_checker('accepted')))
-    main(['--root', str(workspace), 'reason', '--json'])
+    main(['--root', str(workspace), 'layers', 'step', 'reason', '--json'])
     record = json.loads(capsys.readouterr().out)
     assert (record['step'], record['kind']) == ('reason', 'check')
-    main(['--root', str(workspace), 'records', record['digest'][:12]])
+    main(['--root', str(workspace), 'layers', 'step', 'records', record['digest'][:12]])
     assert json.loads(capsys.readouterr().out)['digest'] == record['digest']
 
 
@@ -90,5 +90,5 @@ def test_command_exits_with_the_status(workspace: Path, monkeypatch: pytest.Monk
     """Exit with status 3 when the run is unchecked."""
     monkeypatch.setenv('VERIPHY_OO_HORN', str(workspace / 'missing-oo-horn'))
     with pytest.raises(SystemExit) as raised:
-        main(['--root', str(workspace), 'reason'])
+        main(['--root', str(workspace), 'layers', 'step', 'reason'])
     assert raised.value.code == 3

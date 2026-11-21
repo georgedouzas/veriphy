@@ -2,13 +2,11 @@
 
 import json
 import sys
-from collections.abc import Sequence
 from pathlib import Path
 
 import click
 
 from veriphy.core import TableError, find_workspace_root, project_dir
-from veriphy.core._commands import run_command
 from veriphy.packs.math.script import SHIPPED_PACKS, Table, load_core_table, load_pack, parse_table
 
 TRANSLATIONS_DIR = 'translations'
@@ -133,12 +131,3 @@ def show(name: str, root: Path | None) -> None:
         sys.stderr.write(f"no translation entry for '{name}'\n")
         raise SystemExit(NOT_FOUND)
     sys.stdout.write(found)
-
-
-def main(argv: Sequence[str] | None = None) -> None:
-    """List the translation entries in force for the project, or show one.
-
-    Args:
-        argv: The command-line arguments, `sys.argv[1:]` when `None`.
-    """
-    run_command(translations, argv, 'veriphy translations')

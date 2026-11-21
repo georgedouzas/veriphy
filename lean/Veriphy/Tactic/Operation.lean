@@ -30,14 +30,17 @@ syntax (name := veriphyCertify) "veriphy " &"certify " str : tactic
 /-- `veriphy search "<script>"` (or `"<name>.sage"`): run a proof script and show what it finds, closing nothing. -/
 syntax (name := veriphySearch) "veriphy " &"search " str : tactic
 
-macro_rules
-  | `(tactic| veriphy certify $s:str) =>
-    if isScriptFile s.getString then `(tactic| sage_run file $s) else `(tactic| sage_run $s)
+/-- The script an argument gives: the argument itself, or the saved `.sage` file it names. -/
+def scriptOf (s : String) : IO String :=
+  if isScriptFile s then readScript s else pure s
+
+elab_rules : tactic
+  | `(tactic| veriphy certify $s:str) => do sageRunCore (← scriptOf s.getString)
 
 elab_rules : tactic
   | `(tactic| veriphy search $s:str) => do
-    let script ← if isScriptFile s.getString then readScript s.getString else pure s.getString
-    let (lean, stdout, _, _) ← withLenientProblem fun p => do
+    let script ← scriptOf s.getString
+    let (lean, stdout, _) ← withLenientProblem fun p => do
       let problem ← p.toJson
       Kit.run "run" (Bridge.run problem script)
     let out := if stdout.all Char.isWhitespace then "" else s!"\n── script output ──\n{stdout.trimAsciiEnd}"
@@ -54,11 +57,11 @@ syntax (name := veriphyTestCommand) "#veriphy " &"test " ident ppSpace str : com
 /-- `#veriphy translations check ["<dir>"]`: check every project translation entry. -/
 syntax (name := veriphyCheckCommand) "#veriphy " &"translations " &"check" (ppSpace str)? : command
 
-macro_rules
+elab_rules : command
   | `(#veriphy meaning $c:ident $[seed $s]? $[values $n]? $[points $p]?) =>
-    `(#veriphy_meaning $c:ident $[seed $s]? $[values $n]? $[points $p]?)
-  | `(#veriphy test $c:ident $s:str) =>
-    if isScriptFile s.getString then `(sage_test $c:ident file $s) else `(sage_test $c:ident $s)
-  | `(#veriphy translations check $[$dir]?) => `(#veriphy_check_translations $[$dir]?)
+    meaningCore c (s.map (·.getNat) |>.getD 0) (n.map (·.getNat) |>.getD meaningDefaultValues)
+      (p.map (·.getString))
+  | `(#veriphy test $c:ident $s:str) => do sageTestCore (← getRef) c (← scriptOf s.getString)
+  | `(#veriphy translations check $[$dir]?) => checkTranslationsCore (dir.map (·.getString) |>.getD "")
 
 end Veriphy

@@ -82,7 +82,7 @@ def find(root: Path, target: str) -> Path | None:
 
 
 def _runner() -> Callable[[object, str, int], dict[str, object]]:
-    """Return the daemon's test-script runner, which needs Sage."""
+    """Return the Sage session's test-script runner, which needs Sage."""
     try:
         oracle = importlib.import_module('veriphy.packs.math.primitives.sage.methods')
     except ImportError:
@@ -100,7 +100,7 @@ def rerun(path: Path, runner: Callable[[object, str, int], dict[str, object]] | 
 
     Args:
         path: The record file.
-        runner: The test-script runner; the daemon's when `None`.
+        runner: The test-script runner; the Sage session's when `None`.
 
     Returns:
         One line per oracle instance whose verdict or evaluation changed; empty when the record still holds.

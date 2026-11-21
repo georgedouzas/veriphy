@@ -27,7 +27,7 @@ Each release tag SHALL be usable as a Lake dependency revision, through `[[requi
 Publishing (PyPI upload and the GitHub release) SHALL run only after every CI job passes on the tagged commit:
 - the Sage-free Lean build, including the Sage-free kit tests;
 - the Python checks;
-- the Sage integration job, which runs the daemon unit tests and the full tactic suite with replay enabled against the package installed from the built wheel.
+- the Sage integration job, which runs the Sage session unit tests and the full tactic suite with replay enabled against the package installed from the built wheel.
 
 #### Scenario: Failing integration blocks the release
 - **WHEN** the integration job fails on a tagged commit

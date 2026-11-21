@@ -11,8 +11,8 @@ environment you can follow the next steps:
 
 - `uv sync` from the root of the project to install the main and development dependencies.
 
-- Install the Sage daemon from the checkout into SageMath with `sage -pip install -e .`, so the tactics use the working
-  tree's daemon. Point `VERIPHY_SAGE_SERVER` at `src/veriphy/packs/math/primitives/sage/__main__.py` to try daemon changes without
+- Install the Sage session from the checkout into SageMath with `sage -pip install -e .`, so the tactics use the working
+  tree's Sage session. Point `VERIPHY_SAGE_SESSION` at `src/veriphy/packs/math/primitives/sage/__main__.py` to try Sage session changes without
   reinstalling.
 
 - `lake exe cache get && lake build` to build the Lean library.
@@ -30,7 +30,7 @@ environment you can follow the next steps:
 | Stage | Where |
 |---|---|
 | Extract the goal and every nameable hypothesis (polynomial forms where they exist, Lean text always) | `withLenientProblem`, `lean/Veriphy/Kit/Problem.lean` |
-| Send the problem and the script to the daemon session (one Sage process per Lean process) | `Kit.run (Bridge.run …)`, `lean/Veriphy/Bridge.lean` |
+| Send the problem and the script to the Sage session (one Sage process per Lean process) | `Kit.run (Bridge.run …)`, `lean/Veriphy/Bridge.lean` |
 | Run the script with `problem` and the toolkit bound; read `proof` | `run`, `src/veriphy/oracle/_scripts.py` |
 | Parse the block, run exactly that, reject `sorry` and non-standard axioms, replay, emit | `veriphy certify`, `closeAndEmit` in `lean/Veriphy/Kit/Family.lean` |
 
@@ -38,13 +38,13 @@ environment you can follow the next steps:
 
 ```text
 lakefile.toml         Lake configuration, with lake-manifest.json and lean-toolchain, kept at the root
-lean/Veriphy/         Lean library: sage_run, problem extraction, checks and replay, the daemon bridge
+lean/Veriphy/         Lean library: veriphy certify, problem extraction, checks and replay, the Sage session bridge
 lean/VeriphyCheck/    Mathlib-only kernel checkers, bundled by scripts/bundle_check.py
 lean/VeriphyTest/     Lean tests: the kit (no Sage), veriphy certify examples, the benchmark
 lean/assets/          Recipe assets projects copy into .veriphy/lean/
 lean/coverage/        Lake project measuring translation coverage on Physlib and mathlib
 .veriphy/             The workspace's certificate scripts, which the Lean tests run
-src/veriphy/          Python package: the Sage daemon, the toolkit, the catalog, the claim graph
+src/veriphy/          Python package: the Sage session, the toolkit, the catalog, the claim graph
 src/veriphy/packs/math/agents/  Playbooks and recipes with templates, as plain markdown, installed with the package
 tests/                Python tests
 skills/               Claude Code wrappers for the playbooks
@@ -53,13 +53,13 @@ skills/               Claude Code wrappers for the playbooks
 The repository is generated from [copier-modern-python](https://github.com/georgedouzas/copier-modern-python), and
 `copier update` pulls template changes. The Python code follows `openspec/constitution.md`.
 
-## Daemon protocol
+## Sage session protocol
 
-The daemon reads one JSON request per line on stdin and writes one response per line on stdout. Each response carries
+The Sage session reads one JSON request per line on stdin and writes one response per line on stdout. Each response carries
 the package version. The methods are `ping`, `run` (a proof script against a serialized problem) and the advisory
 `symbolic_check`, `matrix_check`, `solve` and `run_script`.
 
-Scripts run with the daemon's own privileges. The daemon is a user-launched, untrusted oracle, and the trust boundary
+Scripts run with the Sage session's own privileges. The Sage session is a user-launched, untrusted oracle, and the trust boundary
 is the Lean kernel.
 
 ## Adding a recipe
@@ -158,7 +158,7 @@ Each release is one git tag `X.Y.Z`, and that tag is the only place a version is
 | Channel | Artifact | How a user gets it |
 |---|---|---|
 | Lake | the Lean library | `[[require]] … rev = "X.Y.Z"` |
-| PyPI | the `veriphy` package, including the Sage daemon | `sage -pip install veriphy` |
+| PyPI | the `veriphy` package, including the Sage session | `sage -pip install veriphy` |
 | Claude plugin | the skills and playbooks | `claude plugin install veriphy@veriphy` |
 
 CI gates a release with a Lean job without Sage, the Python checks, and an integration job in a SageMath container that
@@ -166,7 +166,7 @@ installs the built wheel and runs the tactic suite with replay on.
 
 ## Known future work
 
-- A daemon that installs without SageMath, through the modular
+- A Sage session that installs without SageMath, through the modular
   [passagemath](https://github.com/passagemath/passagemath) wheels, once they are shown to cover what scripts need.
 - Exact SOS on the boundary of the PSD cone (facial reduction). Today that case needs hinted squares.
 - A separate repository of shared, curated certificate scripts.

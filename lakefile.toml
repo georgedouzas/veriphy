@@ -10,7 +10,7 @@ name = "Veriphy"
 [[lean_lib]]
 name = "VeriphyCheck"
 
-# Tactic tests exercise the live Sage daemon: `lake build VeriphyTest`
+# Tactic tests exercise the live Sage session: `lake build VeriphyTest`
 # (`VeriphyTest.Kit` is Sage-free: `lake build VeriphyTest.Kit`)
 [[lean_lib]]
 name = "VeriphyTest"
