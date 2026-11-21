@@ -63,9 +63,9 @@ is the claim's, and compared with the published value:
 
 ```sh
 veriphy layers step reproduce analysis.R mtcars.csv <sha256> --claimed -5.344472 --claim mpg-weight
-# reproduce: agrees, level reproduced (reproduction)
+# reproduce: agrees, and the record grants reproduced (reproduction)
 veriphy layers step vary analysis.R mtcars.csv <sha256> '["mpg ~ wt + hp", "mpg ~ wt + cyl"]'
-# vary: robust, level robust (reproduction), or fragile under a named variation
+# vary: robust, and the record grants robust (reproduction); or fragile, naming the variation
 ```
 
 Both kinds of claim can sit in the same claim graph. A paper's policy conclusion that rests on a reproduced estimate

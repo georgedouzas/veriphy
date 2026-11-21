@@ -8,7 +8,7 @@ grid: "" {
   horizontal-gap: 36
   style: {stroke-width: 0; fill: transparent}
 
-  agents: "4 · Agents: write artifacts and choose workflows" {
+  agents: "4 · Agents: write artifacts, follow workflows · veriphy layers agents" {
     class: open
     grid-columns: 4
     prove
@@ -18,7 +18,7 @@ grid: "" {
   }
   x4: "a pack adds\nplaybooks and skills" {class: open; shape: page}
 
-  workflows: "3 · Workflows: step sequences as data, the next step from the records" {
+  workflows: "3 · Workflows: the next step from the records · veriphy layers workflow" {
     class: deterministic
     grid-columns: 3
     prove: "prove-claim"
@@ -27,7 +27,7 @@ grid: "" {
   }
   x3: "a pack adds\nworkflows" {class: open; shape: page}
 
-  claims: "2 · Claims: what the records establish" {
+  claims: "2 · Claims: what the records establish · veriphy layers claims" {
     class: deterministic
     grid-columns: 4
     graph: "claim graph"
@@ -37,22 +37,22 @@ grid: "" {
   }
   x2: "a pack adds\nlevels · conventions" {class: open; shape: page}
 
-  stepper: "1 · Steps: a primitive, hashed inputs, a replayable record" {
+  stepper: "1 · Steps: hashed inputs, a replayable record · veriphy layers step" {
     class: deterministic
     grid-columns: 4
-    elaborate {class: check}
+    check {class: check}
     meaning {class: evidence}
-    certify {class: check}
-    reproduce {class: evidence}
+    reproduce {class: check}
+    formalize {class: agent}
   }
   x1: "a pack adds\nstep definitions · digest scopes" {class: open; shape: page}
 
-  primitives: "0 · Primitives: typed, pinned, deterministic; no records, no config" {
+  primitives: "0 · Primitives: typed, pinned, deterministic, no records · veriphy layers primitive" {
     class: deterministic
     grid-columns: 5
     lean: "lean.check\nkernel"
     sage: "sage.sample\noracle"
-    oohorn: "oo-horn.check\nchecker"
+    oohorn: "horn.check\nchecker"
     r: "r.run\nreproduction"
     more: "…\nany pack" {class: open}
   }
@@ -66,6 +66,6 @@ grid: "" {
     math: "math · needs lean\nSageMath · recipes"
     reproduction: "reproduction\nR · reproduced · robust"
   }
-  config: "veriphy.yaml\nselects packs,\noverrides any key" {shape: page}
+  config: "veriphy.yaml\nselects packs, overrides any key\nveriphy config · veriphy pack" {shape: page}
 }
 
