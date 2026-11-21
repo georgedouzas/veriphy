@@ -243,16 +243,17 @@ def _requires(packs: Sequence[Pack]) -> dict[str, set[str]]:
 
 
 def installed(packages: Mapping[str, str] | None = None) -> Resolved:
-    """Resolve the configuration of every installed pack, with no workspace file: what a person sees by hand.
+    """Resolve the configuration outside a workspace: the given packs, or those a workspace with no file selects.
 
     Args:
-        packages: Each pack's name and package; those of the `veriphy.packs` entry point by default.
+        packages: Each pack's name and package; the default packs (`math`, with what it requires) when `None`.
 
     Returns:
         The configuration.
     """
     known = dict(packages) if packages is not None else pack_packages()
-    return _merge(order_packs(list(known), Path.cwd(), known), {}, Path.cwd())
+    names = list(packages) if packages is not None else list(DEFAULT_PACKS)
+    return _merge(order_packs(names, Path.cwd(), known), {}, Path.cwd())
 
 
 def resolve(root: Path) -> Resolved:

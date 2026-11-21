@@ -457,6 +457,24 @@ Every claim has one of five levels, highest first:
 
 `#veriphy level MyProject` lists the level of every theorem under a prefix. A test is never reported as a proof.
 
+## Reproducing an analysis: the `reproduction` pack
+
+A field with no proofs fits the same layers. The `reproduction` pack, selected with `packs: [reproduction]`, reruns
+a published analysis from its own script and data in a pinned R image (`rocker/r-ver`, by digest; podman or docker
+runs it), and gives the claim a level of the class `reproduction`:
+
+```
+veriphy reproduce analysis.R data.csv <sha256> --claimed -5.344472 --claim mpg-weight   # agrees: reproduced
+veriphy vary analysis.R data.csv <sha256> '["mpg ~ wt + hp", "mpg ~ wt + cyl"]'          # robust, or fragile
+```
+
+The script defines `run <- function(data, inputs)` and returns `list(estimate = ..., se = ...)`. `reproduce` refuses
+data whose SHA-256 differs from the claim's, so a reproduction is always of the named data, and records both estimates
+whether they agree or not. `vary` grants `robust` when the estimate keeps its sign and significance under every
+variation declared before the run. The levels read `reproduced (reproduction)` and `robust (reproduction)` in every
+report, never as proofs. The `reproduce` skill and its playbook (`veriphy agents path --pack reproduction`) walk an
+agent through a paper; `src/veriphy/packs/reproduction/example/` is a worked claim on R's `mtcars`.
+
 ## The research claim graph
 
 Veriphy's tactics check one claim at a time. The graph checks how the claims of a paper or research program fit

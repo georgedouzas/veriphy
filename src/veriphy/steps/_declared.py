@@ -12,7 +12,7 @@ from veriphy.steps._primitives import call_primitive
 from veriphy.steps._runner import Argument, Outcome, Params, Prepared, Step, exit_code
 
 Scope = Callable[[Path, object], str | bytes]
-TYPES: dict[str, Callable[[str], object]] = {'string': str, 'integer': int, 'json': str}
+TYPES: dict[str, Callable[[str], object]] = {'string': str, 'integer': int, 'number': float, 'json': str}
 
 
 def _value(_root: Path, value: object) -> str:
@@ -44,7 +44,7 @@ class Input:
         scope: The scope that gives the content its digest covers.
         path: Whether it is a path, resolved from the workspace root.
         optional: Whether it is an option rather than a positional argument.
-        kind: `string`, `integer` or `json` (given as text, sent parsed).
+        kind: `string`, `integer`, `number` or `json` (given as text, sent parsed).
         default: Its value when not given.
         many: Whether it may be given several times, collecting a list.
         record: Whether it is only kept in the record, not sent to the primitive.
@@ -200,7 +200,7 @@ def declared_step(name: str, spec: Mapping[str, object], scopes: Mapping[str, ob
     def execute(root: Path, params: Params, prepared: Prepared) -> Outcome:
         """Record an agent's artifact, or call the primitive and read its result."""
         values = prepared.context if isinstance(prepared.context, dict) else {}
-        kept = {i.name: values[i.name] for i in inputs if i.record}
+        kept = {i.name: values[i.name] for i in inputs if i.record and values[i.name] is not None}
         if kind == 'agent':
             return Outcome('written', {**kept, 'author': params.get('by') or 'agent'})
         sent = {i.name: str(v) if i.path else v for i in inputs if not i.record and (v := values[i.name]) is not None}
@@ -212,7 +212,8 @@ def declared_step(name: str, spec: Mapping[str, object], scopes: Mapping[str, ob
             sent['seed'] = prepared.seed or 0
         outcome = call_primitive(root, primitive, sent, status=status)
         outputs = {**kept, **outcome.outputs}
-        result = _compare(outputs, values, rule) if rule is not None else outcome.status
+        compared = rule is not None and exit_code(outcome.status) == 0 and str(rule.get('field')) in outputs
+        result = _compare(outputs, values, rule) if compared and rule is not None else outcome.status
         level = grants if grants is not None and exit_code(result) == 0 else None
         if level is not None:
             _check_grant(root, name, primitive, level)

@@ -147,6 +147,16 @@ jobs:
       env:
         VERIPHY_REQUIRE_CHECKER: '1'
 
+    - name: Reproduce the example analysis in the pinned R image
+      run: |
+        cd "$(mktemp -d)"
+        cp "$GITHUB_WORKSPACE"/src/veriphy/packs/reproduction/example/* .
+        printf 'version: 1\npacks: [reproduction]\n' > veriphy.yaml
+        uv run --project "$GITHUB_WORKSPACE" veriphy reproduce analysis.R mtcars.csv \
+          450a97ba6b438c6ea5bdf2aaac7eab0ecbbf812b5ff74b56f62dcf0a0c7eb0e5 --claimed -5.344472 --claim mpg-weight
+        uv run --project "$GITHUB_WORKSPACE" veriphy vary analysis.R mtcars.csv \
+          450a97ba6b438c6ea5bdf2aaac7eab0ecbbf812b5ff74b56f62dcf0a0c7eb0e5 '["mpg ~ wt + hp", "mpg ~ wt + cyl"]'
+
     - name: Run the research workflow on a fixture chapter, over a Lean export, setting up on first use
       run: |
         printf 'import VeriphyTest.Graph\n#veriphy export GraphTest\n' > Export.lean
