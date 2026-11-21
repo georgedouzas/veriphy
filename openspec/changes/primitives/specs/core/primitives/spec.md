@@ -3,16 +3,15 @@
 ## ADDED Requirements
 
 ### Requirement: Tools
-A tool entry SHALL name its `contract` (`files` or `json-lines`), its `run` command as an argument list, its `pin` and
-its `timeout`. Input values SHALL reach a tool as files or inside JSON requests, never interpolated into a shell
-command.
+A tool entry SHALL name its `contract` (`jsonrpc` or `files`), its `run` command as an argument list, its `pin` and its
+`timeout`. Input values SHALL reach a tool as files or inside JSON messages, never interpolated into a shell command.
 
 #### Scenario: A value with shell syntax
 - **WHEN** a primitive's input holds the string `; rm -rf ~`
 - **THEN** the tool receives it as data, and no shell interprets it
 
 ### Requirement: Primitives
-A primitive entry SHALL name its tool, its `method` or `command`, its trust class (`kernel`, `checker`,
+A primitive entry SHALL name a Python `function`, or its tool and that tool's `method` or `command`, its trust class (`kernel`, `checker`,
 `reproduction`, `oracle`, `measurement` or `search`), an input schema and an output schema, and `seed` when it uses
 randomness. Its input SHALL be checked against the input schema before the tool is started, and its output against
 the output schema.
@@ -33,13 +32,26 @@ or malformed result SHALL fail the call with the tool's standard error.
 - **WHEN** a files tool exits with status 0 but writes no `{out}`
 - **THEN** the call fails, holding the tool's standard error
 
-### Requirement: JSON-lines contract
-A `json-lines` tool SHALL run as one process per session, read one JSON request per line and write one JSON response
-per line.
+### Requirement: Python primitives
+A primitive with a `function` SHALL be called in-process, with the same schema checks as any primitive, and its
+output SHALL name Veriphy's version as its tool's.
+
+#### Scenario: No process for Python code
+- **WHEN** `shacl.validate` runs
+- **THEN** no process is started, and the output's tools name `veriphy`
+
+### Requirement: JSON-RPC contract
+A `jsonrpc` tool SHALL run as one process per session, speaking JSON-RPC 2.0 over stdio with one message per line.
+The Sage daemon SHALL answer JSON-RPC 2.0 requests, and SHALL still answer requests without `"jsonrpc"` in the format of
+earlier releases.
 
 #### Scenario: Sage behind the contract
 - **WHEN** the `math` pack's `sage` tool answers `ping`
-- **THEN** the response carries Sage's and Veriphy's versions, as today
+- **THEN** the response is a JSON-RPC 2.0 result carrying Sage's and Veriphy's versions
+
+#### Scenario: An error
+- **WHEN** a request names a method the daemon does not have
+- **THEN** the response carries `error` with a code and a message naming the known methods
 
 ### Requirement: Pins
 Before a tool runs, its pin (`image` with a digest, `commit` with `sha256`, or `version`) SHALL be checked. A tool that
@@ -84,7 +96,7 @@ JSON. A primitive whose tool is missing SHALL be listed as unavailable with the 
 - **THEN** `primitive list` shows `lean.check` as unavailable, naming `lake`, and the `core` primitives as available
 
 ### Requirement: Shipped primitives
-Veriphy SHALL ship the packs `core` (`horn.check`, `shacl.validate`), `lean` (the Lean session, `lean.check`,
+Veriphy SHALL ship the packs `core` (`horn.check`, `shacl.validate`), `lean` (`lean.check`,
 `lean.serialize`, `lean.level`) and `math` (the `sage` tool, one `sage.*` primitive per daemon method, and the
 composites `meaning` and `certify`), each as a `pack.yaml` found through the `veriphy.packs` entry point. `math` SHALL
 need `lean`, and `core` SHALL NOT need Lean.
@@ -93,12 +105,12 @@ need `lean`, and `core` SHALL NOT need Lean.
 - **WHEN** the daemon's methods are compared with the `math` pack's primitives
 - **THEN** each method has a `sage.*` primitive with an input and an output schema
 
-### Requirement: Lean session
-The `lean` tool SHALL keep a file's imports loaded across requests with the same import header, and Lean primitives
-SHALL give the same output as running `lake env lean` on the same file.
+### Requirement: Lean REPL
+The Lean primitives SHALL run in the community Lean REPL, pinned by commit, keeping one environment per import header,
+and SHALL give the same output as running `lake env lean` on the same file.
 
 #### Scenario: Two checks, one load
-- **WHEN** `lean.check` runs on two files that both import only `Mathlib`, in one session
+- **WHEN** `lean.check` runs on two files that both import only `Mathlib`, in one process
 - **THEN** Mathlib is loaded once, and each output equals that of `lake env lean --json` on the file
 
 ### Requirement: Unchanged behaviour

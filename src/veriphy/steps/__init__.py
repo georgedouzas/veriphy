@@ -6,6 +6,7 @@ through `veriphy.claims`). This package imports only `veriphy.core` and `veriphy
 """
 
 from veriphy.steps._cli import main
+from veriphy.steps._primitives import call_primitive
 from veriphy.steps._records import (
     KINDS,
     LEVELLED_KINDS,
@@ -16,11 +17,9 @@ from veriphy.steps._records import (
     read_record,
 )
 from veriphy.steps._registry import (
-    BUILTIN_PACKS,
     DEPRECATED_VERBS,
     LAYERS,
     load_steps,
-    pack_packages,
     register,
     registered,
     resolve_verb,
@@ -28,7 +27,6 @@ from veriphy.steps._registry import (
 from veriphy.steps._runner import Argument, Outcome, Params, Prepared, Result, Step, exit_code, run_step
 
 __all__ = [
-    'BUILTIN_PACKS',
     'DEPRECATED_VERBS',
     'KINDS',
     'LAYERS',
@@ -41,12 +39,12 @@ __all__ = [
     'RecordStore',
     'Result',
     'Step',
+    'call_primitive',
     'config_digest',
     'exit_code',
     'input_digest',
     'load_steps',
     'main',
-    'pack_packages',
     'read_record',
     'register',
     'registered',

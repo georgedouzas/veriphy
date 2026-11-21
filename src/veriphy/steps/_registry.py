@@ -2,13 +2,10 @@
 
 import importlib
 import warnings
-from importlib.metadata import entry_points
 
-from veriphy.core import StepError
+from veriphy.core import StepError, pack_packages
 from veriphy.steps._runner import Step
 
-# Veriphy's own packs; others register under the `veriphy.packs` entry point, naming their package
-BUILTIN_PACKS = ('core', 'lean', 'math')
 LAYERS = ('primitives', 'steps', 'claims', 'workflows', 'agents')
 _STEPS: dict[str, Step] = {}
 # old step names, kept for one minor release
@@ -64,14 +61,6 @@ def resolve_verb(verb: str) -> str:
 def registered() -> dict[str, Step]:
     """Return the registered steps, by name, without loading any pack."""
     return dict(_STEPS)
-
-
-def pack_packages() -> dict[str, str]:
-    """Return each pack's name and package: Veriphy's own, then those under the `veriphy.packs` entry point."""
-    packages = {name: f'veriphy.packs.{name}' for name in BUILTIN_PACKS}
-    for entry in entry_points(group='veriphy.packs'):
-        packages.setdefault(entry.name, entry.value)
-    return packages
 
 
 def _import_layer(package: str, layer: str) -> None:

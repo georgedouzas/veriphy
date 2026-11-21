@@ -9,6 +9,7 @@ from veriphy.steps import main as run_verb
 
 # programs of the layers and packs, each with its own subcommands
 PROGRAMS = {
+    'primitive': ('veriphy.primitives', 'list, describe or run a primitive by hand, with no record'),
     'claims': ('veriphy.claims', 'the research claim graph: extract, slice, reason, report'),
     'agents': ('veriphy.agents', 'the playbooks, recipes and templates agents follow'),
     'certificates': ('veriphy.packs.math.steps.certificates', "the project's saved certificate scripts"),

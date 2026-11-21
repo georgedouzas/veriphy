@@ -1,1 +1,8 @@
-"""The `math` pack's primitives: the Sage daemon and its methods, and the Lean ↔ Sage translation tables."""
+"""The `math` pack's primitives: the Sage daemon, the translation tables, and the composites `meaning` and `certify`.
+
+Importing this package registers the composites.
+"""
+
+from veriphy.packs.math.primitives._composites import certify, meaning
+
+__all__ = ['certify', 'meaning']

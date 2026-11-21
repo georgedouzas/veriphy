@@ -9,27 +9,28 @@ agent's prompt, and every Lean step starts a fresh process that loads Mathlib ag
 
 ## What Changes
 
-- **Tools and primitives.** A tool is a program Veriphy starts, with a contract, a command and a pin. A primitive is
-  one typed operation on a tool, with an input schema, an output schema, a trust class and, when it is random, how
-  it takes a seed.
-- **Two contracts.** `files` (read input files, write one JSON result to `{out}`) and `json-lines` (a long-running
-  process answering one JSON request per line). Inputs are never interpolated into a shell command.
+- **Primitives.** A primitive is one typed operation, with an input schema, an output schema, a trust class and, when
+  it is random, how it takes a seed. It is a Python function, or a method of a tool Veriphy starts.
+- **Three ways to run, two of them standard.** `python`: a function called in-process (`module:function`), for
+  everything Veriphy can do in its own interpreter. `jsonrpc`: a long-running process speaking JSON-RPC 2.0 over
+  stdio, one message per line, for a tool in another interpreter (SageMath). `files`: an external command that reads
+  its input file and writes one JSON result, for foreign tools such as R. Inputs never pass through a shell.
 - **Checks around every call.** The input is checked against its schema, the tool against its pin (image digest,
   commit with hash, or exact version), and the output against its schema. A mismatch refuses to run.
 - **Composites.** A pack's code can compose primitives deterministically. A composite names the part that decides, and
   its trust class is that part's class, or the lowest class of its parts when no part decides.
 - **Pure.** A primitive writes no record and reads no workspace config. The same input and seed give the same output.
 - **By hand.** `veriphy primitive list`, `describe <primitive>` and `run <primitive> --input <file>`.
-- **The first packs, as primitives.** The `pack.yaml` of the `core`, `lean` and `math` packs gains `tools` and
-  `primitives`, and packs are found through the `veriphy.packs` entry point:
-  - `core`: `horn.check` (class `checker`) and `shacl.validate` (`measurement`);
-  - `lean`: the Lean session tool, and `lean.check` (`kernel`), `lean.serialize` and `lean.level`;
-  - `math`: the Sage daemon, each daemon method as a `sage.*` primitive, and the composites `meaning` and `certify`.
-- **A Lean session.** The `lean` tool is a json-lines process that loads a file's imports once and answers many
-  requests, so Lean primitives stop paying for Mathlib on every call.
+- **The first packs, as primitives,** declared in `pack.yaml` and found through the `veriphy.packs` entry point:
+  - `core`: `horn.check` (class `checker`) and `shacl.validate` (`measurement`), Python functions;
+  - `lean`: `lean.check` (`kernel`), `lean.serialize` and `lean.level`, Python functions driving the community Lean
+    REPL, which keeps one environment per import header, so Mathlib loads once;
+  - `math`: the Sage daemon as a JSON-RPC tool, each daemon method a `sage.*` primitive, and the composites `meaning`
+    and `certify`.
+- **The Sage daemon speaks JSON-RPC 2.0.** It still answers the requests of earlier releases, so installed Lean
+  libraries keep working, and the Lean bridge sends JSON-RPC 2.0 requests.
 - **Today's steps call primitives.** `check`, `level`, `meaning`, `validate` and `reason` keep their records and
-  results, and run through primitives. The Lean bridge takes the Sage command from the `math` pack, and the
-  environment variables still override it.
+  results, and run through primitives.
 
 Every installed pack is available in this change. Selecting packs per workspace comes with `packs-and-config`.
 
@@ -40,19 +41,19 @@ that `layered-modules` created.
 
 ### New Capabilities
 
-- `core/primitives`: tools, primitives, the two contracts, pins, schemas, composites, purity, the `primitive`
-  command, the Lean session and the primitives of the `core`, `lean` and `math` packs.
+- `core/primitives`: primitives, the three ways to run, pins, schemas, composites, purity, the `primitive` command,
+  the Lean REPL, and the primitives of the `core`, `lean` and `math` packs.
 
 ### Modified Capabilities
 
-None. The daemon's protocol, `veriphy certify`, `#veriphy test` and the step records behave as before.
+None. `veriphy certify`, `#veriphy test` and the step records behave as before; the daemon also answers the old
+request format.
 
 ## Impact
 
-- New: `veriphy.primitives` (descriptors, contracts, pins, registry, command), and
-  `veriphy/packs/{core,lean,math}/pack.yaml` with their schemas.
-- `veriphy.steps`: the Lean and graph steps call primitives instead of `lake env lean` and the checker directly.
-- `veriphy.primitives.graph`: `oo-horn` becomes a `files` tool, its pinned commit and hash moved to the `core` pack.
-- Lean: `Veriphy/Bridge.lean` reads the Sage command from the `math` pack when present.
-- `pyproject.toml`: the `veriphy.packs` entry points; `jsonschema` as a dependency.
-- A pinned Lean REPL for the `lean` session tool.
+- New: `veriphy.primitives` (descriptors, contracts, pins, registry, command), the `primitives` subpackages of the
+  `core`, `lean` and `math` packs, and their `pack.yaml` declarations.
+- `veriphy.steps`, `veriphy.claims`: the Lean and graph steps call primitives.
+- The Sage daemon and `Veriphy/Bridge.lean`: JSON-RPC 2.0 messages.
+- `pyproject.toml`: `jsonschema` and PyYAML.
+- The community Lean REPL, pinned by commit and built against the workspace's toolchain on first use.

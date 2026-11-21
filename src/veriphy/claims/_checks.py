@@ -1,5 +1,7 @@
 """Check a research graph: SHACL shapes as a measurement, exclusive conventions, and clashes from checked runs."""
 
+import tempfile
+from collections.abc import Iterable
 from dataclasses import dataclass
 from importlib.resources import files
 from itertools import combinations
@@ -8,7 +10,8 @@ from pathlib import Path
 from veriphy.claims._reasoning import Run
 from veriphy.claims._store import ProjectGraph
 from veriphy.claims._vocabulary import AXIOM, label_of, vocabulary_triples, vp
-from veriphy.primitives.graph._engine import Triple, validate_shacl
+from veriphy.primitives import default_registry
+from veriphy.primitives.graph._engine import Triple
 
 
 def shapes_text() -> str:
@@ -57,6 +60,22 @@ class ShapeReport:
         return not self.violations
 
 
+def _shacl_violations(data: Iterable[Triple]) -> list[dict[str, str]]:
+    """Return the violations of the data against the shapes, from the `shacl.validate` primitive."""
+    with tempfile.TemporaryDirectory(prefix='veriphy-shacl-') as tmp:
+        directory = Path(tmp)
+        (directory / 'data.nt').write_text(''.join(f'{s} {p} {o} .\n' for s, p, o in sorted(data)))
+        (directory / 'shapes.ttl').write_text(shapes_text())
+        inputs: dict[str, object] = {'data': str(directory / 'data.nt'), 'shapes': str(directory / 'shapes.ttl')}
+        output = default_registry().call('shacl.validate', inputs)
+    rows = output.get('violations')
+    return (
+        [{str(k): str(v) for k, v in row.items()} for row in rows if isinstance(row, dict)]
+        if isinstance(rows, list)
+        else []
+    )
+
+
 def validate_shapes(graph: ProjectGraph) -> ShapeReport:
     """Validate a graph, with the vocabulary, against the shapes.
 
@@ -68,7 +87,7 @@ def validate_shapes(graph: ProjectGraph) -> ShapeReport:
     """
     data = graph.triples() | set(vocabulary_triples())
     violations = []
-    for row in validate_shacl(data, shapes_text()):
+    for row in _shacl_violations(data):
         focus = row['focus']
         sources = tuple(sorted({a.file for a in graph.assertions if a.triple[0] == focus}))
         violations.append(ShapeViolation(focus, row['path'], row['message'].strip('"'), sources))

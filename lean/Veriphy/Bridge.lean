@@ -118,7 +118,7 @@ private def exchange (s : Session) (req : Json) (seconds : Nat) : IO Reply := do
   if ← timedOut.get then return .timeout
   return if line.isEmpty then .eof else .line line
 
-/-- Send one request to the daemon session and return its result. The session starts on first use, is
+/-- Send one JSON-RPC 2.0 request to the daemon session and return its result. The session starts on first use, is
 restarted once if it died, and is killed when a request exceeds the time limit. -/
 def request (cfg : Config := {}) (method : String) (params : Json := Json.null) : IO Json := do
   let seconds ← requestTimeout
@@ -127,7 +127,8 @@ def request (cfg : Config := {}) (method : String) (params : Json := Json.null) 
     let (s, fresh) ← match ← get with
       | some s => pure (s, false)
       | none => pure (← start cfg, true)
-    let req := Json.mkObj [("id", Json.num s.nextId), ("method", Json.str method), ("params", params)]
+    let req := Json.mkObj [("jsonrpc", Json.str "2.0"), ("id", Json.num s.nextId), ("method", Json.str method),
+      ("params", params)]
     match ← exchange s req seconds with
     | .line text =>
       set (some { s with nextId := s.nextId + 1 })
@@ -148,8 +149,11 @@ def request (cfg : Config := {}) (method : String) (params : Json := Json.null) 
       | none => throw <| IO.userError "veriphy: the Sage daemon died twice in a row"
   let .ok json := Json.parse answer
     | throw <| IO.userError s!"veriphy: the Sage daemon answered with something other than JSON:\n{answer}"
+  -- a JSON-RPC 2.0 error carries its message in an object
   match json.getObjVal? "error" with
-  | .ok (Json.str e) => throw <| IO.userError s!"sage daemon error: {e}"
+  | .ok e =>
+    let text := (e.getObjValAs? String "message").toOption.getD (e.getStr?.toOption.getD e.compress)
+    throw <| IO.userError s!"sage daemon error: {text}"
   | _ => IO.ofExcept (json.getObjVal? "result")
 
 /-- One request, decoded: the shared path of every daemon method. -/

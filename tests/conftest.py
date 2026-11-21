@@ -16,8 +16,8 @@ def daemon() -> Daemon:
     """Return a function that sends one request through the protocol and returns the response."""
 
     def send(method: str, **params: object) -> JsonObject:
-        """Send `method` with `params` and return the response object."""
-        return answer_request(json.dumps({'id': 7, 'method': method, 'params': params}))
+        """Send `method` with `params` as a JSON-RPC 2.0 request and return the response object."""
+        return answer_request(json.dumps({'jsonrpc': '2.0', 'id': 7, 'method': method, 'params': params}))
 
     return send
 
@@ -45,6 +45,8 @@ def err(daemon: Daemon) -> Callable[..., str]:
         """Return the error text of a request that must fail."""
         response = daemon(method, **params)
         assert 'error' in response, response.get('result')
-        return str(response['error'])
+        error = response['error']
+        assert isinstance(error, dict)
+        return str(error['message'])
 
     return send

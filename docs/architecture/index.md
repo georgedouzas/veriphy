@@ -128,38 +128,47 @@ layer reads only its own registry.
 
 ![A primitive](diagrams/primitive.svg)
 
-A **tool** is a program Veriphy starts: Lean, SageMath, `oo-horn`, R. A **primitive** is one typed operation on a tool:
-`lean.check`, `lean.serialize`, `lean.level`, `sage.sample`, `sage.search`, `horn.check`, `r.run`. A tool is pinned, and
-a primitive declares its schemas and its trust class:
+A **primitive** is one typed operation, with schemas and a trust class: `lean.check`, `lean.serialize`, `lean.level`,
+`sage.sample`, `sage.search`, `horn.check`, `shacl.validate`, `r.run`. Veriphy invents no protocol for them. A
+primitive is run in one of three ways:
+
+- **a Python function**, called in-process (`module:function`): everything Veriphy can do in its own interpreter,
+  such as SHACL validation, `oo-horn`'s verdict, and Lean through the community REPL;
+- **a JSON-RPC 2.0 tool** over stdio, one message per line, as language servers and MCP servers talk: a long-running
+  process in another interpreter, which is SageMath's case;
+- **a files tool**: a foreign command that reads its input file and writes one JSON result to `{out}`, such as R.
 
 ```yaml
 tools:
   sage:
-    contract: json-lines
-    run: [sage, -python, -m, veriphy.packs.math.daemon]
+    contract: jsonrpc
+    run: [sage, -python, -m, veriphy.packs.math.primitives.sage]
     pin: {version: "10.9"}
 
 primitives:
   sage.sample:
     tool: sage
-    method: sample
+    method: meaning
     trust: oracle
-    input: schemas/sample.input.json
-    output: schemas/sample.output.json
+    input: {type: object, required: [problem], properties: {seed: {type: integer}}}
+    output: {type: object, required: [outcome]}
     seed: param                # the seed travels as the request's `seed`
+  shacl.validate:
+    function: veriphy.primitives.graph._primitives:shacl_validate
+    trust: measurement
+    input: {type: object, required: [data, shapes]}
+    output: {type: object, required: [conforms, violations]}
 ```
 
-A tool follows one of two contracts, so it needs no Python:
-
-- **files**: the command reads its inputs from files and writes one JSON result to `{out}`;
-- **json-lines**: a long-running process answers one JSON request per line, as the Sage daemon does today.
+A Sage process is needed because Lean tactics call Sage, Lean cannot embed Python, and Sage takes seconds to start:
+one process per session answers every request.
 
 Inputs reach a tool as files or JSON, never interpolated into a shell command. Before a primitive runs, its input is
 checked against its schema and its tool against its pin (an image digest, a commit with a hash, or an exact version).
 A mismatch refuses to run and names the field or both versions. The output is checked against its schema.
 
-The `lean` tool is a json-lines session: one process loads a file's imports once and then answers many requests, so
-`lean.check` and `lean.serialize` do not pay for loading Mathlib on every call.
+The Lean primitives drive the community Lean REPL, which keeps one environment per import header, so `lean.check` and
+`lean.serialize` do not pay for loading Mathlib on every call.
 
 ### Composites
 
@@ -416,8 +425,8 @@ bridge to the Sage daemon.
 | `veriphy.certificates`, `veriphy.translations` | `veriphy.packs.math.steps.certificates`, `veriphy.packs.math.primitives.translations` |
 | `veriphy.prompts` | `veriphy.agents`, with the playbooks in the `math` pack, research included, since it proves in Lean |
 | the record store in `veriphy.core` | `veriphy.steps` |
-| Sage daemon and its JSON-lines protocol | the json-lines contract, with each daemon method a `sage.*` primitive |
-| `lake env lean` per Lean step | the `lean` session tool, loading imports once |
+| Sage daemon and its own JSON-per-line protocol | JSON-RPC 2.0, with each daemon method a `sage.*` primitive |
+| `lake env lean` per Lean step | the community Lean REPL, loading imports once |
 | `oo-horn` pinned by commit and hash | the pinning rule every tool follows, in the `core` pack |
 | step records with hand-written Python steps | steps declared over primitives |
 | a Lean step's digest over every Lean file | the `lean-imports` digest scope |
