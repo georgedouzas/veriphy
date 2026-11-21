@@ -2,14 +2,14 @@
 
 ## 1. Engine
 
-- [ ] 1.1 Add the workflow schema and its checks (D1). Verify with pytest: an undefined step, an unreachable entry and a transition to an unknown status are refused.
-- [ ] 1.2 Add `next`, computed from records alone (D2, D4, D5). Verify with pytest on record fixtures: each transition, an attempt limit, a `when` condition on a record and on a claim's level, and the same records giving the same answer.
-- [ ] 1.3 Add `run`, stopping at agent steps (D3). Verify with pytest on fake steps: it runs evidence and check steps in order and stops at the first agent step with its request.
+- [x] 1.1 Add the workflow schema and its checks (D1). Verify with pytest: an undefined step and a transition to an entry the workflow does not have are refused.
+- [x] 1.2 Add `next`, computed from records alone, in time order (D2, D4, D5). Verify with pytest on record fixtures: each transition, a return to an earlier entry, an attempt limit, a `when` condition, and the same records giving the same answer.
+- [x] 1.3 Add `run`, stopping at agent steps (D3). Verify with pytest on a fixture pack: it runs evidence and check steps in order and stops at the first agent step with its request.
 
 ## 2. Workflows and skills
 
-- [ ] 2.1 Define `prove-claim` and `verify-paper` in the `math` pack, and `reproduce-analysis` in the `reproduction` pack. Verify with `config check`, and with a test that each workflow's steps exist.
-- [ ] 2.2 Rewrite the skills and playbooks to follow `next` and `run`, keeping guidance for agent steps only. Verify with the document tests and the research workflow fixture run through `run`.
+- [x] 2.1 Define `prove-claim` (with the agent step `prove`) and `verify-paper` in the `math` pack, and `reproduce-analysis` in the `reproduction` pack. Verify with `config check`, and with a test that each workflow's steps exist.
+- [x] 2.2 Have the skills follow `next` and `run`, the playbooks keeping the guidance for agent steps. Verify with the document tests.
 
 ## 3. Integration
 

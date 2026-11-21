@@ -324,7 +324,7 @@ def check(resolved: Resolved) -> list[str]:
         tool = spec.get('tool') if isinstance(spec, dict) else None
         if tool and tool not in tools:
             problems.append(f"primitives.{name} names the tool '{tool}', which no pack or {WORKSPACE_FILE} declares")
-    return problems + _step_problems(resolved) + _trust_problems(resolved)
+    return problems + _step_problems(resolved) + _trust_problems(resolved) + _workflow_problems(resolved)
 
 
 def _step_problems(resolved: Resolved) -> list[str]:
@@ -334,6 +334,8 @@ def _step_problems(resolved: Resolved) -> list[str]:
     for name, spec in resolved.section('steps').items():
         declared = spec if isinstance(spec, dict) else {}
         primitive = declared.get('primitive')
+        if 'code' in declared:
+            continue
         if declared.get('kind') != 'agent' and primitive not in primitives:
             problems.append(
                 f"steps.{name} names the primitive '{primitive}', which no pack or {WORKSPACE_FILE} declares",
@@ -408,4 +410,49 @@ def _trust_problems(resolved: Resolved) -> list[str]:
                 f"steps.{name} grants {granted} ({trusts.get(granted) or 'unknown'}), which its primitive's class "
                 f'({trust}) cannot grant',
             )
+    return problems
+
+
+def workflow_entries(workflow: object) -> list[tuple[str, dict[str, object]]]:
+    """Return a workflow's entries as each step's name and its rules: transitions, `attempts`, `exhausted`, `when`.
+
+    Args:
+        workflow: The workflow, a list of step names or one-key mappings from a step to its rules.
+
+    Returns:
+        The entries, in order.
+
+    Examples:
+        >>> workflow_entries(['formalize', {'meaning': {'counterexample': 'stop'}}])
+        [('formalize', {}), ('meaning', {'counterexample': 'stop'})]
+    """
+    entries: list[tuple[str, dict[str, object]]] = []
+    for entry in workflow if isinstance(workflow, list) else []:
+        if isinstance(entry, dict) and len(entry) == 1:
+            ((step, rules),) = entry.items()
+            entries.append((str(step), dict(rules) if isinstance(rules, dict) else {}))
+        else:
+            entries.append((str(entry), {}))
+    return entries
+
+
+RULES = frozenset({'attempts', 'exhausted', 'when'})
+
+
+def _workflow_problems(resolved: Resolved) -> list[str]:
+    """Return the workflows that name a step no pack defines, or go to an entry they do not have."""
+    steps = set(resolved.section('steps'))
+    problems = []
+    for name, workflow in resolved.section('workflows').items():
+        entries = workflow_entries(workflow)
+        known = {step for step, _ in entries} | {'stop'}
+        for step, rules in entries:
+            if step not in steps:
+                problems.append(f"workflows.{name} names the step '{step}', which no pack defines")
+            targets = [v for k, v in rules.items() if k not in RULES or k == 'exhausted']
+            problems += [
+                f"workflows.{name}: {step} goes to '{target}', which is not an entry of the workflow"
+                for target in targets
+                if isinstance(target, str) and target not in known
+            ]
     return problems

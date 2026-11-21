@@ -7,6 +7,10 @@ levels:
   none: {description: Neither proved in Lean nor tested by Veriphy.}
 
 steps:
+  # Python steps of the claims layer, listed here so the configuration names every step
+  validate: {code: veriphy.claims}
+  reason: {code: veriphy.claims}
+  report: {code: veriphy.claims}
   formalize:
     kind: agent
     help: record the formal statement an agent wrote, with its author

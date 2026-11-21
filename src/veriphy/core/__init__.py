@@ -14,6 +14,7 @@ from veriphy.core._config import (
     level_trust,
     merge_patch,
     resolve,
+    workflow_entries,
 )
 from veriphy.core._config import check as check_config
 from veriphy.core._digests import canonical_json, content_digest
@@ -85,6 +86,7 @@ __all__ = [
     'read_pack',
     'resolve',
     'run_process',
+    'workflow_entries',
 ]
 
 # deprecated: the record store moved to `veriphy.steps`, the layer that writes records

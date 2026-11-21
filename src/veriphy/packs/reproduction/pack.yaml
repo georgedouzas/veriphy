@@ -65,4 +65,4 @@ steps:
       claim: {optional: true, record: true}
 
 workflows:
-  reproduce-analysis: [extract, validate, reproduce, vary, reason, report]
+  reproduce-analysis: [extract, reproduce, vary]

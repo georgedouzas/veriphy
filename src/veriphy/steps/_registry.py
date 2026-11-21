@@ -98,6 +98,8 @@ def load_steps(root: Path | None = None) -> dict[str, Step]:
     steps = {name: step for name, step in _STEPS.items() if _OWNERS.get(name) in selected or not _OWNERS.get(name)}
     scopes = config.section('scopes')
     for name, spec in config.section('steps').items():
+        if isinstance(spec, dict) and 'code' in spec:
+            continue
         steps[name] = declared_step(name, spec if isinstance(spec, dict) else {}, scopes)
     return steps
 

@@ -10,6 +10,10 @@ package. If the command fails, ask the user to run `sage -pip install veriphy` a
 Check the workspace once per session: `veriphy config check` passes with `packs: [reproduction]` in `veriphy.yaml`,
 and podman or docker runs, since the analysis runs in a pinned image.
 
+Sequence the work with the `reproduce-analysis` workflow: `veriphy next reproduce-analysis <script>` names the next
+step, and `veriphy run reproduce-analysis <script> --input data=<file> --input sha256=<digest>` runs the steps that
+are not yours until it needs you.
+
 Then follow `<prompts>/reproduce.md` exactly as written:
 extract → reproduce → vary → reason and report.
 

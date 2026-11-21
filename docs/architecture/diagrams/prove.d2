@@ -2,23 +2,19 @@
 ...@legend
 direction: right
 
-formalize: "formalize\nLean statement" {class: agent}
-meaning: "meaning\nback-translation ·\nseeded numeric test" {class: evidence}
-elaborate: "elaborate\nstatement type-checks" {class: check}
-search: "search\nSage script" {class: evidence}
-certify: "certify\nkernel · axioms · replay" {class: check}
-test: "test\nseeded instances" {class: evidence}
-level: "level\nfrom the proof term" {class: check}
-report: "report" {class: derived}
-suspect: "statement-suspect" {shape: oval}
+formalize: "formalize\nthe agent writes the statement" {class: agent}
+meaning: "meaning\nseeded values ·\nLean serializes, Sage samples" {class: evidence}
+check1: "check\nthe statement elaborates" {class: check}
+prove: "prove\nthe agent writes the proof\n(veriphy certify, recipes)" {class: agent}
+check2: "check\nkernel · axioms" {class: check}
+suspect: "stop: statement-suspect" {shape: oval}
+done: "done\nlevel from the records" {shape: oval}
 
 formalize -> meaning
-meaning -> elaborate: agrees
+meaning -> check1: agrees
 meaning -> suspect: counterexample
-elaborate -> search
-search -> certify: candidate
-certify -> search: "rejected: iterate" {style.stroke-dash: 3}
-certify -> level: accepted
-search -> test: "no certificate feasible"
-test -> level
-level -> report
+check1 -> formalize: "refused (3 attempts)" {style.stroke-dash: 3}
+check1 -> prove: accepted
+prove -> check2
+check2 -> prove: "refused (5 attempts)" {style.stroke-dash: 3}
+check2 -> done: accepted

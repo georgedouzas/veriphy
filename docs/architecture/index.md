@@ -267,12 +267,9 @@ workflows:
   prove-claim:
     - formalize
     - meaning: {counterexample: stop}
-    - check
-    - search
-    - certify: {rejected: search, attempts: 5}
-    - test: {when: no-certificate}
-    - level
-    - report
+    - check: {refused: formalize, attempts: 3}
+    - prove
+    - check: {refused: prove, attempts: 5}
 ```
 
 ![Proving a claim](diagrams/prove.svg)
@@ -440,19 +437,18 @@ The old names keep working for one minor release and warn that they are deprecat
 Each milestone is an OpenSpec change under `openspec/changes/`, built from the bottom layer up:
 
 1. `step-records` (archived): records and the step runner.
-2. `meaning-step`: the meaning check, the first evidence step.
-3. `layered-modules`: the module tree by layer, the import rule, and the deprecated aliases of the old modules.
-4. `operation-api`: operations, verbs, results, the `veriphy` tactic, command and shell command, `veriphy.run`, and
-   the script contract with `veriphy.script`.
-5. `primitives`: tools, primitives, the two contracts, pins, the Lean session, and Lean, SageMath and `oo-horn`
-   behind them, shipped as the `core`, `lean` and `math` packs.
-6. `packs-and-config`: `veriphy.yaml`, packs by name and path, the merge, the registries and `config show`/`check`.
-7. `declarative-steps`: steps declared over primitives, digest scopes with `lean-imports`, and today's steps moved
-   to declarations.
-8. `claims-and-trust`: trust classes, levels from packs in one order, the grant rule, and the graph's vocabulary
-   taken from the config.
-9. `reproduction-pack`: a pack outside mathematics that fills every layer, to test the design.
-10. `workflows-as-data`: workflows, `next`, `run`, and skills that follow them.
+2. `meaning-step` (archived): the meaning check, the first evidence step.
+3. `layered-modules` (archived): the module tree by layer, the import rule, and the deprecated aliases.
+4. `operation-api` (archived): operations, verbs, results, the `veriphy` tactic, command and shell command,
+   `veriphy.run`, and the script contract.
+5. `primitives` (archived): primitives as Python functions, JSON-RPC 2.0 tools or files tools, pins and schemas, the
+   Lean REPL, and Lean, SageMath and `oo-horn` behind them.
+6. `packs-and-config` (archived): `veriphy.yaml`, packs by name and path, JSON Merge Patch, `config show`/`check`.
+7. `click-commands`: the `veriphy` command as one click group.
+8. `declarative-steps`: steps declared over primitives, digest scopes with `lean-imports`, agent steps.
+9. `claims-and-trust`: trust classes, levels from packs in one order, the grant rule, levels from records.
+10. `reproduction-pack`: a pack outside mathematics that fills every layer, to test the design.
+11. `workflows-as-data`: workflows, `next`, `run`, and skills that follow them.
 
 ## Open questions
 
