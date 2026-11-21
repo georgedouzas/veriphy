@@ -17,7 +17,7 @@
 ## 3. Integration
 
 - [x] 3.1 Move `check`, `level`, `meaning`, `validate` and `reason` onto primitives. Verify with the step tests unchanged.
-- [ ] 3.2 Document primitives, the three ways to run and the `primitive` command in the user guide and the architecture page, and run the gate and CI. Verify that every session and job is green.
+- [x] 3.2 Document primitives, the three ways to run and the `primitive` command in the user guide and the architecture page, and run the gate and CI. Verify that every session and job is green.
 
 ## Workflow follow-up
 
