@@ -13,6 +13,9 @@ If it does not, ask the user to run `sage -pip install 'veriphy[graph]'`. The
 first `reason` sets up the reasoner and the checker by itself and says so, which
 takes minutes where the checker is built.
 
+Sequence the work with the `verify-paper` workflow: `veriphy next verify-paper <source>` names the next step, and
+`veriphy run verify-paper <source>` runs the steps that are not yours until it needs you.
+
 Then follow `<prompts>/research.md` exactly as written:
 extract → validate → triage → prove with slices → export → reason and report.
 Extraction follows `<prompts>/research/extraction.md`, triage follows

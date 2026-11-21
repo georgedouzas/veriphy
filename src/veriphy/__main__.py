@@ -17,6 +17,8 @@ PROGRAMS = {
     'primitive': ('veriphy.primitives._cli', 'primitive', 'list, describe or run a primitive by hand, with no record'),
     'claims': ('veriphy.claims._cli', 'claims', 'the research claim graph: validate, reason, slice, appendix, …'),
     'agents': ('veriphy.agents._cli', 'agents', 'the playbooks, recipes and templates agents follow'),
+    'next': ('veriphy.workflows._cli', 'next_command', "a workflow's next step for a target, from its records"),
+    'run': ('veriphy.workflows._cli', 'run_command', "run a workflow's steps for a target until an agent step"),
     'certificates': (
         'veriphy.packs.math.steps.certificates._catalog',
         'certificates',

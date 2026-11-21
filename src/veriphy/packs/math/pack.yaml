@@ -9,6 +9,11 @@ levels:
   certificate: {trust: kernel, above: lean-proof, description: 'A recipe built the proof, which the kernel checked.'}
 
 steps:
+  prove:
+    kind: agent
+    help: record the proof an agent wrote for a claim, with its author
+    inputs:
+      artifact: {scope: file, path: true, help: the Lean file holding the claim and its proof}
   meaning:
     kind: evidence
     primitive: meaning
@@ -137,3 +142,13 @@ primitives:
     trust: oracle
     input: {type: object}
     output: {type: object}
+
+workflows:
+  # the agent formalizes, Sage tests the statement, Lean checks it, the agent proves it, Lean checks the proof
+  prove-claim:
+    - formalize
+    - meaning: {counterexample: stop}
+    - check: {refused: formalize, attempts: 3}
+    - prove
+    - check: {refused: prove, attempts: 5}
+  verify-paper: [extract, validate, reason, report]

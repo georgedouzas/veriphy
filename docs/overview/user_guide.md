@@ -226,6 +226,28 @@ within a tolerance, and `grants` gives the level when the step accepts. An `agen
 wrote, as `veriphy formalize Claim.lean --by agent`. `veriphy <step> --help` is generated from the declaration, and
 `veriphy steps` lists the workspace's steps with the pack that defines each.
 
+### Workflows
+
+A workflow is a list of steps in a pack's `pack.yaml` or in `veriphy.yaml`, with what a record's status does next:
+
+```yaml
+workflows:
+  prove-claim:
+    - formalize
+    - meaning: {counterexample: stop}
+    - check: {refused: formalize, attempts: 3}
+    - prove
+    - check: {refused: prove, attempts: 5}
+```
+
+`veriphy next prove-claim Claim.lean` reads the records whose inputs name the target, in the order they were written,
+and names the next step: the first entry with no newer record, or `stop` with the status that stopped it. A return to
+an earlier entry needs a new record, `attempts` counts the step's records (with `exhausted` naming where to go when
+they are used up), and `when: {without: kernel}` runs an entry only while no record grants a `kernel` level.
+`veriphy run prove-claim Claim.lean --input declaration=t` runs the steps that are not an agent's until the next one
+is (`formalize`, `prove`, `extract`), and says what the agent must record. The `math` pack ships `prove-claim` and
+`verify-paper`, the `reproduction` pack `reproduce-analysis`.
+
 ### Primitives
 
 Under every operation are primitives: deterministic operations, which record nothing. A primitive has an input

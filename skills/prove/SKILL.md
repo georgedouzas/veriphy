@@ -13,6 +13,10 @@ Verify the installation once per session: the Sage daemon answers
 the Lean workspace you prove in requires Veriphy and builds. If either fails,
 walk the user through the README's install section instead of proceeding.
 
+Sequence the work with the `prove-claim` workflow: `veriphy next prove-claim <file>` names the next step, and
+`veriphy run prove-claim <file> --input declaration=<name>` runs the steps that are not yours until it needs you
+(`formalize`, `prove`: record your file with `veriphy <step> <file> --by agent`). Take no step it did not name.
+
 Then follow the playbook at `<prompts>/prove.md` exactly as written:
 formalize (with round-trip and numeric lie detection) → compile-fix → prove →
 verify → report. For step 3c (building a certificate) follow the `certify`
