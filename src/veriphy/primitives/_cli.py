@@ -6,8 +6,8 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from veriphy.core import VeriphyError
-from veriphy.primitives._registry import load_registry
+from veriphy.core import VeriphyError, find_workspace_root, resolve
+from veriphy.primitives._registry import Registry, load_registry
 
 USAGE_EXIT = 2
 FAILED_EXIT = 1
@@ -26,9 +26,14 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _workspace() -> Registry:
+    """Return the registry of the current workspace's packs, as its `veriphy.yaml` selects them."""
+    return load_registry(resolved=resolve(find_workspace_root()))
+
+
 def _list() -> str:
     """Return one line per primitive."""
-    registry = load_registry()
+    registry = _workspace()
     lines = []
     for name, primitive in sorted(registry.primitives.items()):
         missing = registry.unavailable(name)
@@ -39,7 +44,7 @@ def _list() -> str:
 
 def _describe(name: str) -> str:
     """Return a primitive's description, as JSON."""
-    registry = load_registry()
+    registry = _workspace()
     primitive = registry.get(name)
     tool = registry.tools.get(primitive.tool)
     description: dict[str, object] = {
@@ -66,7 +71,7 @@ def _run(name: str, source: Path | None) -> str:
     if not isinstance(inputs, dict):
         message = 'the input must be a JSON object'
         raise VeriphyError(message)
-    registry = load_registry()
+    registry = _workspace()
     try:
         output = registry.call(name, inputs)
     finally:

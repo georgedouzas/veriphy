@@ -4,11 +4,13 @@ import importlib
 import sys
 from collections.abc import Sequence
 
+from veriphy.core import find_workspace_root
 from veriphy.steps import load_steps
 from veriphy.steps import main as run_verb
 
 # programs of the layers and packs, each with its own subcommands
 PROGRAMS = {
+    'config': ('veriphy.core._config', "the workspace's resolved configuration: show, check"),
     'primitive': ('veriphy.primitives', 'list, describe or run a primitive by hand, with no record'),
     'claims': ('veriphy.claims', 'the research claim graph: extract, slice, reason, report'),
     'agents': ('veriphy.agents', 'the playbooks, recipes and templates agents follow'),
@@ -32,7 +34,8 @@ LEAN_VERBS = {
 def help_text() -> str:
     """Return what `veriphy help` prints: the shell's verbs and programs, and Lean's verbs."""
     lines = ['Operations (veriphy <verb> …, or veriphy.run(verb, target, …) in Python):']
-    lines += [f'  {name:<14}{step.kind:<10}{step.help}' for name, step in sorted(load_steps().items())]
+    steps = load_steps(find_workspace_root())
+    lines += [f'  {name:<14}{step.kind:<10}{step.help}' for name, step in sorted(steps.items())]
     lines += ['  records       list the records, or show one by its digest', '', 'Programs:']
     lines += [f'  {name:<14}{about}' for name, (_, about) in PROGRAMS.items()]
     lines += ['', 'In Lean:']

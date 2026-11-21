@@ -3,6 +3,6 @@
 from veriphy.packs.lean.steps._lean import CHECK, LEVEL, lean_sources, resolve
 from veriphy.steps import register
 
-register(CHECK, LEVEL)
+register(CHECK, LEVEL, pack='lean')
 
 __all__ = ['CHECK', 'LEVEL', 'lean_sources', 'resolve']

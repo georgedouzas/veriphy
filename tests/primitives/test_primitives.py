@@ -141,7 +141,7 @@ def test_shipped_packs_declare_every_daemon_method() -> None:
 
 def test_lean_bridge_starts_the_packs_daemon() -> None:
     """Keep the Lean bridge's default daemon command equal to the `math` pack's `sage` tool."""
-    run = load_registry({'math': 'veriphy.packs.math'}).tools['sage'].run
+    run = load_registry().tools['sage'].run
     bridge = (Path(__file__).resolve().parents[2] / 'lean' / 'Veriphy' / 'Bridge.lean').read_text()
     module = run[2].split('|', 1)[1].rstrip('}').split()[1]
     assert f'"{module}"' in bridge

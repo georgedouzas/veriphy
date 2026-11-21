@@ -2,21 +2,25 @@
 
 import importlib
 import warnings
+from pathlib import Path
 
-from veriphy.core import StepError, pack_packages
+from veriphy.core import StepError, installed, resolve
 from veriphy.steps._runner import Step
 
 LAYERS = ('primitives', 'steps', 'claims', 'workflows', 'agents')
 _STEPS: dict[str, Step] = {}
+# the pack that registered each step; a step of no pack is always available
+_OWNERS: dict[str, str] = {}
 # old step names, kept for one minor release
 DEPRECATED_VERBS = {'elaborate': 'check'}
 
 
-def register(*steps: Step) -> None:
+def register(*steps: Step, pack: str = '') -> None:
     """Add steps to the registry.
 
     Args:
         *steps: The steps. Registering the same step again is harmless.
+        pack: The pack that defines them, so a workspace that does not select it does not see them.
 
     Raises:
         StepError: If another step already has the name.
@@ -35,6 +39,7 @@ def register(*steps: Step) -> None:
             message = f"two steps are named '{step.name}': rename one of them"
             raise StepError(message)
         _STEPS[step.name] = step
+        _OWNERS[step.name] = pack
 
 
 def resolve_verb(verb: str) -> str:
@@ -73,13 +78,20 @@ def _import_layer(package: str, layer: str) -> None:
             raise
 
 
-def load_steps() -> dict[str, Step]:
-    """Import every pack's layer subpackages, so each registers its steps, and return the registry.
+def load_steps(root: Path | None = None) -> dict[str, Step]:
+    """Import the selected packs' layer subpackages, so each registers its steps, and return their steps.
+
+    Args:
+        root: The workspace whose `veriphy.yaml` selects the packs; every installed pack when `None`.
 
     Returns:
-        Every step, by name.
+        The selected packs' steps, by name.
     """
-    for package in pack_packages().values():
+    config = resolve(root) if root is not None else installed()
+    selected = {pack.name for pack in config.packs}
+    for pack in config.packs:
+        if pack.package is None:
+            continue
         for layer in LAYERS:
-            _import_layer(package, layer)
-    return registered()
+            _import_layer(pack.package, layer)
+    return {name: step for name, step in _STEPS.items() if _OWNERS.get(name) in selected or not _OWNERS.get(name)}

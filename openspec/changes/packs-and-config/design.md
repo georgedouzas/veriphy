@@ -24,7 +24,7 @@ translation pack is the one plug-in mechanism outside Python, in Lean.
 ### D1. A JSON Schema, versioned
 
 `veriphy.yaml` has `version: 1` and is validated against a JSON Schema shipped with the package. Unknown keys are
-errors that name the key and its line, so a typo is never silently ignored. `pack.yaml` uses the same schema with
+errors that name the key and its path, as JSON Schema reports them, so a typo is never silently ignored. `pack.yaml` uses the same schema with
 `name` and `requires` added.
 
 ### D2. Packs are data first
@@ -33,11 +33,12 @@ A pack is `pack.yaml` plus its files. Veriphy's own packs are directories inside
 `veriphy.packs` entry point like any third-party pack. Code a pack needs (composites, digest scopes) lives in the
 pack's own module and is named from `pack.yaml` by its import path.
 
-### D3. Order by requirement, merge by key
+### D3. Order by requirement, merge by JSON Merge Patch
 
-Packs are ordered so each comes after the packs it requires, keeping the listed order otherwise. Mappings merge
-recursively, and a later scalar or list replaces an earlier one. `null` removes the key, so `tools: {sage: null}`
-drops SageMath, and every primitive and step that needs it is reported unavailable.
+Packs are ordered so each comes after the packs it requires, keeping the listed order otherwise. Each pack, then the
+workspace file, is applied as a JSON Merge Patch (RFC 7396): mappings merge recursively, a later value replaces an
+earlier one, and `null` removes the key. So `tools: {sage: null}` drops SageMath, and every primitive and step that
+needs it is reported unavailable. The standard says what the merge does; Veriphy adds nothing to it.
 
 ### D4. Collisions between unrelated packs are errors
 
@@ -45,11 +46,12 @@ When two packs that do not require each other define the same entry, the later o
 check` names both packs and the entry, and the workspace file settles it by defining the entry itself. A pack that
 requires another may override its entries, since it was written knowing them.
 
-### D5. One registry per layer
+### D5. One mapping, one section per layer
 
-The resolved config is split into the registries of primitives (tools, primitives), steps (steps, scopes), claims
-(levels, conventions), workflows and playbooks. A layer receives its registry as a parameter, so it reads no config
-of a layer above it, and each layer's module registers its own checks with `config check`.
+The resolved config is one mapping. Each layer reads its own sections (primitives: `tools`, `primitives`; steps:
+`steps`, `scopes`; claims: `levels`, `conventions`; workflows; playbooks), and receives them as a parameter, so it
+reads nothing of a layer above it. `config check` is the JSON Schema and the checks across sections (a primitive
+names a declared tool), in one place.
 
 ### D6. The digest covers meaning, not formatting
 
@@ -58,7 +60,6 @@ The config digest is the digest of the resolved config as canonical JSON, so a c
 
 ## Risks / Trade-offs
 
-- [YAML adds a dependency] → PyYAML is small and already in most environments. The schema check reuses `jsonschema`
-  from `primitives`.
+- [YAML adds a dependency] → PyYAML came with `primitives`, as did `jsonschema`.
 - [Requiring the workspace to settle collisions adds friction] → It happens only for unrelated packs defining the same
   name, which is exactly the case that would otherwise go wrong unnoticed.
