@@ -61,7 +61,7 @@ where
     set (atoms.push e)
     return s!"x{atoms.size}"
 
-/-- The variable names `exprToSage` assigned, in order, for the daemon. -/
+/-- The variable names `exprToSage` assigned, in order, for the Sage session. -/
 def sageVarNames (atoms : Array Expr) : List String :=
   (List.range atoms.size).map (s!"x{·}")
 

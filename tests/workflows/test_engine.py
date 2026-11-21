@@ -97,7 +97,7 @@ def test_back_to_an_earlier_entry_until_a_newer_record(workspace: Path) -> None:
     """Return to the agent after a refusal, and go on once it records a newer artifact."""
     _write(workspace, 'broken')
     lines = run_workflow(workspace, 'flow', 'Claim.lean', {})
-    waiting = 'flow: waiting for write: record the artifact, as veriphy write Claim.lean'
+    waiting = 'flow: waiting for write: record the artifact, as veriphy layers step write Claim.lean'
     assert lines == ['test: refused', 'verify: refused', waiting]
     assert next_step(workspace, 'flow', 'Claim.lean').step == 'write'
     _write(workspace, 'fixed')

@@ -27,7 +27,7 @@ the shapes before it continues.
   its label and line, and validation passes
 
 ### Requirement: Triage
-The skill SHALL sort the claims of a source into four groups: a recipe applies, `sage_test` applies, formalization is
+The skill SHALL sort the claims of a source into four groups: a recipe applies, `#veriphy test` applies, formalization is
 needed first, and statement suspect after a numerical check. It SHALL record the group of each claim in the graph.
 
 #### Scenario: A suspect claim

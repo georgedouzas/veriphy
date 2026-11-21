@@ -45,7 +45,7 @@ output SHALL name Veriphy's version as its tool's.
 
 ### Requirement: JSON-RPC contract
 A `jsonrpc` tool SHALL run as one process per session, speaking JSON-RPC 2.0 over stdio with one message per line.
-The Sage daemon SHALL answer JSON-RPC 2.0 requests, and SHALL still answer requests without `"jsonrpc"` in the format of
+The Sage session SHALL answer JSON-RPC 2.0 requests, and SHALL still answer requests without `"jsonrpc"` in the format of
 earlier releases.
 
 #### Scenario: Sage behind the contract
@@ -53,7 +53,7 @@ earlier releases.
 - **THEN** the response is a JSON-RPC 2.0 result carrying Sage's and Veriphy's versions
 
 #### Scenario: An error
-- **WHEN** a request names a method the daemon does not have
+- **WHEN** a request names a method the Sage session does not have
 - **THEN** the response carries `error` with a code and a message naming the known methods
 
 ### Requirement: Pins
@@ -86,12 +86,12 @@ called through the same checks as any primitive.
 - **THEN** it names `lean.serialize` and `sage.sample` as parts, none deciding, and the class `oracle`
 
 ### Requirement: Primitive command
-`veriphy primitive list` SHALL name every available primitive with its trust class and pack, `describe` SHALL
+`veriphy layers primitive list` SHALL name every available primitive with its trust class and pack, `describe` SHALL
 print one primitive's schemas, tool, pin and class, and `run <primitive> --input <file>` SHALL print its output as
 JSON. A primitive whose tool is missing SHALL be listed as unavailable with the reason.
 
 #### Scenario: By hand
-- **WHEN** a person runs `veriphy primitive run sage.sample --input problem.json` with a seed in the input
+- **WHEN** a person runs `veriphy layers primitive run sage.sample --input problem.json` with a seed in the input
 - **THEN** standard output holds the sampled values, and no record is written
 
 #### Scenario: No Lean installed
@@ -100,12 +100,12 @@ JSON. A primitive whose tool is missing SHALL be listed as unavailable with the 
 
 ### Requirement: Shipped primitives
 Veriphy SHALL ship the packs `core` (`horn.check`, `shacl.validate`), `lean` (`lean.check`,
-`lean.serialize`, `lean.level`) and `math` (the `sage` tool, one `sage.*` primitive per daemon method, and the
+`lean.serialize`, `lean.level`) and `math` (the `sage` tool, one `sage.*` primitive per Sage method, and the
 composites `meaning` and `certify`), each as a `pack.yaml` found through the `veriphy.packs` entry point. `math` SHALL
 need `lean`, and `core` SHALL NOT need Lean.
 
-#### Scenario: Every daemon method is a primitive
-- **WHEN** the daemon's methods are compared with the `math` pack's primitives
+#### Scenario: Every Sage method is a primitive
+- **WHEN** the Sage session's methods are compared with the `math` pack's primitives
 - **THEN** each method has a `sage.*` primitive with an input and an output schema
 
 ### Requirement: Lean REPL
@@ -119,8 +119,8 @@ and SHALL give the same output as running `lake env lean` on the same file.
 ### Requirement: Unchanged behaviour
 The steps `check`, `level`, `meaning`, `validate` and `reason` SHALL call primitives and give the same records as
 before. The Lean bridge SHALL take the Sage command from the `math` pack, and `VERIPHY_SAGE_CMD` and
-`VERIPHY_SAGE_SERVER` SHALL still override it.
+`VERIPHY_SAGE_SESSION` SHALL still override it.
 
 #### Scenario: A user's workspace
-- **WHEN** a workspace with no `veriphy.yaml` runs `veriphy certify` and `veriphy meaning`
-- **THEN** it starts the same daemon as before, and the meaning record has the same outcome and outputs
+- **WHEN** a workspace with no `veriphy.yaml` runs `veriphy certify` and `veriphy layers step meaning`
+- **THEN** it starts the same Sage session as before, and the meaning record has the same outcome and outputs

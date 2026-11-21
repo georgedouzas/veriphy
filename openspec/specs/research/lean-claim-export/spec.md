@@ -7,21 +7,21 @@ levels and dependencies come from what the kernel checked and not from extractio
 ## Requirements
 
 ### Requirement: The veriphy_graph command
-The system SHALL provide the command `#veriphy_graph p₁ … pₙ`, which writes every declaration under the prefixes
+The system SHALL provide the command `#veriphy export p₁ … pₙ`, which writes every declaration under the prefixes
 to `.veriphy/graph/lean/` with provenance `lean`: theorems and definitions of type `Prop` as claims, other
 definitions as definitions. A second run SHALL replace the files of the first.
 
 #### Scenario: Exporting a project
-- **WHEN** `#veriphy_graph KK` runs in a module that imports the project
+- **WHEN** `#veriphy export KK` runs in a module that imports the project
 - **THEN** `.veriphy/graph/lean/` holds one node per theorem and definition under `KK`, and the command reports the
   numbers of claims, definitions and dependencies it wrote
 
 #### Scenario: A prefix with no declarations
-- **WHEN** `#veriphy_graph Missing` runs and no declaration starts with `Missing`
+- **WHEN** `#veriphy export Missing` runs and no declaration starts with `Missing`
 - **THEN** the command fails and names the prefix
 
 ### Requirement: Levels from the environment
-Each exported claim SHALL carry the level `#veriphy_levels` reports for it: `certificate`, `lean-proof`, `kernel-test`,
+Each exported claim SHALL carry the level `#veriphy level` reports for it: `certificate`, `lean-proof`, `kernel-test`,
 `oracle-test` or `none`. The export SHALL NOT compute a level any other way.
 
 #### Scenario: A recipe-built proof

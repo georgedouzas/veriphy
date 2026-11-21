@@ -20,7 +20,7 @@ open Lean Elab Tactic Meta
 inductive Rel | eq | le | lt | ne
   deriving BEq, Repr, Inhabited
 
-/-- The daemon's relation tag. -/
+/-- The Sage session's relation tag. -/
 def Rel.tag : Rel → String
   | .eq => "eq" | .le => "le" | .lt => "lt" | .ne => "ne"
 
@@ -89,7 +89,7 @@ structure Problem where
   namespaces : List String := []
   /-- Problems found resolving the translation tables (missing constants, conflicts). -/
   tableProblems : Array String := #[]
-  /-- The project's table entries the problem uses, serialized for the daemon. -/
+  /-- The project's table entries the problem uses, serialized for the Sage session. -/
   extensions : List Table := []
   /-- The derivatives the translation met: variable, body and point in Sage syntax, function and point in Lean. -/
   derivatives : Array (String × String × String × String × String) := #[]
@@ -205,7 +205,7 @@ def Problem.enrich (p : Problem) : MetaM Problem := do
     conditions := conditions.push (sage.toSage, kindTag c.kind, bound, ← c.prop, ← c.dischargedBy nameable)
   let atomTypes ← st.atoms.mapM atomType
   let p := { p with atoms := st.atoms, hyps, goal, factExprs, goalExpr, atomTypes, conditions }
-  -- the project entries the translation used travel with the problem, so the daemon renders with them
+  -- the project entries the translation used travel with the problem, so the Sage session renders with them
   let used := st.usedEntries
   let extensions := (tables.filter (·.«namespace» == "project")).map fun t =>
     { t with functions := t.functions.filter (used.contains ·.lean),
@@ -320,7 +320,7 @@ private def Constraint.toJson (c : Constraint) : MetaM Json := do
   | some e => return Json.mkObj (base ++ [("text", ← text e)])
   | none => return Json.mkObj base
 
-/-- Serialization for the daemon: variables, a Lean rendering of each atom, the carrier type, the
+/-- Serialization for the Sage session: variables, a Lean rendering of each atom, the carrier type, the
 hypotheses (with names, relation tags and text; text only for facts), and the goal. -/
 def Problem.toJson (p : Problem) : MetaM Json := do
   let atoms ← p.atoms.mapM text

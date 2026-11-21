@@ -50,7 +50,7 @@ A rewrite entry SHALL give the lemma name, the functions it applies to, the rewr
 - **THEN** a goal containing `Real.arcosh y` gets the symbolic form `arccosh(y)` and the domain condition `1 ≤ y`
 
 ### Requirement: One source for both directions
-The same entries SHALL drive the Lean-to-Sage translation and the Sage-to-Lean rendering. The extracted problem SHALL carry the project's entries, so the daemon renders with exactly the table the translation used.
+The same entries SHALL drive the Lean-to-Sage translation and the Sage-to-Lean rendering. The extracted problem SHALL carry the project's entries, so the Sage session renders with exactly the table the translation used.
 
 #### Scenario: Rendering with a project entry
 - **WHEN** a project entry maps `Real.cosh` to `cosh` and a script renders a Sage result containing `cosh`
@@ -64,14 +64,14 @@ An entry SHALL NOT redefine an entry of the same or an earlier namespace (`mathl
 - **THEN** extraction reports the conflict with the core entry for `Real.exp`, and the core entry stays in force
 
 ### Requirement: Round-trip check
-A Lean command SHALL check every project entry. For each entry it translates the round-trip example, renders it back through the daemon, and proves the rendering equal to the original. It reports each entry as passed or failed, with Lean's error for a failure. For each rewrite entry, the command SHALL also elaborate the worked example goal and close it with the entry.
+A Lean command SHALL check every project entry. For each entry it translates the round-trip example, renders it back through the Sage session, and proves the rendering equal to the original. It reports each entry as passed or failed, with Lean's error for a failure. For each rewrite entry, the command SHALL also elaborate the worked example goal and close it with the entry.
 
 #### Scenario: Checking a project's entries
 - **WHEN** a project test file runs the check command over two valid entries and one whose Sage name is wrong
 - **THEN** two entries pass, and the third fails with the elaboration or equality error
 
 ### Requirement: Discoverable entries
-`sage -python -m veriphy.translations list` SHALL print every entry of the active namespaces: its namespace, the file, the Lean constant or lemma, the Sage name, and the conditions. `show <name>` SHALL print one entry in full. Both SHALL report invalid files without failing on them.
+`veriphy pack math translations list` SHALL print every entry of the active namespaces: its namespace, the file, the Lean constant or lemma, the Sage name, and the conditions. `show <name>` SHALL print one entry in full. Both SHALL report invalid files without failing on them.
 
 #### Scenario: Listing a project's entries
 - **WHEN** `.veriphy/translations/` holds `hyperbolic.json` with `Real.cosh` and `Real.sinh`

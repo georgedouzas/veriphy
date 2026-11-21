@@ -66,7 +66,7 @@ return found(instances)"
 
 -- a floating-point comparison is refused, naming the instance
 /--
-error: sage daemon error: test: CertificateError: the instance at ['1']: floating-point values cannot decide it; use exact or interval ones
+error: Sage session error: test: CertificateError: the instance at ['1']: floating-point values cannot decide it; use exact or interval ones
 -/
 #guard_msgs (warning, error, drop info) in
 #veriphy test SageTestTest.expGe "instances = [oracle_instance('1', lhs=RDF(2), rhs=RDF(1).exp(), relation='<=')]
@@ -74,7 +74,7 @@ return found(instances)"
 
 -- the template, unedited, asks for the proof
 /--
-error: sage daemon error: test: AssertionError: fill in PROOF (and CASES, unless the default instances fit the binders) in a copy
+error: Sage session error: test: AssertionError: fill in PROOF (and CASES, unless the default instances fit the binders) in a copy
 -/
 #guard_msgs (warning, error, drop info) in
 #veriphy test SageTestTest.addZero "src/veriphy/packs/math/agents/recipes/templates/test_fallback.sage"

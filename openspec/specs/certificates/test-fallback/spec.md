@@ -31,22 +31,22 @@ no recipe applies.
 - **THEN** its level is `none`
 
 
-### Requirement: The sage_test command
-The system SHALL provide the command `sage_test <constant> file "<name>.sage"` (and the inline form with a script
+### Requirement: The test command
+The system SHALL provide the command `#veriphy test <constant> "<name>.sage"` (and the inline form with a script
 string). The constant's type SHALL be a proposition, or the constant SHALL be a definition of type `Prop`. Lean SHALL
-open its universal binders, serialize the binders and the body as a problem, and run the script, which assigns
-`instances`: for each instance, a value for every binder as Lean text, and either a `proof` tactic block or an `oracle`
+open its universal binders, serialize the binders and the body as a problem, and run the script, which returns
+`found(instances)`: for each instance, a value for every binder as Lean text, and either a `proof` tactic block or an `oracle`
 verdict with its evaluation.
 
 #### Scenario: Kernel-checked instances
-- **WHEN** `sage_test rank_nullity file "rank_nullity_test.sage"` runs and the script returns three matrices with
+- **WHEN** `#veriphy test rank_nullity "rank_nullity_test.sage"` runs and the script returns three matrices with
   proofs by `matrix_rank` and `dimension`
 - **THEN** Lean instantiates the statement at each matrix, checks each block, and reports the three instances as
   accepted
 
 #### Scenario: A proposition without a proof
 - **WHEN** the target is `def sylvester_invariance : Prop := …`, which has no Lean proof
-- **THEN** `sage_test` checks its instances the same way, and the level is `kernel-test` or `oracle-test`
+- **THEN** `#veriphy test` checks its instances the same way, and the level is `kernel-test` or `oracle-test`
 
 ### Requirement: Instances are independent of the claim
 An instance SHALL be accepted only when its block closes the instantiated goal with the standard axioms and its proof
@@ -77,7 +77,7 @@ Sage and SHALL be reported only after every emitted instance was accepted.
 
 ### Requirement: Test record
 Every run SHALL write `.veriphy/tests/<target>.json` with the target, its statement, the level, the seed, the Sage
-version, the script's hash and every instance (values, kind, verdict). `python -m veriphy.certificates tests` SHALL
+version, the script's hash and every instance (values, kind, verdict). `veriphy pack math certificates tests` SHALL
 list the records with their levels, and `--rerun <target>` SHALL rerun the oracle instances. Oracle evaluations SHALL
 use exact arithmetic, or interval arithmetic with at least 53 bits, and SHALL NOT compare floating-point numbers.
 
@@ -90,7 +90,7 @@ use exact arithmetic, or interval arithmetic with at least 53 bits, and SHALL NO
 - **THEN** the run fails and names the instance
 
 ### Requirement: Level report
-`#veriphy_levels [prefixes]` SHALL list the declarations under the prefixes with their level: `kernel-test` or
+`#veriphy level [prefixes]` SHALL list the declarations under the prefixes with their level: `kernel-test` or
 `oracle-test` for those carrying `veriphy_tested`, `certificate` for theorems on the standard axioms whose proof came
 from a recipe's replacement, `lean-proof` for the other theorems on the standard axioms, and `none` otherwise.
 

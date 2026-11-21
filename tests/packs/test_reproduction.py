@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from veriphy.__main__ import PROGRAMS
+from veriphy.__main__ import LAYERS
 from veriphy.claims import shown_level
 from veriphy.core import check_config, level_order, level_trust, resolve
 from veriphy.primitives import load_registry
@@ -94,6 +94,8 @@ def test_robust_and_fragile(workspace: Path) -> None:
 def test_the_playbook_names_real_commands(workspace: Path) -> None:
     """Name only the steps and programs a workspace of the reproduction pack has, and say levels with their class."""
     text = (EXAMPLE.parent / 'agents' / 'reproduce.md').read_text()
-    named = set(re.findall(r'(?<![#\w.-])veriphy ([a-z]+)', text))
-    assert named <= {*load_steps(workspace), *PROGRAMS, 'records', 'steps', 'help'}
+    named = set(re.findall(r'(?<![#\w.-])veriphy layers step ([a-z]+)', text))
+    assert named <= {*load_steps(workspace), 'list', 'records'}
+    assert set(re.findall(r'(?<![#\w.-])veriphy ([a-z]+)', text)) <= {'layers', 'config', 'pack', 'help'}
+    assert set(re.findall(r'(?<![#\w.-])veriphy layers ([a-z]+)', text)) <= set(LAYERS)
     assert 'reproduced (reproduction)' in text

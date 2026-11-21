@@ -1,4 +1,4 @@
-"""Answer one request line of the daemon protocol."""
+"""Answer one request line of the Sage session protocol."""
 
 import json
 
@@ -25,25 +25,26 @@ METHODS: dict[str, Method] = {**PROTOCOL_METHODS, **SCRIPT_METHODS, **SYMBOLIC_M
 
 # JSON-RPC 2.0 error codes
 PARSE_ERROR = -32700
+INVALID_REQUEST = -32600
 METHOD_NOT_FOUND = -32601
 METHOD_FAILED = -32000
 
 
-def _respond(request: object, req_id: JsonValue, outcome: str, value: JsonValue, code: int) -> JsonObject:
-    """Return one response: JSON-RPC 2.0 for a JSON-RPC request, else the shape of earlier releases (deprecated)."""
-    if isinstance(request, dict) and request.get('jsonrpc') == '2.0':
-        if outcome == 'result':
-            return {'jsonrpc': '2.0', 'id': req_id, 'result': value}
-        return {'jsonrpc': '2.0', 'id': req_id, 'error': {'code': code, 'message': value}}
-    return {'id': req_id, outcome: value, 'veriphy': __version__}
+def _result(req_id: JsonValue, value: JsonValue) -> JsonObject:
+    """Return a JSON-RPC 2.0 response carrying a result."""
+    return {'jsonrpc': '2.0', 'id': req_id, 'result': value}
+
+
+def _error(req_id: JsonValue, code: int, message: str) -> JsonObject:
+    """Return a JSON-RPC 2.0 response carrying an error."""
+    return {'jsonrpc': '2.0', 'id': req_id, 'error': {'code': code, 'message': message}}
 
 
 def answer_request(line: str) -> JsonObject:
-    """Answer one request line with one response object, never raising.
+    """Answer one JSON-RPC 2.0 request line with one response object, never raising.
 
-    A request is JSON-RPC 2.0 (`{"jsonrpc": "2.0", "id", "method", "params"}`), answered with `result` or with
-    `error: {code, message}`. A request without `"jsonrpc"` is answered as earlier releases did, with `result` or an
-    `error` string, until the next minor release.
+    A request is `{"jsonrpc": "2.0", "id", "method", "params"}`, answered with `result` or with
+    `error: {code, message}`.
 
     Args:
         line: The request.
@@ -56,22 +57,20 @@ def answer_request(line: str) -> JsonObject:
         True
         >>> answer_request('{"jsonrpc": "2.0", "id": 2, "method": "nosuch"}')['error']['code']
         -32601
-        >>> answer_request('{"id": 3, "method": "ping"}')['result']['ok']
-        True
+        >>> answer_request('{"id": 3, "method": "ping"}')['error']['code']
+        -32600
     """
-    request: object = None
     req_id: JsonValue = None
     try:
         request = json.loads(line)
-        if not isinstance(request, dict):
-            return _respond(request, None, 'error', 'a request must be a JSON object', PARSE_ERROR)
+        if not isinstance(request, dict) or request.get('jsonrpc') != '2.0':
+            return _error(None, INVALID_REQUEST, 'a request must be a JSON-RPC 2.0 object, with "jsonrpc": "2.0"')
         req_id = request.get('id')
         name = request.get('method')
         if name not in METHODS:
-            known = f"unknown method '{name}' (known: {sorted(METHODS)})"
-            return _respond(request, req_id, 'error', known, METHOD_NOT_FOUND)
-        return _respond(request, req_id, 'result', METHODS[name](request.get('params') or {}), 0)
+            return _error(req_id, METHOD_NOT_FOUND, f"unknown method '{name}' (known: {sorted(METHODS)})")
+        return _result(req_id, METHODS[name](request.get('params') or {}))
     except MethodError as exc:
-        return _respond(request, req_id, 'error', str(exc), METHOD_FAILED)
+        return _error(req_id, METHOD_FAILED, str(exc))
     except json.JSONDecodeError as exc:
-        return _respond(request, req_id, 'error', f'{type(exc).__name__}: {exc}', PARSE_ERROR)
+        return _error(None, PARSE_ERROR, f'{type(exc).__name__}: {exc}')

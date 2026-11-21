@@ -261,7 +261,7 @@ example (x : ℚ) : (Polynomial.X ^ 2 + Polynomial.C 1 : Polynomial ℚ).eval x 
     (← Veriphy.resolveScriptPath "src/veriphy/packs/math/agents/recipes/templates/sos.sage") ==
       root / "src/veriphy/packs/math/agents/recipes/templates/sos.sage"]
 
--- a missing script is reported with its resolved path, before any daemon call
+-- a missing script is reported with its resolved path, before any Sage session call
 /-- info: true -/
 #guard_msgs in
 #eval show IO Bool from do

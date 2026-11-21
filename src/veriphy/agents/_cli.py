@@ -3,13 +3,11 @@
 import difflib
 import shutil
 import sys
-from collections.abc import Sequence
 from pathlib import Path
 
 import click
 
 from veriphy.core import find_workspace_root, project_dir
-from veriphy.core._commands import run_command
 
 SUFFIXES = ('.md', '.sage', '.lean')
 ASSETS = 'assets'
@@ -149,19 +147,3 @@ def show(name: str) -> None:
 def copy(name: str, root: Path | None) -> None:
     """Copy a template or an asset into the workspace."""
     _copy(name, find_workspace_root(root))
-
-
-def main(argv: Sequence[str] | None = None) -> None:
-    """Give an agent the installed playbooks: `path`, `list`, `show <name>` and `copy <name>`.
-
-    The command exits with status 1 for an unknown or ambiguous name, a copy of a playbook or recipe, or a copy that
-    would overwrite a file, and with status 2 on bad usage.
-
-    Args:
-        argv: The command-line arguments, `sys.argv[1:]` when `None`.
-
-    Examples:
-        >>> main(['show', 'recipes/sos'])  # doctest: +ELLIPSIS
-        # ...
-    """
-    run_command(agents, argv, 'veriphy agents')

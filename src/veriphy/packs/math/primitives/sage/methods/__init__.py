@@ -1,4 +1,4 @@
-"""Provide the Sage-backed daemon: its protocol entry point and the exact building blocks of its methods.
+"""Provide the Sage-backed Sage session: its protocol entry point and the exact building blocks of its methods.
 
 Importing this package imports SageMath.
 """

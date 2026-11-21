@@ -1,5 +1,5 @@
-"""Catalog a project's `.veriphy/translations/`: `list` them, or `show <name>`."""
+"""Catalog the translation entries in force: `veriphy pack math translations`."""
 
-from veriphy.packs.math.primitives.translations._catalog import main
+from veriphy.packs.math.primitives.translations._catalog import translations
 
-__all__ = ['main']
+__all__ = ['translations']

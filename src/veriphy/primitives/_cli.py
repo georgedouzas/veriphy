@@ -1,14 +1,13 @@
-"""The primitive command: `veriphy primitive list`, `describe <primitive>` and `run <primitive> --input <file>`."""
+"""The primitive command: `veriphy layers primitive list`, `describe <primitive>`, `run <primitive> --input <file>`."""
 
 import json
 import sys
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from pathlib import Path
 
 import click
 
 from veriphy.core import VeriphyError, find_workspace_root, resolve
-from veriphy.core._commands import run_command
 from veriphy.primitives._registry import Registry, load_registry
 
 USAGE_EXIT = 2
@@ -60,11 +59,7 @@ def _run(name: str, source: Path | None) -> str:
     if not isinstance(inputs, dict):
         message = 'the input must be a JSON object'
         raise VeriphyError(message)
-    registry = _workspace()
-    try:
-        output = registry.call(name, inputs)
-    finally:
-        registry.close()
+    output = _workspace().call(name, inputs)
     return json.dumps(output, indent=2, sort_keys=True, ensure_ascii=False) + '\n'
 
 
@@ -104,12 +99,3 @@ def describe(name: str) -> None:
 def run(name: str, source: Path | None) -> None:
     """Run one primitive, as JSON in and out."""
     _guarded(lambda: _run(name, source))
-
-
-def main(argv: Sequence[str] | None = None) -> None:
-    """List, describe or run primitives.
-
-    Args:
-        argv: The command-line arguments, `sys.argv[1:]` when `None`.
-    """
-    run_command(primitive, argv, 'veriphy primitive')

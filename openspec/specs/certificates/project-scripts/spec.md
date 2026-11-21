@@ -6,14 +6,14 @@ Keeps the certificates that agents and users create in the project they belong t
 ## Requirements
 
 ### Requirement: Scripts live in the caller's project
-Certificate scripts SHALL be stored as `.sage` files in `.veriphy/certificates/` at the root of the project being proved, never in the Veriphy repository or package. `sage_run file "<path>"` SHALL run a script file. A bare file name (no directory) SHALL resolve in `.veriphy/certificates/`, and any other relative path SHALL resolve against the Lean workspace root.
+Certificate scripts SHALL be stored as `.sage` files in `.veriphy/certificates/` at the root of the project being proved, never in the Veriphy repository or package. `veriphy certify "<path>"` SHALL run a script file. A bare file name (no directory) SHALL resolve in `.veriphy/certificates/`, and any other relative path SHALL resolve against the Lean workspace root.
 
 #### Scenario: Run a saved script
-- **WHEN** a proof in a downstream project uses `sage_run file "anomaly_farkas.sage"`
+- **WHEN** a proof in a downstream project uses `veriphy certify "anomaly_farkas.sage"`
 - **THEN** the script `.veriphy/certificates/anomaly_farkas.sage` runs against the current goal, and the emitted replacement is the plain Lean proof
 
 #### Scenario: Explicit path
-- **WHEN** a proof uses `sage_run file ".veriphy/certificates/anomaly_farkas.sage"`
+- **WHEN** a proof uses `veriphy certify ".veriphy/certificates/anomaly_farkas.sage"`
 - **THEN** the same script runs
 
 #### Scenario: Missing file
@@ -28,7 +28,7 @@ Each saved script SHALL begin with a comment header giving `name`, `technique` (
 - **THEN** the catalog lists it with a note that `technique` is missing
 
 ### Requirement: Discoverable catalog
-`sage -python -m veriphy.certificates list [--root DIR]` SHALL print one line per script in `.veriphy/certificates/` of the workspace: name, technique, goal shape and description. `… show <name>` SHALL print one script.
+`veriphy pack math certificates list [--root DIR]` SHALL print one line per script in `.veriphy/certificates/` of the workspace: name, technique, goal shape and description. `… show <name>` SHALL print one script.
 
 #### Scenario: Agent discovers existing scripts
 - **WHEN** an agent runs the list command in a project with three saved scripts

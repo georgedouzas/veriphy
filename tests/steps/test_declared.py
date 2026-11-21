@@ -119,10 +119,10 @@ def test_lean_imports_follows_imports(tmp_path: Path) -> None:
 def test_the_command_follows_the_declaration(workspace: Path) -> None:
     """Make required inputs arguments and the others options, and list each step with its pack."""
     runner = CliRunner()
-    shown = runner.invoke(veriphy, ['--root', str(workspace), 'reproduce', '--help'])
-    assert 'Usage: veriphy reproduce [OPTIONS] X CLAIMED' in shown.output
-    listed = runner.invoke(veriphy, ['--root', str(workspace), 'steps'])
+    shown = runner.invoke(veriphy, ['--root', str(workspace), 'layers', 'step', 'reproduce', '--help'])
+    assert 'Usage: veriphy layers step reproduce [OPTIONS] X CLAIMED' in shown.output
+    listed = runner.invoke(veriphy, ['--root', str(workspace), 'layers', 'step', 'list'])
     assert 'estimate\tevidence\tecon\ttwice the value' in listed.output
     assert 'formalize\tagent\tcore' in listed.output
-    ran = runner.invoke(veriphy, ['--root', str(workspace), 'estimate', '4'])
+    ran = runner.invoke(veriphy, ['--root', str(workspace), 'layers', 'step', 'estimate', '4'])
     assert (ran.exit_code, 'estimate: reported' in ran.output) == (0, True)

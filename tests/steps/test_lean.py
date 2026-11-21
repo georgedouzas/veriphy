@@ -42,12 +42,12 @@ def test_check_refuses_a_broken_file(tmp_path: Path) -> None:
     assert isinstance(errors, list)
     assert errors[0]['line'] == 2
     with pytest.raises(SystemExit) as raised:
-        main(['--root', str(ROOT), 'check', str(path)])
+        main(['--root', str(ROOT), 'layers', 'step', 'check', str(path)])
     assert raised.value.code == 1
 
 
 def test_level_matches_the_lean_report() -> None:
-    """Report the levels `#veriphy_levels` gives the kit's level fixtures."""
+    """Report the levels `#veriphy level` gives the kit's level fixtures."""
     record = run_step(LEVEL, ROOT, {'module': 'VeriphyTest.Kit', 'prefixes': ['KitLevels']}, rerun=True).record
     assert record.status == 'reported'
     assert record.outputs['levels'] == {

@@ -20,7 +20,9 @@ GRANTING = frozenset({'oracle', 'reproduction', 'checker', 'kernel'})
 BOTTOM = 'none'
 # the digest scopes every workspace has; a pack adds others under `scopes`
 BUILTIN_SCOPES = ('value', 'file', 'files')
-SECTIONS = ('tools', 'primitives', 'scopes', 'steps', 'levels', 'conventions', 'workflows', 'playbooks')
+SECTIONS = ('tools', 'primitives', 'scopes', 'steps', 'levels', 'conventions', 'workflows', 'playbooks', 'commands')
+# the step group's own commands, which no step may take as its name
+RESERVED_STEPS = ('list', 'records')
 SCHEMA: dict[str, object] = {
     'type': 'object',
     'additionalProperties': False,
@@ -324,7 +326,31 @@ def check(resolved: Resolved) -> list[str]:
         tool = spec.get('tool') if isinstance(spec, dict) else None
         if tool and tool not in tools:
             problems.append(f"primitives.{name} names the tool '{tool}', which no pack or {WORKSPACE_FILE} declares")
+    for name, spec in resolved.section('commands').items():
+        target = spec.get('command') if isinstance(spec, dict) else None
+        if not isinstance(target, str) or ':' not in target:
+            problems.append(f'commands.{name} must name its click command as <module>:<attribute>')
     return problems + _step_problems(resolved) + _trust_problems(resolved) + _workflow_problems(resolved)
+
+
+def pack_commands(resolved: Resolved) -> dict[str, dict[str, tuple[str, str]]]:
+    """Return the programs each selected pack declares, by pack, each as its import target and its help line.
+
+    Args:
+        resolved: The configuration.
+
+    Returns:
+        For each pack that declares commands, `{name: (<module>:<attribute>, help)}`; the workspace's own are under
+        `workspace`.
+    """
+    found: dict[str, dict[str, tuple[str, str]]] = {}
+    for name, spec in resolved.section('commands').items():
+        if not isinstance(spec, dict) or not isinstance(spec.get('command'), str):
+            continue
+        source = resolved.sources.get(f'commands.{name}', WORKSPACE_FILE)
+        owner = 'workspace' if source == WORKSPACE_FILE else source
+        found.setdefault(owner, {})[name] = (str(spec['command']), str(spec.get('help', '')))
+    return found
 
 
 def _step_problems(resolved: Resolved) -> list[str]:
@@ -333,6 +359,8 @@ def _step_problems(resolved: Resolved) -> list[str]:
     problems = []
     for name, spec in resolved.section('steps').items():
         declared = spec if isinstance(spec, dict) else {}
+        if name in RESERVED_STEPS:
+            problems.append(f"steps.{name}: '{name}' is the step group's own command, so no step may take its name")
         primitive = declared.get('primitive')
         if 'code' in declared:
             continue

@@ -1,5 +1,5 @@
 """The playbooks, recipes, templates and recipe assets, installed with the package: `python -m veriphy.agents`."""
 
-from veriphy.agents._cli import assets_dir, content_dir, entries, main
+from veriphy.agents._cli import assets_dir, content_dir, entries
 
-__all__ = ['assets_dir', 'content_dir', 'entries', 'main']
+__all__ = ['assets_dir', 'content_dir', 'entries']

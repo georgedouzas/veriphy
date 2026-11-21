@@ -64,8 +64,11 @@ veriphy.run("certify", "Basic.lean:12", script="sos.sage")
 ```
 
 Lean has one tactic, `veriphy <verb>`, and one command, `#veriphy <verb>`, so no name clashes with Mathlib and
-`#veriphy help` lists every verb. The shell has one command, `veriphy <verb>` (also `python -m veriphy <verb>`), and
-Python has `veriphy.run`.
+`#veriphy help` lists every verb. The shell runs a step as `veriphy layers step <verb>` (also
+`python -m veriphy layers step <verb>`), and Python has `veriphy.run`. The `veriphy` command has four commands:
+`layers` (one group per layer, in order: `primitive`, `step`, `claims`, `workflow`, `agents`), `config`, `pack` (the
+selected packs, and a group per pack that declares programs, such as `math`) and `help`. What a pack adds appears
+under them, so the top level stays the same as packs are added.
 
 ### Verbs
 
@@ -116,10 +119,10 @@ import, and each pack adds its helpers under it (`veriphy.script.algebra`, `veri
 | Layer | Holds | Deterministic because | Used by hand as | A pack adds |
 |---|---|---|---|---|
 | 4. Agents | playbooks and skills | they act only through the layers below | `/prove`, `/research` | playbooks, skills |
-| 3. Workflows | step sequences with transitions, as data | the same records give the same next step | `veriphy next`, `veriphy run` | workflows |
-| 2. Claims | the claim graph, levels, trust, conventions, reports | they are functions of the records | `veriphy claims` | levels, conventions |
-| 1. Steps | a primitive with declared inputs and a record | inputs are hashed and outputs recorded | `veriphy <verb>` | steps, digest scopes |
-| 0. Primitives | typed, pinned operations on tools | same input and seed, same output | `veriphy primitive run`, `#veriphy` | tools, primitives |
+| 3. Workflows | step sequences with transitions, as data | the same records give the same next step | `veriphy layers workflow next`, `veriphy layers workflow run` | workflows |
+| 2. Claims | the claim graph, levels, trust, conventions, reports | they are functions of the records | `veriphy layers claims` | levels, conventions |
+| 1. Steps | a primitive with declared inputs and a record | inputs are hashed and outputs recorded | `veriphy layers step <verb>` | steps, digest scopes |
+| 0. Primitives | typed, pinned operations on tools | same input and seed, same output | `veriphy layers primitive run`, `#veriphy` | tools, primitives |
 
 Configuration is not a layer. It is shared by all of them: the resolved config fills one registry per layer, and each
 layer reads only its own registry.
@@ -130,29 +133,32 @@ layer reads only its own registry.
 
 A **primitive** is one typed operation, with schemas and a trust class: `lean.check`, `lean.serialize`, `lean.level`,
 `sage.sample`, `sage.search`, `horn.check`, `shacl.validate`, `r.run`. Veriphy invents no protocol for them. A
-primitive is run in one of three ways:
+primitive is run in one of two ways:
 
 - **a Python function**, called in-process (`module:function`): everything Veriphy can do in its own interpreter,
-  such as SHACL validation, `oo-horn`'s verdict, and Lean through the community REPL;
-- **a JSON-RPC 2.0 tool** over stdio, one message per line, as language servers and MCP servers talk: a long-running
-  process in another interpreter, which is SageMath's case;
-- **a files tool**: a foreign command that reads its input file and writes one JSON result to `{out}`, such as R.
+  such as SHACL validation, `oo-horn`'s verdict, and Lean through `lake env lean`;
+- **a files tool**: a command, run once per call, that reads its input file and writes one JSON result to `{out}`,
+  such as SageMath (`sage -python -m veriphy.packs.math.primitives.sage call <method>`) or R.
+
+Python keeps no process alive between calls. The one long-lived process is Lean's own: while Lean compiles a file
+that runs `veriphy certify`, `#veriphy test` or `#veriphy meaning`, it keeps one Sage session, a child process it
+talks to in JSON-RPC 2.0 over stdin and stdout, so a file with many calls starts Sage once.
 
 ```yaml
 tools:
   sage:
-    contract: jsonrpc
+    contract: files            # one process per call, writing its result to {out}
     run: [sage, -python, -m, veriphy.packs.math.primitives.sage]
     pin: {version: "10.9"}
 
 primitives:
   sage.sample:
     tool: sage
-    method: meaning
+    command: [call, meaning, '{input}', '{out}']
     trust: oracle
     input: {type: object, required: [problem], properties: {seed: {type: integer}}}
     output: {type: object, required: [outcome]}
-    seed: param                # the seed travels as the request's `seed`
+    seed: param                # the seed travels as the input's `seed`
   shacl.validate:
     function: veriphy.primitives.graph._primitives:shacl_validate
     trust: measurement
@@ -167,8 +173,8 @@ Inputs reach a tool as files or JSON, never interpolated into a shell command. B
 checked against its schema and its tool against its pin (an image digest, a commit with a hash, or an exact version).
 A mismatch refuses to run and names the field or both versions. The output is checked against its schema.
 
-The Lean primitives drive the community Lean REPL, which keeps one environment per import header, so `lean.check` and
-`lean.serialize` do not pay for loading Mathlib on every call.
+Each Lean primitive runs `lake env lean` once, and pays for loading its imports every time: the simplicity is worth
+more than the seconds, since a command runs one or two of them.
 
 ### Composites
 
@@ -181,7 +187,7 @@ lowest class of its parts. So `certify` is `kernel`, because Lean decides, and `
 
 ### By hand
 
-`veriphy primitive list` names the primitives of the workspace, `describe` prints one's schemas, and
+`veriphy layers primitive list` names the primitives of the workspace, `describe` prints one's schemas, and
 `run <primitive> --input input.json` runs it and prints its output, with no record. A pack can also surface a
 primitive where its users work: `#veriphy meaning`, `veriphy certify` and `veriphy test` call operations from a Lean
 file.
@@ -289,7 +295,7 @@ The same model covers a field with no proofs. Reproducing an empirical claim:
 
 Playbooks and skills tell an agent which workflow to follow and how to write the artifacts the agent steps need: a
 formal statement, an extraction, a Sage script, an analysis script. Everything else they do goes through
-`veriphy next` and `veriphy run`, so two agents on the same records take the same steps.
+`veriphy layers workflow next` and `veriphy layers workflow run`, so two agents on the same records take the same steps.
 
 ## Packs and configuration
 
@@ -372,12 +378,12 @@ veriphy/
   __init__.py      run, Result: the operation API, a facade over the layers
   script/          the script API: Goal, Result, found, refuted, unknown, and each pack's helpers
   core/            shared: errors, digests, canonical JSON, process runner, pack loading and the merge
-  primitives/      0  tools, primitives, contracts, pins, composites        veriphy primitive …
+  primitives/      0  tools, primitives, contracts, pins, composites        veriphy layers primitive …
                       graph/: the RDF engine, and the reasoner and oo-horn adapters
-  steps/           1  the step runner, digest scopes, the record store     veriphy <verb>, veriphy records
-  claims/          2  the claim graph, levels, trust, reasoning, reports    veriphy claims …
-  workflows/       3  next, run                                             veriphy next | run
-  agents/          4  the playbook loader                                   veriphy agents path
+  steps/           1  the step runner, digest scopes, the record store     veriphy layers step <verb> | list | records
+  claims/          2  the claim graph, levels, trust, reasoning, reports    veriphy layers claims …
+  workflows/       3  next, run                                             veriphy layers workflow next | run
+  agents/          4  the playbook loader                                   veriphy layers agents path
   packs/
     core/          pack.yaml declaring the built-ins
     lean/          primitives/lean  steps
@@ -390,31 +396,33 @@ Veriphy's layers up to k. What every workspace needs (the claim graph, its reaso
 modules, and the `core` pack only declares it. A step's code lives at the highest layer it needs, `report` in
 `veriphy.claims` for instance, and registers itself, so the step runner never imports a layer above it. The Lean library
 in `lean/` holds the Lean side of the `lean` and `math` packs: the `veriphy` tactic, the `#veriphy` command and the
-bridge to the Sage daemon.
+bridge to the Sage session.
 
 | Module | Layer | Public surface |
 |---|---|---|
 | `veriphy` | facade | `run(verb, target, **inputs) → Result`, `Result` |
 | `veriphy.script` | facade | `Goal`, `Result`, `found`, `refuted`, `unknown`, pack helpers |
 | `veriphy.core` | shared | errors, digests, canonical JSON, packs, `veriphy config` |
-| `veriphy.primitives` | 0 | descriptors, the two contracts, pin checks, composites, `veriphy primitive` |
-| `veriphy.steps` | 1 | the step runner, digest scopes, records, `veriphy <verb>`, `veriphy records` |
-| `veriphy.claims` | 2 | the claim graph, levels, trust classes, reasoning, reports, `veriphy claims` |
+| `veriphy.primitives` | 0 | descriptors, the two contracts, pin checks, composites, `veriphy layers primitive` |
+| `veriphy.steps` | 1 | the step runner, digest scopes, records, `veriphy layers step <verb>`, `list`, `records` |
+| `veriphy.claims` | 2 | the claim graph, levels, trust classes, reasoning, reports, `veriphy layers claims` |
 | `veriphy.workflows` | 3 | `next`, `run` |
-| `veriphy.agents` | 4 | the playbooks, `veriphy agents path` |
+| `veriphy.agents` | 4 | the playbooks, `veriphy layers agents path` |
 | `veriphy.packs.<name>` | packs | `pack.yaml` and the pack's own code, by layer |
 
-## From today to the target
+## From the earlier names
 
-| Today | In the target |
+The names before 0.8 are removed, each in favour of one name:
+
+| Before 0.8 (removed) | Now |
 |---|---|
 | `sage_run "script"`, `sage_run file "…"` | `veriphy certify "…"` |
-| `sage_test …` | `veriphy test …` |
+| `sage_test …` | `#veriphy test …` |
 | `#veriphy_meaning`, `#veriphy_levels`, `#veriphy_graph` | `#veriphy meaning`, `#veriphy level`, `#veriphy export` |
 | `#veriphy_translate`, `#veriphy_tables`, `#veriphy_coverage`, `#veriphy_check_translations` | `#veriphy translate`, `#veriphy translations`, `#veriphy coverage`, `#veriphy translations check` |
-| `python -m veriphy elaborate`, `level`, `meaning` | `veriphy check`, `veriphy level`, `veriphy meaning` |
-| `python -m veriphy.graph …` | `veriphy claims …` |
-| `python -m veriphy.prompts path` | `veriphy agents path` |
+| `python -m veriphy elaborate`, `level`, `meaning` | `veriphy layers step check`, `veriphy layers step level`, `veriphy layers step meaning` |
+| `python -m veriphy.graph …` | `veriphy layers claims …` |
+| `python -m veriphy.prompts path` | `veriphy layers agents path` |
 | Sage scripts setting `proof` from injected globals | scripts with a header and `run(goal, inputs)` |
 | `veriphy.toolkit` (226 public names) | `veriphy.script` and its pack helpers |
 | `veriphy.oracle`, `veriphy.sage_server` | `veriphy.packs.math.primitives.sage` |
@@ -422,8 +430,7 @@ bridge to the Sage daemon.
 | `veriphy.certificates`, `veriphy.translations` | `veriphy.packs.math.steps.certificates`, `veriphy.packs.math.primitives.translations` |
 | `veriphy.prompts` | `veriphy.agents`, with the playbooks in the `math` pack, research included, since it proves in Lean |
 | the record store in `veriphy.core` | `veriphy.steps` |
-| Sage daemon and its own JSON-per-line protocol | JSON-RPC 2.0, with each daemon method a `sage.*` primitive |
-| `lake env lean` per Lean step | the community Lean REPL, loading imports once |
+| Sage session and its own JSON-per-line protocol | JSON-RPC 2.0, with each Sage method a `sage.*` primitive |
 | `oo-horn` pinned by commit and hash | the pinning rule every tool follows, in the `core` pack |
 | step records with hand-written Python steps | steps declared over primitives |
 | a Lean step's digest over every Lean file | the `lean-imports` digest scope |
@@ -442,8 +449,8 @@ Each milestone was an OpenSpec change, built from the bottom layer up and archiv
 3. `layered-modules` (archived): the module tree by layer, the import rule, and the deprecated aliases.
 4. `operation-api` (archived): operations, verbs, results, the `veriphy` tactic, command and shell command,
    `veriphy.run`, and the script contract.
-5. `primitives` (archived): primitives as Python functions, JSON-RPC 2.0 tools or files tools, pins and schemas, the
-   Lean REPL, and Lean, SageMath and `oo-horn` behind them.
+5. `primitives` (archived): primitives as Python functions or files tools, pins and schemas, the
+   Lean, SageMath and `oo-horn` behind them.
 6. `packs-and-config` (archived): `veriphy.yaml`, packs by name and path, JSON Merge Patch, `config show`/`check`.
 7. `click-commands` (archived): the `veriphy` command as one click group.
 8. `declarative-steps` (archived): steps declared over primitives, digest scopes with `lean-imports`, agent steps.
@@ -455,7 +462,7 @@ Each milestone was an OpenSpec change, built from the bottom layer up and archiv
 
 - **The name.** Veriphy reads as physics. If the scope is all of science, the name should be decided before
   `veriphy.yaml` and the pack names fix it.
-- **The Lean session.** The `primitives` design wraps the community REPL, with one environment per import header. A
-  Veriphy server on Lean's frontend could reuse environments across headers, at the cost of maintaining it.
+- **Lean's load time.** Each Lean primitive loads its imports. A workflow with many Lean steps on one file could
+  share them through the community REPL, if the time ever matters more than the process it keeps.
 - **Containers.** Pinning R or Stata by image needs a container runtime on the user's machine. A pack could offer a
   lockfile alternative (`renv`, `conda-lock`) with a weaker pin.

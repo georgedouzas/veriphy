@@ -1,7 +1,7 @@
 """Run the research graph from the command line: `python -m veriphy.claims <command>`."""
 
 import sys
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -16,7 +16,6 @@ from veriphy.claims._slices import render_slice, slice_claim
 from veriphy.claims._store import add_triples, confirm, graph_dir, load_graph, resolve_term
 from veriphy.claims._vocabulary import AXIOM, label_of, source_of, vocabulary_text
 from veriphy.core import GraphError, find_workspace_root
-from veriphy.core._commands import run_command
 from veriphy.primitives.graph._checker import CHECKER_VARIABLE, build_checker, find_checker
 
 FAILED, NOT_ACCEPTED = 1, 3
@@ -265,15 +264,3 @@ _command(
     click.argument('action', type=click.Choice(['build', 'path'])),
     click.option('--reasoner-only', is_flag=True, help='fetch the release (the reasoner) only'),
 )
-
-
-def main(argv: Sequence[str] | None = None) -> None:
-    """Run one command of the research graph.
-
-    It exits with status 1 on a graph error, 2 on bad usage, and 3 when a run is not accepted by the checker,
-    validation finds a violation, or a slice loses a consequence.
-
-    Args:
-        argv: The command-line arguments, `sys.argv[1:]` when `None`.
-    """
-    run_command(claims, argv, 'veriphy claims')

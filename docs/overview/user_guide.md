@@ -1,208 +1,136 @@
-# User guide
+# Guide
 
-To install Veriphy, see the [README](../index.md). To add a recipe or a building block, see
-[Development](../development/index.md).
+Veriphy verifies claims in any field that has a checkable notion of evidence. The framework knows nothing about
+any particular field: its packs bring the tools, the checks and the levels. This guide covers the framework. The
+[packs](../packs/index.md) pages cover what each shipped pack adds. To install Veriphy, see the [README](../index.md).
 
-## How it works
+## Concepts
 
-Lean and a computer algebra system solve complementary problems. Sage computes quickly, but every result has to be
-trusted, and wrong branch cuts, dropped solutions and simplifier bugs are real. Lean proves with kernel certainty but
-has no comparable symbolic engine. Physics needs both.
-
-Veriphy follows the skeptical approach (Harrison and Théry). Sage finds what is hard to find and easy to check, a short
-script turns that into a Lean tactic block, and the kernel accepts it or rejects it. A certificate is worth computing
-when finding is much harder than checking and an existing Lean checker accepts it (`ring1`, `linear_combination`,
-`nlinarith`, `positivity`, `norm_num`, `decide`). Ideal membership, sums of squares, LP duality and witnesses are the
-classic cases.
-
-Sage, the bridge, the translator and the agent are all outside the trusted base:
-
-- `veriphy certify` rejects `sorry` and any axiom beyond Lean's standard three, and replays the block from its printed text.
-- Polynomials cross the bridge as structured term lists rather than strings, so Lean rebuilds terms instead of parsing
-  CAS output. A mistranslation fails the tactic. It can't prove the wrong thing.
-- Sage is needed only while writing proofs. `veriphy certify` offers a `Try this:` replacement, you commit that, and your
-  proofs and CI need only Lean and mathlib.
-
-Veriphy has no ready-made certificates. Real goals have a long tail, so it ships building blocks: the tactic, a toolkit
-and a recipe per technique. Each certificate is written for the goal in hand and saved in your project.
-
-## Skills
-
-`research` calls `prove` for each claim, and `prove` calls `certify` for each computational core. The skills are thin
-wrappers around plain markdown that ships with the Python package: `prove.md`, `certify.md`, `research.md` and
-`recipes/`, in the directory `sage -python -m veriphy agents path` prints. Any agent can follow them, and
-`sage -python -m veriphy agents list` names every playbook, recipe, template and asset.
-
-### `prove`: from a statement to a proof
-
-The input is a Lean statement, an informal statement, or a backlog item from a repo you supply, such as a
-[Physlib](https://physlib.io) `informal_lemma`. If it refers to another library, the workspace has to require both that
-library and Veriphy.
-
-1. **Formalize.** Lean can't check that a formal statement means what the informal one said, so the agent runs two
-   checks. It translates the statement back to English and compares. It then tests it with `symbolic_check` or
-   `matrix_check`, or at ten or more random values satisfying the hypotheses. A counterexample stops the run.
-2. **Compile.** The statement type-checks with `sorry` as the proof.
-3. **Prove.** Cheapest route first: `simp`, `norm_num`, `positivity`, `nlinarith`, then premise search, then a
-   certificate through `certify`. When the agent doesn't know what the proof even is, it can ask Sage (`solve`,
-   `run_script`), but it has to prove in Lean whatever it takes from the answer. Missing lemmas get proved first.
-   Missing definitions are flagged to you and never invented.
-4. **Verify.** `lake build` from clean, with no `sorry` and no call to Sage in the final proof.
-
-It ends with one of these, and leaves commits and PRs to you:
-
-| Report | Meaning |
+| Concept | What it is |
 |---|---|
-| `proved` | a verified Lean proof, naming the recipes and scripts used |
-| `tested` | no certificate is feasible, and `#veriphy test` checked the claim at instances. The report gives the level and the counts |
-| `statement-suspect` | the numeric test contradicted the claim, and the report gives the counterexample |
-| `blocked-library-gap` | the statement needs theory that doesn't exist yet, named in the report |
-| `blocked-missing-building-block` | the toolkit lacks a Sage computation or a Lean emitter, named in the report |
+| claim | something a source asserts: a theorem, an estimate, a convention a chapter relies on |
+| primitive | a deterministic operation, typed by JSON Schema, pinned, of one trust class; it records nothing |
+| step | a primitive with declared inputs; running it writes a record, and the same inputs replay it |
+| record | what a step checked: the digest of its inputs, the tools and versions, the status, the outputs, the level |
+| trust class | the kind of evidence a primitive gives: `kernel`, `checker`, `reproduction`, `oracle`, `measurement`, `search` |
+| level | how verified a claim is, in one order from `none`, each level of one trust class |
+| workflow | a list of steps with what each status does next; the records decide the next step |
+| agent | writes what Veriphy cannot (a formal statement, a proof, an extraction), and records it with an agent step |
+| pack | a directory with a `pack.yaml` that adds to any of the above |
 
-### `certify`: one goal, one certificate
+Veriphy is built in five layers, each using only the ones below it: primitives (0), steps (1), claims (2), workflows (3)
+and agents (4). A pack can add to every layer. The [architecture](../architecture/index.md) explains the design.
 
-It inspects the goal, reuses a saved script if one fits, and otherwise adapts a recipe. It then iterates on Lean's
-errors until the block is accepted. Working scripts stay in `.veriphy/certificates/`, where any goal of the same shape
-can reuse them. See [Building proofs with `veriphy certify`](#building-proofs-with-veriphy-certify).
+Agents and computer algebra systems are untrusted. A step's trust class comes from the primitive that decides it, so
+an agent's artifact counts only once a checking step accepts it, and a search tool's answer counts only through the
+checker that verifies it.
 
-### `research`: a paper or chapter as a whole
+## The workspace
 
-`research` checks a draft and doesn't write your prose. A typical use is to run it on each chapter as it stabilizes, and
-again after each substantial edit.
-
-1. **Extract.** The agent writes claims, conventions, concepts and dependencies to
-   `.veriphy/graph/sources/<source>.agent.ttl`. It never writes to a `.human.ttl` file. Confirming an assertion is your
-   act.
-2. **Validate.** `validate` checks the file against the SHACL shapes. A clean report means the file is complete, not
-   that it is right.
-3. **Triage.** Each claim with a computable form is tested numerically under the conventions it assumes. A
-   counterexample makes it `suspect`, and a convention clash is a common cause. The rest go to `recipe`, `test`
-   (`#veriphy test`) or `formalize` (needs definitions or theory you don't have yet).
-4. **Prove.** In dependency order, each claim goes through `prove` with its graph slice as context, and is linked to its
-   Lean claim with `formalizedBy`.
-5. **Export.** `#veriphy export <prefix>` writes the levels and dependencies Lean knows.
-6. **Reason.** `reason` derives the consequences and `oo-horn` checks the run. `excludes`, `clashes`, `levels` and
-   `appendix` then build the report.
-7. **Report.** You get the appendix and, for each claim, its group and effective level, along with every clash, suspect
-   and capped claim. A claim isn't called proved below `lean-proof`, and an unchecked run isn't called checked.
-
-The appendix goes in the paper with `--format latex`. Your reader sees the level of each claim, what caps it, the
-checker's verdict and the command that rechecks the run. Before changing a convention midway, run `impact` and `plan
---against HEAD` to see what the change reaches.
-
-
-## Your project
-
-Veriphy keeps its files under `.veriphy/` at the Lean workspace root. Commit it with your proofs.
+A workspace is a directory, usually a repository. Veriphy finds its root by walking up from the current directory, or
+takes it from `--root`. It keeps its files under `.veriphy/`:
 
 | Directory | Holds |
 |---|---|
-| `.veriphy/certificates/` | certificate scripts |
-| `.veriphy/translations/` | your translation and rewrite entries |
-| `.veriphy/lean/` | Lean files copied from Veriphy, such as recipe assets |
-| `.veriphy/coverage/` | coverage reports |
-| `.veriphy/tests/` | records written by `#veriphy test` |
-| `.veriphy/graph/` | the research claim graph: `sources/`, `lean/` and `runs/` |
+| `.veriphy/runs/` | the records, one JSON file per step run; they stay out of git, and deleting them only means the steps run again |
+| `.veriphy/graph/` | the claim graph: `sources/`, `lean/`, `runs/` and `appendix/` |
 
-Projects from Veriphy 0.1.0 keep scripts in a top-level `certificates/`. They still work, and the catalog prints the
-command that moves them.
+A pack may add directories of its own; the `math` pack's are on [its page](../packs/math.md#your-project).
 
-Some recipes need Lean assets. `sage -python -m veriphy agents copy assets/VeriphyAssets/<name>` copies one to
-`.veriphy/lean/VeriphyAssets/`, and the library is declared once in `lakefile.toml`:
+### `veriphy.yaml` and packs
 
-```toml
-[[lean_lib]]
-name = "VeriphyAssets"
-srcDir = ".veriphy/lean"
+The workspace may hold `veriphy.yaml` at its root. Every key is optional. Without the file, a workspace is
+`packs: [math]`, which brings in `lean` and `core`.
+
+```yaml
+version: 1
+packs: [reproduction, ./packs/econ]   # by name, or by the path of a directory holding a pack.yaml
+tools:
+  r: {timeout: 1200}
 ```
 
-| Asset | States | Recipe |
-|---|---|---|
-| `CoordinateGeometry.lean` | Christoffel symbols, curvature, Killing vectors and forms in a chart | `coordinate_geometry` |
-| `FusionData.lean` | multiplicity-free fusion data, pentagon and hexagon equations, gauge transformations | `fusion_category` |
+A pack is named by the name of a shipped pack, by the name a Python package registers under the `veriphy.packs` entry
+point, or by path. Packs are applied in order, each after the packs it requires, then the workspace file, each as a
+JSON Merge Patch (RFC 7396): a mapping merges key by key, a later value replaces an earlier one, and `null` removes an
+entry. So `tools: {sage: null}` drops SageMath and every primitive that needs it. When two packs that do not require
+each other define the same entry, `veriphy config check` names both, and the workspace file settles it by defining the
+entry itself.
 
-Environment variables:
+`veriphy config show` prints the resolved configuration with the pack or file each entry comes from.
+`veriphy config check` refuses collisions and references that do not resolve. The digest of the resolved configuration
+goes into every record, so a changed pin makes the steps run again, and a changed comment does not.
 
-| Variable | Effect |
-|---|---|
-| `VERIPHY_SAGE_CMD` | the `sage` executable, if it isn't on `PATH` |
-| `VERIPHY_SAGE_TIMEOUT` | seconds allowed per Sage request (default 150) |
-| `VERIPHY_GRAPH_SETUP` | `off` stops the graph fetching or building anything |
-| `VERIPHY_OO_HORN` | use this `oo-horn` binary |
+## Commands
 
-## Operations and records
+```text
+veriphy layers primitive list | describe | run          layer 0
+veriphy layers step <step> … | list | records           layer 1
+veriphy layers claims validate | reason | levels | …    layer 2
+veriphy layers workflow list | next | run               layer 3
+veriphy layers agents list | path | show | copy         layer 4
+veriphy config show | check
+veriphy pack list | <pack> <program> …
+veriphy help
+```
 
-Everything Veriphy runs is an operation: a verb, the target it acts on, its inputs, and a result. The shell runs one
-as `veriphy <verb> <target> [inputs]` (or `python -m veriphy <verb>`), Python as
-`veriphy.run(verb, target, **inputs)`, and Lean as the tactic `veriphy <verb>` on the goal or the command
-`#veriphy <verb>` on a claim. `veriphy help` lists the verbs of the workspace, and `#veriphy help` those of Lean.
+`veriphy help` lists the workspace's steps, its packs' programs and Lean's verbs. Every command takes `--help`. Python
+runs a step as `veriphy.run(step, target, **inputs)`.
 
-| Operation | Kind | Does |
-|---|---|---|
-| `check <file>` | check | Lean checks the file, and the record gives each declaration's axioms |
-| `level <module> [--prefix P]` | derived | the level `#veriphy level` gives each declaration |
-| `meaning <file> <declaration>` | evidence | the statement tested at seeded values satisfying its hypotheses: `agrees`, `counterexample` or `undecided` |
-| `validate` | evidence | the research graph against its shapes |
-| `reason` | check | graph reasoning, with `oo-horn`'s verdict |
-| `report <source> [--format latex]` | derived | the verification appendix |
+## Primitives
+
+Under every step are primitives: deterministic operations that record nothing. A primitive has an input schema, an
+output schema and a trust class, and runs one of two ways:
+
+- as a Python function, in-process;
+- as a command, run once per call, that writes one JSON result to `{out}`: any other program, such as SageMath in the
+  `math` pack or R in the `reproduction` pack.
+
+Veriphy keeps no process alive between calls.
+
+A tool is pinned by an exact version, a commit with its hash, or a container image by digest (run with podman or
+docker). The input is checked against its schema before anything runs, the tool against its pin, and the output against
+its schema. Every output names the tools that produced it, with their versions.
+
+A composite combines primitives, and its trust class is that of the part that decides it. The `math` pack's `certify`
+has Sage search for a proof and Lean check it, so its class is `kernel`.
+
+```sh
+veriphy layers primitive list                     # every primitive, its class, its pack, whether it can run here
+veriphy layers primitive describe certify         # its parts, its deciding part, its schemas
+veriphy layers primitive run shacl.validate --input input.json
+```
+
+## Steps and records
+
+`veriphy layers step <step> <target> [inputs]` runs a step and prints its status and the path of its record.
+`veriphy layers step list` lists the workspace's steps with the pack that defines each, and `veriphy layers step <step>
+--help` is generated from the step's declaration.
 
 A record is a JSON file under `.veriphy/runs/<step>/<digest>.json`. It holds the step, its kind, the digest of its
-inputs, the tool versions, the status, the outputs and, for checks and derived steps, the level. The digest covers the
-content of the inputs, not their paths, so a step that runs again on the same inputs returns its record without
-running anything. A record whose status is `unchecked` or `failed` describes the machine rather than the inputs, so
-the step runs again the next time. `--rerun` forces a run and keeps both records when the result changed.
+inputs, the tool versions, the status, the outputs and any level granted. The digest covers the content of the inputs,
+not their paths, so a step that runs again on the same inputs returns its record without running anything. A record
+whose status is `unchecked` or `failed` describes the machine rather than the inputs, so the step runs again next
+time. `--rerun` forces a run, and keeps both records when the result changed.
 
 `--json` prints the record and nothing else, for agents. The command exits with status 0 when the step accepted, 1
-when it refused, found a counterexample or failed, 2 on bad usage and 3 when the result is unchecked or undecided.
-`meaning` checks the one thing the kernel cannot: that a formal statement says what the informal one meant. It draws
-values for the binders with `--seed` (default 0), keeps those at which every hypothesis and every domain condition
-holds, and evaluates the conclusion exactly, or in interval arithmetic of 128 bits. An equation is first tried
-symbolically. `--informal "<text>"` stores the agent's reading of the statement in the record, `--values N` sets how
-many values must agree (10 by default), and `--points '[{"x": "pi"}]'` evaluates at given values instead.
-`#veriphy meaning c` runs the same check inside Lean. Agreement is evidence and grants no level.
+when it refused, found a counterexample or failed, 2 on bad usage, and 3 when the result is unchecked or undecided.
+`veriphy layers step records` lists the records, and `records <digest>` shows one.
 
-`veriphy records` lists the records, and `records <digest>` shows one. The records stay out of git by
-default: delete `.veriphy/runs/` and the steps simply run again.
-
-`veriphy.run` returns the result with its `verb`, `target`, `status`, `outputs`, `level` and `record`:
+Python gets the same result, with its `verb`, `target`, `status`, `outputs`, `level` and `record`:
 
 ```python
 import veriphy
 
-result = veriphy.run('meaning', 'Claim.lean', declaration='wrong', informal='the square root of x squared is -x')
-result.status, result.outputs['counterexample']['values']   # ('counterexample', {'x': '1'})
+result = veriphy.run('reproduce', 'analysis.R', data='mtcars.csv', sha256='450a…', claimed=-5.344472)
+result.status, result.level   # ('agrees', 'reproduced')
 ```
 
-The other programs run through the same command: `veriphy claims …` (the research claim graph), `veriphy agents …`
-(the playbooks and templates), `veriphy certificates …` (your saved scripts) and `veriphy translations …` (the
-translation entries in force).
-
-### Configuration: `veriphy.yaml` and packs
-
-A workspace may hold `veriphy.yaml` at its root. Every key is optional, and without the file a workspace is
-`packs: [math]`, which brings `lean` and `core` with it:
-
-```yaml
-version: 1
-packs: [core, ./packs/econ]     # by name, or by path to a directory holding a pack.yaml; no Lean, no SageMath
-tools:
-  sage: {pin: {version: "10.9"}}
-```
-
-A pack is a `pack.yaml` in the same format, with `name` and `requires` added, beside its files. The packs are applied
-in order, each after the packs it requires, and then the workspace file, each as a JSON Merge Patch (RFC 7396): a
-mapping merges key by key, a later value replaces an earlier one, and `null` removes an entry, so
-`tools: {sage: null}` drops SageMath and every primitive that needs it. When two packs that do not require each other
-define the same entry, `veriphy config check` names both, and the workspace file settles it by defining the entry
-itself.
-
-`veriphy config show` prints the resolved configuration with the pack or file each entry comes from, and
-`veriphy config check` refuses collisions and references that do not resolve. The digest of the resolved
-configuration enters every record, so a changed pin runs the steps again, and a changed comment does not.
+Steps come in four kinds: `agent` (records an artifact an agent wrote, with its author), `evidence` (a measurement,
+granting no level), `check` (accepts or refuses, and may grant a level) and `derived` (computed from other records).
 
 ### Declaring a step
 
-A step that wraps a primitive is declared, in a pack's `pack.yaml` or in `veriphy.yaml`, with no Python:
+A step over a primitive is declared in YAML, in a pack's `pack.yaml` or in `veriphy.yaml`, with no Python:
 
 ```yaml
 steps:
@@ -210,23 +138,63 @@ steps:
     kind: check
     primitive: r.run
     grants: reproduced
-    compare: {field: estimate, against: claimed, tolerance: 0.001}
+    compare: {field: estimate, against: claimed, tolerance: 0.000001}
     inputs:
-      script: {scope: file, path: true}
+      script: {scope: file, path: true, help: the analysis script}
       data: {scope: file, path: true}
-      claimed: {type: integer, record: true}
+      sha256: {help: "the data's SHA-256, as the claim names it"}
+      claimed: {type: number, optional: true, record: true}
 ```
 
-Each input names its digest scope: `value` (the default), `file`, `files`, or one a pack defines, as the `lean` pack's
-`lean-imports` (a Lean file, the workspace files it imports, the toolchain and the manifest, so an edit to an unrelated
-file replays the record). An input is `path` (resolved from the workspace root), `optional` (an option, not an
-argument), of a `type` (`string`, `integer` or `json`), with a `default`, or `record` only (kept in the record, not sent
-to the primitive). `status` names the output field holding the status, `compare` sets it to `agrees` or `differs`
-within a tolerance, and `grants` gives the level when the step accepts. An `agent` step records an artifact an agent
-wrote, as `veriphy formalize Claim.lean --by agent`. `veriphy <step> --help` is generated from the declaration, and
-`veriphy steps` lists the workspace's steps with the pack that defines each.
+| Field | Meaning |
+|---|---|
+| `kind` | `agent`, `evidence`, `check` or `derived` |
+| `primitive` | the primitive the step calls (none for an agent step) |
+| `inputs` | one argument or option each, in order |
+| `status` | the output field that holds the status (default `status`) |
+| `compare` | sets the status to `agrees` or `differs`, comparing an output `field` with an input `against`, within a `tolerance` |
+| `grants` | the level the step grants when it accepts |
+| `seed` | whether the step takes `--seed`, which enters the digest |
+| `help` | one line for the command's help |
 
-### Workflows
+An input has a digest `scope`: `value` (the default), `file`, `files`, or one a pack defines. For example, the `lean`
+pack's `lean-imports` covers a Lean file, the workspace files it imports, the toolchain and the manifest, so an edit to
+an unrelated file replays the record. An input may also be a `path` (resolved from the workspace root), `optional` (an
+option, not an argument), of a `type` (`string`, `integer`, `number` or `json`), with a `default`, `many` (repeatable),
+or `record` only (kept in the record, not sent to the primitive).
+
+An agent step needs no primitive:
+
+```yaml
+steps:
+  formalize:
+    kind: agent
+    inputs: {artifact: {scope: file, path: true}}
+```
+
+`veriphy layers step formalize Claim.lean --by agent` records the file's digest and its author.
+
+## Trust classes and levels
+
+| Class | Evidence | Grants levels |
+|---|---|---|
+| `kernel` | a proof checked by a proof assistant's kernel | yes |
+| `checker` | a result checked by an independent verified checker | yes |
+| `reproduction` | the same result recomputed from the same code, data and environment | yes |
+| `oracle` | an exact or interval evaluation by an untrusted system | yes |
+| `measurement` | a report about the inputs, such as a validation | no |
+| `search` | a candidate found by search, which something else must check | no |
+
+The classes are fixed. The levels come from the packs: each names its class and the level directly below it, and a
+workspace's levels form one order from `none`. With the default packs the order is `none`, `oracle-test`,
+`kernel-test`, `lean-proof`, `certificate`. With `reproduction` it gains `reproduced` and `robust`. When two packs place
+a level in the same position, `veriphy config check` names both, and `veriphy.yaml` orders them by overriding `above`.
+
+A step grants only levels of its primitive's class. `veriphy config check` refuses a step that would grant another,
+and so does the step itself when it writes its record. Every report shows a level with its class, as in
+`reproduced (reproduction)`, so a reproduction or an oracle test never reads as a proof.
+
+## Workflows
 
 A workflow is a list of steps in a pack's `pack.yaml` or in `veriphy.yaml`, with what a record's status does next:
 
@@ -240,334 +208,97 @@ workflows:
     - check: {refused: prove, attempts: 5}
 ```
 
-`veriphy next prove-claim Claim.lean` reads the records whose inputs name the target, in the order they were written,
-and names the next step: the first entry with no newer record, or `stop` with the status that stopped it. A return to
-an earlier entry needs a new record, `attempts` counts the step's records (with `exhausted` naming where to go when
-they are used up), and `when: {without: kernel}` runs an entry only while no record grants a `kernel` level.
-`veriphy run prove-claim Claim.lean --input declaration=t` runs the steps that are not an agent's until the next one
-is (`formalize`, `prove`, `extract`), and says what the agent must record. The `math` pack ships `prove-claim` and
-`verify-paper`, the `reproduction` pack `reproduce-analysis`.
+`veriphy layers workflow next prove-claim Claim.lean` reads the records whose inputs name the target, in the order
+they were written, and names the next step: the first entry with no newer record, or `stop` with the status that
+stopped it. Going back to an earlier entry needs a new record there. `attempts` counts the step's records, and
+`exhausted` names where to go once they are used up (`stop` by default). `when: {without: kernel}` runs an entry only
+while no record grants a level of the `kernel` class.
 
-### Primitives
+`veriphy layers workflow run prove-claim Claim.lean --input declaration=t` runs the steps that are not an agent's
+until the next one is, and says what the agent must record. `veriphy layers workflow list` lists the workspace's
+workflows. The `math` pack ships `prove-claim` and `verify-paper`, and the `reproduction` pack `reproduce-analysis`.
 
-Under every operation are primitives: deterministic operations, which record nothing. A primitive has an input
-schema, an output schema and a trust class (`kernel`, `checker`, `reproduction`, `oracle`, `measurement` or
-`search`), and runs one of three ways: as a Python function in-process (SHACL validation, `oo-horn`'s verdict, Lean
-through the community REPL), as a method of a JSON-RPC 2.0 tool over stdio (the Sage daemon, which lives in Sage's own
-Python), or as a command writing one JSON result (foreign tools). A composite combines primitives: `certify` has Sage
-search for a proof and Lean check it, so its class is Lean's, `kernel`; `meaning` has Lean serialize a claim and Sage
-sample it, so its class is `oracle`.
+## The claim graph
 
-```
-veriphy primitive list                       # every primitive, its class, its pack, whether it can run here
-veriphy primitive describe certify           # its parts, its deciding part, its schemas
-veriphy primitive run sage.sample --input problem.json
-```
+Steps check one claim at a time. The claim graph checks how the claims of a paper or research program fit together:
+which conventions each one assumes, which claims it rests on, and how verified it is once its weakest dependency
+counts. It belongs to the `core` pack and works with any field's levels.
 
-The input is checked against its schema before anything runs, a tool against its pin (an exact version, a commit with
-its hash, or a container image), and the output against its schema. Every output names the tools that produced it,
-with their versions. The Lean REPL keeps one environment per import header, so a file's imports load once for every
-check that shares them; `VERIPHY_LEAN_REPL=off` runs `lake env lean` each time instead, with the same output. Each
-pack declares its primitives in its `pack.yaml`.
-
-The names before 0.8 keep working until the next minor release, each with a warning that names its replacement:
-`sage_run` is `veriphy certify`, `sage_test` is `#veriphy test`, `#veriphy_meaning`, `#veriphy_levels` and
-`#veriphy_graph` are `#veriphy meaning`, `#veriphy level` and `#veriphy export`, the translation commands are
-`#veriphy translate`, `#veriphy translations [check]` and `#veriphy coverage`, the step `elaborate` is `check`, and
-`python -m veriphy.graph` and `python -m veriphy.prompts` are `veriphy claims` and `veriphy agents`.
-
-## Building proofs with `veriphy certify`
-
-```lean
--- the script sees the goal (x0 = a, x1 = b) and returns the Lean tactic block it found
-example (a b : ℝ) : 0 ≤ a ^ 2 * b ^ 2 - 2 * a * b + 1 := by
-  veriphy certify "return found(nlinarith([sq_nonneg(x0*x1 - 1, problem)]))"
--- Try this: nlinarith [sq_nonneg (a * b - 1)]
-
--- a saved script from the project, here a Farkas refutation found by an exact LP
-example (x y : ℚ) (h1 : x + y ≤ 1) (h2 : x - y = 3) (h3 : 0 ≤ y) : False := by
-  veriphy certify "farkas.sage"
-```
-
-The steps are the ones `certify` follows:
-
-1. **Inspect.** `veriphy search "print(goal_kind, goal.text); print(hyps); print(atoms); return unknown('inspecting')"`
-   shows the problem and closes nothing.
-2. **Reuse.** `sage -python -m veriphy certificates list` shows your saved scripts, and `show <name>` prints one. A
-   saved script runs unchanged on any goal of the same shape.
-3. **Adapt.** Otherwise copy a template with `sage -python -m veriphy agents copy recipes/templates/<name>` and edit
-   the lines marked `EDIT`.
-4. **Iterate.** A failure shows the script's output, the Lean text and Lean's error together.
-5. **Commit** the emitted replacement, and keep the script.
-
-Every script, saved or inline, follows one contract. A saved script declares itself and defines `run`:
-
-```python
-SCRIPT = {'name': 'sos_pair', 'serves': 'certify', 'technique': 'one square', 'goal': '0 ≤ (a - b) ^ 2',
-          'description': 'The goal is a square.', 'inputs': {}}
-
-
-def run(goal, inputs):
-    return found(nlinarith([sq_nonneg(x0 - x1, problem)]))
-```
-
-`goal` is the goal proposition (`goal.poly`, `goal.rel`, `goal.text`, `goal.expr`), `inputs` the values the caller
-gave, and the whole problem is bound as `problem`, with its parts (`lhs`, `rhs`, `hyps`, `R`, the variables). `run` returns `found(…)` with what the verb needs
-(a proof for `certify`, instances for `test`), `refuted(values)` when the goal is false there, or `unknown(reason)`.
-An inline script is the body of `run`. Upper-case constants above `run` are the lines a copy edits. A script that
-assigns `proof` or `instances` instead still works, with a note, until the next minor release.
-
-| Goal shape | Recipe |
-|---|---|
-| `a = b` from equality hypotheses | `ideal_membership` |
-| `False`, `a ≤ b`, `a < b` linear in the hypotheses | `farkas` |
-| `0 ≤ p`, `p` polynomial | `sos` |
-| polynomial inequality needing products or squares | `hint_search` |
-| `lhs = rhs` where the factored `lhs` helps | `factor_rewrite` |
-| `∃ x₁ … xₙ, …` with rational values | `witness` |
-| `∑ k ∈ Finset.range n, f k = F n` | `sum_induction` |
-| long manipulation through intermediate forms | `calc_derivation` |
-| easy on each side of a condition | `case_split` |
-| identity between explicit matrices | `matrix_identity` |
-| `lhs ≤ rhs` with divisions (rational functions) | `rational_inequality` |
-| identity of `exp`, `log`, `sqrt`, `sin`, `cos`, `cosh`, … by named lemmas | `transcendental_rewrite` |
-| `!![…]` identity, `det` or `trace` written in the goal | `matrix_from_goal` |
-| `deriv (fun x => f x) a = v` with an explicit `f` | `derivative` |
-| ODE in `deriv x`, `x` given by `hx : x = fun s => …` or asked for by `∃ x` | `ode_solution` |
-| bracket relations, Casimirs, Cartan-matrix facts of explicit matrices | `lie_structure` |
-| representations, decompositions, branching, Clebsch-Gordan | `representation` |
-| `False` from nonlinear polynomial hypotheses; `p = 0` from `pᵏ` in the ideal | `infeasibility` |
-| `Nat.Prime p` for a large explicit `p` | `primality` |
-| Smith or Jordan form, diagonalization of an explicit matrix | `matrix_normal_form` |
-| `NormedSpace.exp` of an explicit matrix (nilpotent, diagonalizable) | `matrix_exponential` |
-| commutators of explicit or differential operators; gamma-matrix identities | `operator_identity` |
-| Christoffel symbols, Killing vectors, exact forms, contractions in coordinates | `coordinate_geometry` |
-| hypergeometric sums (binomials, factorials): WZ pairs, Gosper | `wz_certificate` |
-| closed forms of linear recurrences | `recurrence` |
-| rational bounds on `exp`, `log`, `sin`, `cos`, `π` at explicit points | `certified_bound` |
-| a real root or eigenvalue in an explicit interval | `root_isolation` |
-| `∫ x in a..b, f x = v` with an elementary antiderivative | `definite_integral` |
-| `LinearIndependent K v`, its negation, spans equal to spans or kernels | `independence` |
-| `Matrix.rank A = r` and its bounds, for an explicit matrix | `matrix_rank` |
-| `Module.finrank K V = n` for spans, intersections, kernels, product spaces | `dimension` |
-| `¬ ∃ f : V →ₗ[K] W, …`: a map that is not linear or bilinear | `nonlinearity` |
-| the signature of an explicit symmetric matrix (`Veriphy.Linear.HasSignature`) | `signature` |
-| no certificate is feasible: test the claim at instances (`#veriphy test`) | `test_fallback` |
-| fusion or braided fusion data (pentagons, hexagons, gauges), naturality of an intertwiner | `fusion_category` |
-| graded brackets, super-Jacobi (`sl(m\|n)`, `osp`, `D(2,1;α)`, `G(3)`, `F(4)`) | `lie_superalgebra` |
-| (Physlib) an explicit matrix `∈ lorentzAlgebra` | `physlib/lorentz_algebra` |
-| (Physlib) a commutator of ladder operators, positions and momenta | `physlib/ladder_operators` |
-
-While formalizing, you can also ask Sage for guidance with `symbolic_check`, `matrix_check`, `solve` and `run_script`.
-Their output is never copied into a proof.
-
-## Extending the translation
-
-Veriphy translates Lean terms to Sage through tables in three namespaces, resolved in order:
-
-1. `mathlib`, the core: field arithmetic, elementary and inverse trigonometric functions, `rpow`, `logb`, sums and
-   products, integer functions, derivatives, matrices and polynomials;
-2. library packs shipped with Veriphy, such as `physlib`, active only when the library is imported;
-3. your project's entries in `.veriphy/translations/*.json`.
-
-A later namespace never overrides an earlier one. `#veriphy translations` prints the namespaces in force, `#veriphy translate
-t` shows how a term translates, and `sage -python -m veriphy translations list` lists your project's entries (`--all`
-adds the core and the packs).
-
-When a function stays an atom, add an entry. For `Real.arcosh`, which Sage calls `arccosh` and which needs `1 ≤ x`:
-
-```json
-{
-  "functions": [
-    {"lean": "Real.arcosh", "sage": "arccosh", "arity": 1, "types": ["ℝ"], "result": "ℝ",
-     "conditions": [{"kind": "le", "lhs": "1", "rhs": "#0"}],
-     "example": "Real.arcosh x"}
-  ]
-}
-```
-
-A function entry names the Lean constant, the Sage function, the number of explicit arguments, the argument and result
-types, its domain conditions (`ne`, `nonneg` or `pos` on argument `#i`, or `le` between two sides) and an example term.
-A rewrite entry names a lemma, the functions it applies to, its direction, its side conditions (with `#i` for the
-argument a Sage `pattern` binds to `wi`) and an example signature such as `(x : ℝ) (hx : x ≠ 0) : Real.Gamma (x + 1) = x
-* Real.Gamma x`. Check every entry with:
-
-```lean
-#veriphy translations check
-```
-
-It translates each function's example, renders it back, proves the two equal, and closes each rewrite's example with its
-lemma, reporting each entry as passed or failed.
-
-### Types, casts and integer functions
-
-Sage computes over one symbolic ring, and Lean doesn't. The translation records each subterm's Lean type, so a script's
-result renders back at the right type: `symbolic(e, problem, lean_type='ℕ')` writes casts where the goal has them,
-`typed(e, 'ℕ')` marks a natural-number subterm, and natural subtraction and division keep Lean's meaning: `a - b` is
-plain subtraction when a hypothesis gives `b ≤ a` and `max(a - b, 0)` otherwise, and `/` and `%` need a positive
-divisor. `Nat.factorial`, `Nat.choose`, `Nat.gcd`, `Int.floor`, `Int.ceil`, `max` and `min` translate to Sage's
-`factorial`, `binomial`, `gcd`, `floor`, `ceil`, `max_symbolic` and `min_symbolic`.
-
-`#veriphy coverage` measures which statements of a corpus translate without opaque atoms, and ranks the heads that
-don't. Use it to decide which entries to add.
-
-## Unknown functions and differential equations
-
-A local function `x : ℝ → ℝ` (or of a type that views as `ℝ`, `ℂ` or `ℚ`, such as Physlib's `Time`) translates to a Sage
-symbolic function `F_x`, and `deriv x t`, `deriv (deriv x) t` and a pack's derivative notations (`∂ₜ x t`) to its
-derivatives. A script sees:
-
-- `problem.functions`, the unknown functions;
-- `problem.definitions`, hypotheses `hx : x = fun s => …` that define one explicitly;
-- `problem.exists_function`, a goal `∃ x, (∀ t, ODE) ∧ x t₀ = y₀ ∧ …`, split into its conjuncts.
-
-The `ode_solution` recipe proves that an explicit function solves the equation, by differentiation rather than by
-trusting Sage. `desolve` proposes the solution. The proof states each derivative of it as a fact, proved by mathlib's
-derivative lemmas, rewrites the equation with them and closes it by `ring` or `field_simp`:
-
-```lean
-example (ω x₀ v₀ : ℝ) (hω : ω ≠ 0) :
-    ∃ x : ℝ → ℝ, (∀ t, deriv (deriv x) t + ω ^ 2 * x t = 0) ∧ x 0 = x₀ ∧ deriv x 0 = v₀ := by
-  veriphy certify "ode_solution.sage"
-```
-
-A wrong solution fails with the equation Lean could not close, such as `Real.exp (t * 3) * 9 = Real.exp (t * 3) * 6`.
-
-## Large checks: `VeriphyCheck`
-
-Entrywise proofs stop scaling at a few dozen entries. `VeriphyCheck` has checkers that run in the kernel by `decide
-+kernel`, each with a soundness theorem that gives the mathlib statement:
-
-| Checker | Proves |
-|---|---|
-| `mul_eq_of_check`, `ofLists_mul` | `A * B = C` for explicit matrices (32×32 integer products in about 5 s) |
-| `bracket_eq_of_check`, `commute_of_check` | `⁅A, B⁆ = C`, `A * B = B * A` |
-| `trace_eq_of_check`, `eq_of_check` | `trace A = c`, `A = B` |
-| `jacobi_of_check`, `bracket_self_of_check` | the Jacobi identity and antisymmetry of a structure-constant table |
-| `prime_of_pratt` | `Nat.Prime p`, from a Pratt certificate |
-
-The toolkit picks entrywise proofs for small goals and checkers for large ones. `VeriphyCheck` imports only mathlib. If
-your project can't depend on Veriphy, as with a mathlib or Physlib contribution, copy in the bundle that `python3
-scripts/bundle_check.py` writes.
-
-## When no certificate exists: `#veriphy test` and verification levels
-
-Some claims have no certificate, such as a statement about every matrix or in every dimension. Their proofs are mathlib
-proofs, and Veriphy tests them instead:
-
-```lean
-theorem traceDouble (n : ℕ) (A : Matrix (Fin n) (Fin n) ℚ) : Matrix.trace (A + A) = 2 * Matrix.trace A := by
-  rw [Matrix.trace_add]; ring
-
-#veriphy test traceDouble "trace_double_test.sage"
-```
-
-The script picks values for every binder. The kernel checks each instance by computation, or Sage evaluates it exactly
-(or by intervals) when Lean can't state it. Instances come from the claim's statement, never its proof. A run needs
-three accepted instances, one of them an edge case. It writes `.veriphy/tests/<claim>.json`, which `sage -python -m
-veriphy.packs.math.steps.certificates tests` lists and `tests --rerun <claim>` reruns.
-
-Every claim has one of five levels, highest first:
-
-| Level | What was checked | Builds without Sage |
-|---|---|---|
-| `certificate` | a recipe built the proof, which the kernel checked | yes |
-| `lean-proof` | a complete Lean proof that no recipe built, on the standard axioms alone | yes |
-| `kernel-test` | the kernel checked the claim at instances, each by computation | yes |
-| `oracle-test` | Sage evaluated the claim at some instances, exactly or by intervals of at least 53 bits | the record is kept |
-| `none` | no checked proof and no test: a stated proposition, or a proof that uses `sorry` or another axiom | |
-
-`#veriphy level MyProject` lists the level of every theorem under a prefix. A test is never reported as a proof.
-
-## Reproducing an analysis: the `reproduction` pack
-
-A field with no proofs fits the same layers. The `reproduction` pack, selected with `packs: [reproduction]`, reruns
-a published analysis from its own script and data in a pinned R image (`rocker/r-ver`, by digest; podman or docker
-runs it), and gives the claim a level of the class `reproduction`:
-
-```
-veriphy reproduce analysis.R data.csv <sha256> --claimed -5.344472 --claim mpg-weight   # agrees: reproduced
-veriphy vary analysis.R data.csv <sha256> '["mpg ~ wt + hp", "mpg ~ wt + cyl"]'          # robust, or fragile
-```
-
-The script defines `run <- function(data, inputs)` and returns `list(estimate = ..., se = ...)`. `reproduce` refuses
-data whose SHA-256 differs from the claim's, so a reproduction is always of the named data, and records both estimates
-whether they agree or not. `vary` grants `robust` when the estimate keeps its sign and significance under every
-variation declared before the run. The levels read `reproduced (reproduction)` and `robust (reproduction)` in every
-report, never as proofs. The `reproduce` skill and its playbook (`veriphy agents path --pack reproduction`) walk an
-agent through a paper; `src/veriphy/packs/reproduction/example/` is a worked claim on R's `mtcars`.
-
-## The research claim graph
-
-Veriphy's tactics check one claim at a time. The graph checks how the claims of a paper or research program fit
-together: which conventions each one assumes, which claims it rests on, and how verified it is once its weakest
-dependency counts.
-
-The reasoner is untrusted. `oo-horn`, a verified Lean checker from [Open
-Ontologies](https://github.com/fabio-rovai/open-ontologies) that shares no code with Veriphy, accepts or refuses every
-run, and Veriphy reports a graph conclusion only with the verdict the checker printed. The `research` skill drives the
-commands below, and you can run any of them yourself.
+The reasoner is untrusted. `oo-horn`, a verified Lean checker from
+[Open Ontologies](https://github.com/fabio-rovai/open-ontologies) that shares no code with Veriphy, accepts or refuses
+every run, and Veriphy reports a conclusion of the graph only with the verdict the checker printed.
 
 ### Setup
 
-```bash
-sage -pip install 'veriphy[graph]'
+```sh
+pip install 'veriphy[graph]'
 ```
 
-The first command that needs them sets up the reasoner and `oo-horn` from the pinned Open Ontologies release, says what
-it fetches or builds, and caches it in `~/.cache/veriphy/open-ontologies/v2.1.0`:
+The first command that needs them sets up the reasoner and `oo-horn` from the pinned Open Ontologies release, says
+what it fetches or builds, and caches it in `~/.cache/veriphy/open-ontologies/v2.1.0`:
 
-- the release is cloned with `git`, and refused unless its commit is the pinned one
-- the reasoner is imported from the release's source, so nothing is installed into Python at run time
+- the release is cloned with `git`, and refused unless its commit is the pinned one;
+- the reasoner is imported from the release's source, so nothing is installed into Python at run time;
 - on Linux x86_64 `oo-horn` is the release's prebuilt binary, kept only if its SHA-256 matches both the pinned hash and
-  the hash the release lists, and only if it runs
-- elsewhere `oo-horn` is built once with the release's Lean toolchain through `elan`, which takes minutes
+  the hash the release lists, and only if it runs;
+- elsewhere `oo-horn` is built once with the release's Lean toolchain through `elan`, which takes minutes.
 
-`sage -python -m veriphy claims checker build` does the same ahead of time. `VERIPHY_GRAPH_SETUP=off` forbids automatic
-setup, for offline machines and CI. Without a checker, every result is labelled `unchecked`, with the command that sets
-it up.
-
+`veriphy layers claims checker build` does the same ahead of time. `VERIPHY_GRAPH_SETUP=off` forbids automatic setup,
+for offline machines and CI, and `VERIPHY_OO_HORN` names a binary to use. Without a checker, every result is labelled
+`unchecked`, with the command that sets it up.
 
 ### Sources
 
 Each source has one Turtle file per provenance in `.veriphy/graph/sources/`: `chapter9.agent.ttl` for what an agent
-extracted, and `chapter9.human.ttl` for what a person wrote or confirmed.
+extracted, and `chapter9.human.ttl` for what a person wrote or confirmed. An agent never writes a `.human.ttl` file.
 
 ```turtle
 @prefix vp: <urn:veriphy:vocabulary#> .
-@prefix : <urn:veriphy:source:chapter9#> .
+@prefix : <urn:veriphy:source:chapter3#> .
 
-:half a vp:Convention ; vp:conventionFor "killing-normalization" ;
-    vp:statement "Tr(T^a T^b) = 1/2 δ^ab" ; vp:realizedBy <urn:veriphy:lean:KK.killingHalf> .
-:lemma-5.2 a vp:Claim ; vp:statedIn :chapter9 ; vp:statement "The Killing form is -3/2 δ." ;
-    vp:assumes :half ; vp:formalizedBy <urn:veriphy:lean:KK.killing_form_value> .
-:thm-9.1 a vp:Claim ; vp:statedIn :chapter9 ; vp:statement "The vacuum is stable." ;
-    vp:uses :lemma-5.2, <urn:veriphy:source:arXiv:0808.3236#thm-2> .
+:parallel a vp:Convention ; vp:conventionFor "identification" ; vp:statement "parallel trends" .
+:est-1 a vp:Claim ; vp:statedIn :chapter3 ; vp:statement "The policy lowered unemployment by 2.1 points." ;
+    vp:assumes :parallel .
+:policy a vp:Claim ; vp:statedIn :chapter3 ; vp:statement "The policy should be extended." ;
+    vp:uses :est-1, <urn:veriphy:source:doi:10.1257/aer.20181169#table-2> .
 ```
 
-A claim from another paper is a node of that paper's source, named by its arXiv identifier or DOI. `owl:sameAs` says two
-sources mean the same concept.
+A claim from another paper is a node of that paper's source, named by its arXiv identifier or DOI. `owl:sameAs` says
+that two sources mean the same concept.
 
-```bash
-sage -python -m veriphy claims vocabulary                            # print the vocabulary
-sage -python -m veriphy claims validate                              # check the files and shapes
-sage -python -m veriphy claims confirm chapter9 lemma-5.2 assumes half   # move one triple to the human file
+```sh
+veriphy layers claims vocabulary                              # print the vocabulary
+veriphy layers claims validate                                # check the files against the shapes
+veriphy layers claims confirm chapter3 est-1 assumes parallel   # move one triple to the human file
 ```
 
 `validate`'s SHACL report is a measurement, not a checked conclusion.
 
-### The Lean export
+### Levels in the graph
 
-`#veriphy export KK` writes every theorem and definition under `KK` to `.veriphy/graph/lean/KK.nt`, with their levels,
-statements and dependencies. These come from the Lean environment, not from extraction. Use `formalizedBy` to link a
-prose claim to its Lean claim, and `realizedBy` to link a convention to the Lean definition behind it.
+A claim's own level is the highest level it earns: from a record of a step whose inputs name it (`--claim est-1` on
+`reproduce`), or from the formal claim that formalizes it (the `lean` pack's `#veriphy export`). It is `none`
+otherwise. Its effective level is the lowest level among everything it uses, directly or not.
+`veriphy layers claims levels --source chapter3` prints:
+
+```text
+| claim | own | effective | capped by | Lean |
+|---|---|---|---|---|
+| est-1 | robust (reproduction) | robust (reproduction) |  |  |
+| lemma-2 | certificate (kernel) | certificate (kernel) |  | Econ.lemma2 |
+| thm-3 | certificate (kernel) | reproduced (reproduction) | est-2 | Econ.thm3 |
+```
+
+Here the workspace selects `math` and `reproduction` and places `reproduced` and `robust` below `kernel-test` in its
+`veriphy.yaml`. A claim proved in Lean that rests on an estimate that was only reproduced is then capped at
+`reproduced`, and the report names the claim that caps it.
 
 ### Reasoning and verdicts
 
-`sage -python -m veriphy claims reason` derives the consequences and writes a certificate under
+`veriphy layers claims reason` derives the consequences and writes a certificate under
 `.veriphy/graph/runs/<digest>/`: the asserted triples, the rules, one derivation line per conclusion, and a digest.
-Veriphy states the meaning of its vocabulary as OWL axioms that the checker's built-in rules evaluate. So every run uses
-the built-in rule table unchanged, and an accepted run earns `entailed` through the theorem
+Veriphy states the meaning of its vocabulary as OWL axioms that the checker's built-in rules evaluate. Every run
+therefore uses the built-in rule table unchanged, and an accepted run earns `entailed` through the theorem
 `OOCert.entails_of_builtin_horn`: every conclusion holds in every model of the asserted triples.
 
 | Status | Meaning |
@@ -577,73 +308,105 @@ the built-in rule table unchanged, and an accepted run earns `entailed` through 
 | `unchecked` | no checker was found or it didn't finish, and no conclusion is reported as checked |
 | `incomplete` | the run stopped before its fixpoint |
 
-`sage -python -m veriphy claims recheck .veriphy/graph/runs/<digest>` checks a stored run again without the reasoner, and
-says whether the current graph still asserts the same triples. The commands exit with status 3 when the checker didn't
-accept the run.
+`veriphy layers claims recheck .veriphy/graph/runs/<digest>` checks a stored run again without the reasoner, and says
+whether the current graph still asserts the same triples. The commands exit with status 3 when the checker didn't
+accept the run. The `reason`, `validate` and `report` steps run the same operations and record them.
 
+### Conventions, impact and clashes
 
-### Levels
+Conventions of the same aspect exclude each other. A pack declares the aspects it knows: the `reproduction` pack has
+`identification: [parallel-trends, no-parallel-trends]`. `veriphy layers claims excludes` proposes the `excludes`
+triples, and `--confirm` writes them as human assertions. `veriphy layers claims clashes` then reports every claim
+with two checked `assumes` conclusions whose conventions exclude each other, including assumptions inherited across
+papers.
 
-A claim's own level is the highest it earns: from the export or the Lean claim that formalizes it, or from a step's
-record whose inputs name it, as a reproduction does; it is `none` otherwise. Its effective level is the lowest level
-among everything it uses, directly or not. Every report shows a level with its trust class, so a reproduction or an
-oracle test never reads as a proof. `sage -python -m veriphy claims levels --source chapter9` prints:
+`veriphy layers claims impact chapter3 parallel` lists every claim that assumes the convention, directly or through
+its dependencies, with the chain that reaches it. Before changing a convention, edit the source file and compare with
+the last commit:
 
-```
-| claim | own | effective | capped by | Lean |
-|---|---|---|---|---|
-| lemma-5.2 | certificate (kernel) | certificate (kernel) |  | KK.killing_form_value |
-| lemma-8.4 | oracle-test (oracle) | oracle-test (oracle) |  | KK.curvature_pos |
-| thm-9.1 | certificate (kernel) | oracle-test (oracle) | lemma-8.4 | KK.vacuum |
-```
-
-The levels come from the packs: `core` declares `none`, `lean` declares `lean-proof`, and `math` declares
-`oracle-test`, `kernel-test` and `certificate`. Each level names its trust class (`kernel`, `checker`,
-`reproduction` or `oracle`; `measurement` and `search` grant nothing) and the level directly below it, and the levels
-of a workspace form one order. When two packs place a level in the same position, `veriphy config check` names both,
-and `veriphy.yaml` orders them by overriding their `above`. A step grants only levels of its primitive's class:
-`config check` refuses a step that would, and so does the step itself when it writes its record.
-
-### Convention impact and plans
-
-`sage -python -m veriphy claims impact chapter9 half` lists every claim that assumes the convention `half`, directly or
-through its dependencies, with the chain that reaches it and its Lean name. Before changing a convention, edit the
-source file and compare against the last commit:
-
-```bash
-sage -python -m veriphy claims plan --against HEAD
+```sh
+veriphy layers claims plan --against HEAD
 ```
 
 The plan reasons over both graphs, has both runs checked, and lists the assertions you changed and the consequences
-added and removed: `assumes` triples, level caps and clashes. Editing only a statement's text gives one changed
-assertion and no changed consequence.
+added and removed: `assumes` triples, level caps and clashes.
 
-### Clashes
+### Slices and the appendix
 
-Conventions of the same aspect exclude each other. `sage -python -m veriphy claims excludes` proposes the `excludes`
-triples, and `--confirm` writes them as human assertions. `sage -python -m veriphy claims clashes` then reports every
-claim or concept with two checked `assumes` conclusions whose conventions exclude each other, including assumptions
-inherited across papers.
+`veriphy layers claims slice chapter3 policy` prints what an agent needs to work on a claim: its statement, the
+statements and levels of the claims it uses, and each convention it assumes. Veriphy reasons over the slice alone, has
+that run checked, and offers the slice only if it keeps every consequence about the claim.
 
-### Slices
-
-`sage -python -m veriphy claims slice chapter9 thm-9.1` prints what an agent needs to formalize `thm-9.1`: its statement,
-the statements and levels of the claims it uses, and each convention it assumes with the Lean definition behind it.
-Veriphy reasons over the slice alone, has that run checked, and offers the slice only if it keeps every consequence
-about the claim.
-
-### The verification appendix
-
-`sage -python -m veriphy claims appendix chapter9 --format latex` writes `.veriphy/graph/appendix/chapter9.tex`: a row
-per claim with its own and effective levels, what caps it, its Lean name and its clashes, and a paragraph with the run,
-the verdict, the provenance of the assertions and the command that rechecks it. An unchecked run says so in the
-paragraph and the table header. `--format markdown` writes the same as Markdown.
-
+`veriphy layers claims appendix chapter3 --format latex` writes `.veriphy/graph/appendix/chapter3.tex`: a row per
+claim with its own and effective levels, what caps it, and its clashes, and a paragraph with the run, the verdict, the
+provenance of the assertions and the command that rechecks it. An unchecked run says so. `--format markdown` writes the
+same as Markdown.
 
 ### Limits
 
-- The graph doesn't check that a prose claim and its Lean statement say the same thing. `formalizedBy` is an assertion,
-  and reports count where each assertion came from.
+- The graph doesn't check that a prose claim and its formal statement say the same thing. `formalizedBy` is an
+  assertion, and reports count where each assertion came from.
 - A checked conclusion is only as good as the asserted triples. A bad extraction gives a faithfully wrong conclusion.
 - No clash found is the reasoner's result, not a checked conclusion. A Horn certificate proves what was derived, not
   what wasn't.
+
+## Agents and skills
+
+Playbooks are plain Markdown in each pack's `agents/` directory, installed with the Python package. Any agent can
+follow them: `veriphy layers agents path` prints the directory (`--pack reproduction` for that pack's),
+`veriphy layers agents list` names every playbook, recipe, template and asset, and `veriphy layers agents copy`
+copies a template into the workspace.
+
+The Claude Code skills are thin wrappers that follow a workflow: they ask `veriphy layers workflow next` for the step,
+do it if it is theirs, record it with an agent step, and let `veriphy layers workflow run` do the rest.
+
+| Skill | Pack | Workflow |
+|---|---|---|
+| `prove` | `math` | `prove-claim` |
+| `certify` | `math` | one goal, inside `prove` |
+| `research` | `math` | `verify-paper` |
+| `reproduce` | `reproduction` | `reproduce-analysis` |
+
+## Writing a pack
+
+A pack is a directory with a `pack.yaml`. A local pack is named in `veriphy.yaml` by its path. A pack published as a
+Python package declares an entry point in the `veriphy.packs` group, naming the module that holds its `pack.yaml`.
+Then `packs: [<name>]` selects it.
+
+```yaml
+version: 1
+name: econ
+requires: [core]          # packs applied first; their entries may be overridden here
+```
+
+Every other section is optional:
+
+| Section | Declares |
+|---|---|
+| `tools` | external programs, each a command run once per call (`contract: files`): `run`, `pin` (`version`, `commit` with `sha256`, or `image`), `version`, `timeout` |
+| `primitives` | `function: module:attribute`, or `tool` with a `command` (its arguments, with `{input}`, `{out}`, `{seed}` and `{file:<input>}`); `trust`, `input` and `output` schemas; `{composite: module}` for one written in Python |
+| `scopes` | digest scopes, each `{function: module:attribute}` taking the workspace root and the value |
+| `steps` | steps over primitives, or agent steps; `{code: module}` for one written in Python |
+| `levels` | each with `trust`, `above` and `description` |
+| `conventions` | aspects and the conventions that exclude each other |
+| `workflows` | step sequences with transitions |
+| `commands` | programs as `{command: module:attribute, help}`, run as `veriphy pack <pack> <name>` |
+
+Playbooks go in the pack's `agents/` directory. Python code a pack declares (functions, composites, scopes, commands)
+is imported only when used, so a pack whose tools are missing still loads, and `veriphy layers primitive list` says
+what can't run.
+
+`veriphy config check` reports collisions with other packs, steps naming primitives or scopes no pack declares,
+levels outside one order, steps granting a level their primitive's class can't grant, and workflows naming unknown
+steps. The [reproduction pack](https://github.com/georgedouzas/veriphy/tree/main/src/veriphy/packs/reproduction) is a
+complete example outside mathematics: one tool pinned by image, two composites, two steps, two levels, a convention,
+a workflow, a playbook and a worked example.
+
+## Environment variables
+
+| Variable | Effect |
+|---|---|
+| `VERIPHY_GRAPH_SETUP` | `off` stops the claim graph fetching or building anything |
+| `VERIPHY_OO_HORN` | use this `oo-horn` binary |
+| `VERIPHY_SAGE_CMD` | the `sage` executable, if it isn't on `PATH` (the `math` pack) |
+| `VERIPHY_SAGE_TIMEOUT` | seconds allowed per Sage request, 150 by default (the `math` pack) |

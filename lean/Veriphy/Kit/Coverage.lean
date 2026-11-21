@@ -1,7 +1,7 @@
 /-
 Coverage of the symbolic translation on a corpus of statements (Sage-free).
 
-`#veriphy_coverage [Prefix, …]` walks the theorems declared in modules whose name starts with one of the prefixes
+`#veriphy coverage [Prefix, …]` walks the theorems declared in modules whose name starts with one of the prefixes
 (or, for the current file, whose own name does), opens their binders and translates every relation (`=`, `≠`, `≤`,
 `<`, `≥`, `>`) in the hypotheses and the conclusion. Each atom of a translation is classified:
 
@@ -17,7 +17,6 @@ A statement is fully covered when every atom is local. The report gives the shar
 -/
 import Veriphy.Kit.Problem
 import Veriphy.Kit.Project
-import Veriphy.Kit.Deprecation
 
 namespace Veriphy.Coverage
 
@@ -25,7 +24,7 @@ open Lean Elab Command Meta
 
 register_option veriphy.coverage.write : Bool := {
   defValue := true
-  descr := "write #veriphy_coverage reports under .veriphy/coverage/"
+  descr := "write #veriphy coverage reports under .veriphy/coverage/"
 }
 
 /-- How an atom of a translation is classified. -/
@@ -211,12 +210,11 @@ def measure (prefixes : Array Name) : MetaM Report := do
       failures := failures.push (n, ← ex.toMessageData.toString)
   return aggregate prefixes thms.size failures verdicts
 
-/-- `#veriphy_coverage [Prefix, …]` measures the translation's coverage of a corpus; see the module doc. -/
-syntax (name := veriphyCoverage) "#veriphy_coverage " "[" ident,* "]" (str)? : command
+/-- `#veriphy coverage [p, …] ["file.json"]` measures the translation's coverage of a corpus; see the module doc. -/
+syntax (name := veriphyCoverageCommand) "#veriphy " &"coverage " "[" ident,* "]" (str)? : command
 
 elab_rules : command
-  | `(#veriphy_coverage%$tk [$ps,*] $[$out]?) => do
-    warnDeprecated tk "#veriphy_coverage" "#veriphy coverage"
+  | `(#veriphy coverage [$ps,*] $[$out]?) => do
     let prefixes := ps.getElems.map (·.getId)
     let report ← liftTermElabM (measure prefixes)
     logInfo report.summary

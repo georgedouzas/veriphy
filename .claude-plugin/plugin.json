@@ -1,6 +1,6 @@
 {
   "name": "veriphy",
-  "description": "Machine-verified physics/math proofs in Lean 4 with SageMath as an untrusted oracle, and reproduction of published analyses: the prove, certify, research and reproduce skills, a research claim graph checked by the Lean checker oo-horn, the veriphy certify tactic, recipes for building kernel-checked certificates, and pinned, recorded steps.",
+  "description": "An extensible verification framework with agents in the loop. Steps are pinned and recorded, levels carry a trust class, and workflows decide the next step from the records. Packs bring each field: Lean and mathematics (the prove, certify and research skills, the veriphy certify tactic, kernel-checked certificates with SageMath as an untrusted oracle), and reproduction of published analyses (the reproduce skill), over a claim graph checked by the Lean checker oo-horn.",
   "version": "0.7.0",
   "author": {
     "name": "Georgios Douzas"

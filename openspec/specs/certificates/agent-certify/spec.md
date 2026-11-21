@@ -6,11 +6,11 @@ Lets the proving agent assemble a one-off certificate at proof time. It writes a
 ## Requirements
 
 ### Requirement: Agent workflow documents the route
-The `prove` workflow SHALL direct the agent to create certificates itself with `sage_run`, the toolkit and the procedures: inspect the problem, pick a recipe, adapt its template, run, and iterate on the combined feedback. The agent SHALL report `blocked-missing-building-block`, naming the missing primitive or emitter, only when the toolkit cannot express the proof.
+The `prove` workflow SHALL direct the agent to create certificates itself with `veriphy certify`, the toolkit and the procedures: inspect the problem, pick a recipe, adapt its template, run, and iterate on the combined feedback. The agent SHALL report `blocked-missing-building-block`, naming the missing primitive or emitter, only when the toolkit cannot express the proof.
 
 #### Scenario: Missing dedicated tactic, available family
 - **WHEN** the agent needs a weighted-square inequality
-- **THEN** the documented workflow leads it to the SOS or hint-search recipe and a `sage_run` script, not to a report
+- **THEN** the documented workflow leads it to the SOS or hint-search recipe and a `veriphy certify` script, not to a report
 
 #### Scenario: Genuine gap
 - **WHEN** the proof needs a Sage computation no toolkit primitive provides

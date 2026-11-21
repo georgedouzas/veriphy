@@ -1,6 +1,6 @@
 """Layer 1, steps: each hashes its inputs, replays a final record of the same inputs, or runs and records.
 
-A step is registered by the layer or pack that defines it, and `veriphy <verb>` runs one. Veriphy's own
+A step is registered by the layer or pack that defines it, and `veriphy layers step <verb>` runs one. Veriphy's own
 packs register `check` and `level` (`lean`), `meaning` (`math`), and `validate`, `reason` and `report` (`core`,
 through `veriphy.claims`). This package imports only `veriphy.core` and `veriphy.primitives`.
 """
@@ -16,18 +16,15 @@ from veriphy.steps._records import (
     read_record,
 )
 from veriphy.steps._registry import (
-    DEPRECATED_VERBS,
     LAYERS,
     load_steps,
     register,
     registered,
-    resolve_verb,
     step_packs,
 )
 from veriphy.steps._runner import Argument, Outcome, Params, Prepared, Result, Step, exit_code, run_step
 
 __all__ = [
-    'DEPRECATED_VERBS',
     'KINDS',
     'LAYERS',
     'LEVELLED_KINDS',
@@ -47,7 +44,6 @@ __all__ = [
     'read_record',
     'register',
     'registered',
-    'resolve_verb',
     'run_step',
     'step_packs',
 ]

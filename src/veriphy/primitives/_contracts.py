@@ -1,14 +1,14 @@
-"""Run tools by their contracts, JSON-RPC 2.0 over stdio or `files`, checking their pins; no input reaches a shell."""
+"""Run tools by the `files` contract, one process per call writing one JSON result, checking their pins; no shell."""
 
+import functools
 import json
 import os
 import re
 import shlex
 import shutil
-import subprocess  # nosec B404 - a long-lived process started from fixed arguments, never a shell
 import sys
 import tempfile
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 from veriphy.core import PinError, PrimitiveError, ToolError, run_process
@@ -113,7 +113,7 @@ def check_pin(tool: Tool, reported: str | None) -> Found:
         PinError: If the reported version differs from the pinned one.
 
     Examples:
-        >>> sage = Tool('sage', 'jsonrpc', ('sage',), Pin('version', '10.9'))
+        >>> sage = Tool('sage', 'files', ('sage',), Pin('version', '10.9'))
         >>> check_pin(sage, '10.9').pin
         'version'
         >>> check_pin(sage, '10.8')  # doctest: +ELLIPSIS
@@ -219,8 +219,9 @@ def run_files(tool: Tool, command: tuple[str, ...], inputs: dict[str, object], s
     return value
 
 
+@functools.cache
 def probe_files(tool: Tool) -> str | None:
-    """Return the version a files tool's probe reports, `None` without a probe or in an image (its digest pins it)."""
+    """Return the version a files tool's probe reports, once per process; `None` without a probe or in an image."""
     if not tool.version.command or (tool.pin is not None and tool.pin.kind == 'image'):
         return None
     try:
@@ -228,106 +229,3 @@ def probe_files(tool: Tool) -> str | None:
     except ToolError as exc:
         raise PrimitiveError(str(exc)) from exc
     return _match_version(tool, out + err)
-
-
-@dataclass
-class Session:
-    """One process of a JSON-RPC 2.0 tool over stdio, one message per line.
-
-    Args:
-        tool: The tool.
-        found: What the tool reported when it started.
-        process: The running process.
-    """
-
-    tool: Tool
-    found: Found
-    process: subprocess.Popen[str]
-    counter: int = field(default=0)
-
-    def request(self, method: str, params: dict[str, object]) -> dict[str, object]:
-        """Send one request and return its result.
-
-        Args:
-            method: The method.
-            params: Its parameters.
-
-        Returns:
-            The result object.
-
-        Raises:
-            PrimitiveError: If the process exited, answered with an error, or answered with a non-object.
-        """
-        self.counter += 1
-        stdin, stdout = self.process.stdin, self.process.stdout
-        if stdin is None or stdout is None or self.process.poll() is not None:
-            message = f"tool '{self.tool.name}' is not running"
-            raise PrimitiveError(message)
-        request = {'jsonrpc': '2.0', 'id': self.counter, 'method': method, 'params': params}
-        stdin.write(json.dumps(request) + '\n')
-        stdin.flush()
-        line = stdout.readline()
-        if not line:
-            message = f"tool '{self.tool.name}' exited without answering '{method}'"
-            raise PrimitiveError(message)
-        try:
-            response = json.loads(line)
-        except json.JSONDecodeError as exc:
-            message = f"tool '{self.tool.name}' answered '{method}' with a line that is not JSON: {line[:200]}"
-            raise PrimitiveError(message) from exc
-        if not isinstance(response, dict):
-            message = f"tool '{self.tool.name}' answered '{method}' with something other than an object"
-            raise PrimitiveError(message)
-        error = response.get('error')
-        if error is not None:
-            text = error.get('message', error) if isinstance(error, dict) else error
-            message = f'{self.tool.name}: {text}'
-            raise PrimitiveError(message)
-        result = response.get('result')
-        if not isinstance(result, dict):
-            message = f"tool '{self.tool.name}' answered '{method}' with a result that is not an object"
-            raise PrimitiveError(message)
-        return result
-
-    def close(self) -> None:
-        """Stop the process."""
-        if self.process.stdin is not None:
-            self.process.stdin.close()
-        try:
-            self.process.wait(timeout=10)
-        except subprocess.TimeoutExpired:
-            self.process.kill()
-
-
-def start_session(tool: Tool) -> Session:
-    """Start a JSON-RPC tool and check its pin, by its version probe's method when it has one.
-
-    Args:
-        tool: The tool.
-
-    Returns:
-        The running session.
-
-    Raises:
-        PrimitiveError: If the tool does not start, answer or match its pin (a `PinError`); the process is stopped.
-    """
-    argv = command_line(tool)
-    process = subprocess.Popen(  # noqa: S603  # nosec B603 - a fixed argument list from the pack, never a shell
-        argv,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-        text=True,
-        bufsize=1,
-    )
-    session = Session(tool, Found(tool.name, 'unknown', 'none'), process)
-    try:
-        reported = None
-        if tool.version.method:
-            answer = session.request(tool.version.method, {})
-            reported = _match_version(tool, str(answer.get(tool.version.field, '')))
-        session.found = check_pin(tool, reported)
-    except PrimitiveError:
-        session.close()
-        raise
-    return session

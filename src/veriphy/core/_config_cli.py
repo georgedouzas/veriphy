@@ -2,12 +2,10 @@
 
 import json
 import sys
-from collections.abc import Sequence
 from pathlib import Path
 
 import click
 
-from veriphy.core._commands import run_command
 from veriphy.core._config import Resolved, check, resolve
 from veriphy.core._errors import PackError
 from veriphy.core._project import find_workspace_root
@@ -43,12 +41,3 @@ def check_command(resolved: Resolved) -> None:
     if problems:
         raise SystemExit(1)
     sys.stdout.write(f'config: {len(resolved.packs)} packs, no problems\n')
-
-
-def main(argv: Sequence[str] | None = None) -> None:
-    """Show or check the resolved configuration of a workspace.
-
-    Args:
-        argv: The command-line arguments, `sys.argv[1:]` when `None`.
-    """
-    run_command(config, argv, 'veriphy config')

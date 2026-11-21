@@ -21,7 +21,7 @@ class ParamError(VeriphyError):
 
 
 class MethodError(VeriphyError):
-    """Signal a failed daemon method, with a message of the form `<method>: <reason>`."""
+    """Signal a failed Sage method, with a message of the form `<method>: <reason>`."""
 
 
 class CertificateError(VeriphyError):

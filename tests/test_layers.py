@@ -15,22 +15,10 @@ CORE = -1
 PACK_LAYER = 3
 # modules above the layers, which may import any of them
 FACADES = frozenset({'veriphy', 'veriphy.__main__', 'veriphy._api', 'veriphy.script'})
-# the old paths, kept for one minor release, re-export modules wherever they now live
-ALIASES = frozenset(
-    {
-        'veriphy.certificates',
-        'veriphy.graph',
-        'veriphy.oracle',
-        'veriphy.prompts',
-        'veriphy.sage_server',
-        'veriphy.toolkit',
-        'veriphy.translations',
-    },
-)
 
 
 def layer_of(module: str) -> int | None:
-    """Return a module's layer: -1 for `veriphy.core`, `None` for the facades and aliases.
+    """Return a module's layer: -1 for `veriphy.core`, `None` for the facades.
 
     A pack's module takes the layer of the layer subpackage it sits in, and a pack's other modules (its `script`
     helpers, its `__init__`) are layer 0.
@@ -41,7 +29,7 @@ def layer_of(module: str) -> int | None:
         >>> layer_of('veriphy.packs.core.claims'), layer_of('veriphy.packs.math.script._lie')
         (2, 0)
     """
-    if module in FACADES or any(module == a or module.startswith(a + '.') for a in ALIASES):
+    if module in FACADES:
         return None
     parts = module.split('.')
     if parts[1:2] == ['core']:
@@ -99,8 +87,8 @@ def test_an_upward_import_is_named(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     assert violations(tmp_path / 'veriphy') == ['veriphy.steps._bad (layer 1) imports veriphy.claims (layer 2)']
 
 
-def test_the_daemon_needs_no_command_line_library() -> None:
-    """Import what the Sage daemon imports without click, which Sage's own Python may lack."""
+def test_the_sage_session_needs_no_command_line_library() -> None:
+    """Import what the Sage session imports without click, which Sage's own Python may lack."""
     modules = 'veriphy, veriphy.steps, veriphy.primitives, veriphy.packs.math.primitives'
     code = f'import sys, {modules}; print("click" in sys.modules)'
     done, out, err = run_process([sys.executable, '-c', code], SRC.parent)

@@ -1,4 +1,4 @@
-"""The `math` pack's primitives: the Sage daemon, the translation tables, and the composites `meaning` and `certify`.
+"""The `math` pack's primitives: the Sage session, the translation tables, and the composites `meaning` and `certify`.
 
 Importing this package registers the composites.
 """

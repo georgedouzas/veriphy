@@ -1,16 +1,14 @@
-"""The step command: `veriphy <verb>`, and `records` to list and show what the steps recorded."""
+"""The `step` group: `veriphy layers step <name>` runs a step, `list` lists them, `records` shows what they wrote."""
 
 import json
 import sys
-from collections.abc import Sequence
 from pathlib import Path
 
 import click
 
 from veriphy.core import RecordError, find_workspace_root
-from veriphy.core._commands import run_command
 from veriphy.steps._records import RecordStore, read_record
-from veriphy.steps._registry import DEPRECATED_VERBS, load_steps, step_packs
+from veriphy.steps._registry import load_steps, step_packs
 from veriphy.steps._runner import USAGE_EXIT, Argument, Params, Result, Step, exit_code, run_step
 
 
@@ -67,11 +65,11 @@ def step_command(step: Step, root: Path) -> click.Command:
 
 
 class StepGroup(click.Group):
-    """A command group with one command per step of the workspace that `--root` names, besides its own commands."""
+    """A command group with one command per step of the workspace that `veriphy --root` names, and its own."""
 
     def _steps(self, ctx: click.Context) -> tuple[Path, dict[str, Step]]:
         """Return the workspace root and its steps."""
-        root = find_workspace_root(ctx.params.get('root'))
+        root = find_workspace_root(ctx.find_root().params.get('root'))
         return root, load_steps(root)
 
     def list_commands(self, ctx: click.Context) -> list[str]:
@@ -79,22 +77,13 @@ class StepGroup(click.Group):
         return sorted({*super().list_commands(ctx), *self._steps(ctx)[1]})
 
     def get_command(self, ctx: click.Context, cmd_name: str) -> click.Command | None:
-        """Return a command of the group, or the step of that name, accepting a deprecated step name."""
+        """Return a command of the group, or the step of that name."""
         own = super().get_command(ctx, cmd_name)
         if own is not None:
             return own
         root, steps = self._steps(ctx)
-        step = steps.get(_verb(cmd_name))
+        step = steps.get(cmd_name)
         return None if step is None else step_command(step, root)
-
-
-def _verb(name: str) -> str:
-    """Return the step a command names, saying on standard error when the name is deprecated."""
-    new = DEPRECATED_VERBS.get(name)
-    if new is None:
-        return name
-    sys.stderr.write(f"'{name}' is now '{new}'; the old name goes in the next minor release\n")
-    return new
 
 
 def _print(result: Result, as_json: bool) -> None:
@@ -127,9 +116,9 @@ def records(ctx: click.Context, digest: str | None, step: str | None) -> None:
     sys.stdout.write(matches[0].read_text())
 
 
-@click.command(name='steps', help="the workspace's steps, with their kind and the pack that defines each")
+@click.command(name='list', help="the workspace's steps, with their kind and the pack that defines each")
 @click.pass_context
-def steps_command(ctx: click.Context) -> None:
+def list_command(ctx: click.Context) -> None:
     """List the workspace's steps."""
     root = find_workspace_root(ctx.find_root().params.get('root'))
     steps = load_steps(root)
@@ -138,24 +127,6 @@ def steps_command(ctx: click.Context) -> None:
         sys.stdout.write(f'{name}\t{step.kind}\t{owners.get(name, "")}\t{step.help}\n')
 
 
-ROOT = click.Option(
-    ['--root'],
-    type=click.Path(path_type=Path),
-    default=None,
-    help='the workspace root (found by default)',
-)
-steps_group = StepGroup(name='veriphy', params=[ROOT], help='Run a Veriphy operation and record it.')
-steps_group.add_command(records)
-steps_group.add_command(steps_command)
-
-
-def main(argv: Sequence[str] | None = None) -> None:
-    """Run a step and print its record, or list and show records.
-
-    It exits with status 1 when the step refused, found a counterexample or failed, 2 on bad usage, and 3 when its
-    result is unchecked or undecided.
-
-    Args:
-        argv: The command-line arguments, `sys.argv[1:]` when `None`.
-    """
-    run_command(steps_group, argv, 'veriphy')
+step_group = StepGroup(name='step', help='Run a step of the workspace and record it, or list the steps and records.')
+step_group.add_command(records)
+step_group.add_command(list_command)

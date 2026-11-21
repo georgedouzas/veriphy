@@ -1,15 +1,13 @@
 """The `lean` pack's primitives as Python functions: `check` a file, `serialize` a claim, and `level` a module.
 
-They share one runner per process, which keeps a REPL per workspace and in it one environment per import header.
+Each runs Lean once, as `lake env lean`, and keeps no process.
 """
 
-import atexit
-import functools
 import json
 from pathlib import Path
 
 from veriphy.core import ToolError, run_process
-from veriphy.packs.lean.primitives._runner import REPL_COMMIT, TIMEOUT_S, Runner, lake, toolchain
+from veriphy.packs.lean.primitives._runner import TIMEOUT_S, lake, run_lean, toolchain
 
 AXIOMS_MARKER = 'veriphy-axioms '
 PROBLEM_MARKER = 'veriphy-problem '
@@ -32,20 +30,9 @@ open Lean Elab Command in
 """
 
 
-@functools.cache
-def runner() -> Runner:
-    """Return the process's Lean runner, stopping its REPLs when the process exits."""
-    shared = Runner()
-    atexit.register(shared.close)
-    return shared
-
-
 def _tools(root: Path) -> list[dict[str, str]]:
-    """Return the tools a Lean primitive ran: the workspace's Lean, and the REPL when one kept its imports."""
-    used = [{'name': 'lean', 'version': toolchain(root), 'pin': 'version'}]
-    if runner().repl(root) is not None:
-        used.append({'name': 'lean-repl', 'version': REPL_COMMIT, 'pin': 'commit'})
-    return used
+    """Return the tools a Lean primitive ran: the workspace's Lean."""
+    return [{'name': 'lean', 'version': toolchain(root), 'pin': 'version'}]
 
 
 def _source(params: dict[str, object]) -> str:
@@ -62,7 +49,7 @@ def check(params: dict[str, object]) -> dict[str, object]:
     shift = PRELUDE.count('\n')
     last = len(text.splitlines())
     try:
-        code, error, messages = runner().run(root, PRELUDE + text + AXIOMS_SCRIPT)
+        code, error, messages = run_lean(root, PRELUDE + text + AXIOMS_SCRIPT)
     except ToolError as exc:
         return {'status': 'failed', 'error': str(exc)}
     if not messages and code != 0:
@@ -90,7 +77,7 @@ def serialize(params: dict[str, object]) -> dict[str, object]:
     last = len(text.splitlines())
     source = f'import Veriphy.Tactic.Meaning\n{text}\n\n#veriphy serialize {declaration}\n'
     try:
-        _, error, messages = runner().run(root, source)
+        _, error, messages = run_lean(root, source)
     except ToolError as exc:
         return {'status': 'failed', 'error': str(exc)}
     errors = [m for m in messages if m.severity == 'error']
@@ -113,7 +100,7 @@ def level(params: dict[str, object]) -> dict[str, object]:
         if built != 0:
             return {'status': 'refused', 'error': (out + err).strip()[-4000:]}
         source = f'import {module}\nimport Veriphy.Tactic.Operation\n#veriphy level {" ".join(prefixes)}\n'
-        code, error, messages = runner().run(root, source)
+        code, error, messages = run_lean(root, source)
     except ToolError as exc:
         return {'status': 'failed', 'error': str(exc)}
     errors = [m.text for m in messages if m.severity == 'error']

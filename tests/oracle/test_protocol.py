@@ -1,4 +1,4 @@
-"""Test the daemon's messages: JSON-RPC 2.0, and the format of earlier releases it still answers."""
+"""Test the Sage session's messages: JSON-RPC 2.0 requests and responses only."""
 
 from collections.abc import Callable
 
@@ -7,9 +7,9 @@ from veriphy.core import JsonObject
 from veriphy.packs.math.primitives.sage.methods import answer_request
 
 
-def test_unknown_method(daemon: Callable[..., JsonObject]) -> None:
+def test_unknown_method(sage: Callable[..., JsonObject]) -> None:
     """Answer an unknown method with JSON-RPC's method-not-found error, naming it and keeping the request id."""
-    response = daemon('nosuch')
+    response = sage('nosuch')
     assert (response['jsonrpc'], response['id']) == ('2.0', 7)
     error = response['error']
     assert isinstance(error, dict)
@@ -32,13 +32,13 @@ def test_malformed_line() -> None:
     """Answer a line that is not JSON with an error instead of raising."""
     response = answer_request('not json')
     assert response['id'] is None
-    assert 'JSONDecodeError' in str(response['error'])
+    error = response['error']
+    assert isinstance(error, dict)
+    assert (error['code'], 'JSONDecodeError' in str(error['message'])) == (-32700, True)
 
 
-def test_earlier_format_still_answered() -> None:
-    """Answer a request without `jsonrpc` as earlier releases did: an error string, the version on the envelope."""
-    ok = answer_request('{"id": 1, "method": "ping"}')
-    assert (ok['veriphy'], 'jsonrpc' in ok) == (veriphy.__version__, False)
-    failed = answer_request('{"id": 2, "method": "nosuch"}')
-    assert isinstance(failed['error'], str)
-    assert "unknown method 'nosuch'" in failed['error']
+def test_request_without_jsonrpc_is_invalid() -> None:
+    """Answer a request without `"jsonrpc": "2.0"` with JSON-RPC's invalid-request error."""
+    error = answer_request('{"id": 1, "method": "ping"}')['error']
+    assert isinstance(error, dict)
+    assert error['code'] == -32600

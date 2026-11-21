@@ -3,18 +3,18 @@ name: research
 description: Verify a research source (a LaTeX or Markdown draft, a chapter or a paper) with Veriphy's research claim graph — extract its claims, conventions and dependencies, triage them, prove or test them with their graph slices as context, export the Lean results, and report every claim's effective verification level, clashes and suspects in a verification appendix, with each graph conclusion checked by the Lean checker oo-horn. Use when asked to verify, check or audit a paper, a chapter or a set of results as a whole.
 ---
 
-Find the playbooks once per session: `sage -python -m veriphy agents path` prints
+Find the playbooks once per session: `sage -python -m veriphy layers agents path` prints
 the directory, written `<prompts>` below. They ship with the installed `veriphy`
 package, so they always match its toolkit. If the command fails, ask the user to
 run `sage -pip install veriphy` and stop.
 
-Verify the graph once per session: `sage -python -m veriphy claims --help` runs.
+Verify the graph once per session: `sage -python -m veriphy layers claims --help` runs.
 If it does not, ask the user to run `sage -pip install 'veriphy[graph]'`. The
 first `reason` sets up the reasoner and the checker by itself and says so, which
 takes minutes where the checker is built.
 
-Sequence the work with the `verify-paper` workflow: `veriphy next verify-paper <source>` names the next step, and
-`veriphy run verify-paper <source>` runs the steps that are not yours until it needs you.
+Sequence the work with the `verify-paper` workflow: `veriphy layers workflow next verify-paper <source>` names the next step, and
+`veriphy layers workflow run verify-paper <source>` runs the steps that are not yours until it needs you.
 
 Then follow `<prompts>/research.md` exactly as written:
 extract → validate → triage → prove with slices → export → reason and report.

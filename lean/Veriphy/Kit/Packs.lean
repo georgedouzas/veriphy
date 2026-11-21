@@ -1,13 +1,12 @@
 /-
 The library packs Veriphy ships, and the tables in force for the current environment.
 
-`#veriphy_tables` prints the active namespaces (core, packs whose library is imported, project), their entry counts
+`#veriphy translations` prints the active namespaces (core, packs whose library is imported, project), their entry counts
 and any problem found while resolving them (missing constants, conflicts).
 -/
 import Veriphy.Kit.Table
 import Veriphy.Kit.Project
 import Veriphy.Packs.Physlib
-import Veriphy.Kit.Deprecation
 
 namespace Veriphy
 
@@ -25,12 +24,11 @@ def describeTables (ts : Tables) : List String :=
   ts.map fun t => s!"{t.«namespace»}: {t.functions.length} functions, {t.constants.length} constants, " ++
     s!"{t.coercions.length} coercions, {t.rewrites.length} rewrites"
 
-/-- `#veriphy_tables` — the translation tables in force here. -/
-syntax (name := veriphyTables) "#veriphy_tables" : command
+/-- `#veriphy translations`: the translation tables in force here. -/
+syntax (name := veriphyTranslationsCommand) "#veriphy " &"translations" : command
 
 elab_rules : command
-  | `(#veriphy_tables%$tk) => do
-    warnDeprecated tk "#veriphy_tables" "#veriphy translations"
+  | `(#veriphy translations) => do
     let (ts, problems) ← liftCoreM (activeTables)
     logInfo ("\n".intercalate (describeTables ts ++ problems.toList.map ("problem: " ++ ·)))
 

@@ -5,10 +5,16 @@ from pathlib import Path
 
 import pytest
 
+from veriphy.__main__ import main as veriphy_main
 from veriphy.core import PackError, check_config, merge_patch, resolve
-from veriphy.core._config_cli import main as config_main
 from veriphy.primitives import load_registry
 from veriphy.steps import config_digest, load_steps
+
+
+def main(argv: list[str]) -> None:
+    """Run `veriphy config` with the arguments."""
+    veriphy_main(['config', *argv])
+
 
 ECON = """version: 1
 name: econ
@@ -126,10 +132,10 @@ def test_config_digest_follows_meaning(tmp_path: Path) -> None:
 def test_show_names_each_source(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Show the resolved configuration with the pack or file each entry comes from, and pass the check."""
     root = _workspace(tmp_path, 'version: 1\ntools: {sage: {pin: {version: "10.9"}}}\n')
-    config_main(['--root', str(root), 'show'])
+    main(['--root', str(root), 'show'])
     shown = json.loads(capsys.readouterr().out)
     assert shown['packs'] == ['core', 'lean', 'math']
     assert (shown['sources']['tools.sage'], shown['sources']['primitives.lean.check']) == ('veriphy.yaml', 'lean')
-    assert shown['config']['tools']['sage']['contract'] == 'jsonrpc'
-    config_main(['--root', str(root), 'check'])
+    assert shown['config']['tools']['sage']['contract'] == 'files'
+    main(['--root', str(root), 'check'])
     assert 'no problems' in capsys.readouterr().out

@@ -29,10 +29,10 @@ steps:
 
 tools:
   sage:
-    contract: jsonrpc
-    # VERIPHY_SAGE_CMD and VERIPHY_SAGE_SERVER override the command, as they do for the Lean bridge
-    run: ['{env:VERIPHY_SAGE_CMD|sage}', -python, '{env:VERIPHY_SAGE_SERVER|-m veriphy.packs.math.primitives.sage}']
-    version: {method: ping, field: sage, pattern: 'version ([0-9.]+)'}
+    # one Sage process per call; VERIPHY_SAGE_CMD and VERIPHY_SAGE_SESSION override the command, as for the Lean bridge
+    contract: files
+    run: ['{env:VERIPHY_SAGE_CMD|sage}', -python, '{env:VERIPHY_SAGE_SESSION|-m veriphy.packs.math.primitives.sage}']
+    version: {command: [version], pattern: 'version ([0-9.]+)'}
     timeout: 600
 
 primitives:
@@ -42,7 +42,7 @@ primitives:
 
   sage.ping:
     tool: sage
-    method: ping
+    command: [call, ping, '{input}', '{out}']
     trust: oracle
     input: {type: object, maxProperties: 0}
     output:
@@ -52,7 +52,7 @@ primitives:
 
   sage.search:
     tool: sage
-    method: run
+    command: [call, run, '{input}', '{out}']
     trust: search
     input:
       type: object
@@ -72,7 +72,7 @@ primitives:
 
   sage.compute:
     tool: sage
-    method: run_script
+    command: [call, run_script, '{input}', '{out}']
     trust: oracle
     input:
       type: object
@@ -85,7 +85,7 @@ primitives:
 
   sage.sample:
     tool: sage
-    method: meaning
+    command: [call, meaning, '{input}', '{out}']
     trust: oracle
     seed: param
     input:
@@ -106,7 +106,7 @@ primitives:
 
   sage.instances:
     tool: sage
-    method: test
+    command: [call, test, '{input}', '{out}']
     trust: search
     input:
       type: object
@@ -124,21 +124,21 @@ primitives:
 
   sage.solve:
     tool: sage
-    method: solve
+    command: [call, solve, '{input}', '{out}']
     trust: oracle
     input: {type: object}
     output: {type: object}
 
   sage.symbolic_check:
     tool: sage
-    method: symbolic_check
+    command: [call, symbolic_check, '{input}', '{out}']
     trust: oracle
     input: {type: object}
     output: {type: object}
 
   sage.matrix_check:
     tool: sage
-    method: matrix_check
+    command: [call, matrix_check, '{input}', '{out}']
     trust: oracle
     input: {type: object}
     output: {type: object}
@@ -152,3 +152,11 @@ workflows:
     - prove
     - check: {refused: prove, attempts: 5}
   verify-paper: [extract, validate, reason, report]
+# the pack's programs, as `veriphy pack math <name>`
+commands:
+  certificates:
+    command: veriphy.packs.math.steps.certificates._catalog:certificates
+    help: the project's saved certificate scripts, and its test records
+  translations:
+    command: veriphy.packs.math.primitives.translations._catalog:translations
+    help: the Lean ↔ Sage translation entries in force

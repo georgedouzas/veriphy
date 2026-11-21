@@ -21,10 +21,10 @@ def wrong : Prop := ∀ x : ℝ, 0 ≤ x → Real.sqrt (x ^ 2) = -x
 
 
 @pytest.fixture(autouse=True)
-def _daemon_and_records(monkeypatch: pytest.MonkeyPatch, forget_own_records: list[Path]) -> list[Path]:
-    """Serve Lean's requests with this tree's daemon, and delete the records the test writes into the workspace."""
+def _sage_session_and_records(monkeypatch: pytest.MonkeyPatch, forget_own_records: list[Path]) -> list[Path]:
+    """Serve Lean's requests with this tree's Sage session, and delete the records the test writes."""
     monkeypatch.setenv(
-        'VERIPHY_SAGE_SERVER',
+        'VERIPHY_SAGE_SESSION',
         str(ROOT / 'src' / 'veriphy' / 'packs' / 'math' / 'primitives' / 'sage' / '__main__.py'),
     )
     monkeypatch.setenv('PYTHONPATH', str(ROOT / 'src'))
@@ -51,8 +51,9 @@ def test_meaning_records_a_counterexample_as_evidence(tmp_path: Path, capsys: py
     again = run_step(MEANING, ROOT, params)
     assert again.replayed
     assert again.record == record
+    argv = ['--root', str(ROOT), 'layers', 'step', 'meaning', str(path), 'wrong', '--informal', str(params['informal'])]
     with pytest.raises(SystemExit) as exit_info:
-        main(['--root', str(ROOT), 'meaning', str(path), 'wrong', '--informal', str(params['informal'])])
+        main(argv)
     assert exit_info.value.code == 1
     assert 'meaning: counterexample (replayed)' in capsys.readouterr().out
 

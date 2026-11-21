@@ -1,4 +1,4 @@
-"""Define the type vocabulary of the daemon protocol."""
+"""Define the type vocabulary of the Sage session protocol."""
 
 from collections.abc import Callable
 from typing import TypeAlias

@@ -1,104 +1,119 @@
 # Veriphy
 
-Agent skills and a Lean 4 toolkit for machine-verified math and physics, from a single theorem to a whole paper.
+An extensible framework for verifying claims, with agents in the loop, in any field that has a checkable notion of
+evidence.
 
-Veriphy treats SageMath and the agent as untrusted. Sage finds what is expensive to find (coefficients, sums of squares,
-witnesses, closed forms), a script turns that into a Lean tactic block, and the kernel accepts it or rejects it. A Sage
-bug or an agent's hallucination can waste time, but it can't produce a false theorem. Committed proofs are plain Lean
-and build with mathlib alone, so CI never needs Sage.
+A claim can be a theorem, a published regression estimate, or a convention a chapter relies on. Veriphy runs each check
+as a deterministic **step** and keeps a **record** of what it checked, with which tools and what came out. It gives the
+claim a **level** whose **trust class** says what kind of evidence stands behind it. A kernel-checked proof, a
+reproduction of an estimate and a numeric test each get a level, and no report presents one as another. Agents write
+the artifacts (a formal statement, a proof, an extraction), and Veriphy checks them.
 
-For a paper, single proofs aren't enough. You also need to know which conventions each claim assumes and how far a weak
-lemma undermines what rests on it. Veriphy records this in a claim graph. An untrusted reasoner derives the
-consequences, and `oo-horn`, an independent Lean checker from
-[Open Ontologies](https://github.com/fabio-rovai/open-ontologies), accepts or refuses every run.
+What a field means by "checked" comes from **packs**. A pack is a directory with a `pack.yaml` that declares its tools,
+operations, steps, levels, conventions and workflows, and optionally code and agent playbooks. Adding a field means
+writing a pack. Veriphy itself does not change.
 
-## Workflows
+## Packs
 
-Veriphy has three skills. `research` calls `prove`, and `prove` calls `certify`.
-
-| Skill | Input | Output |
+| Pack | Brings | Levels (trust class) |
 |---|---|---|
-| `prove` | a Lean statement, an informal statement, or a backlog item from a repo you supply | a verified proof, or a report of what blocked it |
-| `certify` | one Lean goal | a kernel-checked certificate and a reusable script |
-| `research` | a LaTeX or Markdown draft, chapter or paper | a verification appendix covering every claim |
+| `core` | the claim graph: extraction, SHACL validation, reasoning checked by [`oo-horn`](https://github.com/fabio-rovai/open-ontologies), verification appendices | `none` |
+| `lean` | Lean 4: `check` a file with its axioms, `level` of every declaration | `lean-proof` (kernel) |
+| `math` | SageMath as an untrusted oracle: `veriphy certify` (Sage finds a certificate, the Lean kernel checks it), `meaning` tests of statements, instance tests, translation tables, recipes, and the `prove`, `certify` and `research` skills | `certificate`, `kernel-test` (kernel), `oracle-test` (oracle) |
+| `reproduction` | published analyses rerun from their own script and data in a pinned R image, and robustness under declared variations | `reproduced`, `robust` (reproduction) |
 
-### Proving a theorem
+A workspace with no `veriphy.yaml` uses `math`, which brings in `lean` and `core`. A workspace that names
+`packs: [reproduction]` needs neither Lean nor SageMath.
 
-```text
-/veriphy:prove the partition function Z(β) = 2cosh(βh) satisfies ∂²(log Z)/∂β² = h²/cosh²(βh)
+## How it is built
+
+Veriphy has five layers, each built only on the ones below it, and a pack can add to every layer:
+
+| Layer | Holds | Command |
+|---|---|---|
+| 0. Primitives | deterministic operations: typed by JSON Schema, pinned, of one trust class, with no records | `veriphy layers primitive` |
+| 1. Steps | a primitive with declared inputs, replayed by the digest of their content, and recorded | `veriphy layers step` |
+| 2. Claims | the claim graph, each claim's level from the records, effective levels, clashes | `veriphy layers claims` |
+| 3. Workflows | step sequences as data, where the records decide the next step | `veriphy layers workflow` |
+| 4. Agents | playbooks and skills that follow the workflows | `veriphy layers agents` |
+
+`veriphy config show|check` prints and checks the configuration the packs and `veriphy.yaml` resolve to, and
+`veriphy pack list` lists the selected packs. A pack's own programs run as `veriphy pack <pack> <program>`. From Python,
+`veriphy.run(step, target, **inputs)` runs the same steps as the shell. In Lean, the `veriphy <verb>` tactic and the
+`#veriphy <verb>` command run Lean's operations.
+
+## Two examples
+
+**A theorem** (the `math` pack). Sage finds the certificate, and the kernel checks it:
+
+```lean
+import Veriphy
+
+example (a b : ℝ) : 0 ≤ a ^ 2 * b ^ 2 - 2 * a * b + 1 := by
+  veriphy certify "return found(nlinarith([sq_nonneg(x0*x1 - 1, problem)]))"
+-- Try this: nlinarith [sq_nonneg (a * b - 1)]
 ```
 
-1. **Formalize.** The agent states the claim in Lean, following the conventions of the target file. Lean can't check
-   that the formal statement means what you said, so two checks come first: the agent translates the statement back to
-   English and compares, then tests it with `symbolic_check` or at random values in Sage.
-2. **Prove.** It tries the cheap routes first: `simp`, `nlinarith` and friends, then premise search. For a computational
-   core it calls `certify`, which reuses a saved script from `.veriphy/certificates/` or adapts one of the recipes.
-3. **Verify.** `lake build` from clean, no `sorry`, and only the Sage-free replacements committed.
-4. **Report.** `proved`, `tested` (no certificate is feasible, so `#veriphy test` checked instances),
-   `statement-suspect` (with the counterexample), `blocked-library-gap` or `blocked-missing-building-block`.
+Lean rejects the block if it uses `sorry` or any axiom beyond the standard three. You commit the Sage-free
+replacement, so proofs and CI need only Lean and mathlib. A Sage bug or an agent's mistake can waste time, but it can't
+produce a false theorem.
 
-It never opens PRs. What to do with the result is your decision.
+**A published estimate** (the `reproduction` pack). The analysis is rerun in a pinned R image, refused unless the data
+is the claim's, and compared with the published value:
 
-### Writing a paper
-
-`research` doesn't write your prose. It checks a draft, and you run it repeatedly as the draft grows:
-
-```text
-/veriphy:research chapter9.tex
+```sh
+veriphy layers step reproduce analysis.R mtcars.csv <sha256> --claimed -5.344472 --claim mpg-weight
+# reproduce: agrees, level reproduced (reproduction)
+veriphy layers step vary analysis.R mtcars.csv <sha256> '["mpg ~ wt + hp", "mpg ~ wt + cyl"]'
+# vary: robust, level robust (reproduction), or fragile under a named variation
 ```
 
-1. **Extract.** The agent records claims, conventions and dependencies in `.veriphy/graph/sources/chapter9.agent.ttl`.
-   You confirm what you agree with, which moves it to your own `.human.ttl` file.
-2. **Triage.** Each claim gets tested numerically under the conventions it assumes, then goes into one of four groups:
-   `suspect` (a counterexample turned up), `recipe`, `test` or `formalize`.
-3. **Prove.** In dependency order, each claim goes through `prove` or `#veriphy test`, with a graph slice as context: its
-   statement, the claims it uses and the Lean definitions behind its conventions.
-4. **Reason.** `#veriphy export` exports levels and dependencies from Lean, the reasoner derives the consequences, and
-   `oo-horn` checks the run. An accepted run has the verdict `entailed`.
-5. **Report.** The appendix gives each claim's own and effective level and names what caps it, along with convention
-   clashes, including those inherited from cited papers. Fix the draft, run again, and include the appendix in the paper
-   (`--format latex`).
+Both kinds of claim can sit in the same claim graph. A paper's policy conclusion that rests on a reproduced estimate
+and a Lean-proved lemma gets the lower of the two as its effective level, and the report names the claim that caps it.
 
-A theorem proved with a recipe but resting on a Sage-tested lemma has the effective level `oracle-test`, and the report
-names that lemma. Before changing a convention midway, `impact` lists every claim it reaches and `plan --against HEAD`
-shows what your edit would change.
+## Agents and workflows
 
-The graph doesn't check that a prose claim and its Lean statement say the same thing. That link is an assertion, and
-reports count who made it.
+A workflow is a list of steps, with what each record's status does next:
 
-### Building one certificate
+```yaml
+workflows:
+  prove-claim:
+    - formalize
+    - meaning: {counterexample: stop}
+    - check: {refused: formalize, attempts: 3}
+    - prove
+    - check: {refused: prove, attempts: 5}
+```
 
-When you are already in a Lean proof and one computational goal is in the way, `/veriphy:certify` builds the proof for
-that goal. It is also the route for `veriphy certify` by hand, described in the
-[user guide](https://georgedouzas.github.io/veriphy/overview/user_guide/#building-proofs-with-veriphy certify).
+`veriphy layers workflow next prove-claim Claim.lean` reads the target's records and names the next step.
+`veriphy layers workflow run …` runs the steps that need no agent until one does. Two agents working from the same
+records take the same steps.
 
-## What's included
+The skills follow these workflows:
 
-| Piece | What it does |
-|---|---|
-| `veriphy certify` | runs a proof script against the goal, checks the emitted block, and emits a Sage-free replacement |
-| Toolkit (`veriphy.packs.math.script`) | binds the goal as a `problem`, emits Lean (`linear_combination`, `nlinarith`, `calc`, witnesses, refutations and more), and has exact solvers (rational LP, SOS from an SDP) |
-| Playbooks and recipes (`veriphy.agents`) | one per technique: when to use it, a tested template, a worked example and its failure modes |
-| Translation tables | map Lean terms to Sage, for mathlib, library packs such as `physlib`, and your project's own entries, each checked by `#veriphy translations check` |
-| `VeriphyCheck` | mathlib-only kernel checkers (`decide +kernel`) with soundness theorems, for matrix products, structure constants and primality too large for entrywise proofs |
-| `#veriphy test` and levels | test claims with no feasible certificate at instances. `#veriphy level` reports `certificate`, `lean-proof`, `kernel-test`, `oracle-test` or `none` |
-| Claim graph (`veriphy.claims`) | effective levels, convention impact, clashes across papers, context slices and appendices, with each conclusion checked by `oo-horn` |
-| Coverage | `#veriphy coverage` measures which statements of a corpus translate without opaque atoms |
+| Skill | Pack | Input | Output |
+|---|---|---|---|
+| `prove` | `math` | a Lean or informal statement | a verified proof, or what blocked it |
+| `certify` | `math` | one Lean goal | a kernel-checked certificate and a reusable script |
+| `research` | `math` | a LaTeX or Markdown draft | a verification appendix covering every claim |
+| `reproduce` | `reproduction` | a paper with its script and data | each estimate reproduced, tested for robustness, or refused |
 
 ## Install
 
-You need [SageMath](https://doc.sagemath.org/html/en/installation/) 10 with `sage` on `PATH`, and
-[elan](https://leanprover-community.github.io/get_started.html).
-
-Install the skills and the Sage side:
-
 ```sh
-claude plugin marketplace add https://github.com/georgedouzas/veriphy
-claude plugin install veriphy@veriphy
-sage -pip install veriphy            # or 'veriphy[graph]' for the research skill
+pip install veriphy                  # the framework, the core and reproduction packs
+pip install 'veriphy[graph]'         # with the claim graph's reasoner and checker
 ```
 
-Then require Veriphy in your project's `lakefile.toml`:
+The `reproduction` pack needs podman or docker for its pinned image.
+
+The `math` pack needs [SageMath](https://doc.sagemath.org/html/en/installation/) 10 and
+[elan](https://leanprover-community.github.io/get_started.html). Install into Sage's Python, and require Veriphy in
+your project's `lakefile.toml`:
+
+```sh
+sage -pip install 'veriphy[graph]'
+```
 
 ```toml
 [[require]]
@@ -107,50 +122,65 @@ git = "https://github.com/georgedouzas/veriphy"
 rev = "0.7.0"
 ```
 
-Run `lake update && lake exe cache get && lake build`, and add `import Veriphy` to your Lean files.
+Then run `lake update && lake exe cache get && lake build`, and add `import Veriphy` to your Lean files. If Sage's
+`veriphy` isn't on your `PATH`, run it as `sage -python -m veriphy`.
 
-The graph extra is the only install step for `research`. Its first run fetches the reasoner and the `oo-horn` checker
-from a pinned Open Ontologies release and verifies them against a pinned commit and hash. On Linux x86_64 `oo-horn` is a
-prebuilt binary. Elsewhere it is built once with `elan`, which takes a few minutes.
-
-Install the plugin from the git URL. A local clone would copy its 8 GB `.lake/` into the plugin cache.
-
-**Other agents.** The playbooks are plain markdown, installed with the Python package.
-`sage -python -m veriphy agents path` prints their directory: point your agent at `prove.md`, `certify.md` or
-`research.md` there.
-
-**Claude Code without the plugin:** the skills read the playbooks from the installed package, so copying the three
-skill files is enough:
+The skills for Claude Code:
 
 ```sh
-for skill in prove certify research; do
-  mkdir -p ~/.claude/skills/$skill
-  curl -fsSL https://raw.githubusercontent.com/georgedouzas/veriphy/0.7.0/skills/$skill/SKILL.md \
-    -o ~/.claude/skills/$skill/SKILL.md
-done
+claude plugin marketplace add https://github.com/georgedouzas/veriphy
+claude plugin install veriphy@veriphy
 ```
 
-## What a proof looks like
+Install the plugin from the git URL. A local clone would copy its 8 GB `.lake/` into the plugin cache. Other agents can
+follow the playbooks directly: `veriphy layers agents path` prints their directory (`--pack reproduction` for that
+pack's playbook).
 
-The skills work through one tactic, which you can also use by hand:
+## Writing a pack
 
-```lean
-import Veriphy
+A pack is a directory with a `pack.yaml`. Name it in your `veriphy.yaml` by path, or publish it as a Python package
+that declares a `veriphy.packs` entry point. Here is a sketch of a pack that wraps a command-line
+tool, pinned by its container image, as a primitive, and declares a step and a level over it:
 
-example (a b : ℝ) : 0 ≤ a ^ 2 * b ^ 2 - 2 * a * b + 1 := by
-  veriphy certify "proof = nlinarith([sq_nonneg(x0*x1 - 1, problem)])"
+```yaml
+version: 1
+name: econ
+requires: [core]
+levels:
+  replicated: {trust: reproduction, above: none, description: the estimate was recomputed from the data}
+tools:
+  stata:
+    contract: files                     # the command writes one JSON result to {out}
+    run: [stata-mp, -b, do]
+    pin: {image: 'registry.example/stata:18@sha256:…'}
+primitives:
+  stata.run:
+    tool: stata
+    trust: reproduction
+    command: ['{file:script}', '{file:data}', '{out}']
+    input: {type: object, required: [script, data]}
+    output: {type: object, required: [status, estimate]}
+steps:
+  replicate:
+    kind: check
+    primitive: stata.run
+    grants: replicated
+    compare: {field: estimate, against: claimed, tolerance: 0.001}
+    inputs:
+      script: {scope: file, path: true}
+      data: {scope: file, path: true}
+      claimed: {type: number, record: true}
 ```
 
-The script sees the goal as `problem` and builds a Lean tactic block. Lean runs the block, and rejects it if it uses
-`sorry` or any axiom beyond the standard three. Then Lean offers a replacement to commit, with no Sage in it:
-
-```text
-Try this: nlinarith [sq_nonneg (a * b - 1)]
-```
+`veriphy config check` refuses a step that would grant a level its primitive's trust class can't grant, and
+the step's command and its `--help` are generated from the declaration. See the
+[guide](https://georgedouzas.github.io/veriphy/overview/user_guide/#writing-a-pack) for every section.
 
 ## More
 
-- [User guide](https://georgedouzas.github.io/veriphy/overview/user_guide/): the skills, `veriphy certify` by hand, recipes,
-  verification levels and the research claim graph
-- [Components](https://georgedouzas.github.io/veriphy/overview/components/): what the toolkit covers, family by family
+- [Guide](https://georgedouzas.github.io/veriphy/overview/user_guide/): concepts, configuration, steps, records,
+  levels, workflows, the claim graph, and writing a pack
+- [Packs](https://georgedouzas.github.io/veriphy/packs/): `math` (certificates, recipes, translations, tests), `lean`
+  and `reproduction`
+- [Architecture](https://georgedouzas.github.io/veriphy/architecture/): the layers and the design behind them
 - [Development](https://georgedouzas.github.io/veriphy/development/): building Veriphy and adding recipes

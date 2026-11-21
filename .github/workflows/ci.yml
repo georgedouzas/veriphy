@@ -99,9 +99,9 @@ jobs:
         cd "$(mktemp -d)"
         cp "$GITHUB_WORKSPACE"/src/veriphy/packs/reproduction/example/* .
         printf 'version: 1\npacks: [reproduction]\n' > veriphy.yaml
-        uv run --project "$GITHUB_WORKSPACE" veriphy reproduce analysis.R mtcars.csv \
+        uv run --project "$GITHUB_WORKSPACE" veriphy layers step reproduce analysis.R mtcars.csv \
           450a97ba6b438c6ea5bdf2aaac7eab0ecbbf812b5ff74b56f62dcf0a0c7eb0e5 --claimed -5.344472 --claim mpg-weight
-        uv run --project "$GITHUB_WORKSPACE" veriphy vary analysis.R mtcars.csv \
+        uv run --project "$GITHUB_WORKSPACE" veriphy layers step vary analysis.R mtcars.csv \
           450a97ba6b438c6ea5bdf2aaac7eab0ecbbf812b5ff74b56f62dcf0a0c7eb0e5 '["mpg ~ wt + hp", "mpg ~ wt + cyl"]'
 
   integration:
@@ -148,7 +148,7 @@ jobs:
         key: oo-horn-${{ hashFiles('src/veriphy/primitives/graph/_checker.py') }}
 
     - name: Set up the checker and the reasoner of the pinned Open Ontologies release
-      run: uv run --extra graph python -m veriphy.claims checker build
+      run: uv run --extra graph veriphy layers claims checker build
 
     - name: Install the built wheel into SageMath
       run: |
@@ -163,7 +163,7 @@ jobs:
           .lake
         key: lean-${{ hashFiles('lean-toolchain', 'lake-manifest.json') }}
 
-    - name: Run the tactic suite against the installed daemon
+    - name: Run the tactic suite against the installed Sage session
       run: |
         lake exe cache get
         lake build VeriphyTest

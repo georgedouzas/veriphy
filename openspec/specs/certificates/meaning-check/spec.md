@@ -6,7 +6,7 @@ Test whether a formal statement says what its informal one meant, which the kern
 ## Requirements
 
 ### Requirement: Meaning check
-`#veriphy_meaning c [seed s] [values n] [points p]` and `python -m veriphy meaning <file> <declaration>` SHALL
+`#veriphy meaning c [seed s] [values n] [points p]` and `python -m veriphy layers step meaning <file> <declaration>` SHALL
 evaluate the statement of `c` at seeded values satisfying its hypotheses and domain conditions, or at given points,
 exactly or by intervals of at least 53 bits, and report `agrees`, `counterexample` or `undecided`. The step SHALL be
 of kind `evidence` and SHALL grant no level.

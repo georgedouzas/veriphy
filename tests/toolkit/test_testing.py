@@ -1,4 +1,4 @@
-"""Test the instances of `sage_test`: kernel and oracle instances, the sampler and the default cases."""
+"""Test the instances of `#veriphy test`: kernel and oracle instances, the sampler and the default cases."""
 
 import pytest
 from sage.all import AA, QQ, RDF, I, QQbar, RealIntervalField, pi

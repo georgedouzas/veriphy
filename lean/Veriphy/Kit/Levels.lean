@@ -10,11 +10,10 @@ Verification levels: how a claim was checked through Veriphy.
   an axiom beyond the standard ones.
 
 `veriphy_instance% c v₁ … vₙ` is the claim `c` at the values, built from `c`'s statement and never from its proof, so
-a tested instance cannot depend on the claim it tests. `#veriphy_levels p₁ …` lists the declarations under the
+a tested instance cannot depend on the claim it tests. `#veriphy level p₁ …` lists the declarations under the
 prefixes with their levels.
 -/
 import Lean
-import Veriphy.Kit.Deprecation
 
 namespace Veriphy
 
@@ -112,12 +111,11 @@ def levelOf [Monad m] [MonadEnv m] (name : Name) : m String := do
       return if t.value.getUsedConstants.contains ``Veriphy.certified then "certificate" else "lean-proof"
     | _ => return "none"
 
-/-- `#veriphy_levels p₁ …`: each theorem (and tested proposition) under the prefixes, with its level. -/
-syntax (name := veriphyLevels) "#veriphy_levels" (ppSpace ident)+ : command
+/-- `#veriphy level p₁ …`: each theorem (and tested proposition) under the prefixes, with its level. -/
+syntax (name := veriphyLevelCommand) "#veriphy " &"level" (ppSpace ident)+ : command
 
 elab_rules : command
-  | `(#veriphy_levels%$tk $prefixes*) => do
-    warnDeprecated tk "#veriphy_levels" "#veriphy level"
+  | `(#veriphy level $prefixes*) => do
     let env ← getEnv
     let roots := prefixes.map (·.getId)
     let names := env.constants.fold (init := #[]) fun acc name info =>

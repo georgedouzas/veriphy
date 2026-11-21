@@ -13,7 +13,6 @@ statement that agrees everywhere it was tried is not proved.
 -/
 import Veriphy.Kit
 import Veriphy.Kit.Claim
-import Veriphy.Kit.Deprecation
 
 namespace Veriphy
 
@@ -21,7 +20,7 @@ open Lean Elab Meta Term Command
 
 register_option veriphy.meaning.json : Bool := {
   defValue := false
-  descr := "Veriphy: `#veriphy_meaning` also logs its whole result as JSON, for `python -m veriphy meaning`"
+  descr := "Veriphy: `#veriphy meaning` also logs its whole result as JSON, for `python -m veriphy layers step meaning`"
 }
 
 /-- How many values must agree when `values` is not given. -/
@@ -88,7 +87,7 @@ def meaningCore (target : Ident) (seed values : Nat) (points : Option String) : 
       | none => pure Json.null
       | some text => match Json.parse text with
         | .ok j => pure j
-        | .error e => throwError "#veriphy_meaning: the points are not JSON ({e}): {text}"
+        | .error e => throwError "#veriphy meaning: the points are not JSON ({e}): {text}"
     let result ← Kit.run "meaning" (Bridge.meaning problem seed values points)
     return (name, result)
   logInfo (meaningSummary name result)
@@ -109,16 +108,5 @@ elab_rules : command
       return Json.mkObj [("declaration", Json.str name.toString), ("kind", Json.str kind),
         ("statement", Json.str statement), ("problem", problem)]
     logInfo m!"veriphy-problem {json.compress}"
-
-/-- `#veriphy_meaning c [seed s] [values n] [points "<json>"]`: test whether the statement of `c` means what it was
-meant to, at seeded values satisfying its hypotheses. -/
-syntax (name := veriphyMeaning) "#veriphy_meaning " ident (ppSpace &"seed " num)? (ppSpace &"values " num)?
-  (ppSpace &"points " str)? : command
-
-elab_rules : command
-  | `(#veriphy_meaning%$tk $c:ident $[seed $s]? $[values $n]? $[points $p]?) => do
-    warnDeprecated tk "#veriphy_meaning" "#veriphy meaning"
-    meaningCore c (s.map (·.getNat) |>.getD 0) (n.map (·.getNat) |>.getD meaningDefaultValues)
-      (p.map (·.getString))
 
 end Veriphy

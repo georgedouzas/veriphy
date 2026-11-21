@@ -48,7 +48,7 @@ class Instance:
         return 'kernel' if self.proof is not None else 'oracle'
 
     def to_json(self) -> dict[str, object]:
-        """Return the instance as the daemon sends it to Lean."""
+        """Return the instance as the Sage session sends it to Lean."""
         data: dict[str, object] = {'values': list(self.values), 'kind': self.kind, 'edge': self.edge}
         if self.proof is not None:
             data['proof'] = self.proof

@@ -1,4 +1,4 @@
-"""Register daemon methods and coerce their request parameters."""
+"""Register Sage methods and coerce their request parameters."""
 
 from collections.abc import Callable
 

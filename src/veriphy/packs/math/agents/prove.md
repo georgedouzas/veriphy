@@ -9,7 +9,7 @@ backlog item (e.g. a Physlib `informal_lemma`). The caller also owns the
 outcome: this playbook ends by *reporting*, never by opening PRs, keeping
 score, or committing to the target repo beyond what the caller asked for.
 
-Paths in this playbook are relative to its directory, which `sage -python -m veriphy agents path` prints. The
+Paths in this playbook are relative to its directory, which `sage -python -m veriphy layers agents path` prints. The
 playbooks ship with the installed `veriphy` package, at the version of its toolkit.
 
 ## Preconditions
@@ -19,7 +19,7 @@ playbooks ship with the installed `veriphy` package, at the version of its toolk
   provided that library (checked out and building), and a workspace exists
   whose lakefile requires both it and Veriphy. Create one if needed; it is
   disposable.
-- Sage daemon answers:
+- Sage session answers:
   `echo '{"id":1,"method":"ping"}' | sage -python -m veriphy.packs.math.primitives.sage`
   (if it is missing: `sage -pip install veriphy`).
 
@@ -28,14 +28,14 @@ playbooks ship with the installed `veriphy` package, at the version of its toolk
 1. **Formalize the statement** (skip if the caller gave formal Lean). Mimic
    the target file's local conventions. When the statement is a claim of the
    workspace's research claim graph, first print its context with
-   `sage -python -m veriphy claims slice <source> <label>` and state it under
+   `sage -python -m veriphy layers claims slice <source> <label>` and state it under
    the conventions and Lean definitions the slice names. Then run BOTH lie
    detectors:
    - *Round-trip*: informalize your formal statement back to English; compare
      with the original. Any semantic drift → redo.
    - *Meaning check*: state the claim in a file (as a `theorem … := sorry`, or
      a `def c : Prop := …`) and run
-     `veriphy meaning <file> <declaration> --informal "<your English reading>"`.
+     `veriphy layers step meaning <file> <declaration> --informal "<your English reading>"`.
      It evaluates the statement at seeded values satisfying its hypotheses,
      exactly or by intervals, after trying an equation symbolically, and
      records the outcome under `.veriphy/runs/meaning/`. The file must
@@ -65,7 +65,7 @@ playbooks ship with the installed `veriphy` package, at the version of its toolk
       `certify.md`. Prove the glue yourself. Veriphy ships no
       ready-made certificates. You create each one from the recipes, reusing
       what the project already has:
-      - first `sage -python -m veriphy certificates list` in the project, and
+      - first `sage -python -m veriphy pack math certificates list` in the project, and
         adapt a saved script whose `goal` matches;
       - otherwise pick a recipe from the index below, copy its template into
         the project's `.veriphy/certificates/`, adapt it, and run it.

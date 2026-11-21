@@ -11,7 +11,7 @@ input digest, the config digest, the tool versions, the seed when the step is ra
 for check and derived steps, the level it grants. A record SHALL NOT be edited after it is written.
 
 #### Scenario: A level report
-- **WHEN** `python -m veriphy level MyProject` runs in a workspace
+- **WHEN** `python -m veriphy layers step level MyProject` runs in a workspace
 - **THEN** a record under `.veriphy/runs/level/` lists each declaration with its level, and names the Lean version
 
 #### Scenario: A failure is recorded
@@ -25,7 +25,7 @@ running a primitive. `unchecked` and `failed` are not final. With `--rerun` the 
 records when the output changed.
 
 #### Scenario: Same inputs
-- **WHEN** `veriphy reason` runs twice on an unchanged graph
+- **WHEN** `veriphy layers step reason` runs twice on an unchanged graph
 - **THEN** the second call returns the first record and starts no reasoner and no checker
 
 #### Scenario: Moved file
@@ -46,16 +46,16 @@ Each step SHALL declare one kind: `agent` (it writes an artifact), `evidence` (i
 records SHALL carry a level.
 
 #### Scenario: Evidence carries no level
-- **WHEN** `python -m veriphy validate` writes its record
+- **WHEN** `python -m veriphy layers step validate` writes its record
 - **THEN** the record has kind `evidence` and no `level` field
 
 ### Requirement: Step command
 `python -m veriphy <step> [arguments]` SHALL run a step and print the record's path and status, or the record itself
 with `--json`. It SHALL exit with status 0 on an accepting status, 1 on a refusal or counterexample, 2 on bad usage
-and 3 on an unchecked result. `python -m veriphy records` SHALL list records and show one by digest.
+and 3 on an unchecked result. `python -m veriphy layers step records` SHALL list records and show one by digest.
 
 #### Scenario: Machine-readable result
-- **WHEN** an agent runs `python -m veriphy level MyProject --json`
+- **WHEN** an agent runs `python -m veriphy layers step level MyProject --json`
 - **THEN** it reads the full record from standard output, with no other text
 
 ### Requirement: First steps
@@ -65,8 +65,8 @@ The packs SHALL declare `check` (Lean checks a file and reports each declaration
 appendix) of `veriphy.claims`. Each SHALL give the same result as before.
 
 #### Scenario: Reason through the step
-- **WHEN** `veriphy reason` runs on the fixture graph with `oo-horn` set up
-- **THEN** the record's status is `entailed`, it names the run's certificate directory, and `veriphy claims
+- **WHEN** `veriphy layers step reason` runs on the fixture graph with `oo-horn` set up
+- **THEN** the record's status is `entailed`, it names the run's certificate directory, and `veriphy layers claims
   recheck` on that directory agrees
 
 #### Scenario: Lean steps without Lean

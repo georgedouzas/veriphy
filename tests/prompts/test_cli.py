@@ -4,7 +4,13 @@ from pathlib import Path
 
 import pytest
 
-from veriphy.agents import content_dir, entries, main
+from veriphy.__main__ import main as veriphy_main
+from veriphy.agents import content_dir, entries
+
+
+def main(argv: list[str]) -> None:
+    """Run `veriphy layers agents` with the arguments."""
+    veriphy_main(['layers', 'agents', *argv])
 
 
 def _run(capsys: pytest.CaptureFixture[str], *argv: str) -> str:
