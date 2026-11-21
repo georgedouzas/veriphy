@@ -10,6 +10,8 @@ The package is built in layers, each importing only the layers below it and `ver
 - `veriphy.packs`: `core`, `lean` and `math`, each with its `pack.yaml` and the layer subpackages it needs.
 - `veriphy.script`: what Sage scripts import.
 
+`veriphy.run(verb, target, **inputs)` runs an operation, the same one `veriphy <verb>` runs in the shell.
+
 Importing `veriphy` itself does not import Sage:
 
 >>> import veriphy
@@ -17,6 +19,8 @@ Importing `veriphy` itself does not import Sage:
 True
 """
 
+from veriphy._api import run
 from veriphy.core._version import __version__
+from veriphy.steps import Result
 
-__all__ = ['__version__']
+__all__ = ['Result', '__version__', 'run']

@@ -1,0 +1,8 @@
+<urn:veriphy:lean:DeprecatedTest.double> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <urn:veriphy:vocabulary#Claim> .
+<urn:veriphy:lean:DeprecatedTest.double> <urn:veriphy:vocabulary#leanName> "DeprecatedTest.double" .
+<urn:veriphy:lean:DeprecatedTest.double> <urn:veriphy:vocabulary#statement> "∀ (n : ℕ), n + n = 2 * n" .
+<urn:veriphy:lean:DeprecatedTest.double> <urn:veriphy:vocabulary#hasLevel> <urn:veriphy:vocabulary#kernel-test> .
+<urn:veriphy:lean:DeprecatedTest.selfSub> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <urn:veriphy:vocabulary#Claim> .
+<urn:veriphy:lean:DeprecatedTest.selfSub> <urn:veriphy:vocabulary#leanName> "DeprecatedTest.selfSub" .
+<urn:veriphy:lean:DeprecatedTest.selfSub> <urn:veriphy:vocabulary#statement> "∀ (x : ℚ), x - x = 0" .
+<urn:veriphy:lean:DeprecatedTest.selfSub> <urn:veriphy:vocabulary#hasLevel> <urn:veriphy:vocabulary#none> .

@@ -4,3 +4,4 @@ import Veriphy.Tactic.SageRun
 import Veriphy.Tactic.SageTest
 import Veriphy.Tactic.Meaning
 import Veriphy.Tactic.CheckTranslations
+import Veriphy.Tactic.Operation

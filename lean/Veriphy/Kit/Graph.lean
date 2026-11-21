@@ -7,6 +7,7 @@ provenance `lean`. With `veriphy.claims.write` off, the command prints the tripl
 -/
 import Veriphy.Kit.Levels
 import Veriphy.Kit.Project
+import Veriphy.Kit.Deprecation
 
 namespace Veriphy.Graph
 
@@ -116,7 +117,8 @@ def build (prefixes : Array Name) : MetaM Export := do
 syntax (name := veriphyGraph) "#veriphy_graph" (ppSpace ident)+ (ppSpace str)? : command
 
 elab_rules : command
-  | `(#veriphy_graph $ps* $[$out]?) => do
+  | `(#veriphy_graph%$tk $ps* $[$out]?) => do
+    warnDeprecated tk "#veriphy_graph" "#veriphy export"
     let prefixes := ps.map (·.getId)
     let result ← liftTermElabM (build prefixes)
     let text := "\n".intercalate result.lines.toList ++ "\n"

@@ -2,12 +2,13 @@
 `#veriphy_check_translations` checks every entry of the project's translation tables against Sage and Lean:
 
 * a function entry's `example` is translated to Sage, rendered back by the toolkit, and the rendering is proved
-  equal to the original by `linear_combination` (through `sage_run`, so Sage must be installed);
+  equal to the original by `linear_combination` (through `veriphy certify`, so Sage must be installed);
 * a rewrite entry's `example`, a signature `(x : ℝ) (hx : x ≠ 0) : goal`, is closed by rewriting with its lemma.
 
 Each entry is reported as passed or failed, with Lean's error.
 -/
 import Veriphy.Tactic.SageRun
+import Veriphy.Kit.Deprecation
 
 namespace Veriphy
 
@@ -17,8 +18,8 @@ open Lean Elab Command
 def roundTripScript : String :=
   "h = hyps[0]\n" ++
     "assert h.expr is not None, 'Sage could not read the translation: check the sage name'\n" ++
-    "proof = steps(tactic(f'have _r : {symbolic(h.expr, problem)} = 0 := by linear_combination {h.name}'), " ++
-    "tactic('trivial'))"
+    "return found(steps(tactic(f'have _r : {symbolic(h.expr, problem)} = 0 := by linear_combination {h.name}'), " ++
+    "tactic('trivial')))"
 
 /-- The one-letter variables of an example term, in order of appearance (not part of a dotted name). -/
 def exampleVariables (example_ : String) : List String := Id.run do
@@ -38,7 +39,7 @@ def functionCheck (dir : String) (f : FunctionEntry) : String :=
   let binders := " ".intercalate ((exampleVariables f.«example»).map (s!"({·} : {ty})"))
   let lhs := if ["ℕ", "ℤ"].contains f.result then s!"((({f.«example»}) : {f.result}) : ℝ)" else s!"({f.«example»})"
   s!"set_option veriphy.translationsDir \"{dir}\" in\nexample {binders} (h : {lhs} = 0) : True := by\n" ++
-    s!"  sage_run \"{roundTripScript}\""
+    s!"  veriphy certify \"{roundTripScript}\""
 
 /-- The Lean source checking one rewrite entry. -/
 def rewriteCheck (r : RewriteEntry) : String :=
@@ -64,7 +65,8 @@ def runCheck (source : String) : CommandElabM (List String) := do
 syntax (name := veriphyCheckTranslations) "#veriphy_check_translations" (str)? : command
 
 elab_rules : command
-  | `(#veriphy_check_translations $[$dir]?) => do
+  | `(#veriphy_check_translations%$tk $[$dir]?) => do
+    warnDeprecated tk "#veriphy_check_translations" "#veriphy translations check"
     let dir := match dir with | some d => d.getString | none => ""
     let (tables, problems) ← liftIO (projectTables dir)
     for p in problems do logError m!"invalid: {p}"

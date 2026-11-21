@@ -32,7 +32,7 @@ def test_answer_request_run_accepts_text(ok: Ok) -> None:
 def test_answer_request_run_missing_proof(err: Err) -> None:
     """Report a script that assigns no proof, with its output."""
     error = err('run', problem=PROBLEM, script="print('searching')")
-    assert 'did not assign `proof`' in error
+    assert 'returned no proof' in error
     assert 'searching' in error
 
 
@@ -53,3 +53,45 @@ def test_answer_request_run_does_not_leak_assumptions(ok: Ok) -> None:
     ok('run', problem=PROBLEM, script="t = var('t'); assume(t > 0); proof = 'trivial'")
     result = ok('run', problem=PROBLEM, script="t = var('t'); print(bool(t > 0)); proof = 'trivial'")
     assert result['stdout'] == 'False\n'
+
+
+def test_run_function_returns_found(ok: Ok) -> None:
+    """Call `run(goal, inputs)` and take the proof from its `found(...)`, with no deprecation."""
+    # goal is the goal proposition; the whole problem stays `problem`
+    script = "SCRIPT = {'name': 'cofactor', 'serves': 'certify', 'inputs': {}}\n\ndef run(goal, inputs):\n"
+    script += "    return found(linear_combination([(x0 + x1 + 3, hyp(problem, 'h'))], problem))"
+    result = ok('run', problem=PROBLEM, script=script)
+    assert result['lean'] == 'linear_combination (a + b + 3) * h'
+    assert 'deprecated' not in result
+
+
+def test_inline_body_returns(ok: Ok) -> None:
+    """Read a script that `return`s at top level as the body of `run(goal, inputs)`."""
+    assert ok('run', problem=PROBLEM, script="return found('nlinarith [h]')")['lean'] == 'nlinarith [h]'
+
+
+def test_refuted_names_the_values(err: Err) -> None:
+    """Report a refuted goal with the values where it fails."""
+    error = err('run', problem=PROBLEM, script="return refuted({'a': 2, 'b': 2}, 'the left side is 16')")
+    assert 'the goal is false at a := 2, b := 2: the left side is 16' in error
+
+
+def test_unknown_gives_the_reason(err: Err) -> None:
+    """Report a script that found nothing, with its reason."""
+    assert 'the script found nothing: no cofactor of degree 2' in err(
+        'run',
+        problem=PROBLEM,
+        script="return unknown('no cofactor of degree 2')",
+    )
+
+
+def test_run_must_return_a_result(err: Err) -> None:
+    """Refuse a `run` that returns anything but a script result."""
+    assert 'must return found' in err('run', problem=PROBLEM, script="def run(goal, inputs):\n    return 'nlinarith'")
+
+
+def test_legacy_proof_is_deprecated(ok: Ok) -> None:
+    """Accept a script that assigns `proof`, noting the new form."""
+    result = ok('run', problem=PROBLEM, script="proof = 'nlinarith [h]'")
+    assert result['lean'] == 'nlinarith [h]'
+    assert 'return found(proof)' in str(result['deprecated'])

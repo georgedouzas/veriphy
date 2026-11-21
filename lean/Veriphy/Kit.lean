@@ -1,5 +1,5 @@
 /-
-The kit `sage_run` is built from.
+The kit `veriphy certify` is built from.
 
   Kit.Problem  goal + context → normalized problem (lenient: text for anything without a polynomial form)
   Kit.Family   `closeAndEmit`: run what you print, reject `sorry` and non-standard axioms, emit once
@@ -24,3 +24,4 @@ import Veriphy.Kit.Linear
 import Veriphy.Kit.Levels
 import Veriphy.Kit.Claim
 import Veriphy.Kit.Graph
+import Veriphy.Kit.Operation

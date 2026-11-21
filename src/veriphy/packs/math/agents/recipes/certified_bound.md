@@ -13,37 +13,46 @@
 ## Template
 
 Copy it to the project's `.veriphy/certificates/certified_bound.sage` (or a more specific name), adapt it, keep the
-header, and run it with `sage_run file "<name>.sage"`. It reads the function, point and bound from the goal.
+header, and run it with `veriphy certify "<name>.sage"`. It reads the function, point and bound from the goal.
 
 ```sage
-# name: certified_bound
-# technique: rational bounds on transcendental values from mathlib's decimal lemmas or truncated series
-# goal: Real.exp c < b, b < Real.pi, Real.log c < b and the like, for explicit rationals c and b
-# description: Sage's interval arithmetic picks the lemma or the truncation order; Lean checks the rational remainder.
+SCRIPT = {
+    'name': 'certified_bound',
+    'serves': 'certify',
+    'technique': "rational bounds on transcendental values from mathlib's decimal lemmas or truncated series",
+    'goal': 'Real.exp c < b, b < Real.pi, Real.log c < b and the like, for explicit rationals c and b',
+    'description': "Sage's interval arithmetic picks the lemma or the truncation order; Lean checks the rational remainder.",
+    'inputs': {},
+}
+
 import re
-text = goal.text if goal is not None else ''
-found = re.search(r'Real\.(\w+)\s*\(?\s*([-0-9./ ]*?)\s*\)?\s*(<|>)\s*([0-9.]+)$', text) or \
-    re.search(r'^([0-9.]+)\s*(<|>)\s*Real\.(\w+)\s*\(?\s*([-0-9./ ]*?)\s*\)?$', text)
-assert found, f'the goal must compare Real.f c with a decimal: {text}'
-if text.startswith('Real.'):
-    function, point, relation, bound = found.groups()
-    upper = relation == '<'
-else:
-    bound, relation, function, point = found.groups()
-    upper = relation == '>'
-point = QQ(sage_eval(point)) if point.strip() else QQ(0)
-proof = bound_proof(function.lower(), point, QQ(Integer(bound.replace('.', ''))) / 10 ** len(bound.partition('.')[2]), upper=upper)
+
+
+def run(goal, inputs):
+    text = goal.text if goal is not None else ''
+    matched = re.search(r'Real\.(\w+)\s*\(?\s*([-0-9./ ]*?)\s*\)?\s*(<|>)\s*([0-9.]+)$', text) or \
+        re.search(r'^([0-9.]+)\s*(<|>)\s*Real\.(\w+)\s*\(?\s*([-0-9./ ]*?)\s*\)?$', text)
+    assert matched, f'the goal must compare Real.f c with a decimal: {text}'
+    if text.startswith('Real.'):
+        function, point, relation, bound = matched.groups()
+        upper = relation == '<'
+    else:
+        bound, relation, function, point = matched.groups()
+        upper = relation == '>'
+    point = QQ(sage_eval(point)) if point.strip() else QQ(0)
+    proof = bound_proof(function.lower(), point, QQ(Integer(bound.replace('.', ''))) / 10 ** len(bound.partition('.')[2]), upper=upper)
+    return found(proof)
 ```
 
 ## Worked examples
 
 ```lean
 example : Real.exp 1 < 2.7183 := by
-  sage_run file "certified_bound.sage"
+  veriphy certify "certified_bound.sage"
 -- replacement: exact lt_trans Real.exp_one_lt_d9 (by norm_num)
 
 example : Real.exp (1 / 2) < 1.6488 := by
-  sage_run file "certified_bound.sage"
+  veriphy certify "certified_bound.sage"
 -- replacement: the series to order 6, with its remainder, then linarith
 ```
 

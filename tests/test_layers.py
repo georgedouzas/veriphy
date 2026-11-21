@@ -11,7 +11,7 @@ CORE = -1
 # `veriphy.packs.<pack>.<layer>`: where a pack module names its layer
 PACK_LAYER = 3
 # modules above the layers, which may import any of them
-FACADES = frozenset({'veriphy', 'veriphy.__main__', 'veriphy.script'})
+FACADES = frozenset({'veriphy', 'veriphy.__main__', 'veriphy._api', 'veriphy.script'})
 # the old paths, kept for one minor release, re-export modules wherever they now live
 ALIASES = frozenset(
     {

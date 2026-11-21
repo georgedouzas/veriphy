@@ -1,5 +1,5 @@
 /-
-`#veriphy_meaning c`: does the statement of the claim `c` say what it was meant to? The kernel cannot answer that, so
+`#veriphy meaning c`: does the statement of the claim `c` say what it was meant to? The kernel cannot answer that, so
 the command tests the statement: Sage draws seeded values for its universal binders, keeps those that satisfy the
 hypotheses and the domain conditions of the functions it uses, and evaluates the conclusion at each, exactly or in
 interval arithmetic of 128 bits. An equation is first tried symbolically.
@@ -8,11 +8,12 @@ The outcome is `agrees` (at so many values, or symbolically), `counterexample` (
 `undecided` (with the reason, such as the hypothesis that rejected most values). It is evidence, never a level: a
 statement that agrees everywhere it was tried is not proved.
 
-`#veriphy_meaning c seed 3 values 20` sets the seed and how many values must agree, and
-`#veriphy_meaning c points "[{\"x\": \"pi\"}]"` evaluates at the given values instead of drawing them.
+`#veriphy meaning c seed 3 values 20` sets the seed and how many values must agree, and
+`#veriphy meaning c points "[{\"x\": \"pi\"}]"` evaluates at the given values instead of drawing them.
 -/
 import Veriphy.Kit
 import Veriphy.Kit.Claim
+import Veriphy.Kit.Deprecation
 
 namespace Veriphy
 
@@ -98,7 +99,8 @@ syntax (name := veriphyMeaning) "#veriphy_meaning " ident (ppSpace &"seed " num)
   (ppSpace &"points " str)? : command
 
 elab_rules : command
-  | `(#veriphy_meaning $c:ident $[seed $s]? $[values $n]? $[points $p]?) =>
+  | `(#veriphy_meaning%$tk $c:ident $[seed $s]? $[values $n]? $[points $p]?) => do
+    warnDeprecated tk "#veriphy_meaning" "#veriphy meaning"
     meaningCore c (s.map (·.getNat) |>.getD 0) (n.map (·.getNat) |>.getD meaningDefaultValues)
       (p.map (·.getString))
 

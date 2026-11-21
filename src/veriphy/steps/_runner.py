@@ -98,19 +98,41 @@ class Step:
 
 @dataclass(frozen=True)
 class Result:
-    """A step's record and how it was obtained.
+    """The result of an operation: its record, and how it was obtained.
 
     Args:
         record: The record.
         path: Its file.
         replayed: Whether an existing record was returned without running the step.
         changed: On a run with an earlier final record of the same inputs, whether the result differs from it.
+        target: What the operation acted on, as the caller named it.
     """
 
     record: Record
     path: Path
     replayed: bool
     changed: bool | None = None
+    target: str | None = None
+
+    @property
+    def verb(self) -> str:
+        """The operation's verb, its step's name."""
+        return self.record.step
+
+    @property
+    def status(self) -> str:
+        """What happened."""
+        return self.record.status
+
+    @property
+    def outputs(self) -> dict[str, object]:
+        """What the operation produced."""
+        return self.record.outputs
+
+    @property
+    def level(self) -> str | None:
+        """The level a check or derived operation grants, if any."""
+        return self.record.level
 
 
 def run_step(step: Step, root: Path, params: Params | None = None, *, rerun: bool = False) -> Result:

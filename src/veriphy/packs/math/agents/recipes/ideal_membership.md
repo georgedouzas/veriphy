@@ -8,26 +8,34 @@
 
 ## Template
 
-Copy it to the project's `.veriphy/certificates/ideal_membership.sage` (or a more specific name), adapt the lines marked `EDIT`, keep the header, and run it with `sage_run file "<name>.sage"`.
+Copy it to the project's `.veriphy/certificates/ideal_membership.sage` (or a more specific name), adapt the lines marked `EDIT`, keep its `SCRIPT` declaration, and run it with `veriphy certify "<name>.sage"`.
 
 ```sage
-# name: ideal_membership
-# technique: ideal membership (Gröbner cofactors)
-# goal: lhs = rhs, implied by polynomial equality hypotheses
-# description: Write lhs - rhs as a combination of the equality hypotheses; linear_combination checks it.
-eqs = [h for h in hyps if h.rel == 'eq' and h.poly is not None]
-assert goal is not None and goal.rel == 'eq', 'the goal must be a polynomial equality'
-assert eqs, 'no polynomial equality hypotheses to combine'
-assert goal.poly in R.ideal([h.poly for h in eqs]), 'the goal does not follow from the equalities (not in the ideal)'
-cofactors = goal.poly.lift(R.ideal([h.poly for h in eqs]))
-proof = linear_combination([(c, hyp(problem, h.name)) for c, h in zip(cofactors, eqs)], problem)
+SCRIPT = {
+    'name': 'ideal_membership',
+    'serves': 'certify',
+    'technique': 'ideal membership (Gröbner cofactors)',
+    'goal': 'lhs = rhs, implied by polynomial equality hypotheses',
+    'description': 'Write lhs - rhs as a combination of the equality hypotheses; linear_combination checks it.',
+    'inputs': {},
+}
+
+
+def run(goal, inputs):
+    eqs = [h for h in hyps if h.rel == 'eq' and h.poly is not None]
+    assert goal is not None and goal.rel == 'eq', 'the goal must be a polynomial equality'
+    assert eqs, 'no polynomial equality hypotheses to combine'
+    assert goal.poly in R.ideal([h.poly for h in eqs]), 'the goal does not follow from the equalities (not in the ideal)'
+    cofactors = goal.poly.lift(R.ideal([h.poly for h in eqs]))
+    proof = linear_combination([(c, hyp(problem, h.name)) for c, h in zip(cofactors, eqs)], problem)
+    return found(proof)
 ```
 
 ## Worked example
 
 ```lean
 example (a b : ℝ) (h : a + b = 3) (h' : a * b = 2) : a ^ 2 + b ^ 2 = 5 := by
-  sage_run file "ideal_membership.sage"
+  veriphy certify "ideal_membership.sage"
 -- replacement: linear_combination (a + b + 3) * h + (-2) * h'
 ```
 

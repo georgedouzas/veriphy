@@ -1,6 +1,7 @@
 """Keep the steps that layers and packs register, and load every pack's registrations by name."""
 
 import importlib
+import warnings
 from importlib.metadata import entry_points
 
 from veriphy.core import StepError
@@ -10,6 +11,8 @@ from veriphy.steps._runner import Step
 BUILTIN_PACKS = ('core', 'lean', 'math')
 LAYERS = ('primitives', 'steps', 'claims', 'workflows', 'agents')
 _STEPS: dict[str, Step] = {}
+# old step names, kept for one minor release
+DEPRECATED_VERBS = {'elaborate': 'check'}
 
 
 def register(*steps: Step) -> None:
@@ -35,6 +38,27 @@ def register(*steps: Step) -> None:
             message = f"two steps are named '{step.name}': rename one of them"
             raise StepError(message)
         _STEPS[step.name] = step
+
+
+def resolve_verb(verb: str) -> str:
+    """Return the step name a verb denotes, warning when it is a deprecated name.
+
+    Args:
+        verb: The verb, as the caller wrote it.
+
+    Returns:
+        The step's name.
+
+    Examples:
+        >>> resolve_verb('check')
+        'check'
+    """
+    new = DEPRECATED_VERBS.get(verb)
+    if new is None:
+        return verb
+    message = f"the verb '{verb}' is now '{new}'; the old name goes in the next minor release"
+    warnings.warn(message, DeprecationWarning, 2)
+    return new
 
 
 def registered() -> dict[str, Step]:

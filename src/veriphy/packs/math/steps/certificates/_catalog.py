@@ -1,6 +1,7 @@
 """List and show the certificate scripts saved in a project's `.veriphy/certificates/`."""
 
 import argparse
+import ast
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -16,10 +17,30 @@ NOT_FOUND = 1
 CHANGED = 3
 
 
+def _declared(text: str) -> dict[str, str] | None:
+    """Return the fields of a script's `SCRIPT = {...}` declaration, or `None` when it has none."""
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return None
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == 'SCRIPT' for t in node.targets):
+            try:
+                value = ast.literal_eval(node.value)
+            except ValueError:
+                return None
+            return {str(k): str(v) for k, v in value.items()} if isinstance(value, dict) else None
+    return None
+
+
 def _read_header(path: Path) -> dict[str, str]:
-    """Return the `# key: value` lines at the top of a script, up to its first other line."""
+    """Return a script's fields: its `SCRIPT` declaration, or else its `# key: value` lines up to the first other."""
+    text = path.read_text()
+    declared = _declared(text)
+    if declared is not None:
+        return {key: value for key, value in declared.items() if key in HEADER_KEYS}
     header: dict[str, str] = {}
-    for line in path.read_text().splitlines():
+    for line in text.splitlines():
         if not line.startswith('#'):
             break
         key, sep, value = line.lstrip('#').strip().partition(':')
@@ -34,7 +55,7 @@ def _scripts(directory: Path) -> list[Path]:
 
 
 def _describe(path: Path, runnable: str) -> str:
-    """Return one catalog line for a script: what `sage_run file` takes, then its header fields."""
+    """Return one catalog line for a script: what `veriphy certify` takes, then its header fields."""
     header = _read_header(path)
     fields = [runnable, *(header.get(key, '') for key in HEADER_KEYS)]
     missing = [key for key in HEADER_KEYS if key not in header]
@@ -70,7 +91,7 @@ def _warn_legacy(root: Path) -> None:
 
 def _parser() -> argparse.ArgumentParser:
     """Return the command-line parser: `list [--root DIR]` and `show <name> [--root DIR]`."""
-    parser = argparse.ArgumentParser(prog='python -m veriphy.packs.math.steps.certificates')
+    parser = argparse.ArgumentParser(prog='veriphy certificates')
     commands = parser.add_subparsers(dest='command', required=True)
     for command in (commands.add_parser('list'), commands.add_parser('show'), commands.add_parser('tests')):
         command.add_argument('--root', type=Path, default=None, help='the Lean workspace root (found by default)')

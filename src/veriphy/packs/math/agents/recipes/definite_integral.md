@@ -13,15 +13,24 @@
 ## Template
 
 Copy it to the project's `.veriphy/certificates/definite_integral.sage` (or a more specific name), adapt the lines
-marked `EDIT`, keep the header, and run it with `sage_run file "<name>.sage"`.
+marked `EDIT`, keep its `SCRIPT` declaration, and run it with `veriphy certify "<name>.sage"`.
 
 ```sage
-# name: definite_integral
-# technique: fundamental theorem of calculus with an antiderivative from Sage
-# goal: ∫ x in a..b, f x = v, with f elementary (polynomials, exp, log, sin, cos, sqrt, powers)
-# description: Sage finds F with F' = f and checks F b - F a = v; Lean proves HasDerivAt F f and evaluates the bounds.
+SCRIPT = {
+    'name': 'definite_integral',
+    'serves': 'certify',
+    'technique': 'fundamental theorem of calculus with an antiderivative from Sage',
+    'goal': '∫ x in a..b, f x = v, with f elementary (polynomials, exp, log, sin, cos, sqrt, powers)',
+    'description': "Sage finds F with F' = f and checks F b - F a = v; Lean proves HasDerivAt F f and evaluates the bounds.",
+    'inputs': {},
+}
+
 INDEX = 0  # EDIT: which interval integral of the goal, when it has several
-proof = definite_integral_proof(problem, INDEX)
+
+
+def run(goal, inputs):
+    proof = definite_integral_proof(problem, INDEX)
+    return found(proof)
 ```
 
 ## Worked examples
@@ -29,10 +38,10 @@ proof = definite_integral_proof(problem, INDEX)
 ```lean
 -- the mean of the squared cosine over a period, with the antiderivative φ / 2 + sin (2φ) / 4
 example : ∫ φ in (0 : ℝ)..(2 * Real.pi), Real.cos φ ^ 2 = Real.pi := by
-  sage_run file "definite_integral.sage"
+  veriphy certify "definite_integral.sage"
 
 example : ∫ x in (0 : ℝ)..1, (x ^ 2 + 2 * x) = 4 / 3 := by
-  sage_run file "definite_integral.sage"
+  veriphy certify "definite_integral.sage"
 ```
 
 `lean/VeriphyTest/SageRun.lean` also integrates `sin 2φ` over a period.

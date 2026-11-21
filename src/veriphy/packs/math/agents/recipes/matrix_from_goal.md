@@ -19,38 +19,47 @@
 ## Template
 
 Copy it to the project's `.veriphy/certificates/matrix_from_goal.sage` (or a more specific name), adapt the lines
-marked `EDIT`, keep the header, and run it with `sage_run file "<name>.sage"`.
+marked `EDIT`, keep its `SCRIPT` declaration, and run it with `veriphy certify "<name>.sage"`.
 
 ```sage
-# name: matrix_from_goal
-# technique: matrix computation read from the goal, checked entrywise, modulo side relations
-# goal: an identity, determinant or trace of explicit matrices or vectors, written in the goal (!![…], ![…], *, ᵀ, *ᵥ, det, trace)
-# description: Sage evaluates lhs - rhs from the goal itself; Lean proves it entry by entry or by expanding det or trace.
+SCRIPT = {
+    'name': 'matrix_from_goal',
+    'serves': 'certify',
+    'technique': 'matrix computation read from the goal, checked entrywise, modulo side relations',
+    'goal': 'an identity, determinant or trace of explicit matrices or vectors, written in the goal (!![…], ![…], *, ᵀ, *ᵥ, det, trace)',
+    'description': 'Sage evaluates lhs - rhs from the goal itself; Lean proves it entry by entry or by expanding det or trace.',
+    'inputs': {},
+}
+
 SIMP = []  # EDIT: extra simp lemmas, for example definitions of named matrices
 RELATIONS = []  # EDIT: side relations the entries need, as ['Real.cosh_sq_sub_sinh_sq'], ['Real.sq_sqrt']
-proof = matrix_from_goal_proof(goal, problem, simp=SIMP, relations=RELATIONS)
+
+
+def run(goal, inputs):
+    proof = matrix_from_goal_proof(goal, problem, simp=SIMP, relations=RELATIONS)
+    return found(proof)
 ```
 
 ## Worked examples
 
 ```lean
 example : !![(2 : ℚ), 1; 1, 1] * !![1, -1; -1, 2] = 1 := by
-  sage_run file "matrix_from_goal.sage"
+  veriphy certify "matrix_from_goal.sage"
 
 -- a 4 × 4 determinant, by Laplace expansion
 example : Matrix.det !![(1 : ℚ), 0, 0, 0; 0, -1, 0, 0; 0, 0, -1, 0; 0, 0, 0, -1] = -1 := by
-  sage_run file "matrix_from_goal.sage"
+  veriphy certify "matrix_from_goal.sage"
 
 -- a boost preserves the metric (a copy with RELATIONS = ['Real.cosh_sq_sub_sinh_sq'])
 open Matrix in
 example (u : ℝ) : (!![Real.cosh u, Real.sinh u; Real.sinh u, Real.cosh u])ᵀ * !![(1 : ℝ), 0; 0, -1] *
     !![Real.cosh u, Real.sinh u; Real.sinh u, Real.cosh u] = !![1, 0; 0, -1] := by
-  sage_run file "boost_metric.sage"
+  veriphy certify "boost_metric.sage"
 
 -- an eigenvector with a square root, inline
 open Matrix in
 example : !![(2 : ℝ), 1, 0; 1, 2, 1; 0, 1, 2] *ᵥ ![1, Real.sqrt 2, 1] = (2 + Real.sqrt 2) • ![1, Real.sqrt 2, 1] := by
-  sage_run "proof = matrix_from_goal_proof(goal, problem, relations=['Real.sq_sqrt'])"
+  veriphy certify "proof = matrix_from_goal_proof(goal, problem, relations=['Real.sq_sqrt'])"
 ```
 
 `lean/VeriphyTest/SageRun.lean` also proves a general `4 × 4` determinant, a product with a transpose and symbolic

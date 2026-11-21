@@ -245,7 +245,7 @@ def _add_commands(commands: argparse._SubParsersAction) -> None:
 
 def _parser() -> argparse.ArgumentParser:
     """Return the command-line parser."""
-    parser = argparse.ArgumentParser(prog='python -m veriphy.claims', description='The research claim graph.')
+    parser = argparse.ArgumentParser(prog='veriphy claims', description='The research claim graph.')
     parser.add_argument('--root', type=Path, default=None, help='the Lean workspace root')
     _add_commands(parser.add_subparsers(dest='command', required=True))
     return parser

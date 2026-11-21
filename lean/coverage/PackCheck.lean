@@ -10,7 +10,7 @@ info: mathlib: 26 functions, 2 constants, 5 coercions, 16 rewrites
 physlib: 2 functions, 0 constants, 1 coercions, 6 rewrites
 -/
 #guard_msgs in
-#veriphy_tables
+#veriphy translations
 
 variable (t₀ : Time) (p : Space 2)
 
@@ -22,7 +22,7 @@ atoms:
 conditions:
 -/
 #guard_msgs in
-#veriphy_translate Time.deriv (fun t : Time => t.val ^ 2) t₀
+#veriphy translate Time.deriv (fun t : Time => t.val ^ 2) t₀
 
 -- `∂[0]`: the partial derivative in the first coordinate, every coordinate then set to the point's
 /--
@@ -33,7 +33,7 @@ atoms:
 conditions:
 -/
 #guard_msgs in
-#veriphy_translate Space.deriv 0 (fun x : Space 2 => x 0 ^ 2 * x 1) p
+#veriphy translate Space.deriv 0 (fun x : Space 2 => x 0 ^ 2 * x 1) p
 
 -- `∂ₜ` of an unknown trajectory: the derivative of a Sage symbolic function, at the number `t₀.val` throughout
 /--
@@ -44,4 +44,4 @@ conditions:
 -/
 #guard_msgs in
 variable (x : Time → ℝ) in
-#veriphy_translate Time.deriv x t₀ + 2 * x t₀
+#veriphy translate Time.deriv x t₀ + 2 * x t₀

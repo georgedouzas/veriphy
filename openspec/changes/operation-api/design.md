@@ -45,7 +45,8 @@ def run(goal: Goal, inputs: dict) -> Result:
     return found(proof)
 ```
 
-`Goal` is today's problem object (`goal.lhs`, `goal.rhs`, `goal.hypotheses`, `goal.binders`). `found(x)` carries the
+`goal` is the goal proposition scripts already see (`goal.poly`, `goal.rel`, `goal.text`, `goal.expr`), so a
+template's body keeps its meaning inside `run`; the whole problem stays bound as `problem`. `found(x)` carries the
 artifact the verb needs (a proof term for `certify`, instances for `test`), `refuted(values)` says the goal is false
 at the values, and `unknown(reason)` says nothing was found. For `certify`, `found` leads to Lean's check, `refuted`
 to the status `counterexample` and `unknown` to `unknown`.

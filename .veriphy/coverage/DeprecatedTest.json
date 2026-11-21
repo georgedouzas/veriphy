@@ -1,0 +1,9 @@
+{"with_relation": 1,
+ "theorems": 1,
+ "prefixes": ["DeprecatedTest"],
+ "opaque_heads": [],
+ "no_relation": 0,
+ "fully_covered": 1,
+ "failures": [],
+ "failed": 0,
+ "covered_up_to_uninterpreted": 1}

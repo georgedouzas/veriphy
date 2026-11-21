@@ -16,25 +16,34 @@
 ## Template
 
 Copy it to the project's `.veriphy/certificates/wz_certificate.sage` (or a more specific name), adapt the lines
-marked `EDIT`, keep the header, and run it with `sage_run file "<name>.sage"`.
+marked `EDIT`, keep its `SCRIPT` declaration, and run it with `veriphy certify "<name>.sage"`.
 
 ```sage
-# name: wz_certificate
-# technique: Wilf-Zeilberger pairs and Gosper antidifferences, with telescoping and induction proofs
-# goal: ∑ k ∈ Finset.range (n + 1), F n k = S n (a hypergeometric F), or ∑ k ∈ Finset.range n, f k = S n
-# description: Sympy's Gosper algorithm finds the certificate; Lean checks the summand identity and telescopes.
+SCRIPT = {
+    'name': 'wz_certificate',
+    'serves': 'certify',
+    'technique': 'Wilf-Zeilberger pairs and Gosper antidifferences, with telescoping and induction proofs',
+    'goal': '∑ k ∈ Finset.range (n + 1), F n k = S n (a hypergeometric F), or ∑ k ∈ Finset.range n, f k = S n',
+    'description': "Sympy's Gosper algorithm finds the certificate; Lean checks the summand identity and telescopes.",
+    'inputs': {},
+}
+
 import sympy as sp
 from veriphy.packs.math.script._summation import N as n, K as k
 SUMMAND = None  # EDIT: the summand in n, k (sympy: sp.binomial(n, k), sp.factorial(k), 2**n, …)
 CLOSED_FORM = None  # EDIT: S(n) (sympy), for a definite sum over k ≤ n
 CLOSED_FORM_LEAN = None  # EDIT: S n as the goal writes it in Lean, e.g. '(2 : ℚ) ^ n'; None for an indefinite sum
-assert SUMMAND is not None, 'fill in SUMMAND (and CLOSED_FORM, CLOSED_FORM_LEAN for a definite sum) in a copy'
-if CLOSED_FORM_LEAN is None:
-    print('closed form:', sp.combsimp(gosper_closed_form(SUMMAND)))
-    proof = gosper_proof()
-else:
-    print('WZ mate:', wz_mate(sp.combsimp(SUMMAND / CLOSED_FORM)))
-    proof = wz_proof(SUMMAND, CLOSED_FORM, CLOSED_FORM_LEAN)
+
+
+def run(goal, inputs):
+    assert SUMMAND is not None, 'fill in SUMMAND (and CLOSED_FORM, CLOSED_FORM_LEAN for a definite sum) in a copy'
+    if CLOSED_FORM_LEAN is None:
+        print('closed form:', sp.combsimp(gosper_closed_form(SUMMAND)))
+        proof = gosper_proof()
+    else:
+        print('WZ mate:', wz_mate(sp.combsimp(SUMMAND / CLOSED_FORM)))
+        proof = wz_proof(SUMMAND, CLOSED_FORM, CLOSED_FORM_LEAN)
+    return found(proof)
 ```
 
 ## Worked examples
@@ -42,11 +51,11 @@ else:
 ```lean
 -- with SUMMAND = sp.binomial(n, k), CLOSED_FORM = 2**n and CLOSED_FORM_LEAN = '(2 : ℚ) ^ n'
 example (n : ℕ) : ∑ k ∈ Finset.range (n + 1), (n.choose k : ℚ) = 2 ^ n := by
-  sage_run file "binomial_wz.sage"
+  veriphy certify "binomial_wz.sage"
 
 -- with SUMMAND = k * sp.factorial(k) (an indefinite sum: Gosper finds n! - 1)
 example (n : ℕ) : ∑ k ∈ Finset.range n, (k * k.factorial : ℚ) = n.factorial - 1 := by
-  sage_run file "gosper_factorial.sage"
+  veriphy certify "gosper_factorial.sage"
 ```
 
 ## Failure modes

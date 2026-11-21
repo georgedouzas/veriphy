@@ -6,7 +6,7 @@
   the definitions of the `CoordinateGeometry` asset: `christoffel g k i j x`, `riemann`, `ricci`,
   `scalarCurvature`, `lieMetric` and `IsKilling`, or about differential forms with `extDeriv`, `wedge` and `hodge`.
 - Copy the asset into the project with
-  `sage -python -m veriphy.agents copy assets/VeriphyAssets/CoordinateGeometry` and declare the `VeriphyAssets`
+  `sage -python -m veriphy agents copy assets/VeriphyAssets/CoordinateGeometry` and declare the `VeriphyAssets`
   library (see the user guide). It imports mathlib only: partial derivatives are `deriv` along `Function.update`, the inverse metric is
   mathlib's `Matrix.inv`.
 - SageManifolds computes the components (`christoffel_symbols(metric)`). Lean proves each component from the
@@ -19,27 +19,36 @@
 ## Template
 
 Copy it to the project's `.veriphy/certificates/coordinate_geometry.sage` (or a more specific name), adapt the lines
-marked `EDIT`, keep the header, and run it with `sage_run file "<name>.sage"`.
+marked `EDIT`, keep its `SCRIPT` declaration, and run it with `veriphy certify "<name>.sage"`.
 
 ```sage
-# name: coordinate_geometry
-# technique: metrics, Christoffel symbols, Killing vectors, exact forms and contractions in coordinates
-# goal: a statement about CoordinateGeometry.christoffel, IsKilling or extDeriv for an explicit metric or form
-# description: SageManifolds computes the components; Lean proves them from the CoordinateGeometry asset's definitions.
+SCRIPT = {
+    'name': 'coordinate_geometry',
+    'serves': 'certify',
+    'technique': 'metrics, Christoffel symbols, Killing vectors, exact forms and contractions in coordinates',
+    'goal': 'a statement about CoordinateGeometry.christoffel, IsKilling or extDeriv for an explicit metric or form',
+    'description': "SageManifolds computes the components; Lean proves them from the CoordinateGeometry asset's definitions.",
+    'inputs': {},
+}
+
 METRIC = None  # EDIT: the metric's matrix (Sage) in the coordinates x0, x1, … (from coordinates(n))
 NAME = None  # EDIT: the Lean name of the metric's definition, unfolded by the proofs
 KIND = 'christoffel'  # EDIT: 'christoffel' (one component), 'killing' (a Killing vector), or 'exact' (a primitive)
 FORM = None  # EDIT: for 'exact', the components of the 1-form (Sage, in the coordinates)
-assert METRIC is not None or FORM is not None, 'fill in METRIC and NAME, or FORM, in a copy'
-if KIND == 'christoffel':
-    print(christoffel_symbols(METRIC))
-    proof = christoffel_proof(METRIC, metric=NAME, unfold=[NAME])
-elif KIND == 'killing':
-    proof = killing_proof(unfold=[NAME])
-else:
-    f = primitive(FORM)
-    print('primitive:', f)
-    proof = exact_form_proof(f, len(FORM))
+
+
+def run(goal, inputs):
+    assert METRIC is not None or FORM is not None, 'fill in METRIC and NAME, or FORM, in a copy'
+    if KIND == 'christoffel':
+        print(christoffel_symbols(METRIC))
+        proof = christoffel_proof(METRIC, metric=NAME, unfold=[NAME])
+    elif KIND == 'killing':
+        proof = killing_proof(unfold=[NAME])
+    else:
+        f = primitive(FORM)
+        print('primitive:', f)
+        proof = exact_form_proof(f, len(FORM))
+    return found(proof)
 ```
 
 ## Worked examples
@@ -51,11 +60,11 @@ noncomputable def sphere : Fin 2 → Fin 2 → (Fin 2 → ℝ) → ℝ :=
 -- with METRIC = matrix(SR, [[1, 0], [0, sin(x0)^2]]) and NAME = 'sphere'
 example (x : Fin 2 → ℝ) (h : Real.sin (x 0) ≠ 0) :
     CoordinateGeometry.christoffel sphere 0 1 1 x = -(Real.sin (x 0) * Real.cos (x 0)) := by
-  sage_run file "sphere_christoffel.sage"
+  veriphy certify "sphere_christoffel.sage"
 
 -- ∂_φ is a Killing vector of the sphere (KIND = 'killing')
 example : CoordinateGeometry.IsKilling sphere ![fun _ => 0, fun _ => 1] := by
-  sage_run "proof = killing_proof(unfold=['sphere'])"
+  veriphy certify "proof = killing_proof(unfold=['sphere'])"
 ```
 
 `lean/VeriphyTest/SageRun.lean` also proves every Christoffel symbol of Minkowski space zero, an exact 1-form on ℝ³ with

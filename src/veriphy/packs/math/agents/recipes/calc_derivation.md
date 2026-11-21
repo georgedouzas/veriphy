@@ -7,27 +7,35 @@
 
 ## Template
 
-Copy it to the project's `.veriphy/certificates/calc_derivation.sage` (or a more specific name), adapt the lines marked `EDIT`, keep the header, and run it with `sage_run file "<name>.sage"`.
+Copy it to the project's `.veriphy/certificates/calc_derivation.sage` (or a more specific name), adapt the lines marked `EDIT`, keep its `SCRIPT` declaration, and run it with `veriphy certify "<name>.sage"`.
 
 ```sage
-# name: calc_derivation
-# technique: calc derivation (each step checked on its own)
-# goal: lhs = rhs (or ≤ / <) reached through intermediate expressions Sage computes
-# description: Chain intermediate forms from Sage; each calc step closes by its own tactic, so a failure names the step.
-start = lhs.text  # EDIT: the goal's left side, or a rewritten form of it
-middle = expand(SR(str(lhs.poly)))  # EDIT: any intermediate Sage computes (expanded, factored, substituted, ...)
-chain = [
-    ('=', R(str(middle)), tactic('ring')),  # EDIT: one step per intermediate, each with its own tactic
-    ('=', term(rhs.text), tactic('ring')),
-]
-proof = calc_chain(term(start), chain, problem)
+SCRIPT = {
+    'name': 'calc_derivation',
+    'serves': 'certify',
+    'technique': 'calc derivation (each step checked on its own)',
+    'goal': 'lhs = rhs (or ≤ / <) reached through intermediate expressions Sage computes',
+    'description': 'Chain intermediate forms from Sage; each calc step closes by its own tactic, so a failure names the step.',
+    'inputs': {},
+}
+
+
+def run(goal, inputs):
+    start = lhs.text  # EDIT: the goal's left side, or a rewritten form of it
+    middle = expand(SR(str(lhs.poly)))  # EDIT: any intermediate Sage computes (expanded, factored, substituted, ...)
+    chain = [
+        ('=', R(str(middle)), tactic('ring')),  # EDIT: one step per intermediate, each with its own tactic
+        ('=', term(rhs.text), tactic('ring')),
+    ]
+    proof = calc_chain(term(start), chain, problem)
+    return found(proof)
 ```
 
 ## Worked example
 
 ```lean
 example (x : ℚ) : (x + 1) ^ 2 - 1 = x * (x + 2) := by
-  sage_run file "calc_derivation.sage"
+  veriphy certify "calc_derivation.sage"
 ```
 
 ## Failure modes

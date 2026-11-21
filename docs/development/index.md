@@ -32,7 +32,7 @@ environment you can follow the next steps:
 | Extract the goal and every nameable hypothesis (polynomial forms where they exist, Lean text always) | `withLenientProblem`, `lean/Veriphy/Kit/Problem.lean` |
 | Send the problem and the script to the daemon session (one Sage process per Lean process) | `Kit.run (Bridge.run …)`, `lean/Veriphy/Bridge.lean` |
 | Run the script with `problem` and the toolkit bound; read `proof` | `run`, `src/veriphy/oracle/_scripts.py` |
-| Parse the block, run exactly that, reject `sorry` and non-standard axioms, replay, emit | `sage_run`, `closeAndEmit` in `lean/Veriphy/Kit/Family.lean` |
+| Parse the block, run exactly that, reject `sorry` and non-standard axioms, replay, emit | `veriphy certify`, `closeAndEmit` in `lean/Veriphy/Kit/Family.lean` |
 
 ## Layout
 
@@ -40,7 +40,7 @@ environment you can follow the next steps:
 lakefile.toml         Lake configuration, with lake-manifest.json and lean-toolchain, kept at the root
 lean/Veriphy/         Lean library: sage_run, problem extraction, checks and replay, the daemon bridge
 lean/VeriphyCheck/    Mathlib-only kernel checkers, bundled by scripts/bundle_check.py
-lean/VeriphyTest/     Lean tests: the kit (no Sage), sage_run examples, the benchmark
+lean/VeriphyTest/     Lean tests: the kit (no Sage), veriphy certify examples, the benchmark
 lean/assets/          Recipe assets projects copy into .veriphy/lean/
 lean/coverage/        Lake project measuring translation coverage on Physlib and mathlib
 .veriphy/             The workspace's certificate scripts, which the Lean tests run
@@ -70,7 +70,7 @@ A recipe is knowledge, not code in Veriphy.
    `description`). Make it generic: it reads `problem`, and marks the lines a user adapts with `EDIT`.
 2. Write `src/veriphy/packs/math/agents/recipes/<name>.md`, embedding the template verbatim and giving its decision rule, a
    worked example and its failure modes.
-3. Add a Lean example that runs the template with `sage_run file "src/veriphy/packs/math/agents/recipes/templates/<name>.sage"`
+3. Add a Lean example that runs the template with `veriphy certify "src/veriphy/packs/math/agents/recipes/templates/<name>.sage"`
    (`lean/VeriphyTest/SageRun.lean`, or the benchmark if it replaces a former tactic).
 4. Add it to the index in `src/veriphy/packs/math/agents/prove.md` step 3c.
 

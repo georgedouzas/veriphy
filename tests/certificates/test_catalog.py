@@ -98,3 +98,23 @@ def test_main_bad_usage(capsys: pytest.CaptureFixture[str]) -> None:
         main(['frobnicate'])
     assert exit_info.value.code == 2
     assert 'usage' in capsys.readouterr().err
+
+
+def test_script_declaration_is_read(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Read a script's fields from its `SCRIPT` declaration, the script contract's header."""
+    (tmp_path / 'lakefile.toml').write_text('')
+    directory = tmp_path / '.veriphy' / 'certificates'
+    directory.mkdir(parents=True)
+    declared = {
+        'name': 'sos_pair',
+        'serves': 'certify',
+        'technique': 'sum of squares',
+        'goal': '2ab ≤ a² + b²',
+        'description': 'One square.',
+        'inputs': {},
+    }
+    (directory / 'sos_pair.sage').write_text(f'SCRIPT = {declared!r}\n\ndef run(goal, inputs):\n    return None\n')
+    main(['list', '--root', str(tmp_path)])
+    out = capsys.readouterr().out
+    assert 'sos_pair | sum of squares | 2ab ≤ a² + b² | One square.' in out
+    assert 'incomplete' not in out

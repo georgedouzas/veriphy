@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+from veriphy.__main__ import LEAN_VERBS, PROGRAMS
 from veriphy.agents import content_dir
 from veriphy.claims import COMMANDS, load_graph
 from veriphy.steps import load_steps
@@ -26,23 +27,23 @@ TEMPLATES = sorted((PROMPTS / 'research').glob('*.md'))
 
 @pytest.mark.parametrize('document', DOCUMENTS, ids=lambda p: str(p.relative_to(ROOT)))
 def test_research_documents_name_real_commands(document: Path) -> None:
-    """Name only commands the graph CLI has."""
-    commands = set(re.findall(r'python -m veriphy\.graph (?:--root \S+ )?([a-z]+)', document.read_text()))
+    """Name only commands `veriphy claims` has."""
+    commands = set(re.findall(r'veriphy claims (?:--root \S+ )?([a-z]+)', document.read_text()))
     assert commands <= set(COMMANDS)
 
 
 @pytest.mark.parametrize('document', [*DOCUMENTS, PROMPTS / 'prove.md'], ids=lambda p: str(p.relative_to(ROOT)))
 def test_documents_name_real_steps(document: Path) -> None:
-    """Name only steps `python -m veriphy` has."""
-    steps = set(re.findall(r'python -m veriphy (?:--root \S+ )?([a-z]+)', document.read_text()))
-    assert steps <= {*STEPS, 'records'}
+    """Name only operations, programs and Lean verbs `veriphy` has."""
+    steps = set(re.findall(r'(?<![#\w.-])veriphy (?:--root \S+ )?([a-z]+)', document.read_text()))
+    assert steps <= {*STEPS, *PROGRAMS, *LEAN_VERBS, 'records', 'help'}
 
 
 @pytest.mark.parametrize('playbook', ['prove.md', 'research/triage.md'])
 def test_playbooks_run_the_meaning_step(playbook: str) -> None:
     """Have the formalization step and the triage run the meaning check, and cite its record."""
     text = (PROMPTS / playbook).read_text()
-    assert 'python -m veriphy meaning <file> <declaration> --informal' in text
+    assert 'veriphy meaning <file> <declaration> --informal' in text
     assert '.veriphy/runs/meaning/' in text or "record's path" in text or 'path of the record' in text
 
 
@@ -70,6 +71,6 @@ def test_skill_copies_are_identical_and_read_the_package(skill: str) -> None:
     text = plugin.read_text()
     assert text == repository.read_text()
     assert text.startswith(f'---\nname: {skill}\n')
-    assert 'sage -python -m veriphy.agents path' in text
+    assert 'sage -python -m veriphy agents path' in text
     assert f'<prompts>/{skill}.md' in text
     assert 'VERIPHY_HOME' not in text

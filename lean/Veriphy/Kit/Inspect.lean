@@ -4,6 +4,7 @@ atoms it needed and the domain conditions it imposes, under the tables in force 
 -/
 import Veriphy.Kit.Packs
 import Veriphy.Kit.Symbolic
+import Veriphy.Kit.Deprecation
 
 namespace Veriphy
 
@@ -24,7 +25,8 @@ def inspectTerm (e : Expr) : MetaM String := do
 syntax (name := veriphyTranslate) "#veriphy_translate " term : command
 
 elab_rules : command
-  | `(#veriphy_translate $t) => runTermElabM fun _ => do
+  | `(#veriphy_translate%$tk $t) => runTermElabM fun _ => do
+    warnDeprecated tk "#veriphy_translate" "#veriphy translate"
     let e ← instantiateMVars (← Term.elabTerm t none)
     Term.synthesizeSyntheticMVarsNoPostponing
     logInfo (← inspectTerm (← instantiateMVars e))

@@ -1,7 +1,7 @@
-"""Register the Lean steps, `elaborate` and `level`, and share how a Lean step runs Lean on a generated file."""
+"""Register the Lean steps, `check` and `level`, and share how a Lean step runs Lean on a generated file."""
 
 from veriphy.packs.lean.steps._lean import (
-    ELABORATE,
+    CHECK,
     LEVEL,
     lean_sources,
     message_line,
@@ -12,10 +12,10 @@ from veriphy.packs.lean.steps._lean import (
 )
 from veriphy.steps import register
 
-register(ELABORATE, LEVEL)
+register(CHECK, LEVEL)
 
 __all__ = [
-    'ELABORATE',
+    'CHECK',
     'LEVEL',
     'lean_sources',
     'message_line',

@@ -149,7 +149,7 @@ jobs:
 
     - name: Run the research workflow on a fixture chapter, over a Lean export, setting up on first use
       run: |
-        printf 'import VeriphyTest.Graph\n#veriphy_graph GraphTest\n' > Export.lean
+        printf 'import VeriphyTest.Graph\n#veriphy export GraphTest\n' > Export.lean
         lake env lean Export.lean
         XDG_CACHE_HOME="$(mktemp -d)" tests/graph/fixtures/workflow/run.sh "$(uv run --extra graph which python)"
 

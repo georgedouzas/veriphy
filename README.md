@@ -34,7 +34,7 @@ Veriphy has three skills. `research` calls `prove`, and `prove` calls `certify`.
 2. **Prove.** It tries the cheap routes first: `simp`, `nlinarith` and friends, then premise search. For a computational
    core it calls `certify`, which reuses a saved script from `.veriphy/certificates/` or adapts one of the recipes.
 3. **Verify.** `lake build` from clean, no `sorry`, and only the Sage-free replacements committed.
-4. **Report.** `proved`, `tested` (no certificate is feasible, so `sage_test` checked instances),
+4. **Report.** `proved`, `tested` (no certificate is feasible, so `#veriphy test` checked instances),
    `statement-suspect` (with the counterexample), `blocked-library-gap` or `blocked-missing-building-block`.
 
 It never opens PRs. What to do with the result is your decision.
@@ -51,9 +51,9 @@ It never opens PRs. What to do with the result is your decision.
    You confirm what you agree with, which moves it to your own `.human.ttl` file.
 2. **Triage.** Each claim gets tested numerically under the conventions it assumes, then goes into one of four groups:
    `suspect` (a counterexample turned up), `recipe`, `test` or `formalize`.
-3. **Prove.** In dependency order, each claim goes through `prove` or `sage_test`, with a graph slice as context: its
+3. **Prove.** In dependency order, each claim goes through `prove` or `#veriphy test`, with a graph slice as context: its
    statement, the claims it uses and the Lean definitions behind its conventions.
-4. **Reason.** `#veriphy_graph` exports levels and dependencies from Lean, the reasoner derives the consequences, and
+4. **Reason.** `#veriphy export` exports levels and dependencies from Lean, the reasoner derives the consequences, and
    `oo-horn` checks the run. An accepted run has the verdict `entailed`.
 5. **Report.** The appendix gives each claim's own and effective level and names what caps it, along with convention
    clashes, including those inherited from cited papers. Fix the draft, run again, and include the appendix in the paper
@@ -69,21 +69,21 @@ reports count who made it.
 ### Building one certificate
 
 When you are already in a Lean proof and one computational goal is in the way, `/veriphy:certify` builds the proof for
-that goal. It is also the route for `sage_run` by hand, described in the
-[user guide](https://georgedouzas.github.io/veriphy/overview/user_guide/#building-proofs-with-sage_run).
+that goal. It is also the route for `veriphy certify` by hand, described in the
+[user guide](https://georgedouzas.github.io/veriphy/overview/user_guide/#building-proofs-with-veriphy certify).
 
 ## What's included
 
 | Piece | What it does |
 |---|---|
-| `sage_run` | runs a proof script against the goal, checks the emitted block, and emits a Sage-free replacement |
+| `veriphy certify` | runs a proof script against the goal, checks the emitted block, and emits a Sage-free replacement |
 | Toolkit (`veriphy.packs.math.script`) | binds the goal as a `problem`, emits Lean (`linear_combination`, `nlinarith`, `calc`, witnesses, refutations and more), and has exact solvers (rational LP, SOS from an SDP) |
 | Playbooks and recipes (`veriphy.agents`) | one per technique: when to use it, a tested template, a worked example and its failure modes |
-| Translation tables | map Lean terms to Sage, for mathlib, library packs such as `physlib`, and your project's own entries, each checked by `#veriphy_check_translations` |
+| Translation tables | map Lean terms to Sage, for mathlib, library packs such as `physlib`, and your project's own entries, each checked by `#veriphy translations check` |
 | `VeriphyCheck` | mathlib-only kernel checkers (`decide +kernel`) with soundness theorems, for matrix products, structure constants and primality too large for entrywise proofs |
-| `sage_test` and levels | test claims with no feasible certificate at instances. `#veriphy_levels` reports `certificate`, `lean-proof`, `kernel-test`, `oracle-test` or `none` |
+| `#veriphy test` and levels | test claims with no feasible certificate at instances. `#veriphy level` reports `certificate`, `lean-proof`, `kernel-test`, `oracle-test` or `none` |
 | Claim graph (`veriphy.claims`) | effective levels, convention impact, clashes across papers, context slices and appendices, with each conclusion checked by `oo-horn` |
-| Coverage | `#veriphy_coverage` measures which statements of a corpus translate without opaque atoms |
+| Coverage | `#veriphy coverage` measures which statements of a corpus translate without opaque atoms |
 
 ## Install
 
@@ -116,7 +116,7 @@ prebuilt binary. Elsewhere it is built once with `elan`, which takes a few minut
 Install the plugin from the git URL. A local clone would copy its 8 GB `.lake/` into the plugin cache.
 
 **Other agents.** The playbooks are plain markdown, installed with the Python package.
-`sage -python -m veriphy.agents path` prints their directory: point your agent at `prove.md`, `certify.md` or
+`sage -python -m veriphy agents path` prints their directory: point your agent at `prove.md`, `certify.md` or
 `research.md` there.
 
 **Claude Code without the plugin:** the skills read the playbooks from the installed package, so copying the three
@@ -138,7 +138,7 @@ The skills work through one tactic, which you can also use by hand:
 import Veriphy
 
 example (a b : ℝ) : 0 ≤ a ^ 2 * b ^ 2 - 2 * a * b + 1 := by
-  sage_run "proof = nlinarith([sq_nonneg(x0*x1 - 1, problem)])"
+  veriphy certify "proof = nlinarith([sq_nonneg(x0*x1 - 1, problem)])"
 ```
 
 The script sees the goal as `problem` and builds a Lean tactic block. Lean runs the block, and rejects it if it uses
@@ -150,7 +150,7 @@ Try this: nlinarith [sq_nonneg (a * b - 1)]
 
 ## More
 
-- [User guide](https://georgedouzas.github.io/veriphy/overview/user_guide/): the skills, `sage_run` by hand, recipes,
+- [User guide](https://georgedouzas.github.io/veriphy/overview/user_guide/): the skills, `veriphy certify` by hand, recipes,
   verification levels and the research claim graph
 - [Components](https://georgedouzas.github.io/veriphy/overview/components/): what the toolkit covers, family by family
 - [Development](https://georgedouzas.github.io/veriphy/development/): building Veriphy and adding recipes

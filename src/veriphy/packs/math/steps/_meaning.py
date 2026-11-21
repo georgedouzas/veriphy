@@ -34,16 +34,16 @@ def _prepare_meaning(root: Path, params: Params) -> Prepared:
 
 
 def _meaning(root: Path, params: Params, prepared: Prepared) -> Outcome:
-    """Run `#veriphy_meaning` after the file, and record its outcome with the agent's reading of the statement."""
+    """Run `#veriphy meaning` after the file, and record its outcome with the agent's reading of the statement."""
     path = prepared.context if isinstance(prepared.context, Path) else Path()
     declaration = str(params['declaration'])
     seed = prepared.seed or 0
-    command = f'#veriphy_meaning {declaration} seed {seed} values {int(str(params.get("values") or MEANING_VALUES))}'
+    command = f'#veriphy meaning {declaration} seed {seed} values {int(str(params.get("values") or MEANING_VALUES))}'
     if params.get('points') is not None:
         command += f' points {json.dumps(str(params["points"]))}'
     text = path.read_text()
     last = len(text.splitlines())
-    source = f'import Veriphy.Tactic.Meaning\n{text}\n\nset_option veriphy.meaning.json true in\n{command}\n'
+    source = f'import Veriphy.Tactic.Operation\n{text}\n\nset_option veriphy.meaning.json true in\n{command}\n'
     tools = {'lean': toolchain(root), 'veriphy': __version__}
     try:
         _, error, messages = run_lean(root, source, f'meaning-{content_digest(source)[:12]}')

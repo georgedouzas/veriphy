@@ -11,24 +11,33 @@
 ## Template
 
 Copy it to the project's `.veriphy/certificates/matrix_normal_form.sage` (or a more specific name), adapt the lines marked `EDIT`,
-keep the header, and run it with `sage_run file "<name>.sage"`.
+keep its `SCRIPT` declaration, and run it with `veriphy certify "<name>.sage"`.
 
 ```sage
-# name: matrix_normal_form
-# technique: Smith and Jordan normal forms with explicit transformation matrices and inverses
-# goal: a statement about the Smith form, Jordan form or diagonalization of an explicit matrix
-# description: Sage computes the form and the transformations; the kernel checks U A V = D or A P = P J and the inverses.
+SCRIPT = {
+    'name': 'matrix_normal_form',
+    'serves': 'certify',
+    'technique': 'Smith and Jordan normal forms with explicit transformation matrices and inverses',
+    'goal': 'a statement about the Smith form, Jordan form or diagonalization of an explicit matrix',
+    'description': 'Sage computes the form and the transformations; the kernel checks U A V = D or A P = P J and the inverses.',
+    'inputs': {},
+}
+
 MATRIX = None  # EDIT: the matrix (Sage), integer for a Smith form, rational with rational eigenvalues for a Jordan form
 FORM = 'jordan'  # EDIT: 'smith' or 'jordan' (a diagonalizable matrix gets a diagonal Jordan form)
 CLOSE = 'trivial'  # EDIT: the tactic closing the goal from the facts (hsmith, hU, hV or hjordan, hP)
-assert MATRIX is not None, 'fill in MATRIX (and FORM) in a copy'
-if FORM == 'smith':
-    d, u, v, facts = smith_certificate(MATRIX)
-    print('D =', d.diagonal())
-else:
-    j, p, facts = jordan_certificate(MATRIX)
-    print('J =', j)
-proof = steps(facts, tactic(CLOSE))
+
+
+def run(goal, inputs):
+    assert MATRIX is not None, 'fill in MATRIX (and FORM) in a copy'
+    if FORM == 'smith':
+        d, u, v, facts = smith_certificate(MATRIX)
+        print('D =', d.diagonal())
+    else:
+        j, p, facts = jordan_certificate(MATRIX)
+        print('J =', j)
+    proof = steps(facts, tactic(CLOSE))
+    return found(proof)
 ```
 
 ## Worked examples
@@ -36,7 +45,7 @@ proof = steps(facts, tactic(CLOSE))
 ```lean
 -- with MATRIX = matrix(ZZ, [[2, 4, 4], [-6, 6, 12], [10, -4, -16]]) and FORM = 'smith'
 example : True := by
-  sage_run file "smith_example.sage"
+  veriphy certify "smith_example.sage"
 ```
 
 `lean/VeriphyTest/SageRun.lean` also checks a Jordan form with a nontrivial block.

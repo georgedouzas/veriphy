@@ -1,6 +1,6 @@
 /-
 Claims as problems: a theorem or a definition of type `Prop`, its universal binders opened as locals and its body as
-the goal, for `sage_test`; and the dependence of a proof on a claim, through this module's declarations.
+the goal, for `#veriphy test`; and the dependence of a proof on a claim, through this module's declarations.
 -/
 import Veriphy.Kit.Problem
 import Veriphy.Kit.Levels

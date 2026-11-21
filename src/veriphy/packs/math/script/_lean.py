@@ -78,7 +78,7 @@ def tactic(text: str) -> Lean:
 def leaving_goals(block: Lean) -> Lean:
     """Mark a tactic as leaving goals open on purpose, for the user's next tactic.
 
-    `sage_run` refuses a block that leaves goals unless it is marked; a marked block's open goals stay.
+    `veriphy certify` refuses a block that leaves goals unless it is marked; a marked block's open goals stay.
 
     Args:
         block: The tactic.

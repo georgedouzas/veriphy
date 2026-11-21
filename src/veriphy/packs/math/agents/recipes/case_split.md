@@ -7,25 +7,33 @@
 
 ## Template
 
-Copy it to the project's `.veriphy/certificates/case_split.sage` (or a more specific name), adapt the lines marked `EDIT`, keep the header, and run it with `sage_run file "<name>.sage"`.
+Copy it to the project's `.veriphy/certificates/case_split.sage` (or a more specific name), adapt the lines marked `EDIT`, keep its `SCRIPT` declaration, and run it with `veriphy certify "<name>.sage"`.
 
 ```sage
-# name: case_split
-# technique: case split
-# goal: a statement that is easy on each side of a sign or comparison condition
-# description: Split on a condition Sage suggests; each branch gets its own tactic.
-condition = term('0 ≤ x')  # EDIT: the split, in the goal's terms (Sage can locate sign changes with real_roots)
-name = fresh_name(problem, 'hx')
-on_true = tactic(f'exact mul_nonneg {name} {name}')  # EDIT: the branch where the condition holds
-on_false = nlinarith()  # EDIT: the branch where it fails
-proof = by_cases(name, condition, on_true, on_false)
+SCRIPT = {
+    'name': 'case_split',
+    'serves': 'certify',
+    'technique': 'case split',
+    'goal': 'a statement that is easy on each side of a sign or comparison condition',
+    'description': 'Split on a condition Sage suggests; each branch gets its own tactic.',
+    'inputs': {},
+}
+
+
+def run(goal, inputs):
+    condition = term('0 ≤ x')  # EDIT: the split, in the goal's terms (Sage can locate sign changes with real_roots)
+    name = fresh_name(problem, 'hx')
+    on_true = tactic(f'exact mul_nonneg {name} {name}')  # EDIT: the branch where the condition holds
+    on_false = nlinarith()  # EDIT: the branch where it fails
+    proof = by_cases(name, condition, on_true, on_false)
+    return found(proof)
 ```
 
 ## Worked example
 
 ```lean
 example (x : ℚ) : 0 ≤ x * x := by
-  sage_run file "case_split.sage"
+  veriphy certify "case_split.sage"
 ```
 
 ## Failure modes
