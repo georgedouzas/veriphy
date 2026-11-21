@@ -2,6 +2,25 @@ version: 1
 name: lean
 requires: [core]
 
+scopes:
+  lean-imports: {function: 'veriphy.packs.lean.steps._scopes:lean_imports'}
+  lean-workspace: {function: 'veriphy.packs.lean.steps._scopes:lean_workspace'}
+
+steps:
+  check:
+    kind: check
+    primitive: lean.check
+    help: Lean checks a file, with each axiom set
+    inputs:
+      file: {scope: lean-imports, path: true, help: the Lean file}
+  level:
+    kind: derived
+    primitive: lean.level
+    help: 'the levels of a module, from #veriphy level'
+    inputs:
+      module: {scope: lean-workspace, help: the module, as MyProject.Basic}
+      prefixes: {optional: true, many: true, flag: --prefix, help: 'a name prefix (default: the module)'}
+
 primitives:
   lean.check:
     function: veriphy.packs.lean.primitives._methods:check

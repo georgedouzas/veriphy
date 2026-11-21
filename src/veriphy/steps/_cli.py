@@ -10,7 +10,7 @@ import click
 from veriphy.core import RecordError, find_workspace_root
 from veriphy.core._commands import run_command
 from veriphy.steps._records import RecordStore, read_record
-from veriphy.steps._registry import DEPRECATED_VERBS, load_steps
+from veriphy.steps._registry import DEPRECATED_VERBS, load_steps, step_packs
 from veriphy.steps._runner import USAGE_EXIT, Argument, Params, Result, Step, exit_code, run_step
 
 
@@ -127,6 +127,17 @@ def records(ctx: click.Context, digest: str | None, step: str | None) -> None:
     sys.stdout.write(matches[0].read_text())
 
 
+@click.command(name='steps', help="the workspace's steps, with their kind and the pack that defines each")
+@click.pass_context
+def steps_command(ctx: click.Context) -> None:
+    """List the workspace's steps."""
+    root = find_workspace_root(ctx.find_root().params.get('root'))
+    steps = load_steps(root)
+    owners = step_packs(root)
+    for name, step in sorted(steps.items()):
+        sys.stdout.write(f'{name}\t{step.kind}\t{owners.get(name, "")}\t{step.help}\n')
+
+
 ROOT = click.Option(
     ['--root'],
     type=click.Path(path_type=Path),
@@ -135,6 +146,7 @@ ROOT = click.Option(
 )
 steps_group = StepGroup(name='veriphy', params=[ROOT], help='Run a Veriphy operation and record it.')
 steps_group.add_command(records)
+steps_group.add_command(steps_command)
 
 
 def main(argv: Sequence[str] | None = None) -> None:

@@ -9,7 +9,7 @@ import click
 from veriphy.core import find_workspace_root
 from veriphy.core._commands import run_command
 from veriphy.steps import load_steps
-from veriphy.steps._cli import ROOT, StepGroup, records
+from veriphy.steps._cli import ROOT, StepGroup, records, steps_command
 
 # programs of the layers and packs, each a click group, loaded only when named (some import SageMath)
 PROGRAMS = {
@@ -81,6 +81,7 @@ class Veriphy(StepGroup):
 
 veriphy = Veriphy(name='veriphy', params=[ROOT], help='Run a Veriphy operation and record it, or a program.')
 veriphy.add_command(records)
+veriphy.add_command(steps_command)
 
 
 @veriphy.command(name='help', help='the operations, programs and Lean verbs')

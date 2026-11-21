@@ -2,6 +2,18 @@ version: 1
 name: core
 requires: []
 
+steps:
+  formalize:
+    kind: agent
+    help: record the formal statement an agent wrote, with its author
+    inputs:
+      artifact: {scope: file, path: true, help: the file holding the formal statement}
+  extract:
+    kind: agent
+    help: record the claims an agent extracted from a source, with their author
+    inputs:
+      artifact: {scope: file, path: true, help: the file holding the extracted claims}
+
 primitives:
   horn.check:
     # oo-horn from the pinned Open Ontologies release, set up on first use; the output names its commit

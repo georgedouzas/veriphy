@@ -1,8 +1,1 @@
-"""Register the `math` pack's step, `meaning`, and catalog a project's saved certificate scripts."""
-
-from veriphy.packs.math.steps._meaning import MEANING
-from veriphy.steps import register
-
-register(MEANING, pack='math')
-
-__all__ = ['MEANING']
+"""The `math` pack's step, `meaning`, is declared in its `pack.yaml`; this package catalogs the saved scripts."""

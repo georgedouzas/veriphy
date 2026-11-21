@@ -2,6 +2,20 @@ version: 1
 name: math
 requires: [lean]
 
+steps:
+  meaning:
+    kind: evidence
+    primitive: meaning
+    status: outcome
+    seed: true
+    help: a statement tested at seeded values
+    inputs:
+      file: {scope: lean-imports, path: true, help: the Lean file that states the declaration}
+      declaration: {help: the claim}
+      values: {optional: true, type: integer, default: 10, help: how many values must agree}
+      points: {optional: true, type: json, help: 'values to evaluate at, as JSON: [{"x": "pi"}]'}
+      informal: {optional: true, record: true, help: "the agent's reading of the statement, kept in the record"}
+
 tools:
   sage:
     contract: jsonrpc
@@ -11,6 +25,10 @@ tools:
     timeout: 600
 
 primitives:
+  # composites, written in code: listed here so the configuration names every primitive
+  meaning: {composite: veriphy.packs.math.primitives._composites}
+  certify: {composite: veriphy.packs.math.primitives._composites}
+
   sage.ping:
     tool: sage
     method: ping

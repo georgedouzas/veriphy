@@ -26,9 +26,9 @@ records when the output changed.
 
 ### Requirement: First steps
 The packs SHALL declare `check` (Lean checks a file and reports each declaration's axioms) and `level` (the levels
-`#veriphy level` reports) in `lean`, `meaning` in `math`, and `validate` (the graph's shapes), `reason` (graph
-reasoning with the checker's verdict) and `report` (the verification appendix) in `core`. Each SHALL give the same
-result as before it was declared.
+`#veriphy level` reports) in `lean`, and `meaning` in `math`, and the `core` pack SHALL register the Python steps
+`validate` (the graph's shapes), `reason` (graph reasoning with the checker's verdict) and `report` (the verification
+appendix) of `veriphy.claims`. Each SHALL give the same result as before.
 
 #### Scenario: Reason through the step
 - **WHEN** `veriphy reason` runs on the fixture graph with `oo-horn` set up

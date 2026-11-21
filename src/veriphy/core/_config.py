@@ -14,6 +14,8 @@ from veriphy.core._packs import PACK_FILE, pack_dir, pack_packages, read_pack
 WORKSPACE_FILE = 'veriphy.yaml'
 DEFAULT_PACKS = ('math',)
 DEFAULT = {'version': 1, 'packs': list(DEFAULT_PACKS)}
+# the digest scopes every workspace has; a pack adds others under `scopes`
+BUILTIN_SCOPES = ('value', 'file', 'files')
 SECTIONS = ('tools', 'primitives', 'scopes', 'steps', 'levels', 'conventions', 'workflows', 'playbooks')
 SCHEMA: dict[str, object] = {
     'type': 'object',
@@ -317,4 +319,23 @@ def check(resolved: Resolved) -> list[str]:
         tool = spec.get('tool') if isinstance(spec, dict) else None
         if tool and tool not in tools:
             problems.append(f"primitives.{name} names the tool '{tool}', which no pack or {WORKSPACE_FILE} declares")
+    return problems + _step_problems(resolved)
+
+
+def _step_problems(resolved: Resolved) -> list[str]:
+    """Return the steps that name a primitive or a digest scope no pack declares."""
+    primitives, scopes = resolved.section('primitives'), {*BUILTIN_SCOPES, *resolved.section('scopes')}
+    problems = []
+    for name, spec in resolved.section('steps').items():
+        declared = spec if isinstance(spec, dict) else {}
+        primitive = declared.get('primitive')
+        if declared.get('kind') != 'agent' and primitive not in primitives:
+            problems.append(
+                f"steps.{name} names the primitive '{primitive}', which no pack or {WORKSPACE_FILE} declares",
+            )
+        inputs = declared.get('inputs')
+        for given, raw in (inputs.items() if isinstance(inputs, dict) else []):
+            scope = raw.get('scope', 'value') if isinstance(raw, dict) else 'value'
+            if scope not in scopes:
+                problems.append(f"steps.{name}.inputs.{given} names the scope '{scope}', which no pack declares")
     return problems

@@ -219,6 +219,8 @@ def load_registry(packages: Mapping[str, str] | None = None, resolved: Resolved 
     for name, spec in config.section('tools').items():
         registry.tools[name] = read_tool(name, _mapping(spec), config.sources.get(f'tools.{name}', ''))
     for name, spec in config.section('primitives').items():
+        if isinstance(spec, dict) and 'composite' in spec:
+            continue
         entry = f'primitives.{name}'
         source = config.sources.get(entry, '')
         registry.primitives[name] = read_primitive(name, _mapping(spec), source, config.directory(entry))

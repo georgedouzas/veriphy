@@ -200,6 +200,32 @@ itself.
 `veriphy config check` refuses collisions and references that do not resolve. The digest of the resolved
 configuration enters every record, so a changed pin runs the steps again, and a changed comment does not.
 
+### Declaring a step
+
+A step that wraps a primitive is declared, in a pack's `pack.yaml` or in `veriphy.yaml`, with no Python:
+
+```yaml
+steps:
+  reproduce:
+    kind: check
+    primitive: r.run
+    grants: reproduced
+    compare: {field: estimate, against: claimed, tolerance: 0.001}
+    inputs:
+      script: {scope: file, path: true}
+      data: {scope: file, path: true}
+      claimed: {type: integer, record: true}
+```
+
+Each input names its digest scope: `value` (the default), `file`, `files`, or one a pack defines, as the `lean` pack's
+`lean-imports` (a Lean file, the workspace files it imports, the toolchain and the manifest, so an edit to an unrelated
+file replays the record). An input is `path` (resolved from the workspace root), `optional` (an option, not an
+argument), of a `type` (`string`, `integer` or `json`), with a `default`, or `record` only (kept in the record, not sent
+to the primitive). `status` names the output field holding the status, `compare` sets it to `agrees` or `differs`
+within a tolerance, and `grants` gives the level when the step accepts. An `agent` step records an artifact an agent
+wrote, as `veriphy formalize Claim.lean --by agent`. `veriphy <step> --help` is generated from the declaration, and
+`veriphy steps` lists the workspace's steps with the pack that defines each.
+
 ### Primitives
 
 Under every operation are primitives: deterministic operations, which record nothing. A primitive has an input
