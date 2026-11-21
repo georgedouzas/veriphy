@@ -9,7 +9,9 @@ from veriphy.steps._records import LEVELLED_KINDS, Record, RecordStore, config_d
 
 Params = Mapping[str, object]
 # statuses that mean the tool refused, found a counterexample or did not run; anything else not listed accepts
-REFUSING = frozenset({'refused', 'rejected', 'violations', 'counterexample', 'failed', 'mismatch', 'differs'})
+REFUSING = frozenset(
+    {'refused', 'rejected', 'violations', 'counterexample', 'failed', 'mismatch', 'differs', 'fragile'},
+)
 UNCHECKED = frozenset({'unchecked', 'incomplete', 'undecided'})
 REFUSED_EXIT = 1
 USAGE_EXIT = 2

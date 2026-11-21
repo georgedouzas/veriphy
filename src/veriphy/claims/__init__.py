@@ -14,7 +14,7 @@ from veriphy.claims._checks import (
 )
 from veriphy.claims._cli import COMMANDS, main
 from veriphy.claims._impact import ImpactEntry, Plan, convention_impact, impact_report, plan, plan_report
-from veriphy.claims._levels import LevelRow, claim_levels, level_report, own_level
+from veriphy.claims._levels import LevelRow, claim_levels, level_report, own_level, shown_level
 from veriphy.claims._reasoning import Run, Step, load_run, reason, reason_triples, reasoning_input, recheck
 from veriphy.claims._slices import Slice, check_slice, render_slice, slice_claim, slice_premises
 from veriphy.claims._steps import REASON, REPORT, SUFFIXES, VALIDATE
@@ -112,6 +112,7 @@ __all__ = [
     'setup_enabled',
     'shape_report',
     'shapes_text',
+    'shown_level',
     'slice_claim',
     'slice_premises',
     'source_iri',

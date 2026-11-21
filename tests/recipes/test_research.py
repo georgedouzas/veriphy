@@ -1,6 +1,7 @@
 """Test the research playbook: its commands exist, its Turtle templates load, and both skill copies point at it."""
 
 import re
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -10,7 +11,15 @@ from veriphy.agents import content_dir
 from veriphy.claims import COMMANDS, load_graph
 from veriphy.steps import load_steps
 
-STEPS = load_steps()
+
+def _all_steps() -> set[str]:
+    """Return the steps of the default workspace and of a reproduction workspace, which the documents name."""
+    with tempfile.TemporaryDirectory() as tmp:
+        (Path(tmp) / 'veriphy.yaml').write_text('version: 1\npacks: [reproduction]\n')
+        return {*load_steps(), *load_steps(Path(tmp))}
+
+
+STEPS = _all_steps()
 
 ROOT = Path(__file__).resolve().parents[2]
 PROMPTS = content_dir()
@@ -64,7 +73,7 @@ def test_research_templates_exist() -> None:
     assert [p.stem for p in TEMPLATES] == ['extraction', 'triage']
 
 
-@pytest.mark.parametrize('skill', ['prove', 'certify', 'research'])
+@pytest.mark.parametrize('skill', ['prove', 'certify', 'research', 'reproduce'])
 def test_skill_copies_are_identical_and_read_the_package(skill: str) -> None:
     """Keep the plugin copy and the repository copy of each skill identical, reading the installed playbooks."""
     plugin, repository = (base / 'skills' / skill / 'SKILL.md' for base in (ROOT, ROOT / '.claude'))

@@ -10,7 +10,7 @@ import yaml
 from veriphy.core._errors import PackError
 
 # Veriphy's own packs; others register under the `veriphy.packs` entry point, naming their package
-BUILTIN_PACKS = ('core', 'lean', 'math')
+BUILTIN_PACKS = ('core', 'lean', 'math', 'reproduction')
 PACK_FILE = 'pack.yaml'
 
 

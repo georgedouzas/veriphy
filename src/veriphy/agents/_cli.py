@@ -16,17 +16,20 @@ ASSETS = 'assets'
 NOT_FOUND = 1
 
 
-def content_dir() -> Path:
-    """Return the directory holding the playbooks and recipes.
+def content_dir(pack: str = 'math') -> Path:
+    """Return the directory holding a pack's playbooks and recipes.
+
+    Args:
+        pack: The pack, `math` by default, whose playbooks are `prove`, `certify` and `research`.
 
     Returns:
-        The installed `veriphy/packs/math/agents/` directory.
+        The installed `veriphy/packs/<pack>/agents/` directory.
 
     Examples:
         >>> (content_dir() / 'prove.md').is_file()
         True
     """
-    return Path(__file__).resolve().parents[1] / 'packs' / 'math' / 'agents'
+    return Path(__file__).resolve().parents[1] / 'packs' / pack / 'agents'
 
 
 def assets_dir() -> Path:
@@ -115,10 +118,11 @@ def agents() -> None:
     """Give an agent the installed playbooks."""
 
 
-@agents.command(help='print the directory holding the playbooks and recipes')
-def path() -> None:
-    """Print the content directory."""
-    sys.stdout.write(f'{content_dir()}\n')
+@agents.command(help="print the directory holding a pack's playbooks and recipes")
+@click.option('--pack', default='math', help='the pack (default: math)')
+def path(pack: str) -> None:
+    """Print the content directory of a pack."""
+    sys.stdout.write(f'{content_dir(pack)}\n')
 
 
 @agents.command(name='list', help='list every playbook, recipe, template and asset')

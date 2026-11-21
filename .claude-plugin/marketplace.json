@@ -7,7 +7,7 @@
     {
       "name": "veriphy",
       "source": "./",
-      "description": "Machine-verified physics/math proofs in Lean 4 with SageMath as an untrusted oracle: the /veriphy:prove and /veriphy:certify skills: build kernel-checked certificates with sage_run and recipes."
+      "description": "Machine-verified physics/math proofs in Lean 4 with SageMath as an untrusted oracle: the /veriphy:prove, /veriphy:certify, /veriphy:research and /veriphy:reproduce skills: kernel-checked certificates with veriphy certify and recipes, and reproductions of published analyses in a pinned R image."
     }
   ]
 }
