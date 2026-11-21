@@ -100,4 +100,5 @@ def test_identification_assumptions_clash(workspace: Path, checker: Path) -> Non
     graph = load_graph(workspace)
     found = clashes(graph, reason(graph, checker))
     parallel, opposite = source_iri('chapter3', 'parallel'), source_iri('chapter3', 'no-parallel')
-    assert (source_iri('chapter3', 'policy'), parallel, opposite) in {(c.node, c.first, c.second) for c in found}
+    # a clash names its two conventions in sorted order
+    assert (source_iri('chapter3', 'policy'), opposite, parallel) in {(c.node, c.first, c.second) for c in found}
