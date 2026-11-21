@@ -19,12 +19,13 @@ for check and derived steps, the level it grants. A record SHALL NOT be edited a
 - **THEN** the record has status `refused` and holds Lean's errors, and the command exits with status 1
 
 ### Requirement: Replay by digest
-The input digest SHALL be the SHA-256 of the step name, the content of each input, the config digest and the seed.
-When a record with that digest and a final status exists, the step SHALL return it without running a tool. `unchecked`
-and `failed` are not final. With `--rerun` the step SHALL run again and keep both records when the output changed.
+The input digest SHALL be the SHA-256 of the step name, the content of each input as its digest scope gives it, the
+config digest and the seed. When a record with that digest and a final status exists, the step SHALL return it without
+running a primitive. `unchecked` and `failed` are not final. With `--rerun` the step SHALL run again and keep both
+records when the output changed.
 
 #### Scenario: Same inputs
-- **WHEN** `python -m veriphy reason` runs twice on an unchanged graph
+- **WHEN** `veriphy reason` runs twice on an unchanged graph
 - **THEN** the second call returns the first record and starts no reasoner and no checker
 
 #### Scenario: Moved file
@@ -58,11 +59,16 @@ and 3 on an unchecked result. `python -m veriphy records` SHALL list records and
 - **THEN** it reads the full record from standard output, with no other text
 
 ### Requirement: First steps
-The command SHALL provide `elaborate` (Lean checks a file and reports each declaration's axioms), `level` (the levels
-`#veriphy_levels` reports), `validate` (the graph's shapes), `reason` (graph reasoning with the checker's verdict) and
-`report` (the verification appendix). Each SHALL give the same result as the command it wraps.
+The packs SHALL declare `check` (Lean checks a file and reports each declaration's axioms) and `level` (the levels
+`#veriphy level` reports) in `lean`, and `meaning` in `math`, and the `core` pack SHALL register the Python steps
+`validate` (the graph's shapes), `reason` (graph reasoning with the checker's verdict) and `report` (the verification
+appendix) of `veriphy.claims`. Each SHALL give the same result as before.
 
 #### Scenario: Reason through the step
-- **WHEN** `python -m veriphy reason` runs on the fixture graph with `oo-horn` set up
-- **THEN** the record's status is `entailed`, it names the run's certificate directory, and `python -m veriphy.graph
+- **WHEN** `veriphy reason` runs on the fixture graph with `oo-horn` set up
+- **THEN** the record's status is `entailed`, it names the run's certificate directory, and `veriphy claims
   recheck` on that directory agrees
+
+#### Scenario: Lean steps without Lean
+- **WHEN** a workspace lists `packs: [core]`
+- **THEN** `check` and `level` are not steps of the workspace, and `reason` still runs

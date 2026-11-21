@@ -8,7 +8,7 @@
 
 ## 2. Integration
 
-- [ ] 2.1 Run the gate and CI. Verify that every session and job is green.
+- [x] 2.1 Run the gate and CI. Verify that every session and job is green.
 
 ## Workflow follow-up
 

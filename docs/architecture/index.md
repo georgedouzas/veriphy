@@ -434,7 +434,8 @@ The old names keep working for one minor release and warn that they are deprecat
 
 ## Order of work
 
-Each milestone is an OpenSpec change under `openspec/changes/`, built from the bottom layer up:
+Each milestone was an OpenSpec change, built from the bottom layer up and archived under
+`openspec/changes/archive/`:
 
 1. `step-records` (archived): records and the step runner.
 2. `meaning-step` (archived): the meaning check, the first evidence step.
@@ -444,11 +445,11 @@ Each milestone is an OpenSpec change under `openspec/changes/`, built from the b
 5. `primitives` (archived): primitives as Python functions, JSON-RPC 2.0 tools or files tools, pins and schemas, the
    Lean REPL, and Lean, SageMath and `oo-horn` behind them.
 6. `packs-and-config` (archived): `veriphy.yaml`, packs by name and path, JSON Merge Patch, `config show`/`check`.
-7. `click-commands`: the `veriphy` command as one click group.
-8. `declarative-steps`: steps declared over primitives, digest scopes with `lean-imports`, agent steps.
-9. `claims-and-trust`: trust classes, levels from packs in one order, the grant rule, levels from records.
-10. `reproduction-pack`: a pack outside mathematics that fills every layer, to test the design.
-11. `workflows-as-data`: workflows, `next`, `run`, and skills that follow them.
+7. `click-commands` (archived): the `veriphy` command as one click group.
+8. `declarative-steps` (archived): steps declared over primitives, digest scopes with `lean-imports`, agent steps.
+9. `claims-and-trust` (archived): trust classes, levels from packs in one order, the grant rule, levels from records.
+10. `reproduction-pack` (archived): a pack outside mathematics that fills every layer, to test the design.
+11. `workflows-as-data` (archived): workflows, `next`, `run`, and skills that follow them.
 
 ## Open questions
 
