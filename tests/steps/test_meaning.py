@@ -7,10 +7,10 @@ from pathlib import Path
 import pytest
 
 from veriphy.__main__ import main
-from veriphy.packs.math.steps import MEANING
-from veriphy.steps import RecordStore, config_digest, input_digest, run_step
+from veriphy.steps import RecordStore, config_digest, input_digest, load_steps, run_step
 
 ROOT = Path(__file__).resolve().parents[2]
+MEANING = load_steps(ROOT)['meaning']
 pytestmark = pytest.mark.skipif(
     shutil.which('lake') is None or shutil.which('sage') is None or not (ROOT / '.lake' / 'build').is_dir(),
     reason='needs a built Lean workspace (`lake build`) and SageMath',

@@ -5,6 +5,7 @@ import warnings
 from pathlib import Path
 
 from veriphy.core import StepError, installed, resolve
+from veriphy.steps._declared import declared_step
 from veriphy.steps._runner import Step
 
 LAYERS = ('primitives', 'steps', 'claims', 'workflows', 'agents')
@@ -94,4 +95,25 @@ def load_steps(root: Path | None = None) -> dict[str, Step]:
             continue
         for layer in LAYERS:
             _import_layer(pack.package, layer)
-    return {name: step for name, step in _STEPS.items() if _OWNERS.get(name) in selected or not _OWNERS.get(name)}
+    steps = {name: step for name, step in _STEPS.items() if _OWNERS.get(name) in selected or not _OWNERS.get(name)}
+    scopes = config.section('scopes')
+    for name, spec in config.section('steps').items():
+        steps[name] = declared_step(name, spec if isinstance(spec, dict) else {}, scopes)
+    return steps
+
+
+def step_packs(root: Path | None = None) -> dict[str, str]:
+    """Return the pack, or `veriphy.yaml`, that defines each step of a workspace.
+
+    Args:
+        root: The workspace; every installed pack when `None`.
+
+    Returns:
+        Each step's source, by name.
+    """
+    config = resolve(root) if root is not None else installed()
+    owners = {name: owner for name, owner in _OWNERS.items() if owner}
+    owners |= {
+        entry.removeprefix('steps.'): source for entry, source in config.sources.items() if entry.startswith('steps.')
+    }
+    return owners

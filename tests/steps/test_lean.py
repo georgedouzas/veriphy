@@ -7,10 +7,11 @@ from pathlib import Path
 import pytest
 
 from veriphy.__main__ import main
-from veriphy.packs.lean.steps import CHECK, LEVEL
-from veriphy.steps import RecordStore, run_step
+from veriphy.steps import RecordStore, load_steps, run_step
 
 ROOT = Path(__file__).resolve().parents[2]
+CHECK = load_steps(ROOT)['check']
+LEVEL = load_steps(ROOT)['level']
 pytestmark = pytest.mark.skipif(
     shutil.which('lake') is None or not (ROOT / '.lake' / 'build').is_dir(),
     reason='needs a built Lean workspace (`lake build`)',

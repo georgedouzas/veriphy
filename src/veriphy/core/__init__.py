@@ -3,7 +3,7 @@
 import importlib
 import warnings
 
-from veriphy.core._config import WORKSPACE_FILE, Pack, Resolved, installed, merge_patch, resolve
+from veriphy.core._config import BUILTIN_SCOPES, WORKSPACE_FILE, Pack, Resolved, installed, merge_patch, resolve
 from veriphy.core._config import check as check_config
 from veriphy.core._digests import canonical_json, content_digest
 from veriphy.core._errors import (
@@ -31,6 +31,7 @@ from veriphy.core._types import RELATIONS, Coercer, JsonObject, JsonValue, Metho
 
 __all__ = [
     'BUILTIN_PACKS',
+    'BUILTIN_SCOPES',
     'PACK_FILE',
     'PROJECT_DIR_NAME',
     'RELATIONS',

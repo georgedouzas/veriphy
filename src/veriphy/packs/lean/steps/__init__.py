@@ -1,8 +1,5 @@
-"""Register the Lean steps, `check` and `level`, and share what a Lean step's digest covers."""
+"""The `lean` pack's steps, `check` and `level`, are declared in its `pack.yaml`; this package holds their scopes."""
 
-from veriphy.packs.lean.steps._lean import CHECK, LEVEL, lean_sources, resolve
-from veriphy.steps import register
+from veriphy.packs.lean.steps._scopes import lean_imports, lean_workspace
 
-register(CHECK, LEVEL, pack='lean')
-
-__all__ = ['CHECK', 'LEVEL', 'lean_sources', 'resolve']
+__all__ = ['lean_imports', 'lean_workspace']

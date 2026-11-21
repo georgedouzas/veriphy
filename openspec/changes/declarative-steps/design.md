@@ -29,15 +29,18 @@ steps:
   check:
     kind: check
     primitive: lean.check
+    help: Lean checks a file, with each axiom set
     inputs:
-      file: {scope: lean-imports}
-    status: {from: status}
-    grants: []
+      file: {scope: lean-imports, path: true}
 ```
 
-An input with no scope has the scope `value`. The runner digests each input through its scope, calls the primitive with
-the inputs as its JSON input, and records the output. `status.from` names the output field holding the status, and a
-`map` can rename values. Python steps survive only as composites and scopes, in the packs.
+An input has a `scope` (`value` by default), and may be `path` (resolved from the workspace root), `optional` (an
+option rather than an argument), of a `type` (`string`, `integer`, `json`, a list with `many`), with a `default`, or
+`record` only (kept in the record and its digest, not sent to the primitive, as the agent's reading of a statement).
+The runner digests each input through its scope, sends the others and the workspace root (when the primitive's schema
+asks for `root`) as the primitive's input, and records the output. `status` names the output field holding the status,
+`status` by default. A step that is not a primitive plus inputs (the graph steps, which load and write the claim
+graph) stays a Python step at the layer it needs, registered by its pack.
 
 ### D2. Scopes are named functions
 

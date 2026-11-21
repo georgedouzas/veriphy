@@ -22,6 +22,7 @@ from veriphy.steps._registry import (
     register,
     registered,
     resolve_verb,
+    step_packs,
 )
 from veriphy.steps._runner import Argument, Outcome, Params, Prepared, Result, Step, exit_code, run_step
 
@@ -48,4 +49,5 @@ __all__ = [
     'registered',
     'resolve_verb',
     'run_step',
+    'step_packs',
 ]
