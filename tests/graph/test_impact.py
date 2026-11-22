@@ -1,7 +1,11 @@
 """Test the impact of a convention and plans of a graph edit against a git revision."""
 
+from collections import OrderedDict
 from collections.abc import Callable
 from pathlib import Path
+
+import pytest
+import yaml
 
 from veriphy.claims import convention_impact, impact_report, load_graph, plan, plan_report, reason, source_iri, vp
 
@@ -85,3 +89,17 @@ def test_plan_reasons_with_the_workspaces_packs(committed: Path, fake_checker: C
     result = plan(load_graph(workspace), 'HEAD', fake_checker('accepted'))
     assert not result.added
     assert not result.removed
+
+
+def test_plan_copies_an_ordered_configuration(
+    committed: Path,
+    fake_checker: Callable[[str], Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Copy the workspace's configuration when the YAML loader returns ordered mappings, as some libraries make it."""
+    workspace = committed
+    (workspace / 'veriphy.yaml').write_text('version: 1\npacks: [statistics]\n')
+    load = yaml.safe_load
+    monkeypatch.setattr(yaml, 'safe_load', lambda text: OrderedDict(load(text) or {}))
+    result = plan(load_graph(workspace), 'HEAD', fake_checker('accepted'))
+    assert not result.added
