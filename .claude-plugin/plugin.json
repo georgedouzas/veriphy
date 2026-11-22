@@ -1,7 +1,7 @@
 {
   "name": "veriphy",
   "description": "An extensible verification framework with agents in the loop. Steps are pinned and recorded, levels carry a trust class, and workflows decide the next step from the records. Packs bring each field: Lean and mathematics (the prove, certify and research skills, the veriphy certify tactic, kernel-checked certificates with SageMath as an untrusted oracle), reproduction of published analyses (the reproduce skill), and checks for statistics, social science, economics, physics, life sciences and chemistry with each field's standard libraries, over a claim graph checked by the Lean checker oo-horn.",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "author": {
     "name": "Georgios Douzas"
   },

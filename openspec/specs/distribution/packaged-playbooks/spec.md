@@ -43,3 +43,13 @@ skill SHALL be identical.
 #### Scenario: Package missing
 - **WHEN** `veriphy layers agents path` fails
 - **THEN** the skill asks the user to run `sage -pip install veriphy` and does not proceed
+
+### Requirement: Playbooks by pack
+
+`agents list` and `agents show` SHALL take `--pack`, `math` by default, as `agents path` does, and SHALL read only
+that pack's files.
+
+#### Scenario: The statistics playbooks
+
+- **WHEN** `veriphy layers agents list --pack statistics` runs
+- **THEN** it lists `reproduce.md` and `skills/reproduce/SKILL.md`, and no math recipe
