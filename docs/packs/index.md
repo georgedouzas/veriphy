@@ -10,10 +10,39 @@ Veriphy itself is not a pack: records, the claim graph, workflows and the agent 
 
 ## The shipped packs
 
-| Pack | Field | Steps | Levels | Needs |
+Every shipped pack checks claims with the standard library of its field, so a check means what the field already
+takes it to mean: SciPy recomputes a p-value, Biopython reads a FASTA file, RDKit reads a molecule.
+
+| Pack | Field | Steps | Levels | Install |
 |---|---|---|---|---|
 | [`math`](math.md) | mathematics, and mathematical physics, in Lean | `check`, `levels`, `sample`, `record-proof` | `oracle-test` < `kernel-test` < `lean-proof` < `certificate` | Lean, SageMath |
-| [`social-science`](social_science.md) | studies with data: their analysis, its robustness, their constructs | `reproduce`, `robustness`, `check-concepts` | `reproduced` < `robust` | Python |
+| [`statistics`](statistics.md) | analyses of data, and the statistics papers report | `reproduce`, `robustness`, `check-p-value`, `check-mean` | `reproduced` < `robust` | `veriphy[statistics]`: pandas, SciPy, statsmodels |
+| [`social-science`](social_science.md) | surveys and studies: their scales and constructs | `check-reliability`, and the `statistics` steps | those of `statistics` | `veriphy[social-science]`: pingouin |
+| [`economics`](economics.md) | the tables of economic papers | `recompute`, and the `statistics` steps | `recomputed` < `reproduced` < `robust` | `veriphy[economics]` |
+| [`physics`](physics.md) | formulas and physical constants | `check-units`, `check-constant` | `dimensionally-consistent` | `veriphy[physics]`: pint, SciPy |
+| [`life-sciences`](life_sciences.md) | sequences, and ontology terms | `check-sequence` | `sequence-checked` | `veriphy[life-sciences]`: Biopython, pronto |
+| [`chemistry`](chemistry.md) | molecules and reactions | `check-molecule`, `check-reaction` | `structure-checked` | `veriphy[chemistry]`: RDKit |
+
+### Subfield packs
+
+A subfield pack builds on a field pack, with the codes its subfield trusts. Selecting one brings the field pack it
+requires, so `packs: [econometrics]` also gives the `economics` and `statistics` steps.
+
+| Pack | Builds on | Checks | Steps | Level | Install |
+|---|---|---|---|---|---|
+| [`particle-physics`](particle_physics.md) | `physics` | flavour predictions, running coefficients, PDG values | `check-prediction`, `run-coefficients`, `check-pdg` | `prediction-recomputed` | flavio, wilson, particle |
+| [`general-relativity`](general_relativity.md) | `physics` | the curvature claimed of a metric | `check-metric` | `curvature-checked` | EinsteinPy, SymPy |
+| [`genomics`](genomics.md) | `life-sciences` | variant calls, genotypes, read depth | `check-variant`, `check-coverage` | `genomic-data-checked` | pysam |
+| [`econometrics`](econometrics.md) | `economics` | regressions: OLS, IV, panel | `check-regression` | `recomputed` | linearmodels |
+| [`epidemiology`](epidemiology.md) | `statistics` | hazard ratios, median survival | `check-hazard-ratio`, `check-median-survival` | `recomputed` | lifelines |
+
+Each installs with its extra, `pip install 'veriphy[genomics]'`, which brings its field pack's libraries too.
+
+`social-science` and `economics` build on `statistics`, so selecting either brings its steps too. Every workspace also
+has `check-concepts`, which checks a source's concepts against a thesaurus or an ontology, in SKOS, OWL or OBO.
+
+`pip install 'veriphy[all]'` installs every pack's libraries. A pack whose libraries are missing still loads, and
+`veriphy layers primitive list` names what can't run.
 
 ## Choosing packs
 
@@ -28,20 +57,20 @@ Without a `veriphy.yaml`, a workspace uses `math`. That is the default for a Lea
 
 A pack is named in one of three ways:
 
-- the name of a shipped pack: `math`, `social-science`;
+- the name of a shipped pack: `math`, `statistics`, `life-sciences`;
 - the name a Python package registers under the `veriphy.packs` entry point, for a pack published on PyPI;
-- the path of a directory holding a `pack.yaml`: `./packs/economics`, for a pack of your own.
+- the path of a directory holding a `pack.yaml`: `./packs/epidemiology`, for a pack of your own.
 
 `veriphy pack list` shows the packs a workspace uses, and `veriphy config show` shows everything they declare, with
 the pack each entry comes from. `veriphy config check` checks that it all fits together.
 
 ## Combining packs
 
-A workspace can use several packs. A study in economics that cites a theorem might use:
+A workspace can use several packs. A paper on a drug's binding that quotes a physical constant might use:
 
 ```yaml
 version: 1
-packs: [math, ./packs/economics]
+packs: [physics, chemistry]
 ```
 
 Packs are applied in order, each after the packs it `requires`. When two packs that don't require each other declare
@@ -53,16 +82,16 @@ directly above `none` leave the order open:
 
 ```console
 $ veriphy config check
-config: levels quoted and recomputed are both directly above 'none': set one's `above`
+config: levels dimensionally-consistent and structure-checked are both directly above 'none': set one's `above`
 ```
 
 The workspace settles it:
 
 ```yaml
 version: 1
-packs: [./packs/economics, ./packs/history]
+packs: [physics, chemistry]
 levels:
-  quoted: {above: recomputed}
+  structure-checked: {above: dimensionally-consistent}
 ```
 
 ## Changing a pack's entries
@@ -86,68 +115,71 @@ to a comment doesn't.
 
 Writing a pack starts with three questions about the field:
 
-- **What is checked?** A statistic recomputed from data, a passage found in a source, a proof accepted by Lean.
+- **What is checked?** A statistic recomputed from data, a sequence read from a file, a proof accepted by Lean.
 - **What does a successful check establish?** That becomes a level, with a trust class saying what kind of evidence it
   is. A level must be one the check can establish: a recomputation can't grant a proof.
-- **What do claims assume?** Choices that exclude each other, such as two editions of a text or two measures of one
+- **What do claims assume?** Choices that exclude each other, such as two genome assemblies or two measures of one
   construct, become conventions.
 
-The two examples below are complete packs, in
-[`docs/examples/packs/`](https://github.com/georgedouzas/veriphy/tree/main/docs/examples/packs), and Veriphy's test
-suite runs them.
+The answers become a `pack.yaml`. The shipped `economics` pack is a short, complete one: it recomputes a statistic of
+a published table with pandas and compares it with the claim.
 
-### Economics: recompute a statistic
+### A check in Python
 
-A paper reports the mean growth of the countries in its table. The `economics` pack recomputes such a statistic from
-the published data and compares it with the claim. The check is a Python function, so there is nothing to install:
+The check is a Python function. It receives the step's inputs and returns a status with what it found:
 
 ```python
-# economics_functions.py
-import csv
-from pathlib import Path
+# veriphy/packs/economics/primitives/_tables.py (shortened)
+import pandas as pd
 
 
-def mean(inputs):
-    with Path(inputs['data']).open(newline='') as handle:
-        values = [float(row[inputs['column']]) for row in csv.DictReader(handle)]
-    return {'status': 'reported', 'mean': sum(values) / len(values), 'rows': len(values)}
+def statistic(inputs):
+    data = pd.read_csv(inputs['data'])
+    values = data[inputs['column']].dropna().astype(float)
+    first, last = float(values.iloc[0]), float(values.iloc[-1])
+    found = {'mean': lambda: float(values.mean()), 'cagr': lambda: (last / first) ** (1 / (len(values) - 1)) - 1}
+    return {'status': 'reported', 'value': found[inputs['statistic']](), 'rows': len(values)}
 ```
 
-The `pack.yaml` declares a level, the function as a primitive, and a step over it:
+The `pack.yaml` declares a level, the function as a primitive, a step over it, and a workflow:
 
 ```yaml
 version: 1
 name: economics
+requires: [statistics]           # its steps come too, and its levels are placed relative to these
 
 levels:
   recomputed:
-    trust: reproduction        # the same number again from the same data: evidence of the reproduction kind
+    trust: reproduction          # the same number again from the same data: evidence of the reproduction kind
     above: none
-    description: The statistic was recomputed from the published data and agrees with the claim.
+    description: A statistic of a table, recomputed from the published data, agrees with the claim.
+  reproduced: {above: recomputed}   # a reproduced analysis is stronger evidence than one recomputed statistic
+
+conventions:
+  price-basis: [nominal-prices, real-prices]
 
 primitives:
-  table.mean:
-    function: economics_functions:mean
+  table.statistic:
+    function: veriphy.packs.economics.primitives._tables:statistic
     trust: reproduction
     input:
       type: object
-      required: [data, column]
-      properties: {data: {type: string}, column: {type: string}}
-    output:
-      type: object
-      required: [status, mean, rows]
+      required: [data, column, statistic]
+      properties: {data: {type: string}, column: {type: string}, statistic: {enum: [mean, median, sum, growth, cagr]}}
+    output: {type: object, required: [status]}
 
 steps:
   recompute:
     kind: check
-    primitive: table.mean
+    primitive: table.statistic
     grants: recomputed
-    compare: {field: mean, against: claimed, tolerance: 0.005}
-    help: recompute the mean of a column from the data, and compare it with the value the claim reports
+    compare: {field: value, against: claimed, tolerance: reported}
+    help: recompute a statistic of a table's column and compare it with the claim
     inputs:
       data: {scope: file, path: true, help: the published data, as CSV}
       column: {help: the column}
-      claimed: {type: number, optional: true, record: true, help: the mean the claim reports}
+      statistic: {help: 'mean, median, sum, growth or cagr'}
+      claimed: {type: number, optional: true, record: true, help: the value the claim reports}
       claim: {optional: true, record: true, help: 'the claim, so its level follows the record'}
 
 workflows:
@@ -157,83 +189,43 @@ workflows:
 The step's command follows from its inputs: required inputs become arguments, optional ones options.
 
 ```console
-$ veriphy layers step recompute table.csv growth --claimed 3.03 --claim mean-growth
-recompute table.csv: agrees
-  found 3.033333333333333, the claim says 3.03 (tolerance 0.005)
+$ veriphy layers step recompute gdp.csv real_gdp cagr --claimed 0.016 --claim gdp-growth
+recompute gdp.csv: agrees
+  found 0.01596393764952242, the claim says 0.016 (tolerance 0.0005)
   level: recomputed (reproduction)
-$ veriphy layers step recompute table.csv growth --claimed 3.5
-recompute table.csv: differs from the claim
-  found 3.033333333333333, the claim says 3.5 (tolerance 0.005)
 ```
 
-A step that compares grants its level only when the comparison runs and agrees. `tolerance: reported` would instead
-accept any value that rounds to the figure the claim reports, as the `social-science` pack does.
+A step that compares grants its level only when the comparison runs and agrees. `tolerance: reported` accepts any
+value that rounds to the figure the claim reports: half a unit in its last digit. A number, such as `0.005`, fixes the
+tolerance instead.
 
-### History: find a quotation in its source
+A pack of your own is the same files in a directory of the project, named by path, with its function in a module
+beside the `pack.yaml` (`function: tables:statistic`): the directory is on the import path.
 
-A biography quotes a letter. The `history` pack checks that the quoted passage appears, word for word, in the source
-it is attributed to. This time the check is a command-line tool, `find_quote.py`, shipped beside the `pack.yaml`. It
-reads its input from a JSON file and writes its result to another:
+### A check as a command
+
+A check can also be a program, run once per call. The `statistics` pack runs the authors' own analysis this way, in a
+fresh Python process, so nothing they import leaks into Veriphy:
 
 ```yaml
-version: 1
-name: history
-
-levels:
-  quoted:
-    trust: checker             # a deterministic check of a fact about the source
-    above: none
-    description: The passage appears word for word in the cited source.
-
-conventions:
-  edition: [first-edition, second-edition]
-
 tools:
-  find-quote:
-    contract: files            # run once per call: reads {input}, writes {out}
-    run: ['{python}', '{pack}/find_quote.py']
+  python:
+    contract: files              # run once per call; the primitive's command names its files
+    run: ['{python}', '{pack}/primitives/runner.py']
+    version: {command: [--version]}
+    timeout: 600
 
 primitives:
-  quote.find:
-    tool: find-quote
-    command: ['{input}', '{out}']
-    trust: checker
-    input:
-      type: object
-      required: [source, passage]
-      properties: {source: {type: string}, passage: {type: string}}
-    output:
-      type: object
-      required: [status]
-      properties: {status: {enum: [found, missing]}, line: {type: integer}}
-
-steps:
-  verify-quote:
-    kind: check
-    primitive: quote.find
-    grants: quoted
-    accepts: [found]           # the tool's own word for success; anything else is refused
-    help: check that a passage appears, word for word, in its source
-    inputs:
-      source: {scope: file, path: true, help: the source, as plain text}
-      passage: {help: the quoted passage}
-      claim: {optional: true, record: true, help: 'the claim, so its level follows the record'}
+  analysis.exec:
+    tool: python
+    trust: reproduction
+    command: ['{file:script}', '{file:data}', '{seed}', '{out}', '{file:variation}']
 ```
 
-```console
-$ veriphy layers step verify-quote novel.txt "best of times, it was the worst"
-verify-quote novel.txt: found
-  level: quoted (checker)
-$ veriphy layers step verify-quote novel.txt "age of wisdom"
-verify-quote novel.txt: refused
-  the tool said: missing
-```
-
-The tool answers `found` or `missing`, words Veriphy doesn't know, so the step says which one means success with
-`accepts`. Without it, `veriphy config check` refuses the pack, since every answer would grant the level.
-
-The `edition` convention lets claims say which edition they quote. A claim resting on quotations from both editions
-is then reported as a clash in the claim graph.
+`{pack}` is the pack's directory and `{python}` the Python that runs Veriphy; the program writes its result, as JSON,
+to `{out}`. A program that answers in words of its own, such as `found` or `missing`, names the one that means success
+with `accepts: [found]` on the step. Without it, `veriphy config check` refuses the step, since every answer would
+grant the level.
 
 ### What a pack can declare
 
@@ -260,7 +252,7 @@ A pack used by one project can live in it and be named by path. To share one, pu
 
 ```toml
 [project.entry-points."veriphy.packs"]
-economics = "veriphy_economics"
+epidemiology = "veriphy_epidemiology"
 ```
 
-After `pip install veriphy-economics`, workspaces name it as `packs: [economics]`.
+After `pip install veriphy-epidemiology`, workspaces name it as `packs: [epidemiology]`.

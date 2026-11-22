@@ -15,7 +15,7 @@ from veriphy.steps import load_steps, run_step
 
 ROOT = Path(__file__).resolve().parents[2]
 EXAMPLE = ROOT / 'docs' / 'examples' / 'social-science'
-PLAYBOOK = ROOT / 'src' / 'veriphy' / 'packs' / 'social_science' / 'agents' / 'reproduce.md'
+PLAYBOOK = ROOT / 'src' / 'veriphy' / 'packs' / 'statistics' / 'agents' / 'reproduce.md'
 CLAIM = json.loads((EXAMPLE / 'claim.json').read_text())
 
 
@@ -46,13 +46,13 @@ def test_selecting_the_pack(workspace: Path) -> None:
     """List the pack's tool, primitives, steps, levels and workflow, and nothing of Lean or SageMath."""
     resolved = resolve(workspace)
     assert check_config(resolved) == []
-    assert [p.name for p in resolved.packs] == ['core', 'social-science']
+    assert [p.name for p in resolved.packs] == ['core', 'statistics', 'social-science']
     registry = load_registry(resolved=resolved)
-    assert registry.tools['python'].run[1].endswith('social_science/primitives/runner.py')
+    assert registry.tools['python'].run[1].endswith('statistics/primitives/runner.py')
     assert {'analysis.exec', 'analysis.run', 'analysis.robustness'} <= set(registry.primitives)
     assert not any(name.startswith(('sage.', 'lean.')) for name in registry.primitives)
-    assert {'reproduce', 'robustness', 'check-concepts'} <= set(load_steps(workspace))
-    assert level_order(resolved) == ('none', 'reproduced', 'robust')
+    assert {'reproduce', 'robustness', 'check-concepts', 'check-reliability'} <= set(load_steps(workspace))
+    assert level_order(resolved) == ('none', 'recomputed', 'reproduced', 'robust')
     assert 'reproduce-analysis' in resolved.section('workflows')
 
 

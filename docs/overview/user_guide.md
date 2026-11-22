@@ -88,9 +88,9 @@ A level says how far a claim is verified, and its trust class says by what kind 
 | Trust class | Evidence | Example levels |
 |---|---|---|
 | `kernel` | a proof checked by a proof assistant's kernel | `lean-proof`, `certificate`, `kernel-test` |
-| `checker` | a deterministic check by an independent checker | `quoted` (history example) |
-| `reproduction` | the same result recomputed from the same code and data | `reproduced`, `robust`, `recomputed` |
-| `oracle` | an evaluation by an untrusted system, exact or by intervals | `oracle-test` |
+| `checker` | a deterministic check by an independent checker | `dimensionally-consistent`, `sequence-checked`, `structure-checked` |
+| `reproduction` | the same result recomputed from the same code and data | `recomputed`, `reproduced`, `robust`, `prediction-recomputed` |
+| `oracle` | an evaluation by an untrusted system, exact or by intervals | `oracle-test`, `curvature-checked` |
 
 Two more classes, `measurement` and `search`, describe tools that report or propose without establishing anything, so
 they grant no level. Every report shows a level with its class, as `reproduced (reproduction)`, so a reproduction or an
@@ -239,7 +239,7 @@ the command that rechecks the run.
 ## Agents and skills
 
 A pack's playbooks tell an agent how to do the field's work: which steps to run, what to write, and when to stop.
-`veriphy layers agents path` prints where they are (`--pack social-science` for that pack's), and `veriphy layers
+`veriphy layers agents path` prints where they are (`--pack statistics` for that pack's), and `veriphy layers
 agents list` names every playbook, recipe and template. Any agent can follow them.
 
 In Claude Code, each skill follows a workflow. It asks `veriphy layers workflow next` for the step, writes what is
@@ -250,7 +250,7 @@ asked when the step is the agent's, records it, and lets `veriphy layers workflo
 | `prove` | `math` | `prove-claim` |
 | `certify` | `math` | one goal, inside `prove` |
 | `research` | `math` | `verify-paper` |
-| `reproduce` | `social-science` | `reproduce-analysis` |
+| `reproduce` | `statistics` | `reproduce-analysis` |
 
 ## The layers
 

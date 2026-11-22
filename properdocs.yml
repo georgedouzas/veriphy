@@ -28,7 +28,17 @@ nav:
     - packs/index.md
     - Math: packs/math.md
     - Math components: packs/math_components.md
+    - Statistics: packs/statistics.md
     - Social science: packs/social_science.md
+    - Economics: packs/economics.md
+    - Econometrics: packs/econometrics.md
+    - Epidemiology: packs/epidemiology.md
+    - Physics: packs/physics.md
+    - Particle physics: packs/particle_physics.md
+    - General relativity: packs/general_relativity.md
+    - Life sciences: packs/life_sciences.md
+    - Genomics: packs/genomics.md
+    - Chemistry: packs/chemistry.md
   - API: api/
   - Examples: generated/gallery
   - Architecture: architecture/index.md

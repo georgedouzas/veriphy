@@ -253,7 +253,7 @@ and the records, and `oo-horn` checks the graph's conclusions.
 |---|---|---|---|
 | `kernel` | a proof checked by a proof assistant's kernel | `lean.check` | `certificate`, `lean-proof`, `kernel-test` |
 | `checker` | a certificate checked by a verified checker | `horn.check` | effective levels in the claim graph |
-| `reproduction` | the same result from the same code and data | `analysis.run` (`social-science`) | `reproduced`, `robust` |
+| `reproduction` | the same result from the same code and data | `analysis.run` (`statistics`), `flavio.prediction` | `recomputed`, `reproduced`, `robust`, `prediction-recomputed` |
 | `oracle` | a computation no checker confirmed | `sage.*` | `oracle-test` |
 | `measurement` | a report about the artifacts, not about the claim | `shacl.validate` | none |
 | `search` | candidates only | `sage.search`, any searcher | none |
@@ -312,32 +312,41 @@ steps, `validate`, `reason` and `appendix`) are declared by a framework pack tha
 | Pack | Field | Adds |
 |---|---|---|
 | `math` | mathematics in Lean | Lean (`lean.check`, `lean.serialize`, `lean.levels`, the `lean-imports` scope), SageMath, its script helpers, the recipes, the translation tables, `check`, `levels`, `sample`, `certify`, `record-proof`, the four levels from `oracle-test` to `certificate`, `prove-claim`, `verify-paper`, the `prove`, `certify` and `research` skills |
-| `social-science` | studies with data | the authors' Python analysis as a tool, `reproduce`, `robustness`, `check-concepts`, `reproduced`, `robust`, the `identification` and `sampling` conventions, `reproduce-analysis`, the `reproduce` skill |
+| `statistics` | analyses of data | the authors' Python analysis as a tool, `reproduce`, `robustness`, `check-p-value`, `check-mean` (SciPy), `recomputed` < `reproduced` < `robust`, `reproduce-analysis`, the `reproduce` skill |
+| `social-science` | surveys and studies | `check-reliability` (pingouin), the `sampling` convention, `check-study`; requires `statistics` |
+| `economics` | economic tables | `recompute` (pandas), the `price-basis` and `seasonal-adjustment` conventions; requires `statistics` |
+| `physics` | formulas and constants | `check-units` (pint), `check-constant` (SciPy's CODATA), `dimensionally-consistent` |
+| `life-sciences` | sequences and terms | `check-sequence` (Biopython), OBO ontologies for `check-concepts` (pronto), `sequence-checked` |
+| `chemistry` | molecules and reactions | `check-molecule`, `check-reaction` (RDKit), `structure-checked` |
+| `particle-physics`, `general-relativity` | subfields of physics | flavio, wilson and the PDG tables; EinsteinPy: `prediction-recomputed`, `curvature-checked` |
+| `genomics` | a subfield of the life sciences | pysam: `check-variant`, `check-coverage`, `genomic-data-checked` |
+| `econometrics`, `epidemiology` | subfields of economics and statistics | linearmodels; lifelines: `check-regression`, `check-hazard-ratio`, `check-median-survival` |
+
+`check-concepts` belongs to the framework pack, so every workspace can check its concepts against a thesaurus or an
+ontology.
 
 The resolved config is the framework pack, then each chosen pack after the packs it needs, then the workspace's
 `veriphy.yaml`. A later value overrides an earlier one key by key, and `null` removes an entry. With no file, a
-workspace gets `packs: [math]`. A field brings its own pack; the `economics` example recomputes a statistic:
+workspace gets `packs: [math]`. A field brings its own pack; the `economics` pack recomputes a statistic with pandas:
 
 ```yaml
 version: 1
 name: economics
-
-levels:
-  recomputed: {trust: reproduction, above: none}
+requires: [statistics]
 
 primitives:
-  table.mean:
-    function: economics_functions:mean
+  table.statistic:
+    function: veriphy.packs.economics.primitives._tables:statistic
     trust: reproduction
-    input: {type: object, required: [data, column]}
-    output: {type: object, required: [status, mean]}
+    input: {type: object, required: [data, column, statistic]}
+    output: {type: object, required: [status]}
 
 steps:
   recompute:
     kind: check
-    primitive: table.mean
+    primitive: table.statistic
     grants: recomputed
-    compare: {field: mean, against: claimed, tolerance: 0.005}
+    compare: {field: value, against: claimed, tolerance: reported}
     inputs:
       data: {scope: file, path: true}
       column: {}
@@ -381,7 +390,9 @@ veriphy/
     core/            the framework pack: pack.yaml declaring the built-ins, and claims/ registering their steps
     math/            lean/ (the Lean library and its Lake files)  primitives/lean  primitives/sage
                      primitives/translations  script  steps  agents (playbooks, recipes, skills)
-    social_science/  primitives (the analysis runner)  claims (check-concepts)  agents (playbook, skill)
+    statistics/      primitives (the analysis runner, SciPy's consistency checks)  agents (playbook, skill)
+    social_science/ economics/ physics/ life_sciences/ chemistry/   field packs: pack.yaml, primitives
+    particle_physics/ general_relativity/ genomics/ econometrics/ epidemiology/   subfield packs
 ```
 
 A pack has a `pack.yaml` and the same layer subpackages, only those it needs. A pack's code at layer k imports only

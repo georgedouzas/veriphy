@@ -1,0 +1,42 @@
+version: 1
+name: economics
+# economics: recompute the statistics a paper's tables report from its data, with pandas, over the statistics pack
+# (reproduce, robustness, consistency); its concepts against a classification, such as JEL, with check-concepts
+requires: [statistics]   # its levels too: recompute grants `recomputed`, below `reproduced`
+
+conventions:
+  # whether money is measured in each year's prices or in a base year's
+  price-basis: [nominal-prices, real-prices]
+  seasonal-adjustment: [seasonally-adjusted, not-seasonally-adjusted]
+
+primitives:
+  table.statistic:
+    function: veriphy.packs.economics.primitives._tables:statistic
+    trust: reproduction
+    input:
+      type: object
+      required: [data, column, statistic]
+      properties:
+        data: {type: string}
+        column: {type: string}
+        statistic: {enum: [mean, median, sum, growth, cagr]}
+        periods: {type: integer}
+    output: {type: object, required: [status]}
+
+steps:
+  recompute:
+    kind: check
+    primitive: table.statistic
+    grants: recomputed
+    compare: {field: value, against: claimed, tolerance: reported}
+    help: "recompute a statistic of a table's column (mean, median, sum, growth, cagr) and compare it with the claim"
+    inputs:
+      data: {scope: file, path: true, help: the published data, as CSV}
+      column: {help: the column}
+      statistic: {help: 'mean, median, sum, growth (first row to last, as a fraction) or cagr'}
+      claimed: {type: number, optional: true, record: true, help: the value the claim reports}
+      periods: {optional: true, type: integer, help: 'the number of periods for cagr (default: the rows less one)'}
+      claim: {optional: true, record: true, help: 'the claim, so its level follows the record'}
+
+workflows:
+  check-table: [record-claims, recompute]

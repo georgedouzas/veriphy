@@ -19,17 +19,19 @@ SHALL behave as with `packs: [math]`. Unknown keys SHALL be errors naming the ke
 - **THEN** `config check` fails and names the key
 
 ### Requirement: Packs
-An entry of `packs` SHALL be a name, resolved through the `veriphy.packs` entry point, or a path to a directory
-holding a `pack.yaml` in the workspace file's schema with `name` and `requires` added. Each pack SHALL be loaded after
-the packs it requires, which are loaded even when not listed.
+An entry of `packs` SHALL be a name, of a shipped pack or one resolved through the `veriphy.packs` entry point, or a
+path to a directory holding a `pack.yaml` in the workspace file's schema with `name` and `requires` added. The
+framework pack SHALL come first in every workspace, unnamed, and each other pack SHALL be loaded after the packs it
+requires. A local pack's Python SHALL import from its directory, and a tool's command MAY name `{pack}`, the pack's
+directory.
 
 #### Scenario: Requirements are loaded
-- **WHEN** a workspace lists `packs: [math]`
-- **THEN** the resolved config holds the `core`, `lean` and `math` packs, in that order
+- **WHEN** a workspace has no `veriphy.yaml`
+- **THEN** the resolved config holds the framework pack and `math`, in that order
 
 #### Scenario: A field without Lean
-- **WHEN** a workspace lists `packs: [core, ./packs/econ]` and the local pack requires only `core`
-- **THEN** the resolved config holds that pack's entries and no Lean or SageMath primitive
+- **WHEN** a workspace lists `packs: [./packs/economics]`, whose function sits beside its `pack.yaml`
+- **THEN** the resolved config holds that pack's entries, its function imports, and no Lean or SageMath primitive
 
 ### Requirement: Merge
 The resolved config SHALL be each pack in order, then the workspace file, each applied as a JSON Merge Patch (RFC

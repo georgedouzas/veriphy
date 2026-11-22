@@ -10,15 +10,15 @@ import pytest
 from veriphy.__main__ import LAYERS, LEAN_VERBS
 from veriphy.agents import content_dir
 from veriphy.claims import COMMANDS, load_graph
+from veriphy.core import BUILTIN_PACKS
 from veriphy.steps import load_steps
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
 def _all_steps() -> set[str]:
-    """Return the steps the documents may name: the shipped packs' and the example packs' of the guide."""
-    examples = ROOT / 'docs' / 'examples' / 'packs'
-    packs = ', '.join(['social-science', *(str(p) for p in sorted(examples.iterdir()) if (p / 'pack.yaml').is_file())])
+    """Return the steps the documents may name: every shipped pack's."""
+    packs = ', '.join(p for p in BUILTIN_PACKS if p != 'core')
     with tempfile.TemporaryDirectory() as tmp:
         (Path(tmp) / 'veriphy.yaml').write_text(f'version: 1\npacks: [{packs}]\n')
         return {*load_steps(), *load_steps(Path(tmp))}
@@ -81,7 +81,7 @@ def test_research_templates_exist() -> None:
 
 @pytest.mark.parametrize(
     ('pack', 'skill'),
-    [('math', 'prove'), ('math', 'certify'), ('math', 'research'), ('social_science', 'reproduce')],
+    [('math', 'prove'), ('math', 'certify'), ('math', 'research'), ('statistics', 'reproduce')],
 )
 def test_each_skill_lives_in_its_pack_and_the_plugin_finds_it(pack: str, skill: str) -> None:
     """Keep each skill in its pack's agents layer, in a directory the plugin manifest names, reading the playbooks."""

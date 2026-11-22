@@ -48,8 +48,8 @@ src/veriphy/packs/math/       the math pack
     coverage/                 a Lake project measuring translation coverage on Physlib and mathlib
     .veriphy/certificates/    the certificate scripts the Lean tests run
   agents/                     playbooks, recipes with templates, and the skills
-src/veriphy/packs/social_science/   the social-science pack
-docs/examples/                the example study and the example packs, run by the tests
+src/veriphy/packs/<pack>/      the field packs (statistics, physics, …) and subfield packs (genomics, …)
+docs/examples/                the packs' worked examples, run by the tests
 tests/                        Python tests
 ```
 

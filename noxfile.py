@@ -94,8 +94,8 @@ def docs(session: nox.Session) -> None:
         session: The nox session.
     """
     arg = check_cli(session, ['serve', 'build'], default='serve')
-    # Not `--only-dev`: mkdocstrings imports the package to document it.
-    session.run('uv', 'sync', '--active', external=True)
+    # Not `--only-dev`: mkdocstrings imports the package, with every pack, to document it.
+    session.run('uv', 'sync', '--active', '--extra', 'all', external=True)
     session.run('properdocs', arg)
 
 
@@ -187,7 +187,8 @@ def tests(session: nox.Session) -> None:
     )
     Path(str(purelib).strip(), 'sage.pth').write_text(str(sage_paths))
     env = {'VIRTUAL_ENV': str(venv)}
-    session.run('uv', 'sync', '--active', env=env, external=True)
+    # every field pack's libraries, so each pack's tests run
+    session.run('uv', 'sync', '--active', '--extra', 'all', env=env, external=True)
     session.run(
         str(venv / 'bin' / 'python'),
         '-m',

@@ -1,0 +1,25 @@
+format-version: 1.2
+ontology: go
+remark: An excerpt of the Gene Ontology (http://geneontology.org), CC BY 4.0, for the example.
+
+[Term]
+id: GO:0008150
+name: biological_process
+namespace: biological_process
+
+[Term]
+id: GO:0003674
+name: molecular_function
+namespace: molecular_function
+
+[Term]
+id: GO:0008218
+name: bioluminescence
+namespace: biological_process
+is_a: GO:0008150
+
+[Term]
+id: GO:0046872
+name: metal ion binding
+namespace: molecular_function
+is_a: GO:0003674

@@ -1,0 +1,115 @@
+version: 1
+name: statistics
+# statistical claims: reproduce an analysis from its own Python script and data, test its robustness, and check that
+# reported statistics are consistent with each other; with pandas, SciPy and statsmodels (`veriphy[statistics]`)
+
+levels:
+  recomputed: {trust: reproduction, above: none, description: 'A statistic recomputed from the published data agrees with the claim.'}
+  # a reproduced analysis is stronger evidence than one recomputed statistic
+  reproduced: {trust: reproduction, above: recomputed, description: 'The same estimate from the same code and data.'}
+  robust: {trust: reproduction, above: reproduced, description: 'Reproduced, and its sign and significance hold under every declared variation.'}
+
+conventions:
+  # an identification assumption: a claim resting on one clashes with a claim it cites that assumes the other
+  identification: [parallel-trends, no-parallel-trends]
+  # the alternative a test was run against
+  sidedness: [two-sided-test, one-sided-test]
+
+tools:
+  python:
+    # the authors' analysis, run once per call in a fresh process of the Python that runs Veriphy
+    contract: files
+    run: ['{python}', '{pack}/primitives/runner.py']
+    version: {command: [--version]}
+    timeout: 600
+
+primitives:
+  analysis.exec:
+    tool: python
+    trust: reproduction
+    seed: placeholder
+    command: ['{file:script}', '{file:data}', '{seed}', '{out}', '{file:variation}']
+    input:
+      type: object
+      required: [script, data, variation]
+      properties:
+        script: {type: string, description: 'the analysis script, defining run(data, inputs)'}
+        data: {type: string, description: the data, as CSV}
+        variation: {type: string, description: a file holding the variation, empty for the analysis as published}
+        seed: {type: integer}
+    output: {type: object, required: [status, estimate, se]}
+  # composites, written in code
+  analysis.run: {composite: veriphy.packs.statistics.primitives}
+  analysis.robustness: {composite: veriphy.packs.statistics.primitives}
+  stats.p-value:
+    function: veriphy.packs.statistics.primitives._consistency:p_value
+    trust: reproduction
+    input:
+      type: object
+      required: [test, statistic, claimed]
+      properties:
+        test: {enum: [t, F, chi2, z, r]}
+        statistic: {type: string}
+        df: {type: string}
+        claimed: {type: string}
+        tails: {type: integer, enum: [1, 2]}
+    output: {type: object, required: [status]}
+  stats.grim:
+    function: veriphy.packs.statistics.primitives._consistency:grim
+    trust: reproduction
+    input:
+      type: object
+      required: [mean, n]
+      properties: {mean: {type: string}, n: {type: integer}, items: {type: integer}}
+    output: {type: object, required: [status]}
+
+steps:
+  reproduce:
+    kind: check
+    primitive: analysis.run
+    grants: reproduced
+    seed: true
+    # a paper reports a rounded figure: it agrees with every estimate that rounds to it
+    compare: {field: estimate, against: claimed, tolerance: reported}
+    help: run the authors' script on their data, and compare the estimate with the one the claim reports
+    inputs:
+      script: {scope: file, path: true, help: 'the analysis script, defining run(data, inputs)'}
+      data: {scope: file, path: true, help: the data, as CSV}
+      sha256: {optional: true, help: "the data's SHA-256, as the claim names it: other data is refused"}
+      claimed: {type: number, optional: true, record: true, help: the estimate the claim reports}
+      claim: {optional: true, record: true, help: 'the claim, so its level follows the record'}
+  robustness:
+    kind: check
+    primitive: analysis.robustness
+    grants: robust
+    seed: true
+    help: rerun the analysis under each declared variation, and grant robust when its sign and significance hold
+    inputs:
+      script: {scope: file, path: true, help: 'the analysis script, defining run(data, inputs)'}
+      data: {scope: file, path: true, help: the data, as CSV}
+      variations: {many: true, flag: --variation, help: 'a variation declared before running, such as "y ~ x + z"; repeat for each'}
+      sha256: {optional: true, help: "the data's SHA-256, as the claim names it: other data is refused"}
+      claim: {optional: true, record: true, help: 'the claim, so its level follows the record'}
+  check-p-value:
+    kind: evidence
+    primitive: stats.p-value
+    help: 'recompute a reported p-value from its test statistic, as statcheck does: t, F, chi2, z or r'
+    inputs:
+      test: {help: 't, F, chi2, z or r'}
+      statistic: {help: 'the statistic, as reported: 2.20'}
+      claimed: {help: 'the p-value, as reported: .036 or <.001'}
+      df: {optional: true, help: 'the degrees of freedom: 28, or 1,30 for F'}
+      tails: {optional: true, type: integer, default: 2, help: '1 for a one-sided test'}
+      claim: {optional: true, record: true, help: the claim the statistic belongs to}
+  check-mean:
+    kind: evidence
+    primitive: stats.grim
+    help: 'the GRIM test: is a mean reported for integer data possible for its sample size?'
+    inputs:
+      mean: {help: 'the mean, as reported: 5.19'}
+      n: {type: integer, help: the sample size}
+      items: {optional: true, type: integer, default: 1, help: the number of integer items averaged per respondent}
+      claim: {optional: true, record: true, help: the claim the mean belongs to}
+
+workflows:
+  reproduce-analysis: [record-claims, reproduce, robustness]

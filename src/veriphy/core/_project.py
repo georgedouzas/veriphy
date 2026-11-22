@@ -1,5 +1,6 @@
 """Locate a downstream project's `.veriphy/` directory, where every Veriphy artifact of the project lives."""
 
+import sys
 from pathlib import Path
 
 PROJECT_DIR_NAME = '.veriphy'
@@ -8,11 +9,20 @@ LAKEFILES = ('lakefile.toml', 'lakefile.lean')
 MARKERS = ('veriphy.yaml', *LAKEFILES)
 
 
+def _command_root() -> Path | None:
+    """Return the `--root` the running `veriphy` command was given, if any: a group's own `--root` takes precedence."""
+    click = sys.modules.get('click')  # loaded only by the command line, never by the Sage session
+    context = click.get_current_context(silent=True) if click is not None else None
+    given = context.find_root().params.get('root') if context is not None else None
+    return Path(given) if given else None
+
+
 def find_workspace_root(start: Path | None = None) -> Path:
     """Return the workspace root: the nearest directory, from `start` upwards, holding `veriphy.yaml` or a lakefile.
 
     Args:
-        start: The directory to search from, the working directory when `None`.
+        start: The directory to search from: when `None`, the `--root` of the running command, else the working
+            directory.
 
     Returns:
         The workspace root, or `start` itself when no ancestor holds either.
@@ -26,7 +36,7 @@ def find_workspace_root(start: Path | None = None) -> Path:
         ...     find_workspace_root(root / 'Sub' / 'Dir') == root
         True
     """
-    origin = (start or Path.cwd()).resolve()
+    origin = (start or _command_root() or Path.cwd()).resolve()
     for directory in (origin, *origin.parents):
         if any((directory / name).is_file() for name in MARKERS):
             return directory

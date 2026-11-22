@@ -86,10 +86,10 @@ JSON. A primitive whose tool is missing SHALL be listed as unavailable with the 
 - **THEN** `primitive list` shows `lean.check` as unavailable, naming `lake`, and the `core` primitives as available
 
 ### Requirement: Shipped primitives
-Veriphy SHALL ship the packs `core` (`horn.check`, `shacl.validate`), `lean` (`lean.check`,
-`lean.serialize`, `lean.levels`) and `math` (the `sage` tool, one `sage.*` primitive per Sage method, and the
-composites `meaning` and `certify`), each as a `pack.yaml` found through the `veriphy.packs` entry point. `math` SHALL
-need `lean`, and `core` SHALL NOT need Lean.
+Veriphy SHALL ship the framework pack (`horn.check`, `shacl.validate`), the `math` pack (`lean.check`,
+`lean.serialize`, `lean.levels`, the `sage` tool, one `sage.*` primitive per Sage method, and the composites `sample`
+and `certify`) and the `social-science` pack (the `python` tool, `analysis.exec`, and the composites `analysis.run`
+and `analysis.robustness`), each as a `pack.yaml`. The framework pack SHALL NOT need Lean.
 
 #### Scenario: Every Sage method is a primitive
 - **WHEN** the Sage session's methods are compared with the `math` pack's primitives

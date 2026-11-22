@@ -1,0 +1,12 @@
+# Claims about the example sequence, as an agent extracted them.
+@prefix vp: <urn:veriphy:vocabulary#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix : <urn:veriphy:source:report#> .
+
+:bioluminescence a vp:Concept ; owl:sameAs <http://purl.obolibrary.org/obo/GO_0008218> .
+
+:gfp-length a vp:Claim ; vp:statedIn :report ; vp:statement "The coding sequence is 720 bases long." .
+:gfp-protein a vp:Claim ; vp:statedIn :report ; vp:uses :gfp-length ;
+    vp:statement "It encodes a 239-residue protein that starts MASKGEEL." .
+:gfp-role a vp:Claim ; vp:statedIn :report ; vp:uses :gfp-protein, :bioluminescence ;
+    vp:statement "The protein takes part in bioluminescence." .

@@ -1,0 +1,54 @@
+version: 1
+name: genomics
+# genomics: variants and genotypes in VCF files, and the depth of a region in SAM, BAM or CRAM alignments, with pysam
+# (`veriphy[genomics]`), over the life-sciences pack
+requires: [life-sciences]
+
+levels:
+  genomic-data-checked: {trust: checker, above: sequence-checked, description: 'The variant calls or alignments have the properties the claim gives them.'}
+
+conventions:
+  variant-coordinates: [one-based-coordinates, zero-based-coordinates]
+
+primitives:
+  vcf.variant:
+    function: veriphy.packs.genomics.primitives._reads:variant
+    trust: checker
+    input:
+      type: object
+      required: [vcf, variant]
+      properties: {vcf: {type: string}, variant: {type: string}, sample: {type: string}, genotype: {type: string}}
+    output: {type: object, required: [status]}
+  sam.coverage:
+    function: veriphy.packs.genomics.primitives._reads:coverage
+    trust: checker
+    input:
+      type: object
+      required: [alignments, region]
+      properties: {alignments: {type: string}, region: {type: string}, quality: {type: integer}}
+    output: {type: object, required: [status]}
+
+steps:
+  check-variant:
+    kind: check
+    primitive: vcf.variant
+    grants: genomic-data-checked
+    help: "check that a variant is called in a VCF file, and a sample's genotype"
+    inputs:
+      vcf: {scope: file, path: true, help: 'the variant calls, as VCF'}
+      variant: {help: "the variant, 1-based: 'chr17:7674220 C>T'"}
+      sample: {optional: true, help: the sample the claim is about}
+      genotype: {optional: true, help: "its claimed genotype: '0/1'"}
+      claim: {optional: true, record: true, help: 'the claim, so its level follows the record'}
+  check-coverage:
+    kind: check
+    primitive: sam.coverage
+    grants: genomic-data-checked
+    compare: {field: depth, against: claimed, tolerance: reported}
+    help: "recompute a region's mean depth from the alignments, and compare it with the claim"
+    inputs:
+      alignments: {scope: file, path: true, help: 'the alignments: SAM, BAM or CRAM'}
+      region: {help: "the region, 1-based and inclusive: 'chr1:101-200'"}
+      quality: {optional: true, type: integer, help: 'the least mapping quality a read needs (default: 0)'}
+      claimed: {type: number, optional: true, record: true, help: 'the mean depth the claim reports'}
+      claim: {optional: true, record: true, help: 'the claim, so its level follows the record'}

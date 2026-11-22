@@ -11,7 +11,8 @@ paths = sorted(Path('src').rglob('*.py'))
 paths = [
     path
     for path in paths
-    if not any(part.startswith('_') for part in path.parts[:-1])
+    # private packages, and hidden directories such as the Lean build cache, which holds other projects' Python
+    if not any(part.startswith(('_', '.')) for part in path.parts[:-1])
     and (path.parts[-1] == '__init__.py' or not path.parts[-1].startswith('_'))
 ]
 for path in paths:

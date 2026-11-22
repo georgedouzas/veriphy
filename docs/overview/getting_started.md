@@ -8,7 +8,7 @@ its records in the workspace's `.veriphy/` directory.
 
 ## 1. Reproduce a study
 
-Install Veriphy (`pip install veriphy`) and copy the example study from
+Install Veriphy with the pack's libraries (`pip install 'veriphy[social-science]'`) and copy the example study from
 [`docs/examples/social-science/`](https://github.com/georgedouzas/veriphy/tree/main/docs/examples/social-science)
 into a new directory. Then select the pack:
 

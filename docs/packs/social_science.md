@@ -1,9 +1,14 @@
 # The `social-science` pack
 
 The `social-science` pack checks a study's claims the way a careful referee would. It reruns the authors' analysis
-from their own Python script and data, tests whether each estimate survives variations declared in advance, and
-checks that the constructs the claims talk about (social trust, educational attainment) are concepts of a recognised
-thesaurus. It needs neither Lean nor SageMath.
+from their own Python script and data, tests whether each estimate survives variations declared in advance,
+recomputes the reliability of its scales with pingouin, and checks that the constructs the claims talk about (social
+trust, educational attainment) are concepts of a recognised thesaurus. It builds on [`statistics`](statistics.md),
+whose steps it brings, and needs neither Lean nor SageMath.
+
+```console
+$ pip install 'veriphy[social-science]'
+```
 
 ```yaml
 # veriphy.yaml
@@ -50,6 +55,18 @@ robustness analysis.py: robust under every variation
 `robust` means the estimate keeps its sign and stays significant at 5% under every variation. Otherwise the result is
 `fragile`, and the record names the variations that break it.
 
+## Scales
+
+The trust index is the mean of three items. The chapter reports its reliability, Cronbach's alpha, as .76:
+
+```console
+$ veriphy layers step check-reliability survey.csv --item trust_q1 --item trust_q2 --item trust_q3 --claimed 0.76
+check-reliability survey.csv: agrees
+  found 0.75618, the claim says 0.76 (tolerance 0.005)
+```
+
+Reliability is evidence about the measure, not about a claim, so it grants no level.
+
 ## Constructs and the thesaurus
 
 A claim in the social sciences is about constructs, and two studies can mean different things by the same word. In the
@@ -59,7 +76,7 @@ claim graph, a construct is a `vp:Concept`, linked by `owl:sameAs` to a concept 
 :social-trust a vp:Concept ; owl:sameAs <https://example.org/thesaurus/social-trust> .
 ```
 
-`check-concepts` checks that every construct names a concept the thesaurus defines, and reports the thesaurus's label
+`check-concepts`, which every workspace has, checks that every construct names a concept the thesaurus defines, and reports the thesaurus's label
 for each:
 
 ```console
@@ -122,11 +139,11 @@ Both levels are of the `reproduction` trust class, so every report shows `robust
 |---|---|---|---|
 | `reproduce <script> <data> [--sha256 d] [--claimed v] [--claim c]` | check | runs the script on the data in a fresh Python process, and compares its estimate with the claim | `reproduced` |
 | `robustness <script> <data> --variation v … [--sha256 d] [--claim c]` | check | reruns it under each declared variation | `robust` |
+| `check-reliability <data> --item c … [--claimed a]` | evidence | recomputes a scale's Cronbach's alpha | |
 | `check-concepts <thesaurus>` | evidence | checks every construct against the thesaurus | |
 
-The script defines `run(data, inputs)`. `data` is the CSV as a list of rows, each a mapping from column to value,
-with numbers as floats. `inputs['variation']` is the model to fit instead of the published one, empty for the
-published one. The script returns `{'estimate': …, 'se': …}`. The seed (`--seed`, 0 by default) is set before it runs.
+`reproduce` and `robustness` come from [`statistics`](statistics.md), which describes the script's contract: the
+example's `analysis.py` fits its model with statsmodels.
 
-The workflow `reproduce-analysis` runs `record-claims`, `check-concepts`, `reproduce` and `robustness` in turn, and
-the `reproduce` skill follows it, with the playbook that `veriphy layers agents path --pack social-science` shows.
+The workflow `check-study` runs `record-claims`, `check-concepts`, `reproduce` and `robustness` in turn, and the
+`reproduce` skill follows it, with the playbook that `veriphy layers agents path --pack statistics` shows.

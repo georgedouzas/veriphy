@@ -28,6 +28,22 @@ STATUS_WORDS = {
 DETAIL_LIMIT = 3
 
 
+def _number(value: object) -> str:
+    """Return a number to six significant digits, as a person reads it, and anything else as it is.
+
+    Args:
+        value: The value a record holds.
+
+    Returns:
+        The value as the summary shows it.
+
+    Examples:
+        >>> _number(0.09455343346738476), _number(3.5373801659773317e-10), _number([5.14, 5.18])
+        ('0.0945534', '3.53738e-10', '[5.14, 5.18]')
+    """
+    return f'{value:.6g}' if isinstance(value, float) else str(value)
+
+
 def _target(result: Result, argument: str | None) -> str:
     """Return what the step ran on: its first argument's input, relative to the working directory."""
     first = result.record.inputs.get(argument, '') if argument else ''
@@ -50,7 +66,8 @@ def _errors(outputs: dict[str, object]) -> list[str]:
     for item in errors if isinstance(errors, list) else []:
         if isinstance(item, dict):
             text = str(item.get('message', '')).strip().splitlines()
-            found.append(f"line {item.get('line')}: {text[0] if text else ''}")
+            line = item.get('line')
+            found.append(f"{f'line {line}: ' if line else ''}{text[0] if text else ''}")
     return found[:DETAIL_LIMIT]
 
 
@@ -62,8 +79,8 @@ def _details(outputs: dict[str, object]) -> list[str]:
     compared = outputs.get('compared')
     if isinstance(compared, dict):
         lines.append(
-            f"found {compared.get('found')}, the claim says {compared.get('claimed')} "
-            f"(tolerance {compared.get('tolerance')})",
+            f"found {_number(compared.get('found'))}, the claim says {_number(compared.get('claimed'))} "
+            f"(tolerance {_number(compared.get('tolerance'))})",
         )
     counterexample = outputs.get('counterexample')
     if isinstance(counterexample, dict):

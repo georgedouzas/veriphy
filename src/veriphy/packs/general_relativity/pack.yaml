@@ -1,0 +1,34 @@
+version: 1
+name: general-relativity
+# general relativity: a metric's curvature computed with EinsteinPy and simplified with SymPy, to check that it solves
+# the vacuum equations, is flat, or has a claimed Ricci scalar (`veriphy[general-relativity]`), over the physics pack
+requires: [physics]
+
+levels:
+  curvature-checked: {trust: oracle, above: dimensionally-consistent, description: 'A computer algebra system finds the curvature the claim gives the metric.'}
+
+conventions:
+  # the sign of the Riemann tensor, and which index the Ricci tensor contracts
+  riemann-sign: [mtw-riemann-sign, opposite-riemann-sign]
+
+primitives:
+  gr.curvature:
+    function: veriphy.packs.general_relativity.primitives._curvature:curvature
+    trust: oracle
+    input:
+      type: object
+      required: [coordinates, metric, property]
+      properties: {coordinates: {type: string}, metric: {type: string}, property: {type: string}}
+    output: {type: object, required: [status]}
+
+steps:
+  check-metric:
+    kind: check
+    primitive: gr.curvature
+    grants: curvature-checked
+    help: 'check that a metric solves the vacuum equations, is flat, or has a given Ricci scalar'
+    inputs:
+      coordinates: {help: "the coordinates: 't r theta phi'"}
+      metric: {help: "the metric over them, in SymPy: 'diag(-(1 - 2*M/r), 1/(1 - 2*M/r), r**2, r**2*sin(theta)**2)'"}
+      property: {help: "what the claim says: 'vacuum', 'flat', or 'R = <expression>'"}
+      claim: {optional: true, record: true, help: 'the claim, so its level follows the record'}

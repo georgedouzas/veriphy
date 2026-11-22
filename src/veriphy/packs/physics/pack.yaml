@@ -1,0 +1,46 @@
+version: 1
+name: physics
+# physics: dimensional analysis with pint, and constants against CODATA with SciPy (`veriphy[physics]`); with the math
+# pack, a claim can then be proved in Lean
+levels:
+  dimensionally-consistent: {trust: checker, above: none, description: 'Both sides of the formula have the same dimensions.'}
+
+conventions:
+  metric-signature: [mostly-plus, mostly-minus]
+  unit-system: [si-units, natural-units, gaussian-units]
+  fourier-sign: [fourier-minus-i, fourier-plus-i]
+
+primitives:
+  units.dimensions:
+    function: veriphy.packs.physics.primitives._physics:dimensions
+    trust: checker
+    input:
+      type: object
+      required: [formula]
+      properties: {formula: {type: string}, units: {type: array, items: {type: string}}}
+    output: {type: object, required: [status]}
+  codata.constant:
+    function: veriphy.packs.physics.primitives._physics:constant
+    trust: reproduction
+    input: {type: object, required: [name], properties: {name: {type: string}}}
+    output: {type: object, required: [status]}
+
+steps:
+  check-units:
+    kind: check
+    primitive: units.dimensions
+    grants: dimensionally-consistent
+    help: check that both sides of a formula have the same dimensions, with each symbol's unit
+    inputs:
+      formula: {help: 'the formula, in Python syntax: "E = m * c**2"'}
+      units: {many: true, flag: --unit, help: 'a symbol and its unit, in pint notation: "c=m/s"; repeat for each'}
+      claim: {optional: true, record: true, help: 'the claim, so its level follows the record'}
+  check-constant:
+    kind: evidence
+    primitive: codata.constant
+    compare: {field: value, against: claimed, tolerance: reported}
+    help: "compare a constant's value, as a source uses it, with CODATA"
+    inputs:
+      name: {help: 'the CODATA name: "Newtonian constant of gravitation"'}
+      claimed: {type: number, optional: true, record: true, help: the value the source uses, in CODATA's unit}
+      claim: {optional: true, record: true, help: the claim that uses it}
