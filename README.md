@@ -34,6 +34,7 @@ libraries, and subfield packs build on field packs:
 | Pack | Checks | With |
 |---|---|---|
 | `math` | mathematics in Lean: proofs, with SageMath to find them, and statements, by sampling them | Lean, SageMath |
+| `number-theory`, `group-theory`, `graph-theory` | factorizations and class numbers; finite groups; graph invariants, nested in `math` | PARI, GAP, Sage |
 | `statistics` | an analysis rerun from its own script and data, its robustness, reported p-values and means | pandas, SciPy, statsmodels |
 | `social-science` | a study's scales and constructs, over `statistics` | pingouin |
 | `economics`, `econometrics` | a paper's tables, and its regressions: OLS, IV, panel | pandas, linearmodels |

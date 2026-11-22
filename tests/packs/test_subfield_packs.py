@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from veriphy.core import check_config, level_order, resolve
+from veriphy.core import FIELDS, check_config, level_order, pack_packages, resolve
 from veriphy.steps import load_steps, run_step
 
 EXAMPLES = Path(__file__).resolve().parents[2] / 'docs' / 'examples'
@@ -158,3 +158,25 @@ def test_survival_is_recomputed_with_lifelines(tmp_path: Path) -> None:
     assert ratio[:2] == ('agrees', 'recomputed')
     assert _run(root, 'check-median-survival', **trial, group='arm=control', claimed=19.2)[0] == 'agrees'
     assert _run(root, 'check-median-survival', **trial, group='arm=treatment', claimed=30)[0] == 'differs'
+
+
+def test_subfield_packages_nest_in_their_fields() -> None:
+    """Place each subfield's package in its field's, so the package tree is the tree of fields."""
+    packages = pack_packages()
+    for field, subfields in FIELDS.items():
+        for name in subfields:
+            assert packages[name] == f"{packages[field]}.{name.replace('-', '_')}"
+    assert packages['particle-physics'] == 'veriphy.packs.physics.particle_physics'
+
+
+def test_a_nested_local_pack_builds_on_the_pack_around_it(tmp_path: Path) -> None:
+    """Bring a local pack's enclosing pack, with no `requires`, when the workspace names only the nested one."""
+    field = tmp_path / 'packs' / 'oncology'
+    subfield = field / 'radiotherapy'
+    subfield.mkdir(parents=True)
+    (field / 'pack.yaml').write_text('version: 1\nname: oncology\nconventions:\n  staging: [tnm-8, tnm-7]\n')
+    (subfield / 'pack.yaml').write_text('version: 1\nname: radiotherapy\nconventions:\n  dose-unit: [gray, rad]\n')
+    (tmp_path / 'veriphy.yaml').write_text('version: 1\npacks: [./packs/oncology/radiotherapy]\n')
+    resolved = resolve(tmp_path)
+    assert [p.name for p in resolved.packs] == ['core', 'oncology', 'radiotherapy']
+    assert check_config(resolved) == []

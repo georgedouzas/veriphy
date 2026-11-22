@@ -60,6 +60,10 @@ is unchecked or undecided.
 | `levels <module> [--prefix p …]` | `math` | derived | the levels Lean reads |
 | `sample <file> <declaration> [--informal t] [--values n] [--points json] [--seed s]` | `math` | evidence | |
 | `check-concepts <thesaurus>` | all | evidence | |
+| `check-factorization <number> <claimed>` | `number-theory` | check | `oracle-test` |
+| `check-class-number <polynomial> <claimed>` | `number-theory` | check | `oracle-test` |
+| `check-group <group> <property> <claimed>` | `group-theory` | check | `oracle-test` |
+| `check-graph <graph> <property> <claimed>` | `graph-theory` | check | `oracle-test` |
 | `reproduce <script> <data> [--sha256 d] [--claimed v] [--claim c] [--seed s]` | `statistics` | check | `reproduced` |
 | `robustness <script> <data> --variation v … [--sha256 d] [--claim c] [--seed s]` | `statistics` | check | `robust` |
 | `check-p-value <test> <statistic> <claimed> [--df d] [--tails 1]` | `statistics` | evidence | |
@@ -124,7 +128,7 @@ Without the file, a workspace uses `packs: [math]`.
 ```yaml
 version: 1
 name: <pack>
-requires: [<pack>, …]
+requires: [<pack>, …]     # besides the pack it is nested in, which it always builds on
 ```
 
 ### `levels`

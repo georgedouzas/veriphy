@@ -3,7 +3,7 @@ name: math
 # mathematics in Lean, with SageMath to find proofs and to sample statements
 
 levels:
-  oracle-test: {trust: oracle, above: none, description: Sage evaluated the claim at instances.}
+  oracle-test: {trust: oracle, above: none, description: 'Sage, or a library it ships such as PARI or GAP, evaluated the claim.'}
   kernel-test: {trust: kernel, above: oracle-test, description: The kernel checked the claim at instances.}
   lean-proof: {trust: kernel, above: kernel-test, description: 'A complete Lean proof on the standard axioms, which no recipe built.'}
   certificate: {trust: kernel, above: lean-proof, description: 'A recipe built the proof, which the kernel checked.'}

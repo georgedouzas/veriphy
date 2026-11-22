@@ -318,11 +318,13 @@ steps, `validate`, `reason` and `appendix`) are declared by a framework pack tha
 | `physics` | formulas and constants | `check-units` (pint), `check-constant` (SciPy's CODATA), `dimensionally-consistent` |
 | `life-sciences` | sequences and terms | `check-sequence` (Biopython), OBO ontologies for `check-concepts` (pronto), `sequence-checked` |
 | `chemistry` | molecules and reactions | `check-molecule`, `check-reaction` (RDKit), `structure-checked` |
+| `number-theory`, `group-theory`, `graph-theory` | subfields of mathematics | PARI, GAP and Sage's graphs, run under Sage: `check-factorization`, `check-class-number`, `check-group`, `check-graph`, granting `oracle-test` |
 | `particle-physics`, `general-relativity` | subfields of physics | flavio, wilson and the PDG tables; EinsteinPy: `prediction-recomputed`, `curvature-checked` |
 | `genomics` | a subfield of the life sciences | pysam: `check-variant`, `check-coverage`, `genomic-data-checked` |
 | `econometrics`, `epidemiology` | subfields of economics and statistics | linearmodels; lifelines: `check-regression`, `check-hazard-ratio`, `check-median-survival` |
 
-`check-concepts` belongs to the framework pack, so every workspace can check its concepts against a thesaurus or an
+A subfield's pack is nested in its field's, and builds on it without naming it in `requires`. `check-concepts` belongs
+to the framework pack, so every workspace can check its concepts against a thesaurus or an
 ontology.
 
 The resolved config is the framework pack, then each chosen pack after the packs it needs, then the workspace's
@@ -390,9 +392,13 @@ veriphy/
     core/            the framework pack: pack.yaml declaring the built-ins, and claims/ registering their steps
     math/            lean/ (the Lean library and its Lake files)  primitives/lean  primitives/sage
                      primitives/translations  script  steps  agents (playbooks, recipes, skills)
+      number_theory/ group_theory/ graph_theory/   subfield packs: PARI, GAP, Sage graphs, run under Sage
     statistics/      primitives (the analysis runner, SciPy's consistency checks)  agents (playbook, skill)
-    social_science/ economics/ physics/ life_sciences/ chemistry/   field packs: pack.yaml, primitives
-    particle_physics/ general_relativity/ genomics/ econometrics/ epidemiology/   subfield packs
+      epidemiology/
+    economics/       econometrics/
+    physics/         particle_physics/  general_relativity/
+    life_sciences/   genomics/
+    social_science/  chemistry/
 ```
 
 A pack has a `pack.yaml` and the same layer subpackages, only those it needs. A pack's code at layer k imports only

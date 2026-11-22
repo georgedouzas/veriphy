@@ -34,7 +34,7 @@ from veriphy.core._errors import (
     ToolError,
     VeriphyError,
 )
-from veriphy.core._packs import BUILTIN_PACKS, PACK_FILE, pack_dir, pack_packages, read_pack
+from veriphy.core._packs import BUILTIN_PACKS, FIELDS, PACK_FILE, pack_dir, pack_packages, read_pack
 from veriphy.core._process import find_tool, run_process
 from veriphy.core._project import PROJECT_DIR_NAME, find_workspace_root, project_dir
 from veriphy.core._types import RELATIONS, Coercer, JsonObject, JsonValue, Method
@@ -42,6 +42,7 @@ from veriphy.core._types import RELATIONS, Coercer, JsonObject, JsonValue, Metho
 __all__ = [
     'BUILTIN_PACKS',
     'BUILTIN_SCOPES',
+    'FIELDS',
     'PACK_FILE',
     'PROJECT_DIR_NAME',
     'RELATIONS',

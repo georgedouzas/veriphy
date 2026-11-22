@@ -78,12 +78,14 @@ class Pack:
         directory: The directory holding its `pack.yaml`.
         package: Its Python package, for a pack whose code registers steps or composites; `None` for a data-only pack.
         declared: Its `pack.yaml`.
+        parent: The pack it is nested in, which it builds on: a field's, for a subfield's pack; `None` at the top.
     """
 
     name: str
     directory: Path
     package: str | None
     declared: Mapping[str, object]
+    parent: str | None = None
 
 
 @dataclass(frozen=True)
@@ -208,13 +210,18 @@ def _find_pack(name: str, root: Path, packages: Mapping[str, str]) -> Pack:
         # a local pack's Python (its functions, scopes and steps) imports from its own directory
         if str(directory) not in sys.path:
             sys.path.append(str(directory))
-        return Pack(str(declared.get('name', directory.name)), directory, None, declared)
+        # a pack in another pack's directory is that pack's subfield, and builds on it
+        parent = str(directory.parent) if (directory.parent / PACK_FILE).is_file() else None
+        return Pack(str(declared.get('name', directory.name)), directory, None, declared, parent)
     if name not in packages:
         message = f"no pack is named '{name}': the installed packs are {', '.join(packages)}"
         raise PackError(message)
     declared = read_pack(packages[name])
     validate(declared, f'{name}/{PACK_FILE}')
-    return Pack(name, pack_dir(packages[name]), packages[name], declared)
+    # a pack in another pack's package is that pack's subfield, and builds on it
+    enclosing = packages[name].rpartition('.')[0]
+    parent = next((n for n, package in packages.items() if package == enclosing), None)
+    return Pack(name, pack_dir(packages[name]), packages[name], declared, parent)
 
 
 def order_packs(names: Sequence[str], root: Path, packages: Mapping[str, str] | None = None) -> tuple[Pack, ...]:
@@ -256,14 +263,16 @@ def order_packs(names: Sequence[str], root: Path, packages: Mapping[str, str] | 
 
 
 def _direct(pack: Pack) -> list[str]:
-    """Return the packs a pack requires directly."""
+    """Return the packs a pack requires directly: the pack it is nested in, then those its `requires` names."""
     requires = pack.declared.get('requires')
-    return [str(r) for r in requires] if isinstance(requires, list) else []
+    named = [str(r) for r in requires] if isinstance(requires, list) else []
+    return list(dict.fromkeys([pack.parent, *named] if pack.parent else named))
 
 
 def _requires(packs: Sequence[Pack]) -> dict[str, set[str]]:
     """Return every pack's requirements, direct and indirect."""
-    by_name = {p.name: p for p in packs}
+    # a local pack's parent is named by its directory
+    by_name = {p.name: p for p in packs} | {str(p.directory): p for p in packs}
     closure: dict[str, set[str]] = {}
     for pack in packs:
         seen: set[str] = set()
@@ -272,7 +281,7 @@ def _requires(packs: Sequence[Pack]) -> dict[str, set[str]]:
             name = pending.pop()
             if name in seen or name not in by_name:
                 continue
-            seen.add(name)
+            seen.add(by_name[name].name)
             pending.extend(_direct(by_name[name]))
         closure[pack.name] = seen
     return closure

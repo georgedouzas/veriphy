@@ -28,6 +28,9 @@ nav:
     - packs/index.md
     - Math: packs/math.md
     - Math components: packs/math_components.md
+    - Number theory: packs/number_theory.md
+    - Group theory: packs/group_theory.md
+    - Graph theory: packs/graph_theory.md
     - Statistics: packs/statistics.md
     - Social science: packs/social_science.md
     - Economics: packs/economics.md
