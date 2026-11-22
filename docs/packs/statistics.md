@@ -25,9 +25,11 @@ the statistic as reported and at the ends of its rounding, as statcheck does:
 $ veriphy layers step check-p-value t 2.20 .036 --df 28 --claim effect
 check-p-value t: agrees
   found 0.036225, the claim says 0.036 (tolerance 0.0005)
+  record: .veriphy/runs/check-p-value/….json
 $ veriphy layers step check-p-value t 2.20 .01 --df 28
 check-p-value t: differs from the claim
   found 0.036225, the claim says 0.01 (tolerance 0.005)
+  record: .veriphy/runs/check-p-value/….json
 ```
 
 The test is `t`, `F` (with `--df 1,30`), `chi2`, `z` or `r`, and a bound such as `<.001` is accepted when it holds.
@@ -37,6 +39,7 @@ The test is `t`, `F` (with `--df 1,30`), `chi2`, `z` or `r`, and a bound such as
 $ veriphy layers step check-mean 5.19 28
 check-mean 5.19: differs from the claim
   found [5.14, 5.18, 5.21], the claim says 5.19 (tolerance 0)
+  record: .veriphy/runs/check-mean/….json
 ```
 
 Both are evidence about a paper's reporting, not about its claims, so they grant no level.

@@ -86,6 +86,23 @@ result = veriphy.run('sample', 'Claim.lean', declaration='wrong', informal='the 
 result.status, result.outputs['counterexample']['values']   # ('counterexample', {'x': '1'})
 ```
 
+## Commands
+
+These are the commands the `math` pack adds. The [command reference](../overview/commands.md) lists their options.
+
+| Command | Does |
+|---|---|
+| `veriphy layers step check Claim.lean` | Lean checks the file, and the record lists each declaration's axioms |
+| `veriphy layers step sample Claim.lean wrong` | tests the statement of `wrong` at values that meet its hypotheses |
+| `veriphy layers step levels MyProject` | records the level Lean reads for each declaration of the module |
+| `veriphy layers step record-proof Proof.lean --by alice` | records the proof file an agent wrote, with its author |
+| `veriphy pack math certificates list` | lists your saved certificate scripts, with their header fields |
+| `veriphy pack math certificates show <name>` | prints one saved script |
+| `veriphy pack math certificates tests [--rerun <claim>]` | lists the test records with their levels, or reruns one |
+| `veriphy pack math translations list [--all]` | lists the Lean-to-Sage translation entries in force |
+| `veriphy pack math translations show <name>` | prints the entry for a Lean constant or lemma |
+| `veriphy layers agents copy recipes/templates/sos.sage` | copies a recipe's template into `.veriphy/certificates/` |
+
 ## Levels
 
 | Level | Class | What was checked | Builds without Sage |

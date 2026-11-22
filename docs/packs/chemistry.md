@@ -19,12 +19,15 @@ packs: [chemistry]
 $ veriphy layers step check-molecule "CC(=O)Oc1ccccc1C(=O)O" --formula C9H8O4 --mass 180.2
 check-molecule CC(=O)Oc1ccccc1C(=O)O: accepted
   level: structure-checked (checker)
+  record: .veriphy/runs/check-molecule/….json
 $ veriphy layers step check-reaction "2 [H][H] + O=O >> 2 O"
 check-reaction 2 [H][H] + O=O >> 2 O: accepted
   level: structure-checked (checker)
+  record: .veriphy/runs/check-reaction/….json
 $ veriphy layers step check-reaction "[H][H] + O=O >> O"
 check-reaction [H][H] + O=O >> O: refused
   why: O: 2 on the left, 1 on the right
+  record: .veriphy/runs/check-reaction/….json
 ```
 
 The formula is in Hill order, and the mass, in g/mol, agrees when it rounds to the figure given. A reaction is

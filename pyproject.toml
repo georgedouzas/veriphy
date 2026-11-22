@@ -30,7 +30,7 @@ classifiers = [
 # The claim graph is part of every install: pyoxigraph, pyshacl and rdflib. Its Horn reasoner, open-ontologies-lite,
 # comes from the pinned Open Ontologies release on first use, because its PyPI release lacks the reasoner.
 dependencies = [
-    "click>=8.1",
+    "click>=8.5",
     "jsonschema>=4.17",
     "pyoxigraph>=0.5,<0.6",
     "pyshacl>=0.26",
@@ -141,9 +141,10 @@ select = ["C", "E", "F", "W", "B", "I", "D", "N", "UP", "YTT", "ANN", "S",
 "docs/examples/*" = ["ANN", "D", "B018"]
 "docs/generated/*" = ["ANN", "D"]
 "test_*" = ["ANN", "PLR2004"]
-# The places the tests start a process: Lean on emitted text, and git for graph plans.
+# The places the tests start a process: Lean on emitted text, git for graph plans, and the docs' console sessions.
 "tests/toolkit/conftest.py" = ["S603", "S404"]
 "tests/graph/conftest.py" = ["S603", "S404"]
+"tests/docs/sessions.py" = ["S603", "S404"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -186,8 +187,8 @@ DEP001 = ["sage", "cvxopt", "sympy", "numpy", "open_ontologies_lite"]
 DEP003 = ["numpy"]
 
 [tool.bandit]
-# The places the tests start a process: Lean on emitted text, and git for graph plans.
-exclude_dirs = ["tests/toolkit/conftest.py", "tests/graph/conftest.py", "src/veriphy/packs/math/lean/.lake"]
+# The places the tests start a process: Lean on emitted text, git for graph plans, and the docs' console sessions.
+exclude_dirs = ["tests/toolkit/conftest.py", "tests/graph/conftest.py", "tests/docs/sessions.py", "src/veriphy/packs/math/lean/.lake"]
 # Read by the checks nox session, which passes `-c pyproject.toml`. B101 is the
 # bandit counterpart of the ruff S101 ignore above: asserts are how tests assert.
 skips = ["B101"]

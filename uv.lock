@@ -4270,7 +4270,7 @@ requires-dist = [
     { name = "biopython", marker = "extra == 'all'", specifier = ">=1.84" },
     { name = "biopython", marker = "extra == 'genomics'", specifier = ">=1.84" },
     { name = "biopython", marker = "extra == 'life-sciences'", specifier = ">=1.84" },
-    { name = "click", specifier = ">=8.1" },
+    { name = "click", specifier = ">=8.5" },
     { name = "einsteinpy", marker = "extra == 'all'", specifier = ">=0.5" },
     { name = "einsteinpy", marker = "extra == 'general-relativity'", specifier = ">=0.5" },
     { name = "flavio", marker = "extra == 'all'", specifier = ">=2.7" },

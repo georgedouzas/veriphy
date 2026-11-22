@@ -5,12 +5,14 @@ from collections import deque
 from dataclasses import dataclass, replace
 from pathlib import Path
 
+import yaml
+
 from veriphy.claims._checks import clashes
 from veriphy.claims._levels import claim_levels, own_level
 from veriphy.claims._reasoning import Run, reason
 from veriphy.claims._store import ProjectGraph, graph_dir, load_graph
 from veriphy.claims._vocabulary import AXIOM, SAME_AS, label_of, source_of, vp
-from veriphy.core import GraphError
+from veriphy.core import WORKSPACE_FILE, GraphError
 from veriphy.primitives.graph._engine import Triple
 from veriphy.primitives.graph._process import find_tool, run_process
 
@@ -144,8 +146,22 @@ def graph_at(root: Path, revision: str, workspace: Path) -> ProjectGraph:
         target = workspace / Path(name).relative_to(prefix)
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(_git(root, 'show', f'{revision}:{name}'))
-    (workspace / 'lakefile.toml').write_text('')
+    _copy_config(root, workspace)
     return load_graph(workspace)
+
+
+def _copy_config(root: Path, workspace: Path) -> None:
+    """Give the copy the working workspace's packs, with local pack paths made absolute, so both use one order."""
+    config = root / WORKSPACE_FILE
+    if not config.is_file():
+        (workspace / 'lakefile.toml').write_text('')
+        return
+    declared = yaml.safe_load(config.read_text()) or {}
+    packs = declared.get('packs', [])
+    if isinstance(packs, list):
+        local = [str(p) for p in packs if '/' in str(p) or str(p).startswith('.')]
+        declared['packs'] = [str((root / str(p)).resolve()) if str(p) in local else p for p in packs]
+    (workspace / WORKSPACE_FILE).write_text(yaml.safe_dump(declared))
 
 
 def _consequences(graph: ProjectGraph, run: Run) -> set[Triple]:

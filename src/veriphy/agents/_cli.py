@@ -44,8 +44,11 @@ def assets_dir() -> Path:
     return Path(__file__).resolve().parents[1] / 'packs' / 'math' / 'lean' / ASSETS
 
 
-def entries() -> dict[str, Path]:
-    """Return every playbook, recipe, template and asset, keyed by its name relative to the content directory.
+def entries(pack: str = 'math') -> dict[str, Path]:
+    """Return a pack's playbooks, recipes, templates and assets, keyed by their names relative to its content directory.
+
+    Args:
+        pack: The pack, `math` by default, the only one with recipe assets.
 
     Returns:
         The files, keyed by names such as `prove.md`, `recipes/templates/sos.sage` and
@@ -57,21 +60,25 @@ def entries() -> dict[str, Path]:
         True
         >>> 'assets/VeriphyAssets/FusionData.lean' in names
         True
+        >>> list(entries('statistics'))
+        ['reproduce.md', 'skills/reproduce/SKILL.md']
     """
-    base, assets = content_dir(), assets_dir()
+    base, assets = content_dir(pack), assets_dir()
     found = {
         p.relative_to(base).as_posix(): p
         for p in base.rglob('*')
         if p.suffix in SUFFIXES and p.is_file() and ASSETS not in p.relative_to(base).parts
     }
+    if pack != 'math':
+        return dict(sorted(found.items()))
     shipped = assets / 'VeriphyAssets'
     found |= {f'{ASSETS}/{p.relative_to(assets).as_posix()}': p for p in shipped.rglob('*.lean') if p.is_file()}
     return dict(sorted(found.items()))
 
 
-def _resolve(name: str) -> tuple[str, Path]:
+def _resolve(name: str, pack: str = 'math') -> tuple[str, Path]:
     """Return the entry a name denotes, with the extension optional, or exit naming the closest matches."""
-    known = entries()
+    known = entries(pack)
     matches = [key for key in known if name in (key, key.rsplit('.', 1)[0])]
     if len(matches) == 1:
         return matches[0], known[matches[0]]
@@ -81,7 +88,7 @@ def _resolve(name: str) -> tuple[str, Path]:
         stems = {key.rsplit('.', 1)[0]: key for key in known}
         close = difflib.get_close_matches(name, list(stems), n=3)
         message = f"no playbook, recipe, template or asset named '{name}'"
-        message += f"; closest: {', '.join(stems[c] for c in close)}\n" if close else '\n'
+        message += f'; closest: {", ".join(stems[c] for c in close)}\n' if close else '\n'
     sys.stderr.write(message)
     raise SystemExit(NOT_FOUND)
 
@@ -120,17 +127,19 @@ def path(pack: str) -> None:
     sys.stdout.write(f'{content_dir(pack)}\n')
 
 
-@agents.command(name='list', help='list every playbook, recipe, template and asset')
-def list_entries() -> None:
-    """List every entry by name."""
-    sys.stdout.write(''.join(f'{key}\n' for key in entries()))
+@agents.command(name='list', help="list a pack's playbooks, recipes, templates and assets")
+@click.option('--pack', default='math', help='the pack (default: math)')
+def list_entries(pack: str) -> None:
+    """List a pack's entries by name."""
+    sys.stdout.write(''.join(f'{key}\n' for key in entries(pack)))
 
 
-@agents.command(help='print one file')
+@agents.command(help="print one of a pack's files")
 @click.argument('name')
-def show(name: str) -> None:
+@click.option('--pack', default='math', help='the pack (default: math)')
+def show(name: str, pack: str) -> None:
     """Print one entry."""
-    sys.stdout.write(_resolve(name)[1].read_text())
+    sys.stdout.write(_resolve(name, pack)[1].read_text())
 
 
 @agents.command(help='copy a template or an asset into the workspace')

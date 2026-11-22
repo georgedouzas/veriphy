@@ -34,11 +34,12 @@ The chapter reports that each extra year of education raises social trust by 0.1
 published script and data, naming the data's digest so that no other data is used:
 
 ```console
-$ veriphy layers step reproduce analysis.py survey.csv --sha256 9eeed72a… --claimed 0.127 --claim trust-education
+$ veriphy layers step reproduce analysis.py survey.csv --claimed 0.127 --claim trust-education \
+    --sha256 9eeed72a5abde165e1d8246e634401a5eb82d76a5672a900b739196a2dd4f10a
 reproduce analysis.py: agrees
-  found 0.1265132608543874, the claim says 0.127 (tolerance 0.0005)
+  found 0.126513, the claim says 0.127 (tolerance 0.0005)
   level: reproduced (reproduction)
-  record: .veriphy/runs/reproduce/39da61d5….json
+  record: .veriphy/runs/reproduce/….json
 ```
 
 The paper reports a rounded figure, so the estimate agrees when it rounds to it: the tolerance is half a unit in the
@@ -50,6 +51,7 @@ $ veriphy layers step robustness analysis.py survey.csv \
     --variation "trust_index ~ education_years + income" --claim trust-education
 robustness analysis.py: robust under every variation
   level: robust (reproduction)
+  record: .veriphy/runs/robustness/….json
 ```
 
 `robust` means the estimate keeps its sign and stays significant at 5% under every variation. Otherwise the result is
@@ -63,6 +65,7 @@ The trust index is the mean of three items. The chapter reports its reliability,
 $ veriphy layers step check-reliability survey.csv --item trust_q1 --item trust_q2 --item trust_q3 --claimed 0.76
 check-reliability survey.csv: agrees
   found 0.75618, the claim says 0.76 (tolerance 0.005)
+  record: .veriphy/runs/check-reliability/….json
 ```
 
 Reliability is evidence about the measure, not about a claim, so it grants no level.
@@ -76,13 +79,16 @@ claim graph, a construct is a `vp:Concept`, linked by `owl:sameAs` to a concept 
 :social-trust a vp:Concept ; owl:sameAs <https://example.org/thesaurus/social-trust> .
 ```
 
-`check-concepts`, which every workspace has, checks that every construct names a concept the thesaurus defines, and reports the thesaurus's label
-for each:
+`check-concepts`, which every workspace has, checks that every construct names a concept the thesaurus defines, and
+reports the thesaurus's label for each. It reads the constructs from the claim graph, so put the chapter's claims in
+place first:
 
 ```console
+$ mkdir -p .veriphy/graph/sources && mv chapter3.agent.ttl .veriphy/graph/sources/
 $ veriphy layers step check-concepts thesaurus.ttl
 check-concepts thesaurus.ttl: conforms
   concepts: education is "educational attainment"; social-trust is "social trust"
+  record: .veriphy/runs/check-concepts/….json
 ```
 
 The thesaurus is any SKOS file: an excerpt of [ELSST](https://elsst.cessda.eu), the thesaurus of the European social
@@ -110,8 +116,9 @@ trust-index excludes trust-single-item
 wrote 1 triples as human assertions
 $ veriphy layers step reason
 reason: entailed: oo-horn accepted the derivation
+  record: .veriphy/runs/reason/….json
 $ veriphy layers claims clashes
-1 clashes (run e4546f587119: entailed):
+1 clash (run …: entailed):
 - policy assumes trust-index and trust-single-item
 ```
 
@@ -124,11 +131,15 @@ The pack also declares two aspects of its own: `identification` (`parallel-trend
 
 ```console
 $ veriphy layers claims levels --source chapter3
+Run …: entailed
+
 | claim | own | effective | capped by | Lean |
 |---|---|---|---|---|
 | policy | none | none |  |  |
 | trust-education | robust (reproduction) | robust (reproduction) |  |  |
 | trust-item | none | none |  |  |
+
+robust: 1, reproduced: 0, recomputed: 0, none: 2
 ```
 
 Both levels are of the `reproduction` trust class, so every report shows `robust (reproduction)`, never a proof.

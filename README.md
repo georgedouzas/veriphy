@@ -1,91 +1,55 @@
 # Veriphy
 
-Veriphy checks the claims in your work, keeps a record of every check, and tells you how far each claim is verified.
+Veriphy checks the claims in research papers, and keeps a record of every check.
 
-A claim can be a theorem, an estimate from a regression, a number in a table, or a quotation. Veriphy checks it with
-the right tool: Lean for a proof, the authors' own script for an analysis, a short function for a statistic. It records
-what was checked and what came out, and gives the claim a level such as `lean-proof`, `reproduced` or `none`. Every
-level says what kind of evidence stands behind it, so a reproduced estimate never reads as a proof.
-
-Agents can do the writing: a formal statement, a proof, the list of claims in a paper. Veriphy checks what they write.
-Lean refuses a wrong proof, and sampling a statement catches one that doesn't say what was meant.
-
-## An example
-
-A study reports that each extra year of education raises social trust by 0.127 points. With its script and data:
+A paper says "each extra year of education raises social trust by 0.127 points", or "this formula has consistent
+units", or "this theorem holds". Veriphy runs the right check for each claim: the authors' own script on their data, a
+units checker, or Lean for a proof. It records what it ran and what came out. Then it tells you how far each claim is
+verified, and by what kind of evidence.
 
 ```console
 $ veriphy layers step reproduce analysis.py survey.csv --claimed 0.127 --claim trust-education
 reproduce analysis.py: agrees
-  found 0.1265132608543874, the claim says 0.127 (tolerance 0.0005)
+  found 0.126513, the claim says 0.127 (tolerance 0.0005)
   level: reproduced (reproduction)
-  record: .veriphy/runs/reproduce/39da61d5….json
+  record: .veriphy/runs/reproduce/3ac5….json
 ```
 
-Run it again and nothing reruns: the inputs haven't changed, so Veriphy returns the record it has. Change the data or
-the script, and the step runs again.
+The authors' script gives 0.126513, which rounds to the 0.127 the paper reports. The claim's *level* is now
+`reproduced`: the same number came out of the same code and data. That is weaker than a proof, and Veriphy never
+presents it as one.
 
-## Packs
+## What it checks
 
-Each field Veriphy checks comes as a pack: a directory whose `pack.yaml` declares the field's tools, steps, levels,
-conventions and workflows, with its agents' playbooks beside it. Each checks claims with its field's standard
-libraries, and subfield packs build on field packs:
+Checks are grouped by field, in *packs*. You choose the packs a project uses.
 
-| Pack | Checks | With |
+| Field | Checks | Uses |
 |---|---|---|
-| `math` | mathematics in Lean: proofs, with SageMath to find them, and statements, by sampling them | Lean, SageMath |
-| `number-theory`, `group-theory`, `graph-theory` | factorizations and class numbers; finite groups; graph invariants, nested in `math` | PARI, GAP, Sage |
-| `statistics` | an analysis rerun from its own script and data, its robustness, reported p-values and means | pandas, SciPy, statsmodels |
-| `social-science` | a study's scales and constructs, over `statistics` | pingouin |
-| `economics`, `econometrics` | a paper's tables, and its regressions: OLS, IV, panel | pandas, linearmodels |
-| `epidemiology` | hazard ratios and median survival | lifelines |
-| `physics` | a formula's dimensions, and constants against CODATA | pint, SciPy |
-| `particle-physics` | flavour predictions, running Wilson coefficients, PDG values | flavio, wilson, particle |
-| `general-relativity` | the curvature claimed of a metric | EinsteinPy, SymPy |
-| `life-sciences`, `genomics` | sequences and ontology terms; variant calls and read depth | Biopython, pronto, pysam |
-| `chemistry` | molecules and reactions | RDKit |
+| Mathematics | proofs, and whether a statement says what was meant | Lean, SageMath, PARI, GAP |
+| Statistics | an analysis rerun from its script and data, its robustness, reported p-values and means | pandas, SciPy, statsmodels |
+| Social science | the reliability of survey scales | pingouin |
+| Economics | statistics of published tables, and regressions: OLS, IV, panel | pandas, linearmodels |
+| Epidemiology | hazard ratios and median survival | lifelines |
+| Physics | the units of a formula, physical constants, flavour predictions, curvature of a metric | pint, SciPy, flavio, EinsteinPy |
+| Life sciences | sequences, ontology terms, variant calls and read depth | Biopython, pronto, pysam |
+| Chemistry | molecules and reactions | RDKit |
 
-Every workspace also has the claim graph, which is part of Veriphy rather than a pack. It records what each claim
-rests on and which conventions it assumes, finds the weakest link, and reports clashes. Its reasoning is checked by
-[`oo-horn`](https://github.com/fabio-rovai/open-ontologies).
-
-A workspace chooses its packs in `veriphy.yaml`; without one, it uses `math`:
-
-```yaml
-version: 1
-packs: [social-science]
-```
-
-A field Veriphy doesn't cover yet needs a pack, often a few dozen lines of YAML and a short function. The
-[guide to packs](https://georgedouzas.github.io/veriphy/packs/) walks through one, and through combining packs.
+Veriphy also checks how a paper's claims fit together. It finds the weakest claim under each conclusion, and the
+conclusions that rest on incompatible assumptions.
 
 ## Install
 
 ```sh
-pip install 'veriphy[statistics]'     # a pack's libraries come with its extra; veriphy[all] installs every one
+pip install 'veriphy[statistics]'   # or the extra of another field; veriphy[all] installs every one
 ```
 
-For the `math` pack, install into SageMath's Python instead (`sage -pip install veriphy`), and require Veriphy's Lean
-library in your Lean project's `lakefile.toml`:
-
-```toml
-[[require]]
-name = "veriphy"
-git = "https://github.com/georgedouzas/veriphy"
-rev = "0.8.0"
-subDir = "src/veriphy/packs/math/lean"
-```
-
-In Claude Code, the skills `/veriphy:prove`, `/veriphy:research` and `/veriphy:reproduce` run the same commands for you:
-
-```sh
-claude plugin marketplace add https://github.com/georgedouzas/veriphy
-claude plugin install veriphy@veriphy
-```
+Mathematics needs SageMath and Lean: see [installation](https://georgedouzas.github.io/veriphy/overview/install/).
 
 ## Learn more
 
-- [Getting started](https://georgedouzas.github.io/veriphy/overview/getting_started/): a first session with each pack
-- [Guide](https://georgedouzas.github.io/veriphy/overview/user_guide/): records, levels, workflows and the claim graph
-- [Packs](https://georgedouzas.github.io/veriphy/packs/): choosing, combining and writing packs
-- [Reference](https://georgedouzas.github.io/veriphy/overview/reference/): every command and every `pack.yaml` field
+- [Getting started](https://georgedouzas.github.io/veriphy/overview/getting_started/): a ten-minute tour
+- [Tutorial](https://georgedouzas.github.io/veriphy/overview/tutorial/): every command on one example study
+- [User guide](https://georgedouzas.github.io/veriphy/overview/user_guide/): how checks, records, levels, workflows and
+  the claim graph work
+- [Packs](https://georgedouzas.github.io/veriphy/packs/): each field's checks, and how to write your own
+- [Commands](https://georgedouzas.github.io/veriphy/overview/commands/): every command and option

@@ -197,9 +197,10 @@ def clash_report(found: tuple[Clash, ...], run: Run) -> str:
     """
     if not found:
         return (
-            f'No clash (run {run.directory.name}: {run.label}). The absence of a clash is the reasoner\'s result, not '
+            f"No clash (run {run.directory.name}: {run.label}). The absence of a clash is the reasoner's result, not "
             'a checked conclusion.\n'
         )
-    lines = [f'{len(found)} clashes (run {run.directory.name}: {run.label}):']
+    noun = 'clash' if len(found) == 1 else 'clashes'
+    lines = [f'{len(found)} {noun} (run {run.directory.name}: {run.label}):']
     lines += [f'- {label_of(c.node)} assumes {label_of(c.first)} and {label_of(c.second)}' for c in found]
     return '\n'.join(lines) + '\n'

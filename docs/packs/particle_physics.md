@@ -24,9 +24,11 @@ $ veriphy layers step check-prediction "BR(Bs->mumu)" 3.66e-9 --uncertainty 0.14
 check-prediction BR(Bs->mumu): agrees
   found 3.62893e-09, the claim says 3.66e-09 (tolerance 3.53738e-10)
   level: prediction-recomputed (reproduction)
+  record: .veriphy/runs/check-prediction/….json
 $ veriphy layers step check-prediction "BR(Bs->mumu)" 2.9e-9 --uncertainty 0.1e-9
 check-prediction BR(Bs->mumu): differs from the claim
   found 3.62893e-09, the claim says 2.9e-09 (tolerance 3.38476e-10)
+  record: .veriphy/runs/check-prediction/….json
 ```
 
 The claim agrees when it is within two combined uncertainties (`--sigmas`) of flavio's prediction: flavio's theory
@@ -38,6 +40,7 @@ $ veriphy layers step check-prediction "BR(Bs->mumu)" 5.6e-9 --coefficient C10_b
 check-prediction BR(Bs->mumu): agrees
   found 5.57993e-09, the claim says 5.6e-09 (tolerance 3.56672e-10)
   level: prediction-recomputed (reproduction)
+  record: .veriphy/runs/check-prediction/….json
 ```
 
 The observable is flavio's name for it; `--arguments 1.1,6` gives a q² bin.
@@ -52,6 +55,7 @@ $ veriphy layers step run-coefficients C9_bsmumu 4.8 --coefficient lq1_2223=1e-8
 run-coefficients C9_bsmumu: agrees
   found -5.65788, the claim says -5.66 (tolerance 0.005)
   level: prediction-recomputed (reproduction)
+  record: .veriphy/runs/run-coefficients/….json
 ```
 
 The starting point is SMEFT in the Warsaw basis at 1000 GeV unless `--scale`, `--eft` and `--basis` say otherwise.
@@ -62,9 +66,11 @@ The starting point is SMEFT in the Warsaw basis at 1000 GeV unless `--scale`, `-
 $ veriphy layers step check-pdg "B(s)0" mass 5366.9
 check-pdg B(s)0: agrees
   found 5366.92, the claim says 5366.9 (tolerance 0.25)
+  record: .veriphy/runs/check-pdg/….json
 $ veriphy layers step check-pdg "B(s)0" mass 5279.3
 check-pdg B(s)0: differs from the claim
   found 5366.92, the claim says 5279.3 (tolerance 0.25)
+  record: .veriphy/runs/check-pdg/….json
 ```
 
 Masses and widths are in MeV, lifetimes in ns; a particle is named as the PDG names it, or by its Monte Carlo number.
