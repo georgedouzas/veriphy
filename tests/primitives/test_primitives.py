@@ -122,10 +122,10 @@ def test_primitives_write_no_records(fake: Registry, tmp_path: Path) -> None:
 
 def test_shipped_packs_declare_every_sage_method() -> None:
     """Give every Sage session method a `sage.*` primitive with both schemas, and the shipped packs their primitives."""
-    registry = load_registry({'core': 'veriphy.packs.core', 'lean': 'veriphy.packs.lean', 'math': 'veriphy.packs.math'})
+    registry = load_registry({'core': 'veriphy.packs.core', 'math': 'veriphy.packs.math'})
     methods = {p.command[1] for p in registry.primitives.values() if p.tool == 'sage'}
-    assert methods == {'ping', 'run', 'run_script', 'meaning', 'test', 'solve', 'symbolic_check', 'matrix_check'}
-    assert {'horn.check', 'shacl.validate', 'lean.check', 'lean.serialize', 'lean.level', 'meaning', 'certify'} <= set(
+    assert methods == {'ping', 'run', 'run_script', 'sample', 'test', 'solve', 'symbolic_check', 'matrix_check'}
+    assert {'horn.check', 'shacl.validate', 'lean.check', 'lean.serialize', 'lean.levels', 'sample', 'certify'} <= set(
         registry.primitives,
     )
     assert (registry.get('certify').parts, registry.get('certify').decides) == (
@@ -133,14 +133,16 @@ def test_shipped_packs_declare_every_sage_method() -> None:
         'lean.check',
     )
     assert registry.get('certify').trust == 'kernel'
-    assert registry.get('meaning').trust == 'oracle'
+    assert registry.get('sample').trust == 'oracle'
     assert registry.get('horn.check').function == 'veriphy.primitives.graph._primitives:horn_check'
 
 
 def test_lean_bridge_starts_the_packs_sage_session() -> None:
     """Keep the Lean bridge's default Sage session command equal to the `math` pack's `sage` tool."""
     run = load_registry().tools['sage'].run
-    bridge = (Path(__file__).resolve().parents[2] / 'lean' / 'Veriphy' / 'Bridge.lean').read_text()
+    bridge = (
+        Path(__file__).resolve().parents[2] / 'src' / 'veriphy' / 'packs' / 'math' / 'lean' / 'Veriphy' / 'Bridge.lean'
+    ).read_text()
     module = run[2].split('|', 1)[1].rstrip('}').split()[1]
     assert f'"{module}"' in bridge
     assert json.dumps('-m') in bridge

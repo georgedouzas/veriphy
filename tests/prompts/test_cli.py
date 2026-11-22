@@ -97,9 +97,8 @@ def test_copy_refuses_a_playbook(tmp_path: Path) -> None:
     assert not (tmp_path / '.veriphy').exists()
 
 
-def test_assets_come_from_the_lean_sources_in_a_checkout() -> None:
-    """Find the assets in the repository's `lean/assets/` when the package holds no copy."""
+def test_assets_come_from_the_math_packs_lean_sources() -> None:
+    """Find the assets in the math pack's Lean sources, where Lake builds them."""
     asset = entries()['assets/VeriphyAssets/FusionData.lean']
-    packaged = content_dir() / 'assets'
     assert asset.is_file()
-    assert asset.is_relative_to(packaged) or asset.parts[-4:-2] == ('lean', 'assets')
+    assert asset.parts[-5:-2] == ('math', 'lean', 'assets')

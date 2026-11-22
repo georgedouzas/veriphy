@@ -24,30 +24,38 @@ acting on a named claim or the project, and `#veriphy help` SHALL list the verbs
 - **THEN** it closes the goal as `veriphy certify "sos.sage"` did, at level `certificate`
 
 #### Scenario: Testing a claim's meaning
-- **WHEN** a file runs `#veriphy meaning wrong` on `∀ x : ℝ, 0 ≤ x → √(x ^ 2) = -x`
-- **THEN** it reports the counterexample at `x := 1` as `#veriphy meaning wrong` did
+- **WHEN** a file runs `#veriphy sample wrong` on `∀ x : ℝ, 0 ≤ x → √(x ^ 2) = -x`
+- **THEN** it reports the counterexample at `x := 1` as `#veriphy sample wrong` did
 
 ### Requirement: Shell command and Python function
-`veriphy <verb> <target> [inputs]` SHALL run the verb's step, the same as `python -m veriphy <verb>`, and
-`veriphy.run(verb, target, **inputs)` SHALL return the same result as a `Result`. `veriphy layers claims`, `veriphy layers agents`,
-`veriphy layers step records`, `veriphy layers primitive`, `veriphy config`, `veriphy pack math certificates` and `veriphy pack math translations` SHALL
-replace the per-module programs.
+`veriphy layers step <verb> <target> [inputs]` SHALL run the verb's step, the same as `python -m veriphy layers step <verb>`, and
+`veriphy.run(verb, target, **inputs)` SHALL return the same result as a `Result`.
 
 #### Scenario: Same result from both
 - **WHEN** `veriphy layers step check Claim.lean` and `veriphy.run("check", "Claim.lean")` run on one file
 - **THEN** both give the same status and the same record
 
 #### Scenario: Help generated from a step
-- **WHEN** a user runs `veriphy layers step meaning --help`
+- **WHEN** a user runs `veriphy layers step sample --help`
 - **THEN** it lists the step's arguments and options, `--seed`, `--values`, `--points` and `--informal` among them
 
 ### Requirement: One click group
-The `veriphy` command SHALL be one click group, whose subcommands the layers and packs contribute, with a command per
-registered step of the workspace.
+The `veriphy` command SHALL be one click group with four commands: `layers`, which holds one group per layer in layer
+order (`primitive`, `step`, `claims`, `workflow`, `agents`); `config`; `pack`, which lists the selected packs and holds
+one group per selected pack that declares programs; and `help`. It SHALL list the layer and pack groups without
+importing their modules.
+
+#### Scenario: The top level
+- **WHEN** a user runs `veriphy --help` with the default config
+- **THEN** it lists `config`, `help`, `layers` and `pack`, and nothing else
+
+#### Scenario: The layers
+- **WHEN** a user runs `veriphy layers --help`
+- **THEN** it lists `primitive`, `step`, `claims`, `workflow` and `agents`, in that order
 
 #### Scenario: A pack's step is a command
-- **WHEN** a workspace uses the `reproduction` pack and a user runs `veriphy --help`
-- **THEN** `reproduce` and `vary` are listed beside the layers' commands
+- **WHEN** a workspace uses the `social-science` pack and a user runs `veriphy layers step --help`
+- **THEN** `reproduce` and `vary` are listed beside the other steps, `list` and `records`
 
 ### Requirement: Script contract
 A script SHALL declare `SCRIPT` with its `name`, the verb it `serves` and its `inputs`, and define
@@ -62,10 +70,22 @@ inline SHALL be the body of `run`, with `goal` and `inputs` bound.
 - **WHEN** a script for `certify` returns `refuted({"x": "2"})`
 - **THEN** the tactic fails, reporting that the goal is false at `x := 2`
 
-### Requirement: Deprecated forms
-`veriphy certify`, `sage_test`, the `#veriphy_*` commands, the step name `elaborate`, the `python -m veriphy.<module>`
-programs and scripts that set `proof` SHALL keep working for one minor release, each warning once with its new form.
+### Requirement: One spelling per operation
+Each operation SHALL have one spelling in each place it runs: `veriphy <verb>` and `#veriphy <verb>` in Lean,
+`veriphy layers step <verb>` in the shell and `veriphy.run` in Python. The removed names SHALL fail as unknown, not run.
 
 #### Scenario: An old tactic
-- **WHEN** a proof runs `veriphy certify "sos.sage"`
-- **THEN** it closes the goal, and a warning says to use `veriphy certify "sos.sage"`
+- **WHEN** a proof runs `sage_run file "sos.sage"`
+- **THEN** Lean reports unknown syntax, and `veriphy certify "sos.sage"` closes the goal
+
+#### Scenario: An old verb
+- **WHEN** a user runs `veriphy layers step elaborate Claim.lean`
+- **THEN** the command fails as an unknown command, listing the steps
+
+#### Scenario: A script that assigns its result
+- **WHEN** a script for `certify` assigns `proof = Lean.tactic("rfl")` and defines no `run`
+- **THEN** the Sage session refuses it, saying to return `found(proof)` from `run(goal, inputs)`
+
+#### Scenario: A request without JSON-RPC
+- **WHEN** the Sage session receives `{"id": 1, "method": "ping"}`
+- **THEN** it answers with the JSON-RPC 2.0 error code -32600 (invalid request)

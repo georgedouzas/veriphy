@@ -2,19 +2,19 @@
 ...@legend
 direction: right
 
-formalize: "formalize\nthe agent writes the statement" {class: agent}
-meaning: "meaning\nseeded values ·\nLean serializes, Sage samples" {class: evidence}
+statement: "record-statement\nthe agent writes the statement" {class: agent}
+sample: "sample\nseeded values ·\nLean serializes, Sage samples" {class: evidence}
 check1: "check\nthe statement elaborates" {class: check}
-prove: "prove\nthe agent writes the proof\n(veriphy certify, recipes)" {class: agent}
+proof: "record-proof\nthe agent writes the proof\n(veriphy certify, recipes)" {class: agent}
 check2: "check\nkernel · axioms" {class: check}
 suspect: "stop: statement-suspect" {shape: oval}
 done: "done\nlevel from the records" {shape: oval}
 
-formalize -> meaning
-meaning -> check1: agrees
-meaning -> suspect: counterexample
-check1 -> formalize: "refused (3 attempts)" {style.stroke-dash: 3}
-check1 -> prove: accepted
-prove -> check2
-check2 -> prove: "refused (5 attempts)" {style.stroke-dash: 3}
+statement -> sample
+sample -> check1: agrees
+sample -> suspect: counterexample
+check1 -> statement: "refused (3 attempts)" {style.stroke-dash: 3}
+check1 -> proof: accepted
+proof -> check2
+check2 -> proof: "refused (5 attempts)" {style.stroke-dash: 3}
 check2 -> done: accepted

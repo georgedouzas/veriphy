@@ -5,7 +5,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from veriphy.core import StepError, level_trust, resolve, workflow_entries
-from veriphy.steps import Record, RecordStore, load_steps, read_record, run_step
+from veriphy.steps import Argument, Record, RecordStore, Step, load_steps, read_record, run_step
+from veriphy.steps._summary import summary
 
 STOP = 'stop'
 # a bound on the entries `next` walks, past which a workflow loops on records that never change
@@ -129,6 +130,57 @@ def next_step(root: Path, workflow: str, target: str) -> Next:
     return _walk(workflow_entries(declared), agents, level_trust(config), _records(root, target))
 
 
+def flag(argument: Argument) -> str:
+    """Return how the command line spells an input: its own flag, or `--name` with dashes."""
+    return argument.flag or '--' + argument.name.replace('_', '-')
+
+
+def _params(step: Step, target: str, given: Mapping[str, object]) -> dict[str, object]:
+    """Return a step's parameters from the workflow's inputs, by each input's name or flag, at its type."""
+    params: dict[str, object] = {}
+    for argument in step.arguments:
+        spelled = flag(argument).removeprefix('--').replace('-', '_')
+        value = given.get(argument.name, given.get(spelled))
+        if value is None:
+            continue
+        values = value if isinstance(value, list) else [value]
+        typed = [argument.type(str(v)) for v in values]
+        params[argument.name] = typed if argument.many else typed[-1]
+    if step.arguments and step.arguments[0].name not in params:
+        params[step.arguments[0].name] = target
+    return params
+
+
+def explain(workflow: str, target: str, planned: Next, steps: Mapping[str, Step]) -> list[str]:
+    """Return what a workflow does next for a target, for a person, with the exact command to type.
+
+    Args:
+        workflow: The workflow's name.
+        target: The target.
+        planned: Its next step, as `next_step` gives it.
+        steps: The workspace's steps.
+
+    Returns:
+        The lines to print.
+    """
+    if planned.step is None:
+        done = planned.reason == 'done'
+        return [f'{workflow} on {target}: ' + ('done' if done else f'stopped: {planned.reason}')]
+    step = steps[planned.step]
+    if planned.agent:
+        return [
+            f'{workflow} on {target}: next is {step.name}, an agent step: {step.help}',
+            '  write the file, then record it:',
+            f'  veriphy layers step {step.name} {target} --by <your name>',
+        ]
+    needed = ''.join(f' {flag(a)} <{a.name}>' for a in step.arguments[1:] if not a.option or a.required)
+    return [
+        f'{workflow} on {target}: next is {step.name}: {step.help}',
+        '  run it, and the steps after it that need no agent:',
+        f'  veriphy layers workflow run {workflow} {target}{needed}',
+    ]
+
+
 def run_workflow(root: Path, workflow: str, target: str, inputs: Mapping[str, object]) -> list[str]:
     """Run a workflow's steps that are not an agent's, in order, until an agent step or the end.
 
@@ -139,7 +191,7 @@ def run_workflow(root: Path, workflow: str, target: str, inputs: Mapping[str, ob
         inputs: The other inputs, by name, each given to the steps that take it.
 
     Returns:
-        One line per step run, and a last line saying what happens next.
+        What each step run did, then what happens next, with the command to type.
 
     Raises:
         StepError: If the workflow neither reaches an agent step nor its end within its bound of steps.
@@ -148,21 +200,12 @@ def run_workflow(root: Path, workflow: str, target: str, inputs: Mapping[str, ob
     lines: list[str] = []
     for _ in range(MAX_STEPS):
         planned = next_step(root, workflow, target)
-        if planned.step is None:
-            return [*lines, f'{workflow}: {planned.reason}']
+        if planned.step is None or planned.agent:
+            return [*lines, *explain(workflow, target, planned, steps)]
         step = steps[planned.step]
-        if planned.agent:
-            first = step.arguments[0].name if step.arguments else 'artifact'
-            return [
-                *lines,
-                f'{workflow}: waiting for {step.name}: record the {first}, as veriphy layers step {step.name} {target}',
-            ]
-        names = [argument.name for argument in step.arguments]
-        params = {name: inputs[name] for name in names if name in inputs}
-        if names and names[0] not in params:
-            params[names[0]] = target
-        result = run_step(step, root, params)
-        lines.append(f'{step.name}: {result.record.status}' + (' (replayed)' if result.replayed else ''))
+        result = run_step(step, root, _params(step, target, inputs))
+        first = step.arguments[0].name if step.arguments else None
+        lines += summary(result, root, first).splitlines()
         if result.replayed:
             # a replayed record keeps the time it was written, older than the workflow's position: its time stamp
             # (not its content) moves to now, so the workflow reads it as this run's

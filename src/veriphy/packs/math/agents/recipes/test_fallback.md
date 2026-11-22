@@ -14,7 +14,7 @@
   proof that depends on `c`, directly or through this module's declarations. A run needs three accepted instances,
   one an edge case (zero, one, the identity, a singular matrix, `n = 0`).
 - The result has a level, and the report names it: `kernel-test` when every accepted instance is kernel-checked,
-  `oracle-test` when some are Sage's alone. `#veriphy level <prefix>` lists every claim's level (`certificate`,
+  `oracle-test` when some are Sage's alone. `#veriphy levels <prefix>` lists every claim's level (`certificate`,
   `lean-proof`, `kernel-test`, `oracle-test`, `none`).
 
 ## Template

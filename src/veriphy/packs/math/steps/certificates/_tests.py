@@ -86,7 +86,7 @@ def _runner() -> Callable[[object, str, int], dict[str, object]]:
     try:
         oracle = importlib.import_module('veriphy.packs.math.primitives.sage.methods')
     except ImportError:
-        command = 'sage -python -m veriphy.packs.math.steps.certificates tests --rerun <target>'
+        command = 'sage -python -m veriphy pack math certificates tests --rerun <target>'
         message = f'rerunning a test needs Sage: run `{command}`'
         raise VeriphyError(message) from None
     runner: Callable[[object, str, int], dict[str, object]] = oracle.run_test_script

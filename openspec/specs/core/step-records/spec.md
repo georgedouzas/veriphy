@@ -11,7 +11,7 @@ input digest, the config digest, the tool versions, the seed when the step is ra
 for check and derived steps, the level it grants. A record SHALL NOT be edited after it is written.
 
 #### Scenario: A level report
-- **WHEN** `python -m veriphy layers step level MyProject` runs in a workspace
+- **WHEN** `python -m veriphy layers step levels MyProject` runs in a workspace
 - **THEN** a record under `.veriphy/runs/level/` lists each declaration with its level, and names the Lean version
 
 #### Scenario: A failure is recorded
@@ -50,17 +50,17 @@ records SHALL carry a level.
 - **THEN** the record has kind `evidence` and no `level` field
 
 ### Requirement: Step command
-`python -m veriphy <step> [arguments]` SHALL run a step and print the record's path and status, or the record itself
-with `--json`. It SHALL exit with status 0 on an accepting status, 1 on a refusal or counterexample, 2 on bad usage
-and 3 on an unchecked result. `python -m veriphy layers step records` SHALL list records and show one by digest.
+`veriphy layers step <step> [arguments]` SHALL run a step and print the record's path and status, or the record itself with
+`--json`. It SHALL exit with status 0 on an accepting status, 1 on a refusal or counterexample, 2 on bad usage and 3
+on an unchecked result. `veriphy layers step records` SHALL list records and show one by digest.
 
 #### Scenario: Machine-readable result
-- **WHEN** an agent runs `python -m veriphy layers step level MyProject --json`
+- **WHEN** an agent runs `veriphy layers step levels MyProject --json`
 - **THEN** it reads the full record from standard output, with no other text
 
 ### Requirement: First steps
 The packs SHALL declare `check` (Lean checks a file and reports each declaration's axioms) and `level` (the levels
-`#veriphy level` reports) in `lean`, and `meaning` in `math`, and the `core` pack SHALL register the Python steps
+`#veriphy levels` reports) in `lean`, and `meaning` in `math`, and the `core` pack SHALL register the Python steps
 `validate` (the graph's shapes), `reason` (graph reasoning with the checker's verdict) and `report` (the verification
 appendix) of `veriphy.claims`. Each SHALL give the same result as before.
 

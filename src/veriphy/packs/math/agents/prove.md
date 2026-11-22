@@ -19,9 +19,8 @@ playbooks ship with the installed `veriphy` package, at the version of its toolk
   provided that library (checked out and building), and a workspace exists
   whose lakefile requires both it and Veriphy. Create one if needed; it is
   disposable.
-- Sage session answers:
-  `echo '{"id":1,"method":"ping"}' | sage -python -m veriphy.packs.math.primitives.sage`
-  (if it is missing: `sage -pip install veriphy`).
+- Sage answers: `veriphy layers primitive run sage.ping --input empty.json`, with `{}` in
+  `empty.json` (if it fails: `sage -pip install veriphy`).
 
 ## Loop
 
@@ -35,7 +34,7 @@ playbooks ship with the installed `veriphy` package, at the version of its toolk
      with the original. Any semantic drift → redo.
    - *Meaning check*: state the claim in a file (as a `theorem … := sorry`, or
      a `def c : Prop := …`) and run
-     `veriphy layers step meaning <file> <declaration> --informal "<your English reading>"`.
+     `veriphy layers step sample <file> <declaration> --informal "<your English reading>"`.
      It evaluates the statement at seeded values satisfying its hypotheses,
      exactly or by intervals, after trying an equation symbolically, and
      records the outcome under `.veriphy/runs/meaning/`. The file must
@@ -50,7 +49,7 @@ playbooks ship with the installed `veriphy` package, at the version of its toolk
        a hypothesis no drawn value satisfies (`x = π`). Give values with
        `--points '[{"x": "pi"}]'`, or say in the report that the statement was
        not tested.
-     `#veriphy meaning c` runs the same check inside Lean.
+     `#veriphy sample c` runs the same check inside Lean.
 
 2. **Compile-fix.** Iterate on compiler errors until the statement type-checks
    with `sorry` as the proof. Use LSP/REPL/`lake build` feedback, never guess

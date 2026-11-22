@@ -1,5 +1,6 @@
 """Test the research playbook: its commands exist, its Turtle templates load, and both skill copies point at it."""
 
+import json
 import re
 import tempfile
 from pathlib import Path
@@ -11,23 +12,25 @@ from veriphy.agents import content_dir
 from veriphy.claims import COMMANDS, load_graph
 from veriphy.steps import load_steps
 
+ROOT = Path(__file__).resolve().parents[2]
+
 
 def _all_steps() -> set[str]:
-    """Return the steps of the default workspace and of a reproduction workspace, which the documents name."""
+    """Return the steps the documents may name: the shipped packs' and the example packs' of the guide."""
+    examples = ROOT / 'docs' / 'examples' / 'packs'
+    packs = ', '.join(['social-science', *(str(p) for p in sorted(examples.iterdir()) if (p / 'pack.yaml').is_file())])
     with tempfile.TemporaryDirectory() as tmp:
-        (Path(tmp) / 'veriphy.yaml').write_text('version: 1\npacks: [reproduction]\n')
+        (Path(tmp) / 'veriphy.yaml').write_text(f'version: 1\npacks: [{packs}]\n')
         return {*load_steps(), *load_steps(Path(tmp))}
 
 
 STEPS = _all_steps()
 
-ROOT = Path(__file__).resolve().parents[2]
 PROMPTS = content_dir()
 DOCUMENTS = [
     PROMPTS / 'research.md',
     *sorted((PROMPTS / 'research').glob('*.md')),
-    ROOT / 'skills' / 'research' / 'SKILL.md',
-    ROOT / '.claude' / 'skills' / 'research' / 'SKILL.md',
+    PROMPTS / 'skills' / 'research' / 'SKILL.md',
     ROOT / 'docs' / 'overview' / 'user_guide.md',
     ROOT / 'README.md',
 ]
@@ -48,14 +51,14 @@ def test_documents_name_real_steps(document: Path) -> None:
     groups = set(re.findall(r'(?<![#\w.-])veriphy (?:--root \S+ )?([a-z]+)', text))
     assert groups <= {'layers', 'config', 'pack', 'help', *LEAN_VERBS}
     assert set(re.findall(r'(?<![#\w.-])veriphy layers ([a-z]+)', text)) <= set(LAYERS)
-    assert set(re.findall(r'(?<![#\w.-])veriphy layers step ([a-z]+)', text)) <= {*STEPS, 'list', 'records'}
+    assert set(re.findall(r'(?<![#\w.-])veriphy layers step ([a-z][a-z-]*)', text)) <= {*STEPS, 'list', 'records'}
 
 
 @pytest.mark.parametrize('playbook', ['prove.md', 'research/triage.md'])
 def test_playbooks_run_the_meaning_step(playbook: str) -> None:
     """Have the formalization step and the triage run the meaning check, and cite its record."""
     text = (PROMPTS / playbook).read_text()
-    assert 'veriphy layers step meaning <file> <declaration> --informal' in text
+    assert 'veriphy layers step sample <file> <declaration> --informal' in text
     assert '.veriphy/runs/meaning/' in text or "record's path" in text or 'path of the record' in text
 
 
@@ -76,13 +79,17 @@ def test_research_templates_exist() -> None:
     assert [p.stem for p in TEMPLATES] == ['extraction', 'triage']
 
 
-@pytest.mark.parametrize('skill', ['prove', 'certify', 'research', 'reproduce'])
-def test_skill_copies_are_identical_and_read_the_package(skill: str) -> None:
-    """Keep the plugin copy and the repository copy of each skill identical, reading the installed playbooks."""
-    plugin, repository = (base / 'skills' / skill / 'SKILL.md' for base in (ROOT, ROOT / '.claude'))
-    text = plugin.read_text()
-    assert text == repository.read_text()
+@pytest.mark.parametrize(
+    ('pack', 'skill'),
+    [('math', 'prove'), ('math', 'certify'), ('math', 'research'), ('social_science', 'reproduce')],
+)
+def test_each_skill_lives_in_its_pack_and_the_plugin_finds_it(pack: str, skill: str) -> None:
+    """Keep each skill in its pack's agents layer, in a directory the plugin manifest names, reading the playbooks."""
+    skills = ROOT / 'src' / 'veriphy' / 'packs' / pack / 'agents' / 'skills'
+    manifest = json.loads((ROOT / '.claude-plugin' / 'plugin.json').read_text())
+    assert f'./{skills.relative_to(ROOT)}' in manifest['skills']
+    text = (skills / skill / 'SKILL.md').read_text()
     assert text.startswith(f'---\nname: {skill}\n')
-    assert 'sage -python -m veriphy layers agents path' in text
+    assert 'veriphy layers agents path' in text
     assert f'<prompts>/{skill}.md' in text
     assert 'VERIPHY_HOME' not in text

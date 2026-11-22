@@ -24,7 +24,7 @@ def test_list_names_each_primitive_with_its_class(capsys: pytest.CaptureFixture[
 
 def test_describe_a_composite(capsys: pytest.CaptureFixture[str]) -> None:
     """Describe a composite by its parts, its deciding part and its class."""
-    main(['layers', 'primitive', 'describe', 'meaning'])
+    main(['layers', 'primitive', 'describe', 'sample'])
     description = json.loads(capsys.readouterr().out)
     assert (description['parts'], description['decides'], description['trust']) == (
         ['lean.serialize', 'sage.sample'],

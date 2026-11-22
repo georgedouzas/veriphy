@@ -2,15 +2,15 @@
 
 !!! note "Proposed"
     This page describes the target architecture. It is the reference later changes argue against, and parts of it are
-    not built yet. The [last sections](#from-today-to-the-target) map today's code to it and give the order of work.
+    not built yet. The [last sections](#from-the-earlier-names) map the earlier names to it and give the order of work.
 
 Veriphy verifies, explores and reasons about scientific claims, in any field. It is built in layers. The lowest layer
-holds verification primitives: Lean checking a proof, SageMath computing a value, `oo-horn` checking a graph, R
+holds verification primitives: Lean checking a proof, SageMath computing a value, `oo-horn` checking a graph, a study's own analysis
 running an analysis. Each later layer is built only from the layers below it. Nothing in the core belongs to one
 field: mathematics, Lean included, is a pack, and so is reproducing a statistical analysis.
 
 The diagrams are written in [D2](https://d2lang.com/). Their sources sit next to this page in `diagrams/`, and
-`scripts/render_diagrams.sh` renders them.
+`nox -s diagrams` renders them.
 
 ## Principles
 
@@ -74,17 +74,17 @@ under them, so the top level stays the same as packs are added.
 
 | Verb | Does | Kind |
 |---|---|---|
-| `formalize`, `extract` | the agent writes a statement or the claims of a source | agent |
+| `record-statement`, `record-claims` | the agent writes a statement or the claims of a source | agent |
 | `check` | Lean type-checks a file and reports each declaration's axioms | check |
-| `meaning` | tests a statement at seeded values satisfying its hypotheses | evidence |
+| `sample` | tests a statement at seeded values satisfying its hypotheses | evidence |
 | `search` | a script looks for a candidate certificate | evidence |
 | `certify` | `search`, then Lean checks the proof built from the candidate | check |
 | `test` | checks instances of a statement by computation | evidence or check |
-| `level` | the level of each declaration, from its proof term | derived |
+| `levels` | the level of each declaration, from its proof term | derived |
 | `translate` | a Lean expression to Sage and back | evidence |
 | `export` | the Lean claims of a project, into the claim graph | derived |
-| `validate`, `reason`, `report` | the graph's shapes, its reasoning with `oo-horn`'s verdict, the appendix | evidence, check, derived |
-| `reproduce`, `vary` | reruns an analysis, and runs its declared variations | evidence |
+| `validate`, `reason`, `appendix` | the graph's shapes, its reasoning with `oo-horn`'s verdict, the appendix | evidence, check, derived |
+| `reproduce`, `robustness` | reruns an analysis, and runs its declared variations | check |
 
 A pack adds verbs. A verb is a step's name, and `veriphy help` lists the verbs of the workspace.
 
@@ -107,7 +107,7 @@ def run(goal: Goal, inputs: dict) -> Result:
     return found(calc_chain(term(lhs.text), chain, problem))
 ```
 
-An R script has the same shape: `run <- function(data, inputs) result(estimate = ..., se = ...)`. The header is the
+An analysis script has the same shape: `run(data, inputs)` returns `{'estimate': ..., 'se': ...}`. The header is the
 script's input schema, so a script is a primitive with no other code. `veriphy.script` is the one library scripts
 import, and each pack adds its helpers under it (`veriphy.script.algebra`, `veriphy.script.lie`,
 `veriphy.script.stats`).
@@ -131,17 +131,17 @@ layer reads only its own registry.
 
 ![A primitive](diagrams/primitive.svg)
 
-A **primitive** is one typed operation, with schemas and a trust class: `lean.check`, `lean.serialize`, `lean.level`,
+A **primitive** is one typed operation, with schemas and a trust class: `lean.check`, `lean.serialize`, `lean.levels`,
 `sage.sample`, `sage.search`, `horn.check`, `shacl.validate`, `r.run`. Veriphy invents no protocol for them. A
 primitive is run in one of two ways:
 
 - **a Python function**, called in-process (`module:function`): everything Veriphy can do in its own interpreter,
   such as SHACL validation, `oo-horn`'s verdict, and Lean through `lake env lean`;
 - **a files tool**: a command, run once per call, that reads its input file and writes one JSON result to `{out}`,
-  such as SageMath (`sage -python -m veriphy.packs.math.primitives.sage call <method>`) or R.
+  such as SageMath (`sage -python -m veriphy.packs.math.primitives.sage call <method>`) or an empirical analysis.
 
 Python keeps no process alive between calls. The one long-lived process is Lean's own: while Lean compiles a file
-that runs `veriphy certify`, `#veriphy test` or `#veriphy meaning`, it keeps one Sage session, a child process it
+that runs `veriphy certify`, `#veriphy test` or `#veriphy sample`, it keeps one Sage session, a child process it
 talks to in JSON-RPC 2.0 over stdin and stdout, so a file with many calls starts Sage once.
 
 ```yaml
@@ -154,7 +154,7 @@ tools:
 primitives:
   sage.sample:
     tool: sage
-    command: [call, meaning, '{input}', '{out}']
+    command: [call, sample, '{input}', '{out}']
     trust: oracle
     input: {type: object, required: [problem], properties: {seed: {type: integer}}}
     output: {type: object, required: [outcome]}
@@ -180,16 +180,16 @@ more than the seconds, since a command runs one or two of them.
 
 ![Composites](diagrams/composite.svg)
 
-A composite primitive is a deterministic composition of primitives, written in a pack's code. `meaning` serializes a
+A composite primitive is a deterministic composition of primitives, written in a pack's code. `sample` serializes a
 Lean statement and has Sage sample it, and `certify` has Sage search for a certificate and Lean check it. A composite
 names the part that **decides**, and its trust class is that part's class. Without a deciding part, its class is the
-lowest class of its parts. So `certify` is `kernel`, because Lean decides, and `meaning` is `oracle`.
+lowest class of its parts. So `certify` is `kernel`, because Lean decides, and `sample` is `oracle`.
 
 ### By hand
 
 `veriphy layers primitive list` names the primitives of the workspace, `describe` prints one's schemas, and
 `run <primitive> --input input.json` runs it and prints its output, with no record. A pack can also surface a
-primitive where its users work: `#veriphy meaning`, `veriphy certify` and `veriphy test` call operations from a Lean
+primitive where its users work: `#veriphy sample`, `veriphy certify` and `veriphy test` call operations from a Lean
 file.
 
 ## Layer 1: steps
@@ -219,9 +219,9 @@ Records live in `.veriphy/runs/<step>/<digest>.json`. Steps are declared, not pr
 
 ```yaml
 steps:
-  meaning:
+  sample:
     kind: evidence
-    primitive: meaning
+    primitive: sample
     inputs:
       file: {scope: lean-imports}
       declaration: {}
@@ -229,7 +229,7 @@ steps:
     seed: true
 ```
 
-A **digest scope** says what content an input stands for. `file` is the file's bytes. The `lean` pack adds
+A **digest scope** says what content an input stands for. `file` is the file's bytes. The `math` pack adds
 `lean-imports`: the file, every workspace file it imports, the toolchain and the manifest. Editing an unrelated file
 then leaves the record valid.
 
@@ -237,10 +237,10 @@ Each step has one of four kinds:
 
 | Kind | Decides | Examples |
 |---|---|---|
-| agent | nothing: it writes an artifact | `formalize`, `extract` |
-| evidence | nothing: it finds candidates or measures | `meaning`, `search`, `test`, `reproduce`, `validate` |
+| agent | nothing: it writes an artifact | `record-statement`, `record-claims` |
+| evidence | nothing: it finds candidates or measures | `sample`, `search`, `test`, `reproduce`, `validate` |
 | check | a trusted primitive accepts or refuses | `check`, `certify`, `reason` |
-| derived | computed from other records | `level`, `report` |
+| derived | computed from other records | `levels`, `appendix` |
 
 ## Layer 2: claims
 
@@ -253,7 +253,7 @@ and the records, and `oo-horn` checks the graph's conclusions.
 |---|---|---|---|
 | `kernel` | a proof checked by a proof assistant's kernel | `lean.check` | `certificate`, `lean-proof`, `kernel-test` |
 | `checker` | a certificate checked by a verified checker | `horn.check` | effective levels in the claim graph |
-| `reproduction` | the same result from pinned code, data and environment | `r.run` (pack) | `reproduced`, `robust` |
+| `reproduction` | the same result from the same code and data | `analysis.run` (`social-science`) | `reproduced`, `robust` |
 | `oracle` | a computation no checker confirmed | `sage.*` | `oracle-test` |
 | `measurement` | a report about the artifacts, not about the claim | `shacl.validate` | none |
 | `search` | candidates only | `sage.search`, any searcher | none |
@@ -271,11 +271,11 @@ the same next step.
 ```yaml
 workflows:
   prove-claim:
-    - formalize
-    - meaning: {counterexample: stop}
-    - check: {refused: formalize, attempts: 3}
-    - prove
-    - check: {refused: prove, attempts: 5}
+    - record-statement
+    - sample: {counterexample: stop}
+    - check: {refused: record-statement, attempts: 3}
+    - record-proof
+    - check: {refused: record-proof, attempts: 5}
 ```
 
 ![Proving a claim](diagrams/prove.svg)
@@ -284,11 +284,12 @@ The same model covers a field with no proofs. Reproducing an empirical claim:
 
 ![Reproducing an analysis](diagrams/reproduce.svg)
 
-1. `extract` records the claim, the dataset it uses and the assumption it rests on.
-2. `reproduce` runs the authors' script on the hashed data in a pinned image, with a fixed seed. It grants
-   `reproduced`, or records both estimates when they differ.
-3. `vary` runs the agreed variations and grants `robust` when the estimate holds.
-4. `reason` has `oo-horn` check the graph. A policy claim that rests on this one is capped at `reproduced`, and a
+1. `record-claims` records the claims an agent extracted: each estimate, its data and the assumption it rests on.
+2. `check-concepts` checks that the constructs the claims use are concepts of a thesaurus.
+3. `reproduce` runs the authors' Python script on their data, with a fixed seed. It grants `reproduced`, or records
+   both estimates when they differ.
+4. `robustness` runs the declared variations and grants `robust` when the estimate holds.
+5. `reason` has `oo-horn` check the graph. A policy claim that rests on this one is capped at `reproduced`, and a
    paper that cites it while assuming the opposite identification assumption is reported as a clash.
 
 ## Layer 4: agents
@@ -301,57 +302,49 @@ formal statement, an extraction, a Sage script, an analysis script. Everything e
 
 ![Configuration](diagrams/config.svg)
 
-A pack is a directory with a `pack.yaml`, plus its schemas, playbooks and assets, and code in its own module when it
-needs any. A name in `packs` is an installed pack (the `veriphy.packs` entry point), and a path is a local directory.
-A pack lists the packs it needs, and they are loaded first.
+A pack brings one field: a directory with a `pack.yaml`, plus its schemas, playbooks and assets, and code in its own
+module when it needs any. A name in `packs` is a shipped pack or an installed one (the `veriphy.packs` entry point), and
+a path is a local directory. A pack lists the packs it builds on, and they are loaded first.
 
-| Pack | Needs | Adds |
+Veriphy's own entries (the record store, the claim graph, `oo-horn`, `shacl.validate`, the level `none`, the agent
+steps, `validate`, `reason` and `appendix`) are declared by a framework pack that every workspace has and none chooses.
+
+| Pack | Field | Adds |
 |---|---|---|
-| `core` | | the record store, the claim graph, `oo-horn`, `shacl.validate`, the level `none`, `reason` and `report` |
-| `lean` | `core` | the Lean session, `lean.check`, `lean.serialize`, `lean.level`, `check`, `level`, `lean-proof`, `lean-imports` |
-| `math` | `lean` | SageMath, its script helpers, the recipes, the translation tables, `meaning`, `certify`, `test`, the other three Lean levels, `prove-claim`, `verify-paper`, the `prove`, `certify` and `research` playbooks |
-| `reproduction` | `core` | R, `reproduce`, `vary`, `reproduced`, `robust`, `identification`, `reproduce-analysis`, the `reproduce` playbook |
+| `math` | mathematics in Lean | Lean (`lean.check`, `lean.serialize`, `lean.levels`, the `lean-imports` scope), SageMath, its script helpers, the recipes, the translation tables, `check`, `levels`, `sample`, `certify`, `record-proof`, the four levels from `oracle-test` to `certificate`, `prove-claim`, `verify-paper`, the `prove`, `certify` and `research` skills |
+| `social-science` | studies with data | the authors' Python analysis as a tool, `reproduce`, `robustness`, `check-concepts`, `reproduced`, `robust`, the `identification` and `sampling` conventions, `reproduce-analysis`, the `reproduce` skill |
 
-The resolved config is the core defaults, then each pack after the packs it needs, then the workspace's
+The resolved config is the framework pack, then each chosen pack after the packs it needs, then the workspace's
 `veriphy.yaml`. A later value overrides an earlier one key by key, and `null` removes an entry. With no file, a
-workspace gets `packs: [math]`, which is today's behaviour. A field brings its own pack:
+workspace gets `packs: [math]`. A field brings its own pack; the `economics` example recomputes a statistic:
 
 ```yaml
 version: 1
-packs: [core, ./packs/econ]          # no Lean, no SageMath
-
-tools:
-  r:
-    contract: files
-    run: [Rscript, "{script}", --data, "{data}", --seed, "{seed}", --out, "{out}"]
-    pin: {image: "rocker/r-ver:4.4.1@sha256:5f0c…"}
-
-primitives:
-  r.run:                             # refuses data whose SHA-256 differs from the input's
-    tool: r
-    trust: reproduction
-    input: schemas/run.json
-    output: schemas/estimate.json
-    seed: placeholder
+name: economics
 
 levels:
-  reproduced: {trust: reproduction, above: none}
-  robust: {trust: reproduction, above: reproduced}
+  recomputed: {trust: reproduction, above: none}
+
+primitives:
+  table.mean:
+    function: economics_functions:mean
+    trust: reproduction
+    input: {type: object, required: [data, column]}
+    output: {type: object, required: [status, mean]}
 
 steps:
-  reproduce:
-    kind: evidence
-    primitive: r.run
-    inputs: {script: {scope: file}, data: {scope: file}, sha256: {}, claimed: {}}
-    seed: true
-    compare: {field: estimate, against: claimed, tolerance: 1e-6}
-    grants: reproduced
-
-conventions:
-  identification: [parallel-trends, no-parallel-trends]
+  recompute:
+    kind: check
+    primitive: table.mean
+    grants: recomputed
+    compare: {field: mean, against: claimed, tolerance: 0.005}
+    inputs:
+      data: {scope: file, path: true}
+      column: {}
+      claimed: {type: number, optional: true, record: true}
 
 workflows:
-  reproduce-analysis: [extract, validate, reproduce, vary, reason, report]
+  check-table: [record-claims, recompute]
 ```
 
 `veriphy config check` refuses a config that breaks a rule:
@@ -385,18 +378,18 @@ veriphy/
   workflows/       3  next, run                                             veriphy layers workflow next | run
   agents/          4  the playbook loader                                   veriphy layers agents path
   packs/
-    core/          pack.yaml declaring the built-ins
-    lean/          primitives/lean  steps
-    math/          primitives/sage  primitives/translations  script  steps/certificates  agents (all playbooks)
-    reproduction/  primitives/r  steps  claims  workflows  agents
+    core/            the framework pack: pack.yaml declaring the built-ins, and claims/ registering their steps
+    math/            lean/ (the Lean library and its Lake files)  primitives/lean  primitives/sage
+                     primitives/translations  script  steps  agents (playbooks, recipes, skills)
+    social_science/  primitives (the analysis runner)  claims (check-concepts)  agents (playbook, skill)
 ```
 
 A pack has a `pack.yaml` and the same layer subpackages, only those it needs. A pack's code at layer k imports only
 Veriphy's layers up to k. What every workspace needs (the claim graph, its reasoning, `oo-horn`) lives in the layer
-modules, and the `core` pack only declares it. A step's code lives at the highest layer it needs, `report` in
+modules, and the framework pack only declares it. A step's code lives at the highest layer it needs, `appendix` in
 `veriphy.claims` for instance, and registers itself, so the step runner never imports a layer above it. The Lean library
-in `lean/` holds the Lean side of the `lean` and `math` packs: the `veriphy` tactic, the `#veriphy` command and the
-bridge to the Sage session.
+in the math pack's `lean/` directory holds the Lean side of the pack: the `veriphy` tactic, the `#veriphy` command and
+the bridge to the Sage session.
 
 | Module | Layer | Public surface |
 |---|---|---|
@@ -418,9 +411,9 @@ The names before 0.8 are removed, each in favour of one name:
 |---|---|
 | `sage_run "script"`, `sage_run file "…"` | `veriphy certify "…"` |
 | `sage_test …` | `#veriphy test …` |
-| `#veriphy_meaning`, `#veriphy_levels`, `#veriphy_graph` | `#veriphy meaning`, `#veriphy level`, `#veriphy export` |
+| `#veriphy_meaning`, `#veriphy_levels`, `#veriphy_graph` | `#veriphy sample`, `#veriphy levels`, `#veriphy export` |
 | `#veriphy_translate`, `#veriphy_tables`, `#veriphy_coverage`, `#veriphy_check_translations` | `#veriphy translate`, `#veriphy translations`, `#veriphy coverage`, `#veriphy translations check` |
-| `python -m veriphy elaborate`, `level`, `meaning` | `veriphy layers step check`, `veriphy layers step level`, `veriphy layers step meaning` |
+| `python -m veriphy elaborate`, `level`, `meaning` | `veriphy layers step check`, `veriphy layers step levels`, `veriphy layers step sample` |
 | `python -m veriphy.graph …` | `veriphy layers claims …` |
 | `python -m veriphy.prompts path` | `veriphy layers agents path` |
 | Sage scripts setting `proof` from injected globals | scripts with a header and `run(goal, inputs)` |
@@ -431,10 +424,10 @@ The names before 0.8 are removed, each in favour of one name:
 | `veriphy.prompts` | `veriphy.agents`, with the playbooks in the `math` pack, research included, since it proves in Lean |
 | the record store in `veriphy.core` | `veriphy.steps` |
 | Sage session and its own JSON-per-line protocol | JSON-RPC 2.0, with each Sage method a `sage.*` primitive |
-| `oo-horn` pinned by commit and hash | the pinning rule every tool follows, in the `core` pack |
+| `oo-horn` pinned by commit and hash | the pinning rule every tool follows, in the framework pack |
 | step records with hand-written Python steps | steps declared over primitives |
 | a Lean step's digest over every Lean file | the `lean-imports` digest scope |
-| five fixed levels | levels contributed by the `lean`, `math` and other packs, each with a trust class |
+| five fixed levels | levels contributed by the field packs, each with a trust class |
 | playbooks in prose | workflows as data, with thin skills |
 
 The old names keep working for one minor release and warn that they are deprecated.
@@ -464,5 +457,5 @@ Each milestone was an OpenSpec change, built from the bottom layer up and archiv
   `veriphy.yaml` and the pack names fix it.
 - **Lean's load time.** Each Lean primitive loads its imports. A workflow with many Lean steps on one file could
   share them through the community REPL, if the time ever matters more than the process it keeps.
-- **Containers.** Pinning R or Stata by image needs a container runtime on the user's machine. A pack could offer a
-  lockfile alternative (`renv`, `conda-lock`) with a weaker pin.
+- **Analysis environments.** The `social-science` pack runs an analysis in Veriphy's own Python. A study with its own
+  dependencies needs its environment pinned too, by a lockfile or an image.

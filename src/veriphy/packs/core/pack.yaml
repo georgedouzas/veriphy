@@ -1,6 +1,5 @@
 version: 1
 name: core
-requires: []
 
 levels:
   # the bottom of the chain: neither proved nor tested
@@ -10,15 +9,15 @@ steps:
   # Python steps of the claims layer, listed here so the configuration names every step
   validate: {code: veriphy.claims}
   reason: {code: veriphy.claims}
-  report: {code: veriphy.claims}
-  formalize:
+  appendix: {code: veriphy.claims}
+  record-statement:
     kind: agent
-    help: record the formal statement an agent wrote, with its author
+    help: record the file holding the formal statement an agent wrote, with its author
     inputs:
       artifact: {scope: file, path: true, help: the file holding the formal statement}
-  extract:
+  record-claims:
     kind: agent
-    help: record the claims an agent extracted from a source, with their author
+    help: record the file holding the claims an agent extracted from a source, with their author
     inputs:
       artifact: {scope: file, path: true, help: the file holding the extracted claims}
 

@@ -20,10 +20,9 @@ stack: "Each module imports only lower layers and veriphy.core" {
   }
   packs: "veriphy.packs.<name>: pack.yaml + the same layer subpackages" {
     class: open
-    grid-columns: 4
-    core: "core\npack.yaml (the built-ins)"
-    lean: "lean\nprimitives/lean · steps"
-    math: "math\nprimitives/sage · primitives/translations\nscript · steps/certificates · agents"
-    reproduction: "reproduction\nprimitives/r · steps · claims\nworkflows · agents"
+    grid-columns: 3
+    core: "core\nthe framework pack: the built-ins"
+    math: "math\nlean/ · primitives/lean · primitives/sage\nprimitives/translations · script · steps · agents"
+    social: "social_science\nprimitives (analysis runner)\nclaims (check-concepts) · agents"
   }
 }

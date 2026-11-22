@@ -5,7 +5,7 @@ The effectiveness gate for the move from ready-made certificate tactics to build
 
 ## Mechanical half
 
-`lean/VeriphyTest/Benchmark.lean` holds all 32 problems the removed tactics (`sage_factor`, `sage_sos`, `sage_lincomb`,
+`src/veriphy/packs/math/lean/VeriphyTest/Benchmark.lean` holds all 32 problems the removed tactics (`sage_factor`, `sage_sos`, `sage_lincomb`,
 `sage_witness`, `sage_sum`, `sage_farkas`, `sage_exists`, `sage_certify`) solved. Each one is closed by running a recipe
 template with `veriphy certify`, with replay on. **32/32 pass.**
 

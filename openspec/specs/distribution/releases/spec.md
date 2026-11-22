@@ -21,7 +21,7 @@ Each release tag SHALL be usable as a Lake dependency revision, through `[[requi
 
 #### Scenario: Sources under lean
 - **WHEN** a Lake project requires a release made after the sources moved, with the same three keys as before
-- **THEN** `lake update && lake build` succeeds without `subDir`, and `import Veriphy` resolves to `lean/Veriphy.lean`
+- **THEN** `lake update && lake build` succeeds without `subDir`, and `import Veriphy` resolves to `src/veriphy/packs/math/lean/Veriphy.lean`
 
 ### Requirement: Release gated by CI
 Publishing (PyPI upload and the GitHub release) SHALL run only after every CI job passes on the tagged commit:

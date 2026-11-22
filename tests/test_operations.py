@@ -36,7 +36,8 @@ def test_run_and_the_shell_give_one_record(tmp_path: Path, capsys: pytest.Captur
         None,
     )
     main(['--root', str(tmp_path), 'layers', 'step', 'echo-operation', 'hello'])
-    assert 'echo-operation: agrees (replayed)' in capsys.readouterr().out
+    assert 'echo-operation hello: agrees' in (out := capsys.readouterr().out)
+    assert 'replayed: its inputs did not change' in out
 
 
 def test_help_lists_the_verbs() -> None:
@@ -44,7 +45,7 @@ def test_help_lists_the_verbs() -> None:
     text = help_text()
     assert 'echo-operation' in text
     assert 'evidence' in text
-    for verb in ('check', 'level', 'meaning', 'claims', 'agents', 'certify', 'translate'):
+    for verb in ('check', 'levels', 'sample', 'claims', 'agents', 'certify', 'translate'):
         assert verb in text
 
 
@@ -64,7 +65,7 @@ def test_one_click_group(tmp_path: Path) -> None:
     """Run every program and operation through one click group, with help generated from each step."""
     assert isinstance(group, click.Group)
     runner = CliRunner()
-    shown = runner.invoke(group, ['--root', str(tmp_path), 'layers', 'step', 'meaning', '--help'])
+    shown = runner.invoke(group, ['--root', str(tmp_path), 'layers', 'step', 'sample', '--help'])
     assert shown.exit_code == 0
     assert all(option in shown.output for option in ('--seed', '--values', '--points', '--informal'))
     (tmp_path / 'veriphy.yaml').write_text('version: 1\npacks: [core]\n')

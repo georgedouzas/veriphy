@@ -10,6 +10,7 @@ from veriphy.core import RecordError, find_workspace_root
 from veriphy.steps._records import RecordStore, read_record
 from veriphy.steps._registry import load_steps, step_packs
 from veriphy.steps._runner import USAGE_EXIT, Argument, Params, Result, Step, exit_code, run_step
+from veriphy.steps._summary import summary
 
 
 def _parameter(argument: Argument) -> click.Parameter:
@@ -52,7 +53,7 @@ def step_command(step: Step, root: Path) -> click.Command:
         except (RecordError, FileNotFoundError, KeyError, ValueError) as exc:
             sys.stderr.write(f'{step.name}: {exc}\n')
             raise SystemExit(USAGE_EXIT) from exc
-        _print(result, as_json)
+        _print(result, as_json, root, step.arguments[0].name if step.arguments else None)
         code = exit_code(result.record.status)
         if code:
             raise SystemExit(code)
@@ -86,14 +87,12 @@ class StepGroup(click.Group):
         return None if step is None else step_command(step, root)
 
 
-def _print(result: Result, as_json: bool) -> None:
-    """Print a step's record, or its status and path."""
+def _print(result: Result, as_json: bool, root: Path, first: str | None) -> None:
+    """Print a step's record as JSON, or say what the step did."""
     if as_json:
         sys.stdout.write(json.dumps(result.record.to_json(), indent=2, sort_keys=True, ensure_ascii=False) + '\n')
         return
-    how = ' (replayed)' if result.replayed else ' (unchanged)' if result.changed is False else ''
-    changed = '\nthe result differs from the earlier record of the same inputs' if result.changed else ''
-    sys.stdout.write(f'{result.record.step}: {result.record.status}{how}\n{result.path}{changed}\n')
+    sys.stdout.write(summary(result, root, first))
 
 
 @click.command(name='records', help='list the records, or show one by its digest')

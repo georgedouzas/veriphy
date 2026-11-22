@@ -43,11 +43,17 @@ The project's own Lean sources and committed proofs SHALL stay where the project
 - **THEN** the replacement stays in that file, and only the script goes into `.veriphy/certificates/`
 
 ### Requirement: Root resolution
-Veriphy SHALL resolve `.veriphy/` against the Lean workspace root: the directory holding the root `lakefile.toml` or `lakefile.lean`. Commands run from a subdirectory SHALL find the same `.veriphy/`. The Python catalogs SHALL search upward from the working directory for the workspace root, and SHALL accept an explicit `--root`.
+Veriphy SHALL resolve `.veriphy/` against the workspace root: the nearest directory, from the working directory
+upwards, holding `veriphy.yaml`, `lakefile.toml` or `lakefile.lean`. Commands run from a subdirectory SHALL find the
+same `.veriphy/`, and every command SHALL accept an explicit `--root`.
 
 #### Scenario: Running from a subdirectory
 - **WHEN** `veriphy pack math certificates list` runs in `Project/Sub/Dir`
 - **THEN** it lists `Project/.veriphy/certificates/`
+
+#### Scenario: A workspace without Lean inside a Lean workspace
+- **WHEN** `Project/analysis/veriphy.yaml` selects `packs: [social-science]` and a command runs in `Project/analysis`
+- **THEN** the workspace root is `Project/analysis`, and its packs are `core` and `reproduction`
 
 ### Requirement: Copied Lean sources build as a library
 Lean files copied into `.veriphy/lean/` SHALL build through a `lean_lib` the project declares with `srcDir := ".veriphy/lean"`. The recipes that copy an asset SHALL give the exact `lakefile` stanza, and the copied files SHALL import mathlib only.
@@ -55,10 +61,3 @@ Lean files copied into `.veriphy/lean/` SHALL build through a `lean_lib` the pro
 #### Scenario: Copying the coordinate-geometry asset
 - **WHEN** a project copies `CoordinateGeometry.lean` into `.veriphy/lean/` and adds the stanza
 - **THEN** its own files can `import CoordinateGeometry`, and `lake build` succeeds
-
-### Requirement: Migration from the 0.1.0 layout
-When a project has a top-level `certificates/` directory of scripts (the 0.1.0 layout) and no `.veriphy/certificates/`, the catalog SHALL still list those scripts, warn that the layout moved, and print the `git mv` command that moves them. `veriphy certify` SHALL keep running scripts by any explicit relative path.
-
-#### Scenario: Old layout
-- **WHEN** `veriphy pack math certificates list` runs in a project with `certificates/anomaly.sage` and no `.veriphy/`
-- **THEN** it lists `anomaly`, warns that scripts belong in `.veriphy/certificates/`, and prints `git mv certificates .veriphy/certificates`

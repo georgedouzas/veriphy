@@ -10,7 +10,7 @@ import yaml
 from veriphy.core._errors import PackError
 
 # Veriphy's own packs; others register under the `veriphy.packs` entry point, naming their package
-BUILTIN_PACKS = ('core', 'lean', 'math', 'reproduction')
+BUILTIN_PACKS = ('core', 'math', 'social-science')
 PACK_FILE = 'pack.yaml'
 
 
@@ -22,9 +22,10 @@ def pack_packages() -> dict[str, str]:
 
     Examples:
         >>> list(pack_packages())[:3]
-        ['core', 'lean', 'math']
+        ['core', 'math', 'social-science']
     """
-    packages = {name: f'veriphy.packs.{name}' for name in BUILTIN_PACKS}
+    # a pack's name may hold a dash, its package an underscore
+    packages = {name: f"veriphy.packs.{name.replace('-', '_')}" for name in BUILTIN_PACKS}
     for entry in entry_points(group='veriphy.packs'):
         packages.setdefault(entry.name, entry.value)
     return packages

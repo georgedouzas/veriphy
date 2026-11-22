@@ -27,18 +27,8 @@ layer-k subpackage SHALL import only Veriphy's layers up to k. A test SHALL enfo
 load every registration before it runs.
 
 #### Scenario: A step from a higher layer
-- **WHEN** `python -m veriphy layers step report` runs
+- **WHEN** `python -m veriphy layers step appendix` runs
 - **THEN** the `report` step registered by `veriphy.claims` runs, and `veriphy.steps` imports no higher layer
-
-### Requirement: Deprecated aliases
-Every module path that existed before this change SHALL keep working for one minor release, exposing the same public
-names as its new module and warning once with `DeprecationWarning`. Old programs (`python -m veriphy.graph`,
-`python -m veriphy.prompts`, `python -m veriphy.certificates`, `python -m veriphy.translations`,
-`python -m veriphy.sage_server`) SHALL run the new ones.
-
-#### Scenario: An old import
-- **WHEN** a Sage script runs `from veriphy.toolkit import Lean`
-- **THEN** it gets the same `Lean` as `veriphy.script`, and a deprecation warning names the new path
 
 ### Requirement: Behaviour unchanged
 Every command, Sage method, Lean tactic and step SHALL behave as before this change.
@@ -46,3 +36,11 @@ Every command, Sage method, Lean tactic and step SHALL behave as before this cha
 #### Scenario: The suite
 - **WHEN** the test suite runs with only its imports updated
 - **THEN** every test passes, and the Lean test suite builds
+
+### Requirement: No old module paths
+The package SHALL contain only the layer modules, the packs and the facades `veriphy`, `veriphy.script` and
+`veriphy.__main__`.
+
+#### Scenario: An old import
+- **WHEN** a script runs `from veriphy.toolkit import Lean`
+- **THEN** it fails with `ModuleNotFoundError`, and `from veriphy.script import Lean` works

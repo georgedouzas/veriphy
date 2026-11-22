@@ -1,9 +1,0 @@
-{
-  "claim": "mpg-weight",
-  "statement": "Each extra 1000 lbs of weight lowers fuel economy by 5.34 miles per gallon (mtcars, linear regression).",
-  "estimate": -5.344472,
-  "script": "analysis.R",
-  "data": "mtcars.csv",
-  "sha256": "450a97ba6b438c6ea5bdf2aaac7eab0ecbbf812b5ff74b56f62dcf0a0c7eb0e5",
-  "variations": ["mpg ~ wt + hp", "mpg ~ wt + cyl", "mpg ~ wt + qsec"]
-}

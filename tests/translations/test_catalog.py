@@ -13,7 +13,17 @@ def main(argv: list[str]) -> None:
     veriphy_main(['pack', 'math', 'translations', *argv])
 
 
-FIXTURES = Path(__file__).resolve().parents[2] / 'lean' / 'VeriphyTest' / 'fixtures' / 'translations'
+FIXTURES = (
+    Path(__file__).resolve().parents[2]
+    / 'src'
+    / 'veriphy'
+    / 'packs'
+    / 'math'
+    / 'lean'
+    / 'VeriphyTest'
+    / 'fixtures'
+    / 'translations'
+)
 
 
 @pytest.fixture

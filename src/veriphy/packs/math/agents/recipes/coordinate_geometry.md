@@ -67,7 +67,7 @@ example : CoordinateGeometry.IsKilling sphere ![fun _ => 0, fun _ => 1] := by
   veriphy certify "proof = killing_proof(unfold=['sphere'])"
 ```
 
-`lean/VeriphyTest/SageRun.lean` also proves every Christoffel symbol of Minkowski space zero, an exact 1-form on ℝ³ with
+`src/veriphy/packs/math/lean/VeriphyTest/SageRun.lean` also proves every Christoffel symbol of Minkowski space zero, an exact 1-form on ℝ³ with
 its primitive, and `F_μν F^μν = 2 (B² - E²)`.
 
 ## Failure modes

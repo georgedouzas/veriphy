@@ -1,7 +1,10 @@
 """Development tasks."""
 
+import json
+import re
 import shlex
 import shutil
+import tempfile
 import tomllib
 from pathlib import Path
 from typing import Any
@@ -16,6 +19,11 @@ nox.options.reuse_existing_virtualenvs = True
 PYTHON_VERSIONS: list[str] = ['3.11', '3.12', '3.13', '3.14']
 
 FILES: list[str] = ['src', 'tests', 'docs', 'noxfile.py']
+# the math pack's Lean workspace, and where its Python copies of the translation tables live
+LEAN = Path('src/veriphy/packs/math/lean')
+TABLES = Path('src/veriphy/packs/math/script')
+DIAGRAMS = Path('docs/architecture/diagrams')
+LEAN_IMPORT = re.compile(r'^import (\S+)$', re.MULTILINE)
 CHANGELOG_ARGS: dict[str, Any] = {
     'repository': '.',
     'convention': 'angular',
@@ -244,3 +252,99 @@ def release(session: nox.Session) -> None:
     session.run('git', 'pull', '--rebase', external=True)
     session.run('git', 'tag', version, external=True)
     session.run('git', 'push', 'origin', version, external=True)
+
+
+@nox.session(python=False)
+def diagrams(session: nox.Session) -> None:
+    """Render the D2 sources of the architecture documentation to the SVG files the docs embed.
+
+    Arguments:
+        session: The nox session.
+    """
+    for source in sorted(DIAGRAMS.glob('*.d2')):
+        # `_style.d2` and `legend.d2` are imported by the diagrams, not diagrams themselves
+        if source.name.startswith('_') or source.name == 'legend.d2':
+            continue
+        session.run(
+            'd2',
+            '--layout',
+            'elk',
+            '--theme',
+            '0',
+            '--pad',
+            '24',
+            str(source),
+            str(source.with_suffix('.svg')),
+        )
+
+
+def _clean(value: object) -> object:
+    """Return a table with its keys sorted and its empty fields dropped, as the Python copies keep it."""
+    if isinstance(value, dict):
+        return {key: _clean(item) for key, item in sorted(value.items()) if item is not None}
+    if isinstance(value, list):
+        return [_clean(item) for item in value]
+    return value
+
+
+@nox.session(python=False)
+def tables(session: nox.Session) -> None:
+    """Regenerate the Python copies of the translation tables from their Lean definitions.
+
+    A Sage-free Lean test, `VeriphyTest.Kit`, fails until the copies match the Lean tables.
+
+    Arguments:
+        session: The nox session.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        program = Path(tmp) / 'Gen.lean'
+        program.write_text(
+            'import Veriphy.Kit.Packs\n'
+            '#eval IO.println (Lean.toJson Veriphy.coreTable).compress\n'
+            '#eval do for p in Veriphy.shippedPacks do IO.println (Lean.toJson p.table).compress\n',
+        )
+        with session.chdir(LEAN):
+            output = session.run('lake', 'env', 'lean', str(program), silent=True, external=True)
+    lines = [json.loads(line) for line in str(output).splitlines() if line.startswith('{')]
+    core, packs = lines[0], lines[1:]
+    targets = [(TABLES / 'core_table.json', core)]
+    targets += [(TABLES / 'packs' / f"{table['namespace']}.json", table) for table in packs]
+    for path, table in targets:
+        path.write_text(json.dumps(_clean(table), indent=2, ensure_ascii=False) + '\n')
+        session.log(f'wrote {path}')
+
+
+def _check_modules(name: str, ordered: list[str]) -> None:
+    """Append a `VeriphyCheck` module after the `VeriphyCheck` modules it imports, each once."""
+    if name in ordered:
+        return
+    for dependency in LEAN_IMPORT.findall(LEAN.joinpath(*name.split('.')).with_suffix('.lean').read_text()):
+        if dependency.startswith('VeriphyCheck'):
+            _check_modules(dependency, ordered)
+    ordered.append(name)
+
+
+@nox.session(python=False)
+def bundle(session: nox.Session) -> None:
+    """Bundle the VeriphyCheck library into one Lean file, `dist/VeriphyCheck.lean`, that imports mathlib only.
+
+    A project that can't depend on Veriphy, such as a mathlib or Physlib contribution, copies the file in to use the
+    checkers.
+
+    Arguments:
+        session: The nox session.
+    """
+    modules: list[str] = []
+    for name in LEAN_IMPORT.findall((LEAN / 'VeriphyCheck.lean').read_text()):
+        _check_modules(name, modules)
+    imports: list[str] = []
+    bodies: list[str] = []
+    for name in modules:
+        source = LEAN.joinpath(*name.split('.')).with_suffix('.lean').read_text()
+        imports += [i for i in LEAN_IMPORT.findall(source) if not i.startswith('VeriphyCheck') and i not in imports]
+        bodies.append(f'/-! ## {name} -/\n\n' + LEAN_IMPORT.sub('', source).strip() + '\n')
+    header = '-- VeriphyCheck, bundled by `nox -s bundle` from the Veriphy repository; imports mathlib only.\n'
+    output = Path('dist') / 'VeriphyCheck.lean'
+    output.parent.mkdir(exist_ok=True)
+    output.write_text(header + ''.join(f'import {i}\n' for i in imports) + '\n' + '\n'.join(bodies))
+    session.log(f'wrote {output}')

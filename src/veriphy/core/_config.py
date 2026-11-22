@@ -1,5 +1,6 @@
 """Resolve a workspace's configuration: its packs in order, then `veriphy.yaml`, as JSON Merge Patches (RFC 7396)."""
 
+import sys
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -12,6 +13,8 @@ from veriphy.core._errors import PackError
 from veriphy.core._packs import PACK_FILE, pack_dir, pack_packages, read_pack
 
 WORKSPACE_FILE = 'veriphy.yaml'
+# the pack that holds the framework's own steps, levels and primitives, applied first in every workspace
+FRAMEWORK_PACK = 'core'
 DEFAULT_PACKS = ('math',)
 DEFAULT = {'version': 1, 'packs': list(DEFAULT_PACKS)}
 # trust classes, lowest first; `measurement` and `search` grant no level, and no pack can add a class
@@ -23,6 +26,32 @@ BUILTIN_SCOPES = ('value', 'file', 'files')
 SECTIONS = ('tools', 'primitives', 'scopes', 'steps', 'levels', 'conventions', 'workflows', 'playbooks', 'commands')
 # the step group's own commands, which no step may take as its name
 RESERVED_STEPS = ('list', 'records')
+# the fields a step and its inputs declare; any other is a typo, such as a comma in an unquoted help text
+STEP_FIELDS = ('kind', 'primitive', 'inputs', 'seed', 'status', 'accepts', 'compare', 'grants', 'help', 'code')
+# the statuses Veriphy knows the meaning of; a tool with other words must say which accept, by `accepts`
+KNOWN_STATUSES = frozenset(
+    {
+        'accepted',
+        'refused',
+        'failed',
+        'agrees',
+        'differs',
+        'counterexample',
+        'undecided',
+        'written',
+        'reported',
+        'conforms',
+        'violations',
+        'entailed',
+        'rejected',
+        'unchecked',
+        'incomplete',
+        'robust',
+        'fragile',
+        'mismatch',
+    },
+)
+INPUT_FIELDS = ('scope', 'path', 'optional', 'type', 'default', 'many', 'record', 'flag', 'help')
 SCHEMA: dict[str, object] = {
     'type': 'object',
     'additionalProperties': False,
@@ -176,6 +205,9 @@ def _find_pack(name: str, root: Path, packages: Mapping[str, str]) -> Pack:
             raise PackError(message)
         declared = yaml.safe_load(path.read_text()) or {}
         validate(declared, str(path))
+        # a local pack's Python (its functions, scopes and steps) imports from its own directory
+        if str(directory) not in sys.path:
+            sys.path.append(str(directory))
         return Pack(str(declared.get('name', directory.name)), directory, None, declared)
     if name not in packages:
         message = f"no pack is named '{name}': the installed packs are {', '.join(packages)}"
@@ -186,7 +218,7 @@ def _find_pack(name: str, root: Path, packages: Mapping[str, str]) -> Pack:
 
 
 def order_packs(names: Sequence[str], root: Path, packages: Mapping[str, str] | None = None) -> tuple[Pack, ...]:
-    """Return the named packs and those they require, each after the packs it requires, in the listed order otherwise.
+    """Return the framework pack, the named packs and those they require, each after the packs it requires.
 
     Args:
         names: The packs the workspace lists.
@@ -216,7 +248,9 @@ def order_packs(names: Sequence[str], root: Path, packages: Mapping[str, str] | 
         visiting.pop()
         ordered[pack.name] = pack
 
-    for name in names:
+    # the framework's own pack comes first in every workspace: it is not one a workspace chooses
+    framework = (FRAMEWORK_PACK,) if FRAMEWORK_PACK in known else ()
+    for name in (*framework, *names):
         visit(name)
     return tuple(ordered.values())
 
@@ -364,16 +398,46 @@ def _step_problems(resolved: Resolved) -> list[str]:
         primitive = declared.get('primitive')
         if 'code' in declared:
             continue
+        problems += _status_problems(name, declared, primitives.get(str(primitive)))
         if declared.get('kind') != 'agent' and primitive not in primitives:
             problems.append(
                 f"steps.{name} names the primitive '{primitive}', which no pack or {WORKSPACE_FILE} declares",
             )
+        problems += [
+            f"steps.{name} has the unknown field '{key}': a step takes {', '.join(STEP_FIELDS)}"
+            for key in declared
+            if key not in STEP_FIELDS
+        ]
         inputs = declared.get('inputs')
         for given, raw in (inputs.items() if isinstance(inputs, dict) else []):
+            problems += [
+                f"steps.{name}.inputs.{given} has the unknown field '{key}': an input takes {', '.join(INPUT_FIELDS)}"
+                for key in (raw if isinstance(raw, dict) else {})
+                if key not in INPUT_FIELDS
+            ]
             scope = raw.get('scope', 'value') if isinstance(raw, dict) else 'value'
             if scope not in scopes:
                 problems.append(f"steps.{name}.inputs.{given} names the scope '{scope}', which no pack declares")
     return problems
+
+
+def _status_problems(name: str, declared: Mapping[str, object], primitive: object) -> list[str]:
+    """Return a problem for a granting step whose primitive has statuses of its own, and which names no `accepts`."""
+    if 'grants' not in declared or 'accepts' in declared or not isinstance(primitive, dict):
+        return []
+    output = primitive.get('output')
+    properties = output.get('properties') if isinstance(output, dict) else None
+    field = str(declared.get('status', 'status'))
+    spec = properties.get(field) if isinstance(properties, dict) else None
+    words = spec.get('enum') if isinstance(spec, dict) else None
+    unknown = sorted(str(w) for w in words if str(w) not in KNOWN_STATUSES) if isinstance(words, list) else []
+    if not unknown:
+        return []
+    message = (
+        f"steps.{name} grants a level, and its primitive answers {', '.join(unknown)}: "
+        'say which statuses mean success with `accepts`, or every one would grant it'
+    )
+    return [message]
 
 
 def level_order(resolved: Resolved) -> tuple[str, ...]:

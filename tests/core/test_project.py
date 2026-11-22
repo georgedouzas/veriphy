@@ -47,6 +47,6 @@ def test_a_workspace_file_marks_a_root_inside_a_lean_workspace(tmp_path: Path) -
     (tmp_path / 'lakefile.toml').write_text('')
     analysis = tmp_path / 'analysis'
     (analysis / 'data').mkdir(parents=True)
-    (analysis / 'veriphy.yaml').write_text('version: 1\npacks: [reproduction]\n')
+    (analysis / 'veriphy.yaml').write_text('version: 1\npacks: [social-science]\n')
     assert find_workspace_root(analysis / 'data') == analysis.resolve()
     assert find_workspace_root(tmp_path) == tmp_path.resolve()

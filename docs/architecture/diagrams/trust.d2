@@ -2,22 +2,22 @@
 direction: right
 
 primitives: "Primitives, by trust class" {
-  lean: "lean.check · kernel\n(lean pack)" {class: check}
-  oohorn: "oo-horn.check · checker\n(core pack)" {class: check}
-  r: "r.run · reproduction\n(reproduction pack)" {class: evidence}
+  lean: "lean.check · kernel\n(math pack)" {class: check}
+  oohorn: "horn.check · checker\n(Veriphy)" {class: check}
+  r: "analysis.run · reproduction\n(social-science pack)" {class: check}
   sage: "sage.* · oracle\n(math pack)" {class: evidence}
-  shacl: "shacl.validate · measurement\n(core pack)" {class: derived}
+  shacl: "shacl.validate · measurement\n(Veriphy)" {class: derived}
 }
 
 levels: "Levels in one order, each granted by one class" {
   grid-columns: 1
   certificate: "certificate · kernel · math"
-  leanproof: "lean-proof · kernel · lean"
+  leanproof: "lean-proof · kernel · math"
   kerneltest: "kernel-test · kernel · math"
-  robust: "robust · reproduction · reproduction"
-  reproduced: "reproduced · reproduction · reproduction"
+  robust: "robust · reproduction · social-science"
+  reproduced: "reproduced · reproduction · social-science"
   oracletest: "oracle-test · oracle · math"
-  none: "none · core"
+  none: "none · Veriphy"
 }
 
 primitives.lean -> levels.certificate

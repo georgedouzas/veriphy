@@ -34,7 +34,7 @@ steps:
 
 
 def _pack(root: Path, text: str = REPRODUCTION) -> None:
-    """Write the reproduction pack and its function under the workspace."""
+    """Write the social-science pack and its function under the workspace."""
     (root / 'reproduction').mkdir(exist_ok=True)
     (root / 'reproduction' / 'pack.yaml').write_text(text)
     (root / 'repro_functions.py').write_text("def estimate(inputs):\n    return {'status': 'agrees'}\n")
@@ -122,6 +122,6 @@ def test_claims_without_lean(workspace: Path) -> None:
 
 def test_lean_names_the_levels_as_the_packs_do() -> None:
     """Keep the level names Lean computes from proof terms equal to those the `lean` and `math` packs declare."""
-    lean = Path(__file__).resolve().parents[2] / 'lean' / 'Veriphy'
+    lean = Path(__file__).resolve().parents[2] / 'src' / 'veriphy' / 'packs' / 'math' / 'lean' / 'Veriphy'
     text = (lean / 'Kit' / 'Levels.lean').read_text() + (lean / 'Tactic' / 'SageTest.lean').read_text()
     assert all(f'"{level}"' in text for level in level_order(installed()))

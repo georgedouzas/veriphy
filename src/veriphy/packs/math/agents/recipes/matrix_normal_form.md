@@ -48,7 +48,7 @@ example : True := by
   veriphy certify "smith_example.sage"
 ```
 
-`lean/VeriphyTest/SageRun.lean` also checks a Jordan form with a nontrivial block.
+`src/veriphy/packs/math/lean/VeriphyTest/SageRun.lean` also checks a Jordan form with a nontrivial block.
 
 ## Failure modes
 

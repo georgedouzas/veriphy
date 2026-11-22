@@ -17,7 +17,7 @@ from veriphy.claims._impact import ImpactEntry, Plan, convention_impact, impact_
 from veriphy.claims._levels import LevelRow, claim_levels, level_report, own_level, shown_level
 from veriphy.claims._reasoning import Run, Step, load_run, reason, reason_triples, reasoning_input, recheck
 from veriphy.claims._slices import Slice, check_slice, render_slice, slice_claim, slice_premises
-from veriphy.claims._steps import REASON, REPORT, SUFFIXES, VALIDATE
+from veriphy.claims._steps import APPENDIX, REASON, SUFFIXES, VALIDATE
 from veriphy.claims._store import Assertion, ProjectGraph, add_triples, confirm, graph_dir, load_graph, resolve_term
 from veriphy.claims._vocabulary import (
     generate_axioms,
@@ -50,10 +50,10 @@ from veriphy.primitives.graph._checker import (
 from veriphy.primitives.graph._engine import Triple
 
 __all__ = [
+    'APPENDIX',
     'COMMANDS',
     'PINNED_RELEASE',
     'REASON',
-    'REPORT',
     'SUFFIXES',
     'VALIDATE',
     'Assertion',

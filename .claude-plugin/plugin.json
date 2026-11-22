@@ -4,5 +4,9 @@
   "version": "0.7.0",
   "author": {
     "name": "Georgios Douzas"
-  }
+  },
+  "skills": [
+    "./src/veriphy/packs/math/agents/skills",
+    "./src/veriphy/packs/social_science/agents/skills"
+  ]
 }

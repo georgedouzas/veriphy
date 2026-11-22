@@ -1,25 +1,42 @@
 version: 1
 name: math
-requires: [lean]
+# mathematics in Lean, with SageMath to find proofs and to sample statements
 
 levels:
   oracle-test: {trust: oracle, above: none, description: Sage evaluated the claim at instances.}
   kernel-test: {trust: kernel, above: oracle-test, description: The kernel checked the claim at instances.}
-  lean-proof: {above: kernel-test}
+  lean-proof: {trust: kernel, above: kernel-test, description: 'A complete Lean proof on the standard axioms, which no recipe built.'}
   certificate: {trust: kernel, above: lean-proof, description: 'A recipe built the proof, which the kernel checked.'}
 
+scopes:
+  lean-imports: {function: 'veriphy.packs.math.steps._lean_scopes:lean_imports'}
+  lean-workspace: {function: 'veriphy.packs.math.steps._lean_scopes:lean_workspace'}
+
 steps:
-  prove:
+  check:
+    kind: check
+    primitive: lean.check
+    help: have Lean check a file, and record each declaration's axioms
+    inputs:
+      file: {scope: lean-imports, path: true, help: the Lean file}
+  levels:
+    kind: derived
+    primitive: lean.levels
+    help: 'the level of each declaration of a module, as #veriphy levels gives it'
+    inputs:
+      module: {scope: lean-workspace, help: 'the module, as MyProject.Basic'}
+      prefixes: {optional: true, many: true, flag: --prefix, help: 'a name prefix (default: the module)'}
+  record-proof:
     kind: agent
-    help: record the proof an agent wrote for a claim, with its author
+    help: record the Lean file holding a claim and the proof an agent wrote for it
     inputs:
       artifact: {scope: file, path: true, help: the Lean file holding the claim and its proof}
-  meaning:
+  sample:
     kind: evidence
-    primitive: meaning
+    primitive: sample
     status: outcome
     seed: true
-    help: a statement tested at seeded values
+    help: sample a statement at random values that satisfy its hypotheses, to test that it says what was meant
     inputs:
       file: {scope: lean-imports, path: true, help: the Lean file that states the declaration}
       declaration: {help: the claim}
@@ -36,8 +53,69 @@ tools:
     timeout: 600
 
 primitives:
+  lean.check:
+    function: veriphy.packs.math.primitives.lean._methods:check
+    trust: kernel
+    input:
+      type: object
+      required: [root]
+      properties:
+        root: {type: string, description: the workspace root}
+        file: {type: string, description: the Lean file to check}
+        source: {type: string, description: the Lean text to check, instead of a file}
+      anyOf: [{required: [file]}, {required: [source]}]
+    output:
+      type: object
+      required: [status]
+      properties:
+        status: {enum: [accepted, refused, failed]}
+        errors: {type: array, items: {type: object, required: [line, message]}}
+        warnings: {type: integer}
+        axioms: {type: object, additionalProperties: {type: array, items: {type: string}}}
+        error: {type: string}
+
+  lean.serialize:
+    function: veriphy.packs.math.primitives.lean._methods:serialize
+    trust: kernel
+    input:
+      type: object
+      required: [root, declaration]
+      properties:
+        root: {type: string}
+        file: {type: string}
+        source: {type: string}
+        declaration: {type: string, description: the claim, a theorem or a definition of type Prop}
+      anyOf: [{required: [file]}, {required: [source]}]
+    output:
+      type: object
+      required: [status]
+      properties:
+        status: {enum: [serialized, failed]}
+        declaration: {type: string}
+        statement: {type: string}
+        problem: {type: object}
+        error: {type: string}
+
+  lean.levels:
+    function: veriphy.packs.math.primitives.lean._methods:level
+    trust: kernel
+    input:
+      type: object
+      required: [root, module]
+      properties:
+        root: {type: string}
+        module: {type: string}
+        prefixes: {type: array, items: {type: string}}
+    output:
+      type: object
+      required: [status]
+      properties:
+        status: {enum: [reported, refused, failed]}
+        levels: {type: object, additionalProperties: {type: string}}
+        error: {type: string}
+
   # composites, written in code: listed here so the configuration names every primitive
-  meaning: {composite: veriphy.packs.math.primitives._composites}
+  sample: {composite: veriphy.packs.math.primitives._composites}
   certify: {composite: veriphy.packs.math.primitives._composites}
 
   sage.ping:
@@ -85,7 +163,7 @@ primitives:
 
   sage.sample:
     tool: sage
-    command: [call, meaning, '{input}', '{out}']
+    command: [call, sample, '{input}', '{out}']
     trust: oracle
     seed: param
     input:
@@ -144,14 +222,14 @@ primitives:
     output: {type: object}
 
 workflows:
-  # the agent formalizes, Sage tests the statement, Lean checks it, the agent proves it, Lean checks the proof
+  # the agent writes the statement, Sage samples it, Lean checks it, the agent writes the proof, Lean checks it
   prove-claim:
-    - formalize
-    - meaning: {counterexample: stop}
-    - check: {refused: formalize, attempts: 3}
-    - prove
-    - check: {refused: prove, attempts: 5}
-  verify-paper: [extract, validate, reason, report]
+    - record-statement
+    - sample: {counterexample: stop}
+    - check: {refused: record-statement, attempts: 3}
+    - record-proof
+    - check: {refused: record-proof, attempts: 5}
+  verify-paper: [record-claims, validate, reason, appendix]
 # the pack's programs, as `veriphy pack math <name>`
 commands:
   certificates:

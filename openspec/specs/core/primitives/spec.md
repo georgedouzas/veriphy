@@ -6,18 +6,18 @@ Run every operation Veriphy relies on as a primitive: typed by input and output 
 ## Requirements
 
 ### Requirement: Tools
-A tool entry SHALL name its `contract` (`jsonrpc` or `files`), its `run` command as an argument list, its `pin` and its
-`timeout`. Input values SHALL reach a tool as files or inside JSON messages, never interpolated into a shell command.
+A tool entry SHALL name its `contract`, `files`, its `run` command as an argument list, its `pin`, its `version`
+probe and its `timeout`. Input values SHALL reach a tool as files, never interpolated into a shell command.
 
 #### Scenario: A value with shell syntax
 - **WHEN** a primitive's input holds the string `; rm -rf ~`
 - **THEN** the tool receives it as data, and no shell interprets it
 
 ### Requirement: Primitives
-A primitive entry SHALL name a Python `function`, or its tool and that tool's `method` or `command`, its trust class (`kernel`, `checker`,
-`reproduction`, `oracle`, `measurement` or `search`), an input schema and an output schema, and `seed` when it uses
-randomness. Its input SHALL be checked against the input schema before the tool is started, and its output against
-the output schema.
+A primitive entry SHALL name a Python `function`, or its tool and the `command` that follows the tool's, its trust
+class (`kernel`, `checker`, `reproduction`, `oracle`, `measurement` or `search`), an input schema and an output schema,
+and `seed` when it uses randomness. Its input SHALL be checked against the input schema before the tool is started,
+and its output against the output schema.
 
 #### Scenario: Invalid input
 - **WHEN** `sage.sample` is called with `values: "ten"`
@@ -42,19 +42,6 @@ output SHALL name Veriphy's version as its tool's.
 #### Scenario: No process for Python code
 - **WHEN** `shacl.validate` runs
 - **THEN** no process is started, and the output's tools name `veriphy`
-
-### Requirement: JSON-RPC contract
-A `jsonrpc` tool SHALL run as one process per session, speaking JSON-RPC 2.0 over stdio with one message per line.
-The Sage session SHALL answer JSON-RPC 2.0 requests, and SHALL still answer requests without `"jsonrpc"` in the format of
-earlier releases.
-
-#### Scenario: Sage behind the contract
-- **WHEN** the `math` pack's `sage` tool answers `ping`
-- **THEN** the response is a JSON-RPC 2.0 result carrying Sage's and Veriphy's versions
-
-#### Scenario: An error
-- **WHEN** a request names a method the Sage session does not have
-- **THEN** the response carries `error` with a code and a message naming the known methods
 
 ### Requirement: Pins
 Before a tool runs, its pin (`image` with a digest, `commit` with `sha256`, or `version`) SHALL be checked. A tool that
@@ -100,7 +87,7 @@ JSON. A primitive whose tool is missing SHALL be listed as unavailable with the 
 
 ### Requirement: Shipped primitives
 Veriphy SHALL ship the packs `core` (`horn.check`, `shacl.validate`), `lean` (`lean.check`,
-`lean.serialize`, `lean.level`) and `math` (the `sage` tool, one `sage.*` primitive per Sage method, and the
+`lean.serialize`, `lean.levels`) and `math` (the `sage` tool, one `sage.*` primitive per Sage method, and the
 composites `meaning` and `certify`), each as a `pack.yaml` found through the `veriphy.packs` entry point. `math` SHALL
 need `lean`, and `core` SHALL NOT need Lean.
 
@@ -108,19 +95,26 @@ need `lean`, and `core` SHALL NOT need Lean.
 - **WHEN** the Sage session's methods are compared with the `math` pack's primitives
 - **THEN** each method has a `sage.*` primitive with an input and an output schema
 
-### Requirement: Lean REPL
-The Lean primitives SHALL run in the community Lean REPL, pinned by commit, keeping one environment per import header,
-and SHALL give the same output as running `lake env lean` on the same file.
-
-#### Scenario: Two checks, one load
-- **WHEN** `lean.check` runs on two files that both import only `Mathlib`, in one process
-- **THEN** Mathlib is loaded once, and each output equals that of `lake env lean --json` on the file
-
 ### Requirement: Unchanged behaviour
 The steps `check`, `level`, `meaning`, `validate` and `reason` SHALL call primitives and give the same records as
 before. The Lean bridge SHALL take the Sage command from the `math` pack, and `VERIPHY_SAGE_CMD` and
 `VERIPHY_SAGE_SESSION` SHALL still override it.
 
 #### Scenario: A user's workspace
-- **WHEN** a workspace with no `veriphy.yaml` runs `veriphy certify` and `veriphy layers step meaning`
+- **WHEN** a workspace with no `veriphy.yaml` runs `veriphy certify` and `veriphy layers step sample`
 - **THEN** it starts the same Sage session as before, and the meaning record has the same outcome and outputs
+
+### Requirement: One process per call
+Veriphy SHALL keep no process alive between primitive calls. A tool SHALL run once per call, and its version probe
+SHALL run at most once per Veriphy process. Sage's methods SHALL run as
+`sage -python -m veriphy.packs.math.primitives.sage call <method> <input> <out>`, and the Lean primitives SHALL run
+`lake env lean` once per call. Only Lean itself SHALL keep a Sage session, while it compiles a file, speaking JSON-RPC
+2.0 over its stdin and stdout.
+
+#### Scenario: A Sage primitive
+- **WHEN** `sage.ping` is called twice in one Veriphy process
+- **THEN** Sage starts once for the version probe and once per call, and no Sage process remains afterwards
+
+#### Scenario: A Lean primitive
+- **WHEN** `lean.check` runs on a file
+- **THEN** one `lake env lean` process runs and exits, and the output names the workspace's Lean as its tool

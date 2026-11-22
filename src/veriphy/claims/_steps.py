@@ -67,7 +67,11 @@ def _prepare_reason(root: Path, _params: Params) -> Prepared:
 
 def _run_outputs(run: Run, root: Path) -> dict[str, object]:
     """Return what a reasoning run records: its certificate directory, the checker's word and the counts."""
+    hint = (
+        {'hint': f"set up the checker with `{run.report.get('build')}`"} if run.status == 'unchecked_no_checker' else {}
+    )
     return {
+        **hint,
         'directory': str(run.directory.resolve().relative_to(root.resolve())),
         'checker_status': run.status,
         'verdict': run.verdict,
@@ -117,13 +121,25 @@ def _report(root: Path, params: Params, prepared: Prepared) -> Outcome:
     return Outcome('written' if run.checked else 'unchecked', outputs, _graph_tools())
 
 
-VALIDATE = Step('validate', 'evidence', _prepare_graph, _validate, help='the graph against its shapes')
-REASON = Step('reason', 'check', _prepare_reason, _reason, help='graph reasoning, checked by oo-horn')
-REPORT = Step(
-    'report',
+VALIDATE = Step(
+    'validate',
+    'evidence',
+    _prepare_graph,
+    _validate,
+    help='check that the extracted claims are complete, against the shapes',
+)
+REASON = Step(
+    'reason',
+    'check',
+    _prepare_reason,
+    _reason,
+    help='derive what the claims establish, and have oo-horn check the derivation',
+)
+APPENDIX = Step(
+    'appendix',
     'derived',
     _prepare_report,
     _report,
-    help='the verification appendix of a source',
+    help='write the verification appendix of a source: each claim with its level and what caps it',
     arguments=(Argument('source'), Argument('format', option=True, default='markdown', choices=tuple(SUFFIXES))),
 )
