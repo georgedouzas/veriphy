@@ -6,6 +6,47 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 <!-- insertion marker -->
+## [0.8.0](https://github.com/georgedouzas/veriphy/releases/tag/0.8.0) - 2026-11-22
+
+<small>[Compare with 0.7.0](https://github.com/georgedouzas/veriphy/compare/0.7.0...0.8.0)</small>
+
+### Features
+
+- Workflows as data: a workflow is a list of steps with what a record's status does next, veriphy next reads the target's records in time order and names the next step, veriphy run runs the steps that are not an agent's until it needs one; the math pack ships prove-claim and verify-paper, the reproduction pack reproduce-analysis, and the skills follow them ([01b243b](https://github.com/georgedouzas/veriphy/commit/01b243b1b9200876782745997827a64fde3e1cd0) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- The reproduction pack: R in a pinned image as a files tool, r.run refusing data whose digest differs from the claim's and r.robustness over declared variations, the declared steps reproduce and vary granting reproduced and robust, the identification convention, the reproduce-analysis workflow, the reproduce playbook and skill, and a worked example on mtcars ([63f5c9f](https://github.com/georgedouzas/veriphy/commit/63f5c9f33d66b8502a9bd575267d3aaa8334385c) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Claims and trust: six fixed trust classes, levels contributed by the packs with their class and place in one order, the grant rule in config check and in the runner, a claim's own level from any record naming it, levels in the vocabulary from the configuration, and every report naming the class beside the level ([73d8565](https://github.com/georgedouzas/veriphy/commit/73d856534ea40a111a3e82bd996c3da9a031ccff) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Declared steps: a step is a primitive with inputs, each digested by its scope (lean-imports follows a Lean file's imports, so unrelated edits replay), a status field, comparison and the level it grants; check, level and meaning are declarations, formalize and extract record an agent's artifact, and veriphy steps lists them ([3b36334](https://github.com/georgedouzas/veriphy/commit/3b36334bb1fcee9cc70faf9ecbd1bb4e1ab91d91) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Workspace configuration: veriphy.yaml and pack.yaml in one schema, packs by name or path in the order they require, merged as JSON Merge Patches (RFC 7396), collisions between unrelated packs refused, veriphy config show and check, and the resolved config's digest in every record ([88e7ed0](https://github.com/georgedouzas/veriphy/commit/88e7ed0a590bc914889be693a6d2277975c3a84e) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Primitives: typed, pinned, deterministic operations with schemas and trust classes, run as Python functions, JSON-RPC 2.0 tools over stdio or files tools; the core, lean and math packs declare theirs, Lean runs in the community REPL with one environment per import header, the Sage daemon speaks JSON-RPC 2.0, and the steps call primitives ([bac9d5f](https://github.com/georgedouzas/veriphy/commit/bac9d5f6165830afce8b0a4fc2143a0dae4f3484) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- One operation API: veriphy <verb> and veriphy.run in the shell and Python, the veriphy tactic and #veriphy command in Lean, one script contract (SCRIPT, run(goal, inputs) returning found, refuted or unknown) with the templates rewritten to it, and the old names deprecated ([10e479a](https://github.com/georgedouzas/veriphy/commit/10e479a0317fdab993072692b1a29848d1eedbad) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Meaning step: #veriphy_meaning and python -m veriphy meaning test whether a statement says what it was meant to, at seeded values satisfying its hypotheses and domain conditions, recorded as evidence ([2f8184f](https://github.com/georgedouzas/veriphy/commit/2f8184f51a68866ef7d8c7e9dc88467e0966be06) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Step records and python -m veriphy: every step hashes its inputs, replays a final record of the same inputs, or runs and records; first steps elaborate, level, validate, reason and report ([e7c93b6](https://github.com/georgedouzas/veriphy/commit/e7c93b675884743986a866f74b8323b3cdb4bbc0) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+### Docs
+
+- Archive nested-subfields after a green CI, and pin 0.8.0 in the README, the math page and the plugin manifest ([8a441a1](https://github.com/georgedouzas/veriphy/commit/8a441a18c027d72ae8d65eec85acdde2ad3c8902) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Archive domain-packs, readable-commands and field-packs after a green CI ([120d786](https://github.com/georgedouzas/veriphy/commit/120d7869c47bcf614c89f8871579d18e65d1339f) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- The guide shows the layers, each with its command and what a pack adds to it, and a short scenario for each layer and each pack; the layers diagram names today's steps, primitives and commands ([6b2fa67](https://github.com/georgedouzas/veriphy/commit/6b2fa67ade23e0bad01ecfc80a46359bf8469a5a) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Archive click-commands, declarative-steps, claims-and-trust, reproduction-pack and workflows-as-data after a green CI, giving the new specs their purpose and splitting the two requirements the merge made too long ([4092a8c](https://github.com/georgedouzas/veriphy/commit/4092a8c7c46ecd9ca142bfc3be57f64bd7bb59dd) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Archive packs-and-config into core/workspace-config ([c445d3b](https://github.com/georgedouzas/veriphy/commit/c445d3b72e6ce7da82d97d6af953134a6b69b683) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Archive primitives into core/primitives ([a1884ad](https://github.com/georgedouzas/veriphy/commit/a1884ad72c37033060f88c1a1320e92ec69042f5) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Archive meaning-step, layered-modules and operation-api into their specs ([67c45d8](https://github.com/georgedouzas/veriphy/commit/67c45d812050cd982b722eabc909bad2f730d26e) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- One operation API and modules by layer: the veriphy tactic, #veriphy command, veriphy shell command and veriphy.run, one script contract, and the changes layered-modules and operation-api before the primitives ([33d0b72](https://github.com/georgedouzas/veriphy/commit/33d0b728fd04ec8ec3d409c4070e7f62208ec0bb) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Layered architecture: primitives, steps, claims, workflows and agents, with Lean as a pack; replan the remaining changes bottom-up as primitives, packs-and-config, declarative-steps, claims-and-trust, reproduction-pack and workflows-as-data ([c3c94bb](https://github.com/georgedouzas/veriphy/commit/c3c94bb786c032a6a08c19c53dbafb971342533d) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Archive step-records into core/step-records ([113c24f](https://github.com/georgedouzas/veriphy/commit/113c24fe6b4fa9c3952e7f024589d633fda13496) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- step-records tasks complete, CI green with the Lean steps run in the integration job ([8eef7d0](https://github.com/georgedouzas/veriphy/commit/8eef7d07aa69980bd7f6d366bf081974ba3319c2) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Plan the architecture in six OpenSpec changes: step-records, meaning-step, workspace-config, tool-contracts, reproduction-pack, workflows-as-data ([b708e8f](https://github.com/georgedouzas/veriphy/commit/b708e8f3d8fba30937b8f41672aed33e18a9e1f9) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+### Code Refactoring
+
+- The veriphy command is one click group: a command per step of the workspace, generated from the step's arguments, and the layers' and packs' programs loaded when named; every argparse parser and the hand-written dispatcher are gone ([da8d1e9](https://github.com/georgedouzas/veriphy/commit/da8d1e90bc9e81c03fd455be3e46f96b6e743421) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Modules by layer: veriphy.primitives, steps, claims, workflows and agents over veriphy.core, with the core, lean and math packs; steps registered by their layer or pack; an import-rule test; deprecated aliases for every old module and program ([028f61b](https://github.com/georgedouzas/veriphy/commit/028f61b76866e80fa8a503d133b3e11df62169b4) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+### Tests
+
+- A clash names its two conventions in sorted order, as the identification test now expects ([ad08438](https://github.com/georgedouzas/veriphy/commit/ad08438fbc4e8e409e70592e9603e7df4ea10c62) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Lean step tests forget only the records they wrote, so parallel workers no longer delete each other's records ([00f3bee](https://github.com/georgedouzas/veriphy/commit/00f3bee3e3cdec9c8057fabdac422e4f7c094630) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
 ## [0.7.0](https://github.com/georgedouzas/veriphy/releases/tag/0.7.0) - 2026-11-20
 
 <small>[Compare with 0.6.0](https://github.com/georgedouzas/veriphy/compare/0.6.0...0.7.0)</small>
@@ -28,6 +69,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Code Refactoring
 
 - Move the Lean sources under lean/, keeping the Lake configuration at the root so dependents require the repository unchanged ([bea3785](https://github.com/georgedouzas/veriphy/commit/bea3785e4365cab1a01b367764613d6d77a1342b) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+### Chore
+
+- Release 0.7.0 ([3b55c5d](https://github.com/georgedouzas/veriphy/commit/3b55c5d6f0b0a16820adad459d3ccdb97183cd92) by georgedouzas).
 
 ## [0.6.0](https://github.com/georgedouzas/veriphy/releases/tag/0.6.0) - 2026-11-02
 
