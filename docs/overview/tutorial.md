@@ -457,7 +457,7 @@ $ veriphy layers claims checker path
 $ veriphy layers claims checker build
 Open Ontologies v2.1.0 (…)
 reasoner: …
-checker: …/oo-horn
+checker: …/oo-horn…
 ```
 
 ## 6. Hand the work to an agent
