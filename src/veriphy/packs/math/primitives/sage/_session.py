@@ -1,9 +1,11 @@
 """Run Sage's methods: one call per process for Veriphy's primitives, or a session for Lean while it compiles a file.
 
 `python -m veriphy.packs.math.primitives.sage call <method> <input.json> <out.json>` answers one call, writing its
-result as JSON. `… version` prints Sage's version. With no arguments it reads one JSON-RPC 2.0 request per stdin line
-and answers each on stdout until stdin closes: Lean keeps one such session per file it compiles, so a file with many
-calls starts Sage once.
+result as JSON. `… run <module:function> <input.json> <out.json>` runs a pack's own function under Sage the same way:
+a subfield of mathematics keeps its code in its own package and runs it here, with PARI, GAP and Sage's libraries.
+`… version` prints Sage's version. With no arguments it reads one JSON-RPC 2.0 request per stdin line and answers each
+on stdout until stdin closes: Lean keeps one such session per file it compiles, so a file with many calls starts Sage
+once.
 """
 
 import importlib
@@ -19,7 +21,10 @@ NOT_UNDER_SAGE = (
 )
 SAGE_UNAVAILABLE = 2
 FAILED = 1
-USAGE = 'usage: python -m veriphy.packs.math.primitives.sage [call <method> <input.json> <out.json> | version]\n'
+USAGE = (
+    'usage: python -m veriphy.packs.math.primitives.sage '
+    '[call <method> <input.json> <out.json> | run <module:function> <input.json> <out.json> | version]\n'
+)
 
 
 def _methods() -> ModuleType:
@@ -44,6 +49,18 @@ def _call(method: str, source: Path, target: Path) -> None:
     target.write_text(json.dumps(response['result']))
 
 
+def _run(function: str, source: Path, target: Path) -> None:
+    """Run a pack's function under Sage on the input, writing its result, or exit with status 1 and the error."""
+    _methods()
+    module, _, name = function.partition(':')
+    try:
+        result = getattr(importlib.import_module(module), name)(json.loads(source.read_text()))
+    except (ImportError, AttributeError) as exc:
+        sys.stderr.write(f"no function '{function}': {exc}\n")
+        raise SystemExit(FAILED) from exc
+    target.write_text(json.dumps(result))
+
+
 def main(argv: Sequence[str] | None = None) -> None:
     """Answer one call, print Sage's version, or serve a session on stdin and stdout.
 
@@ -57,6 +74,9 @@ def main(argv: Sequence[str] | None = None) -> None:
     match arguments:
         case ['call', method, source, target]:
             _call(method, Path(source), Path(target))
+            return
+        case ['run', function, source, target]:
+            _run(function, Path(source), Path(target))
             return
     if arguments == ['version']:
         _methods()

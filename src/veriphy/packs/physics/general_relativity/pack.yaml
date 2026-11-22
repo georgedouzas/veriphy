@@ -1,8 +1,7 @@
 version: 1
 name: general-relativity
 # general relativity: a metric's curvature computed with EinsteinPy and simplified with SymPy, to check that it solves
-# the vacuum equations, is flat, or has a claimed Ricci scalar (`veriphy[general-relativity]`), over the physics pack
-requires: [physics]
+# the vacuum equations, is flat, or has a claimed Ricci scalar (`veriphy[general-relativity]`); a subfield of physics, nested in its pack
 
 levels:
   curvature-checked: {trust: oracle, above: dimensionally-consistent, description: 'A computer algebra system finds the curvature the claim gives the metric.'}
@@ -13,7 +12,7 @@ conventions:
 
 primitives:
   gr.curvature:
-    function: veriphy.packs.general_relativity.primitives._curvature:curvature
+    function: veriphy.packs.physics.general_relativity.primitives._curvature:curvature
     trust: oracle
     input:
       type: object

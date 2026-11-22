@@ -1,8 +1,7 @@
 version: 1
 name: econometrics
 # econometrics: published regressions refitted with linearmodels, by OLS, instrumental variables or panel models with
-# fixed effects (`veriphy[econometrics]`), over the economics pack
-requires: [economics]
+# fixed effects (`veriphy[econometrics]`); a subfield of economics, nested in its pack
 
 conventions:
   standard-errors: [unadjusted-errors, robust-errors, clustered-errors]
@@ -10,7 +9,7 @@ conventions:
 
 primitives:
   regression.fit:
-    function: veriphy.packs.econometrics.primitives._regressions:regression
+    function: veriphy.packs.economics.econometrics.primitives._regressions:regression
     trust: reproduction
     input:
       type: object

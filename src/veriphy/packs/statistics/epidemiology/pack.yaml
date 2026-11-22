@@ -1,15 +1,14 @@
 version: 1
 name: epidemiology
 # epidemiology: survival analyses recomputed with lifelines, a Cox model's hazard ratio and a Kaplan-Meier median
-# (`veriphy[epidemiology]`), over the statistics pack
-requires: [statistics]
+# (`veriphy[epidemiology]`); a subfield of statistics, nested in its pack
 
 conventions:
   analysis-population: [intention-to-treat, per-protocol]
 
 primitives:
   survival.cox:
-    function: veriphy.packs.epidemiology.primitives._survival:hazard_ratio
+    function: veriphy.packs.statistics.epidemiology.primitives._survival:hazard_ratio
     trust: reproduction
     input:
       type: object
@@ -23,7 +22,7 @@ primitives:
         group: {type: string}
     output: {type: object, required: [status]}
   survival.median:
-    function: veriphy.packs.epidemiology.primitives._survival:median_survival
+    function: veriphy.packs.statistics.epidemiology.primitives._survival:median_survival
     trust: reproduction
     input:
       type: object

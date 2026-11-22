@@ -1,0 +1,27 @@
+version: 1
+name: group-theory
+# group theory: a finite group's order, structure and properties, with GAP as Sage ships it, run under Sage by the
+# math pack's sage tool; a subfield of math, nested in its pack
+
+primitives:
+  gap.group:
+    tool: sage
+    command: [run, 'veriphy.packs.math.group_theory.primitives._gap:group', '{input}', '{out}']
+    trust: oracle
+    input:
+      type: object
+      required: [group, property, claimed]
+      properties: {group: {type: string}, property: {type: string}, claimed: {type: string}}
+    output: {type: object, required: [status]}
+
+steps:
+  check-group:
+    kind: check
+    primitive: gap.group
+    grants: oracle-test
+    help: "check a finite group's order, structure or properties with GAP"
+    inputs:
+      group: {help: "a GAP constructor: 'SmallGroup(12, 3)', 'DihedralGroup(8)', 'SymmetricGroup(5)'"}
+      property: {help: 'order, structure, id, abelian, nilpotent, solvable, simple, exponent, center-order or classes'}
+      claimed: {help: "the value, as GAP prints it: 'A4', 'true', '[ 12, 3 ]'"}
+      claim: {optional: true, record: true, help: 'the claim, so its level follows the record'}

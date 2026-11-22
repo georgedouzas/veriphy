@@ -25,18 +25,33 @@ takes it to mean: SciPy recomputes a p-value, Biopython reads a FASTA file, RDKi
 
 ### Subfield packs
 
-A subfield pack builds on a field pack, with the codes its subfield trusts. Selecting one brings the field pack it
-requires, so `packs: [econometrics]` also gives the `economics` and `statistics` steps.
+A subfield pack is nested in its field's pack, and builds on it with the codes its subfield trusts: its package sits
+in the field's (`veriphy/packs/physics/particle_physics/`), and selecting it brings the field, so
+`packs: [econometrics]` also gives the `economics` and `statistics` steps.
+
+```text
+math/          number-theory  group-theory  graph-theory
+statistics/    epidemiology
+economics/     econometrics
+physics/       particle-physics  general-relativity
+life-sciences/ genomics
+social-science/  chemistry/
+```
 
 | Pack | Builds on | Checks | Steps | Level | Install |
 |---|---|---|---|---|---|
+| [`number-theory`](number_theory.md) | `math` | factorizations, class numbers | `check-factorization`, `check-class-number` | `oracle-test` | PARI, in Sage |
+| [`group-theory`](group_theory.md) | `math` | finite groups: order, structure, properties | `check-group` | `oracle-test` | GAP, in Sage |
+| [`graph-theory`](graph_theory.md) | `math` | graph invariants | `check-graph` | `oracle-test` | Sage |
 | [`particle-physics`](particle_physics.md) | `physics` | flavour predictions, running coefficients, PDG values | `check-prediction`, `run-coefficients`, `check-pdg` | `prediction-recomputed` | flavio, wilson, particle |
 | [`general-relativity`](general_relativity.md) | `physics` | the curvature claimed of a metric | `check-metric` | `curvature-checked` | EinsteinPy, SymPy |
 | [`genomics`](genomics.md) | `life-sciences` | variant calls, genotypes, read depth | `check-variant`, `check-coverage` | `genomic-data-checked` | pysam |
 | [`econometrics`](econometrics.md) | `economics` | regressions: OLS, IV, panel | `check-regression` | `recomputed` | linearmodels |
 | [`epidemiology`](epidemiology.md) | `statistics` | hazard ratios, median survival | `check-hazard-ratio`, `check-median-survival` | `recomputed` | lifelines |
 
-Each installs with its extra, `pip install 'veriphy[genomics]'`, which brings its field pack's libraries too.
+Each installs with its extra, `pip install 'veriphy[genomics]'`, which brings its field pack's libraries too. The
+subfields of mathematics need only SageMath, which ships PARI and GAP: they run their code under Sage, through the
+math pack's `sage` tool, with `run <module:function>`.
 
 `social-science` and `economics` build on `statistics`, so selecting either brings its steps too. Every workspace also
 has `check-concepts`, which checks a source's concepts against a thesaurus or an ontology, in SKOS, OWL or OBO.
@@ -200,7 +215,13 @@ value that rounds to the figure the claim reports: half a unit in its last digit
 tolerance instead.
 
 A pack of your own is the same files in a directory of the project, named by path, with its function in a module
-beside the `pack.yaml` (`function: tables:statistic`): the directory is on the import path.
+beside the `pack.yaml` (`function: tables:statistic`): the directory is on the import path. A subfield of your own
+pack goes in a directory inside it, and builds on it with no `requires`:
+
+```text
+packs/oncology/pack.yaml
+packs/oncology/radiotherapy/pack.yaml     # packs: [./packs/oncology/radiotherapy] brings oncology too
+```
 
 ### A check as a command
 

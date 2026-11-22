@@ -1,0 +1,44 @@
+version: 1
+name: number-theory
+# number theory: factorizations with proven primality, and certified class numbers, with PARI/GP as Sage ships it,
+# run under Sage by the math pack's sage tool; a subfield of math, nested in its pack
+
+primitives:
+  pari.factorization:
+    tool: sage
+    command: [run, 'veriphy.packs.math.number_theory.primitives._pari:factorization', '{input}', '{out}']
+    trust: oracle
+    input:
+      type: object
+      required: [number, claimed]
+      properties: {number: {type: string}, claimed: {type: string}}
+    output: {type: object, required: [status]}
+  pari.class-number:
+    tool: sage
+    command: [run, 'veriphy.packs.math.number_theory.primitives._pari:class_number', '{input}', '{out}']
+    trust: oracle
+    input:
+      type: object
+      required: [polynomial, claimed]
+      properties: {polynomial: {type: string}, claimed: {type: string}}
+    output: {type: object, required: [status]}
+
+steps:
+  check-factorization:
+    kind: check
+    primitive: pari.factorization
+    grants: oracle-test
+    help: "check a claimed factorization into primes with PARI, proving each factor prime"
+    inputs:
+      number: {help: the integer}
+      claimed: {help: "its factorization: '2^3 * 3 * 5'"}
+      claim: {optional: true, record: true, help: 'the claim, so its level follows the record'}
+  check-class-number:
+    kind: check
+    primitive: pari.class-number
+    grants: oracle-test
+    help: "check the class number of the number field a polynomial defines, certified by PARI without GRH"
+    inputs:
+      polynomial: {help: "an irreducible polynomial in x: 'x^2 + 5'"}
+      claimed: {help: the class number the claim gives}
+      claim: {optional: true, record: true, help: 'the claim, so its level follows the record'}

@@ -1,8 +1,7 @@
 version: 1
 name: particle-physics
 # particle physics: flavour observables recomputed with flavio, Wilson coefficients run with wilson, and particle
-# properties read from the PDG tables with particle (`veriphy[particle-physics]`), over the physics pack
-requires: [physics]
+# properties read from the PDG tables with particle (`veriphy[particle-physics]`); a subfield of physics, nested in its pack
 
 levels:
   prediction-recomputed: {trust: reproduction, above: dimensionally-consistent, description: 'A prediction, recomputed by the field''s own code, agrees with the claim within its uncertainty.'}
@@ -14,7 +13,7 @@ conventions:
 
 primitives:
   flavio.prediction:
-    function: veriphy.packs.particle_physics.primitives._flavour:prediction
+    function: veriphy.packs.physics.particle_physics.primitives._flavour:prediction
     trust: reproduction
     input:
       type: object
@@ -31,7 +30,7 @@ primitives:
         basis: {type: string}
     output: {type: object, required: [status]}
   wilson.run:
-    function: veriphy.packs.particle_physics.primitives._flavour:run
+    function: veriphy.packs.physics.particle_physics.primitives._flavour:run
     trust: reproduction
     input:
       type: object
@@ -47,7 +46,7 @@ primitives:
         to_basis: {type: string}
     output: {type: object, required: [status]}
   pdg.property:
-    function: veriphy.packs.particle_physics.primitives._flavour:pdg
+    function: veriphy.packs.physics.particle_physics.primitives._flavour:pdg
     trust: reproduction
     input:
       type: object

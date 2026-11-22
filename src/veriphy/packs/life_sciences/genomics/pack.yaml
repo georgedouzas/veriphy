@@ -1,8 +1,7 @@
 version: 1
 name: genomics
 # genomics: variants and genotypes in VCF files, and the depth of a region in SAM, BAM or CRAM alignments, with pysam
-# (`veriphy[genomics]`), over the life-sciences pack
-requires: [life-sciences]
+# (`veriphy[genomics]`); a subfield of life-sciences, nested in its pack
 
 levels:
   genomic-data-checked: {trust: checker, above: sequence-checked, description: 'The variant calls or alignments have the properties the claim gives them.'}
@@ -12,7 +11,7 @@ conventions:
 
 primitives:
   vcf.variant:
-    function: veriphy.packs.genomics.primitives._reads:variant
+    function: veriphy.packs.life_sciences.genomics.primitives._reads:variant
     trust: checker
     input:
       type: object
@@ -20,7 +19,7 @@ primitives:
       properties: {vcf: {type: string}, variant: {type: string}, sample: {type: string}, genotype: {type: string}}
     output: {type: object, required: [status]}
   sam.coverage:
-    function: veriphy.packs.genomics.primitives._reads:coverage
+    function: veriphy.packs.life_sciences.genomics.primitives._reads:coverage
     trust: checker
     input:
       type: object

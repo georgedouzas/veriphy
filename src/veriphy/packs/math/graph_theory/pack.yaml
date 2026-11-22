@@ -1,0 +1,27 @@
+version: 1
+name: graph-theory
+# graph theory: a graph's invariants with Sage's graph library, run under Sage by the math pack's sage tool; a
+# subfield of math, nested in its pack
+
+primitives:
+  sage.graph:
+    tool: sage
+    command: [run, 'veriphy.packs.math.graph_theory.primitives._graphs:graph', '{input}', '{out}']
+    trust: oracle
+    input:
+      type: object
+      required: [graph, property, claimed]
+      properties: {graph: {type: string}, property: {type: string}, claimed: {type: string}}
+    output: {type: object, required: [status]}
+
+steps:
+  check-graph:
+    kind: check
+    primitive: sage.graph
+    grants: oracle-test
+    help: "check a graph invariant with Sage: chromatic number, girth, diameter, automorphisms, planarity and more"
+    inputs:
+      graph: {help: "the graph, in graph6 or as a Sage constructor: 'PetersenGraph()', 'CompleteGraph(5)'"}
+      property: {help: 'vertices, edges, chromatic-number, clique-number, independence-number, girth, diameter, automorphisms, planar, hamiltonian or bipartite'}
+      claimed: {help: 'the value the claim gives'}
+      claim: {optional: true, record: true, help: 'the claim, so its level follows the record'}
