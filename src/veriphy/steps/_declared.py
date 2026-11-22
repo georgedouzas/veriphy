@@ -4,6 +4,7 @@ import importlib
 import json
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from decimal import Decimal
 from pathlib import Path
 
 from veriphy.core import BUILTIN_SCOPES, StepError, canonical_json, content_digest, level_trust, resolve
@@ -12,7 +13,31 @@ from veriphy.steps._primitives import call_primitive
 from veriphy.steps._runner import UNCHECKED_EXIT, Argument, Outcome, Params, Prepared, Step, exit_code
 
 Scope = Callable[[Path, object], str | bytes]
-TYPES: dict[str, Callable[[str], object]] = {'string': str, 'integer': int, 'number': float, 'json': str}
+
+
+class Reported(float):
+    """A number as a claim reports it: a float that keeps its text, so that its last digit sets a tolerance.
+
+    Examples:
+        >>> value = Reported('0.080')
+        >>> value == 0.08, str(value), reported_tolerance(value)
+        (True, '0.080', 0.0005)
+    """
+
+    text: str
+
+    def __new__(cls, text: str) -> 'Reported':
+        """Return the number, keeping the text it was read from."""
+        number = super().__new__(cls, text)
+        number.text = str(text).strip()
+        return number
+
+    def __str__(self) -> str:
+        """Return the number as it was reported."""
+        return self.text
+
+
+TYPES: dict[str, Callable[[str], object]] = {'string': str, 'integer': int, 'number': Reported, 'json': str}
 
 
 def _value(_root: Path, value: object) -> str:
@@ -157,12 +182,11 @@ def reported_tolerance(claimed: object) -> float:
         The tolerance.
 
     Examples:
-        >>> reported_tolerance(0.127), reported_tolerance(-5.344472), reported_tolerance(3)
-        (0.0005, 5e-07, 0.5)
+        >>> [reported_tolerance(v) for v in (0.127, -5.344472, 3, 6.674e-11)]
+        [0.0005, 5e-07, 0.5, 5e-15]
     """
-    text = str(claimed)
-    decimals = len(text.split('.', 1)[1]) if '.' in text and 'e' not in text.lower() else 0
-    return float(f'5e-{decimals + 1}')
+    exponent = Decimal(str(claimed)).as_tuple().exponent
+    return float(Decimal(5).scaleb(int(exponent) - 1))
 
 
 def _compare(outputs: dict[str, object], values: Mapping[str, object], rule: Mapping[str, object]) -> str:

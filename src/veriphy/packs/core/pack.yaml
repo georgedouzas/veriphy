@@ -10,6 +10,7 @@ steps:
   validate: {code: veriphy.claims}
   reason: {code: veriphy.claims}
   appendix: {code: veriphy.claims}
+  check-concepts: {code: veriphy.packs.core.claims}
   record-statement:
     kind: agent
     help: record the file holding the formal statement an agent wrote, with its author

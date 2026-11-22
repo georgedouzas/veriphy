@@ -1,0 +1,44 @@
+version: 1
+name: chemistry
+# chemistry: molecules and reactions checked with RDKit (`veriphy[chemistry]`)
+levels:
+  structure-checked: {trust: checker, above: none, description: 'The molecule or reaction has the properties the claim gives it.'}
+
+conventions:
+  # the state quantities are referred to
+  standard-state: [standard-state-1-bar, standard-state-1-atm]
+
+primitives:
+  mol.check:
+    function: veriphy.packs.chemistry.primitives._molecules:molecule
+    trust: checker
+    input:
+      type: object
+      required: [smiles]
+      properties: {smiles: {type: string}, formula: {type: string}, mass: {type: string}}
+    output: {type: object, required: [status]}
+  reaction.balance:
+    function: veriphy.packs.chemistry.primitives._molecules:reaction
+    trust: checker
+    input: {type: object, required: [reaction], properties: {reaction: {type: string}}}
+    output: {type: object, required: [status]}
+
+steps:
+  check-molecule:
+    kind: check
+    primitive: mol.check
+    grants: structure-checked
+    help: "check a molecule's formula and molar mass, given as SMILES"
+    inputs:
+      smiles: {help: 'the molecule, as SMILES: "CCO"'}
+      formula: {optional: true, help: 'the claimed formula, in Hill order: C2H6O'}
+      mass: {optional: true, help: 'the claimed molar mass in g/mol, as reported: 46.07'}
+      claim: {optional: true, record: true, help: 'the claim, so its level follows the record'}
+  check-reaction:
+    kind: check
+    primitive: reaction.balance
+    grants: structure-checked
+    help: 'check that a reaction balances, element by element'
+    inputs:
+      reaction: {help: 'the reaction: "2 [H][H] + O=O >> 2 O"'}
+      claim: {optional: true, record: true, help: 'the claim, so its level follows the record'}

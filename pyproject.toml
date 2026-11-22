@@ -38,6 +38,27 @@ dependencies = [
     "rdflib>=7",
 ]
 
+[project.optional-dependencies]
+# Each pack's libraries, installed by its extra: `pip install 'veriphy[statistics]'`. The math pack's SageMath
+# is the runtime Veriphy is installed into, never a dependency.
+statistics = ["pandas>=2.2", "scipy>=1.13", "statsmodels>=0.14"]
+economics = ["veriphy[statistics]"]
+social-science = ["veriphy[statistics]", "pingouin>=0.5"]
+physics = ["pint>=0.24", "scipy>=1.13"]
+life-sciences = ["biopython>=1.84", "pronto>=2.5"]
+chemistry = ["rdkit>=2024.3"]
+# subfield packs, over the field packs they build on
+# flavio 2.7 reads the PDG 2022 tables, which particle 0.25 no longer ships
+particle-physics = ["veriphy[physics]", "flavio>=2.7", "wilson>=2.5", "particle>=0.24,<0.25"]
+general-relativity = ["veriphy[physics]", "einsteinpy>=0.5", "sympy>=1.13"]
+genomics = ["veriphy[life-sciences]", "pysam>=0.22"]
+econometrics = ["veriphy[economics]", "linearmodels>=6"]
+epidemiology = ["veriphy[statistics]", "lifelines>=0.29"]
+all = [
+    "veriphy[statistics,economics,social-science,physics,life-sciences,chemistry]",
+    "veriphy[particle-physics,general-relativity,genomics,econometrics,epidemiology]",
+]
+
 [project.scripts]
 veriphy = "veriphy.__main__:main"
 
@@ -151,7 +172,12 @@ exclude = "\\.lake"
 [tool.deptry]
 extend_exclude = ["src/veriphy/packs/math/lean/.lake"]
 
+[tool.deptry.package_module_name_map]
+biopython = "Bio"
+
 [tool.deptry.per_rule_ignores]
+# statsmodels is the library the statistics pack's analysis scripts fit their models with, run in their own process
+DEP002 = ["statsmodels"]
 # SageMath (with its bundled cvxopt, sympy and numpy) is the runtime the package is installed into (`sage -pip install veriphy`),
 # never a declared dependency. open_ontologies_lite comes from the pinned Open Ontologies release through
 # `veriphy layers claims checker build`.

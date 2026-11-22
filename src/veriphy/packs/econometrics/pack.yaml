@@ -1,0 +1,45 @@
+version: 1
+name: econometrics
+# econometrics: published regressions refitted with linearmodels, by OLS, instrumental variables or panel models with
+# fixed effects (`veriphy[econometrics]`), over the economics pack
+requires: [economics]
+
+conventions:
+  standard-errors: [unadjusted-errors, robust-errors, clustered-errors]
+  fixed-effects: [entity-effects, time-effects, two-way-effects]
+
+primitives:
+  regression.fit:
+    function: veriphy.packs.econometrics.primitives._regressions:regression
+    trust: reproduction
+    input:
+      type: object
+      required: [data, formula, coefficient]
+      properties:
+        data: {type: string}
+        formula: {type: string}
+        coefficient: {type: string}
+        entity: {type: string}
+        time: {type: string}
+        covariance: {enum: [unadjusted, robust, clustered]}
+    output: {type: object, required: [status]}
+
+steps:
+  check-regression:
+    kind: check
+    primitive: regression.fit
+    grants: recomputed
+    compare: {field: estimate, against: claimed, tolerance: reported}
+    help: "refit a regression from the published data with linearmodels, and compare a coefficient with the claim"
+    inputs:
+      data: {scope: file, path: true, help: the published data, as CSV}
+      formula: {help: "the model: 'y ~ 1 + x', 'y ~ 1 + x + [w ~ z]', or 'y ~ x + EntityEffects' for a panel"}
+      coefficient: {help: the regressor the claim is about}
+      entity: {optional: true, help: "the panel's entity column"}
+      time: {optional: true, help: "the panel's time column"}
+      covariance: {optional: true, help: 'unadjusted (default), robust, or clustered by entity'}
+      claimed: {type: number, optional: true, record: true, help: 'the estimate the claim reports'}
+      claim: {optional: true, record: true, help: 'the claim, so its level follows the record'}
+
+workflows:
+  check-regressions: [record-claims, check-regression]

@@ -28,12 +28,21 @@ the script, and the step runs again.
 ## Packs
 
 Each field Veriphy checks comes as a pack: a directory whose `pack.yaml` declares the field's tools, steps, levels,
-conventions and workflows, with its agents' playbooks beside it. Two ship with Veriphy:
+conventions and workflows, with its agents' playbooks beside it. Each checks claims with its field's standard
+libraries, and subfield packs build on field packs:
 
-| Pack | Checks | Needs |
+| Pack | Checks | With |
 |---|---|---|
 | `math` | mathematics in Lean: proofs, with SageMath to find them, and statements, by sampling them | Lean, SageMath |
-| `social-science` | a study: its analysis rerun from its own Python script and data, its robustness, its constructs against a thesaurus | Python |
+| `statistics` | an analysis rerun from its own script and data, its robustness, reported p-values and means | pandas, SciPy, statsmodels |
+| `social-science` | a study's scales and constructs, over `statistics` | pingouin |
+| `economics`, `econometrics` | a paper's tables, and its regressions: OLS, IV, panel | pandas, linearmodels |
+| `epidemiology` | hazard ratios and median survival | lifelines |
+| `physics` | a formula's dimensions, and constants against CODATA | pint, SciPy |
+| `particle-physics` | flavour predictions, running Wilson coefficients, PDG values | flavio, wilson, particle |
+| `general-relativity` | the curvature claimed of a metric | EinsteinPy, SymPy |
+| `life-sciences`, `genomics` | sequences and ontology terms; variant calls and read depth | Biopython, pronto, pysam |
+| `chemistry` | molecules and reactions | RDKit |
 
 Every workspace also has the claim graph, which is part of Veriphy rather than a pack. It records what each claim
 rests on and which conventions it assumes, finds the weakest link, and reports clashes. Its reasoning is checked by
@@ -47,13 +56,12 @@ packs: [social-science]
 ```
 
 A field Veriphy doesn't cover yet needs a pack, often a few dozen lines of YAML and a short function. The
-[guide to packs](https://georgedouzas.github.io/veriphy/packs/) walks through two complete examples, for economics and
-for history.
+[guide to packs](https://georgedouzas.github.io/veriphy/packs/) walks through one, and through combining packs.
 
 ## Install
 
 ```sh
-pip install veriphy
+pip install 'veriphy[statistics]'     # a pack's libraries come with its extra; veriphy[all] installs every one
 ```
 
 For the `math` pack, install into SageMath's Python instead (`sage -pip install veriphy`), and require Veriphy's Lean

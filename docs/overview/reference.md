@@ -59,9 +59,50 @@ is unchecked or undecided.
 | `check <file>` | `math` | check | |
 | `levels <module> [--prefix p …]` | `math` | derived | the levels Lean reads |
 | `sample <file> <declaration> [--informal t] [--values n] [--points json] [--seed s]` | `math` | evidence | |
-| `reproduce <script> <data> [--sha256 d] [--claimed v] [--claim c] [--seed s]` | `social-science` | check | `reproduced` |
-| `robustness <script> <data> --variation v … [--sha256 d] [--claim c] [--seed s]` | `social-science` | check | `robust` |
-| `check-concepts <thesaurus>` | `social-science` | evidence | |
+| `check-concepts <thesaurus>` | all | evidence | |
+| `reproduce <script> <data> [--sha256 d] [--claimed v] [--claim c] [--seed s]` | `statistics` | check | `reproduced` |
+| `robustness <script> <data> --variation v … [--sha256 d] [--claim c] [--seed s]` | `statistics` | check | `robust` |
+| `check-p-value <test> <statistic> <claimed> [--df d] [--tails 1]` | `statistics` | evidence | |
+| `check-mean <mean> <n> [--items k]` | `statistics` | evidence | |
+| `check-reliability <data> --item c … [--claimed a]` | `social-science` | evidence | |
+| `recompute <data> <column> <statistic> [--claimed v] [--periods n]` | `economics` | check | `recomputed` |
+| `check-regression <data> <formula> <coefficient> [--entity e --time t] [--covariance c] [--claimed v]` | `econometrics` | check | `recomputed` |
+| `check-hazard-ratio <data> <duration> <event> --covariate c … [--claimed v]` | `epidemiology` | check | `recomputed` |
+| `check-median-survival <data> <duration> <event> [--group col=value] [--claimed v]` | `epidemiology` | check | `recomputed` |
+| `check-units <formula> --unit s=u …` | `physics` | check | `dimensionally-consistent` |
+| `check-constant <name> [--claimed v]` | `physics` | evidence | |
+| `check-prediction <observable> <claimed> [--uncertainty u] [--coefficient c=v …]` | `particle-physics` | check | `prediction-recomputed` |
+| `run-coefficients <coefficient> <to-scale> --coefficient c=v … [--claimed v]` | `particle-physics` | check | `prediction-recomputed` |
+| `check-pdg <particle> <property> <claimed>` | `particle-physics` | evidence | |
+| `check-metric <coordinates> <metric> <property>` | `general-relativity` | check | `curvature-checked` |
+| `check-sequence <fasta> [--length n] [--gc f] [--motif m] [--protein p]` | `life-sciences` | check | `sequence-checked` |
+| `check-variant <vcf> <variant> [--sample s] [--genotype g]` | `genomics` | check | `genomic-data-checked` |
+| `check-coverage <alignments> <region> [--quality q] [--claimed d]` | `genomics` | check | `genomic-data-checked` |
+| `check-molecule <smiles> [--formula f] [--mass m]` | `chemistry` | check | `structure-checked` |
+| `check-reaction <reaction>` | `chemistry` | check | `structure-checked` |
+
+A number a claim reports keeps its digits: with `tolerance: reported`, `--claimed 0.080` agrees within 0.0005 and
+`--claimed 20` within 0.5.
+
+## Extras
+
+Each pack's libraries install with its extra: `pip install 'veriphy[<pack>]'`, or `veriphy[all]` for every pack.
+
+| Extra | Installs |
+|---|---|
+| `statistics` | pandas, SciPy, statsmodels |
+| `social-science` | `statistics`, pingouin |
+| `economics` | `statistics` |
+| `econometrics` | `economics`, linearmodels |
+| `epidemiology` | `statistics`, lifelines |
+| `physics` | pint, SciPy |
+| `particle-physics` | `physics`, flavio, wilson, particle |
+| `general-relativity` | `physics`, EinsteinPy, SymPy |
+| `life-sciences` | Biopython, pronto |
+| `genomics` | `life-sciences`, pysam |
+| `chemistry` | RDKit |
+
+The `math` pack's SageMath is the Python Veriphy is installed into, and its Lean library a Lake dependency.
 
 ## `veriphy.yaml`
 
@@ -69,9 +110,9 @@ A workspace's file has the same sections as a `pack.yaml`, plus `packs`. Every k
 
 ```yaml
 version: 1
-packs: [social-science, ./packs/economics]   # shipped packs by name, others by path or entry point
+packs: [physics, chemistry, ./packs/mine]   # shipped packs by name, others by path or entry point
 levels:
-  recomputed: {above: robust}                # settle the order between two packs' levels
+  structure-checked: {above: dimensionally-consistent}   # settle the order between two packs' levels
 tools:
   python: {timeout: 1200}                    # change any entry a pack declares
 ```

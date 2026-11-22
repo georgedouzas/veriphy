@@ -1,0 +1,110 @@
+version: 1
+name: particle-physics
+# particle physics: flavour observables recomputed with flavio, Wilson coefficients run with wilson, and particle
+# properties read from the PDG tables with particle (`veriphy[particle-physics]`), over the physics pack
+requires: [physics]
+
+levels:
+  prediction-recomputed: {trust: reproduction, above: dimensionally-consistent, description: 'A prediction, recomputed by the field''s own code, agrees with the claim within its uncertainty.'}
+
+conventions:
+  # the operator basis Wilson coefficients are given in, as WCxf names it
+  operator-basis: [warsaw-basis, flavio-basis, jms-basis]
+  ckm-input: [ckm-from-tree-level, ckm-from-global-fit]
+
+primitives:
+  flavio.prediction:
+    function: veriphy.packs.particle_physics.primitives._flavour:prediction
+    trust: reproduction
+    input:
+      type: object
+      required: [observable, claimed]
+      properties:
+        observable: {type: string}
+        arguments: {type: string}
+        claimed: {type: [string, number]}
+        uncertainty: {type: [string, number]}
+        sigmas: {type: [string, number]}
+        coefficients: {type: array, items: {type: string}}
+        scale: {type: [string, number]}
+        eft: {type: string}
+        basis: {type: string}
+    output: {type: object, required: [status]}
+  wilson.run:
+    function: veriphy.packs.particle_physics.primitives._flavour:run
+    trust: reproduction
+    input:
+      type: object
+      required: [coefficients, scale, eft, basis, coefficient, to_scale]
+      properties:
+        coefficients: {type: array, items: {type: string}}
+        scale: {type: [string, number]}
+        eft: {type: string}
+        basis: {type: string}
+        coefficient: {type: string}
+        to_scale: {type: [string, number]}
+        to_eft: {type: string}
+        to_basis: {type: string}
+    output: {type: object, required: [status]}
+  pdg.property:
+    function: veriphy.packs.particle_physics.primitives._flavour:pdg
+    trust: reproduction
+    input:
+      type: object
+      required: [particle, property, claimed]
+      properties:
+        particle: {type: string}
+        property: {enum: [mass, width, lifetime]}
+        claimed: {type: [string, number]}
+        uncertainty: {type: [string, number]}
+        sigmas: {type: [string, number]}
+    output: {type: object, required: [status]}
+
+steps:
+  check-prediction:
+    kind: check
+    primitive: flavio.prediction
+    grants: prediction-recomputed
+    help: "recompute an observable's prediction with flavio, in the Standard Model or with new-physics coefficients, and compare the claim with it"
+    inputs:
+      observable: {help: "flavio's name for the observable: 'BR(Bs->mumu)'"}
+      claimed: {help: 'the predicted value the source gives, as reported: 3.66e-9'}
+      uncertainty: {optional: true, help: "the source's uncertainty on it"}
+      sigmas: {optional: true, help: 'how many combined uncertainties the claim may differ by (default: 2)'}
+      arguments: {optional: true, help: "the observable's arguments, such as a q2 bin: 1.1,6"}
+      coefficients: {many: true, optional: true, flag: --coefficient, help: 'a new-physics Wilson coefficient: C10_bsmumu=-1; repeat for each'}
+      scale: {optional: true, help: 'the scale of the coefficients, in GeV (default: 4.8)'}
+      eft: {optional: true, help: 'the effective theory of the coefficients (default: WET)'}
+      basis: {optional: true, help: 'their basis (default: flavio)'}
+      claim: {optional: true, record: true, help: 'the claim, so its level follows the record'}
+  run-coefficients:
+    kind: check
+    primitive: wilson.run
+    grants: prediction-recomputed
+    compare: {field: value, against: claimed, tolerance: reported}
+    help: 'run Wilson coefficients to another scale with wilson, matching between theories, and compare one with the claim'
+    inputs:
+      coefficient: {help: 'the coefficient the claim is about, at the new scale: C9_bsmumu'}
+      to_scale: {help: 'the new scale, in GeV'}
+      coefficients: {many: true, flag: --coefficient, help: 'a coefficient at the starting scale: lq1_2223=1e-8; repeat for each'}
+      scale: {optional: true, default: '1000', help: 'the starting scale, in GeV (default: 1000)'}
+      eft: {optional: true, default: SMEFT, help: 'the starting theory: SMEFT (default) or WET'}
+      basis: {optional: true, default: Warsaw, help: 'the starting basis: Warsaw (default), flavio, JMS'}
+      to_eft: {optional: true, help: 'the theory at the new scale (default: the same)'}
+      to_basis: {optional: true, help: 'the basis at the new scale (default: the same)'}
+      claimed: {type: number, optional: true, record: true, help: "the coefficient's real part the source gives"}
+      claim: {optional: true, record: true, help: 'the claim, so its level follows the record'}
+  check-pdg:
+    kind: evidence
+    primitive: pdg.property
+    help: "compare a particle's mass (MeV), width (MeV) or lifetime (ns) with the PDG's"
+    inputs:
+      particle: {help: "the particle's PDG name or number: 'B(s)0', 'mu-', 531"}
+      property: {help: 'mass, width or lifetime'}
+      claimed: {help: 'the value the source uses, as reported'}
+      uncertainty: {optional: true, help: "the source's uncertainty on it"}
+      sigmas: {optional: true, help: 'how many combined uncertainties the claim may differ by (default: 2)'}
+      claim: {optional: true, record: true, help: the claim that uses it}
+
+workflows:
+  check-flavour: [record-claims, check-pdg, check-prediction]
