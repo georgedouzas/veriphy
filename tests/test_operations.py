@@ -106,3 +106,11 @@ def test_a_step_cannot_take_a_group_command_name(tmp_path: Path) -> None:
         "version: 1\npacks: [core]\nsteps:\n  records: {kind: agent, inputs: {artifact: {path: true}}}\n",
     )
     assert any("'records' is the step group's own command" in p for p in check_config(resolve(tmp_path)))
+
+
+def test_help_aligns_long_step_names_and_shows_lean_only_with_math(tmp_path: Path) -> None:
+    """Keep a long step name apart from its kind, and leave out Lean's verbs in a workspace without `math`."""
+    (tmp_path / 'veriphy.yaml').write_text('version: 1\npacks: [social-science]\n')
+    text = help_text(tmp_path)
+    assert re.search(r'check-reliability +evidence', text)
+    assert 'In Lean:' not in text

@@ -21,13 +21,16 @@ $ veriphy layers step check-metric "t r theta phi" \
     "diag(-(1 - 2*M/r), 1/(1 - 2*M/r), r**2, r**2*sin(theta)**2)" vacuum --claim schwarzschild
 check-metric t r theta phi: accepted
   level: curvature-checked (oracle)
+  record: .veriphy/runs/check-metric/….json
 $ veriphy layers step check-metric "t r theta phi" \
     "diag(-(1 - 2*M/r**2), 1/(1 - 2*M/r**2), r**2, r**2*sin(theta)**2)" vacuum
 check-metric t r theta phi: refused
   why: 2*M*(2*M - r**2)/r**6 is not zero: at {'M': 6.666666666666667, 'r': 21.333333333333332}
+  record: .veriphy/runs/check-metric/….json
 $ veriphy layers step check-metric "t x y z" "diag(-1, exp(2*H*t), exp(2*H*t), exp(2*H*t))" "R = 12*H**2"
 check-metric t x y z: accepted
   level: curvature-checked (oracle)
+  record: .veriphy/runs/check-metric/….json
 ```
 
 The metric is a SymPy matrix, `diag(...)` or a nested list, over the coordinates; every other name is a constant.

@@ -1,12 +1,14 @@
 # Packs
 
-A pack brings one field to Veriphy. It is a directory with a `pack.yaml` that declares how the field checks its
-claims: the tools it runs, the operations on them, the steps that record each check, the levels a check can grant, the
-conventions its claims assume, and the workflows that order the steps. Beside it sit any Python functions the pack
-needs and the playbooks its agents follow.
+A pack holds the checks of one field. Statistics has a pack that reruns analyses and recomputes p-values. Physics has
+one that checks the units of formulas. Mathematics has one that checks proofs in Lean. You choose the packs a project
+uses in its `veriphy.yaml`, and their steps become commands.
 
-Veriphy itself is not a pack: records, the claim graph, workflows and the agent steps (`record-statement`,
-`record-proof`, `record-claims`) are in every workspace, whatever its packs.
+This page lists the packs that ship with Veriphy, then explains how to choose, combine and write packs. Each pack
+has its own page with examples.
+
+Some things don't belong to any field, so every workspace has them, whatever its packs: records, the claim graph,
+workflows, and the steps `record-statement`, `record-claims`, `validate`, `reason`, `appendix` and `check-concepts`.
 
 ## The shipped packs
 
@@ -16,9 +18,9 @@ takes it to mean: SciPy recomputes a p-value, Biopython reads a FASTA file, RDKi
 | Pack | Field | Steps | Levels | Install |
 |---|---|---|---|---|
 | [`math`](math.md) | mathematics, and mathematical physics, in Lean | `check`, `levels`, `sample`, `record-proof` | `oracle-test` < `kernel-test` < `lean-proof` < `certificate` | Lean, SageMath |
-| [`statistics`](statistics.md) | analyses of data, and the statistics papers report | `reproduce`, `robustness`, `check-p-value`, `check-mean` | `reproduced` < `robust` | `veriphy[statistics]`: pandas, SciPy, statsmodels |
+| [`statistics`](statistics.md) | analyses of data, and the statistics papers report | `reproduce`, `robustness`, `check-p-value`, `check-mean` | `recomputed` < `reproduced` < `robust` | `veriphy[statistics]`: pandas, SciPy, statsmodels |
 | [`social-science`](social_science.md) | surveys and studies: their scales and constructs | `check-reliability`, and the `statistics` steps | those of `statistics` | `veriphy[social-science]`: pingouin |
-| [`economics`](economics.md) | the tables of economic papers | `recompute`, and the `statistics` steps | `recomputed` < `reproduced` < `robust` | `veriphy[economics]` |
+| [`economics`](economics.md) | the tables of economic papers | `recompute`, and the `statistics` steps | those of `statistics` | `veriphy[economics]` |
 | [`physics`](physics.md) | formulas and physical constants | `check-units`, `check-constant` | `dimensionally-consistent` | `veriphy[physics]`: pint, SciPy |
 | [`life-sciences`](life_sciences.md) | sequences, and ontology terms | `check-sequence` | `sequence-checked` | `veriphy[life-sciences]`: Biopython, pronto |
 | [`chemistry`](chemistry.md) | molecules and reactions | `check-molecule`, `check-reaction` | `structure-checked` | `veriphy[chemistry]`: RDKit |
@@ -98,6 +100,8 @@ directly above `none` leave the order open:
 ```console
 $ veriphy config check
 config: levels dimensionally-consistent and structure-checked are both directly above 'none': set one's `above`
+config: levels.dimensionally-consistent is not on the chain from none
+config: levels.structure-checked is not on the chain from none
 ```
 
 The workspace settles it:
@@ -141,64 +145,27 @@ a published table with pandas and compares it with the claim.
 
 ### A check in Python
 
-The check is a Python function. It receives the step's inputs and returns a status with what it found:
+The check is a Python function. It receives the step's inputs and returns a status with what it found. This is the
+`economics` pack's, in full:
 
 ```python
-# veriphy/packs/economics/primitives/_tables.py (shortened)
-import pandas as pd
-
-
-def statistic(inputs):
-    data = pd.read_csv(inputs['data'])
-    values = data[inputs['column']].dropna().astype(float)
-    first, last = float(values.iloc[0]), float(values.iloc[-1])
-    found = {'mean': lambda: float(values.mean()), 'cagr': lambda: (last / first) ** (1 / (len(values) - 1)) - 1}
-    return {'status': 'reported', 'value': found[inputs['statistic']](), 'rows': len(values)}
+--8<-- "src/veriphy/packs/economics/primitives/_tables.py"
 ```
 
-The `pack.yaml` declares a level, the function as a primitive, a step over it, and a workflow:
+The `pack.yaml` declares the function as a primitive, a step over it, the field's conventions and a workflow:
 
 ```yaml
-version: 1
-name: economics
-requires: [statistics]           # its steps come too, and its levels are placed relative to these
+--8<-- "src/veriphy/packs/economics/pack.yaml"
+```
 
+The step grants `recomputed`, a level the `statistics` pack declares. A pack that needs a level of its own declares it
+with its trust class and the level directly below it. These are the `statistics` pack's:
+
+```yaml
 levels:
-  recomputed:
-    trust: reproduction          # the same number again from the same data: evidence of the reproduction kind
-    above: none
-    description: A statistic of a table, recomputed from the published data, agrees with the claim.
-  reproduced: {above: recomputed}   # a reproduced analysis is stronger evidence than one recomputed statistic
-
-conventions:
-  price-basis: [nominal-prices, real-prices]
-
-primitives:
-  table.statistic:
-    function: veriphy.packs.economics.primitives._tables:statistic
-    trust: reproduction
-    input:
-      type: object
-      required: [data, column, statistic]
-      properties: {data: {type: string}, column: {type: string}, statistic: {enum: [mean, median, sum, growth, cagr]}}
-    output: {type: object, required: [status]}
-
-steps:
-  recompute:
-    kind: check
-    primitive: table.statistic
-    grants: recomputed
-    compare: {field: value, against: claimed, tolerance: reported}
-    help: recompute a statistic of a table's column and compare it with the claim
-    inputs:
-      data: {scope: file, path: true, help: the published data, as CSV}
-      column: {help: the column}
-      statistic: {help: 'mean, median, sum, growth or cagr'}
-      claimed: {type: number, optional: true, record: true, help: the value the claim reports}
-      claim: {optional: true, record: true, help: 'the claim, so its level follows the record'}
-
-workflows:
-  check-table: [record-claims, recompute]
+  recomputed: {trust: reproduction, above: none, description: 'A statistic recomputed from the published data agrees with the claim.'}
+  reproduced: {trust: reproduction, above: recomputed, description: 'The same estimate from the same code and data.'}
+  robust: {trust: reproduction, above: reproduced, description: 'Reproduced, and its sign and significance hold under every declared variation.'}
 ```
 
 The step's command follows from its inputs: required inputs become arguments, optional ones options.
@@ -206,8 +173,9 @@ The step's command follows from its inputs: required inputs become arguments, op
 ```console
 $ veriphy layers step recompute gdp.csv real_gdp cagr --claimed 0.016 --claim gdp-growth
 recompute gdp.csv: agrees
-  found 0.01596393764952242, the claim says 0.016 (tolerance 0.0005)
+  found 0.0159639, the claim says 0.016 (tolerance 0.0005)
   level: recomputed (reproduction)
+  record: .veriphy/runs/recompute/….json
 ```
 
 A step that compares grants its level only when the comparison runs and agrees. `tolerance: reported` accepts any
@@ -262,7 +230,7 @@ grant the level.
 | `commands` | the pack's own programs, run as `veriphy pack <pack> <program>` |
 | `requires` | the packs it builds on |
 
-The [reference](../overview/reference.md#packyaml) lists every field. Playbooks and skills go in the pack's `agents/`
+The [configuration reference](../overview/reference.md#packyaml) lists every field. Playbooks and skills go in the pack's `agents/`
 directory. Python code is imported only when it's used, so a pack whose tools are missing still loads, and
 `veriphy layers primitive list` shows what can't run.
 

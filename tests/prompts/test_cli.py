@@ -102,3 +102,9 @@ def test_assets_come_from_the_math_packs_lean_sources() -> None:
     asset = entries()['assets/VeriphyAssets/FusionData.lean']
     assert asset.is_file()
     assert asset.parts[-5:-2] == ('math', 'lean', 'assets')
+
+
+def test_list_and_show_take_a_pack(capsys: pytest.CaptureFixture[str]) -> None:
+    """List and show only the named pack's playbooks."""
+    assert _run(capsys, 'list', '--pack', 'statistics') == 'reproduce.md\nskills/reproduce/SKILL.md\n'
+    assert _run(capsys, 'show', 'reproduce', '--pack', 'statistics').startswith('# Reproduce an analysis')

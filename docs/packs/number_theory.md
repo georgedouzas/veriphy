@@ -17,12 +17,15 @@ packs: [number-theory]
 $ veriphy layers step check-factorization 147573952589676412927 "193707721 * 761838257287" --claim mersenne-67
 check-factorization 147573952589676412927: accepted
   level: oracle-test (oracle)
+  record: .veriphy/runs/check-factorization/….json
 $ veriphy layers step check-factorization 147573952589676412927 147573952589676412927
 check-factorization 147573952589676412927: refused
   why: 147573952589676412927 is not prime
+  record: .veriphy/runs/check-factorization/….json
 $ veriphy layers step check-class-number "x^2 + 23" 1
 check-class-number x^2 + 23: refused
   why: the class number is 3, not 1
+  record: .veriphy/runs/check-class-number/….json
 ```
 
 A factorization is a product of primes and powers, `2^3 * 3 * 5`. Primality is PARI's `isprime`, a proof by APR-CL or

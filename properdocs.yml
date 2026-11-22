@@ -1,5 +1,5 @@
 site_name: "veriphy"
-site_description: "An extensible verification framework: deterministic steps, recorded evidence, trust classes and levels, with packs for each field"
+site_description: "Check the claims in research papers, and keep a record of every check"
 site_url: "https://georgedouzas.github.io/veriphy"
 repo_url: "https://github.com/georgedouzas/veriphy"
 repo_name: "georgedouzas/veriphy"
@@ -19,9 +19,12 @@ theme:
 nav:
   - Overview:
     - index.md
+    - Installation: overview/install.md
     - Getting started: overview/getting_started.md
-    - Guide: overview/user_guide.md
-    - Reference: overview/reference.md
+    - Tutorial: overview/tutorial.md
+    - User guide: overview/user_guide.md
+    - Commands: overview/commands.md
+    - Configuration: overview/reference.md
     - Changelog: overview/changelog.md
     - License: overview/license.md
   - Packs:
@@ -82,6 +85,7 @@ plugins:
   - gen-files:
       scripts:
       - docs/generate_api.py
+      - docs/generate_cli.py
   - literate-nav:
       nav_file: SUMMARY.md
   - section-index

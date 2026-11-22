@@ -26,13 +26,16 @@ $ veriphy layers step check-hazard-ratio trial.csv months died --covariate treat
 check-hazard-ratio trial.csv: agrees
   found 0.625649, the claim says 0.63 (tolerance 0.005)
   level: recomputed (reproduction)
+  record: .veriphy/runs/check-hazard-ratio/….json
 $ veriphy layers step check-median-survival trial.csv months died --group arm=control --claimed 19.2
 check-median-survival trial.csv: agrees
   found 19.2, the claim says 19.2 (tolerance 0.05)
   level: recomputed (reproduction)
+  record: .veriphy/runs/check-median-survival/….json
 $ veriphy layers step check-median-survival trial.csv months died --group arm=treatment --claimed 30
 check-median-survival trial.csv: differs from the claim
   found 32.5, the claim says 30 (tolerance 0.5)
+  record: .veriphy/runs/check-median-survival/….json
 ```
 
 The data has a row per subject: the time to the event or to censoring, and whether the event happened. The hazard

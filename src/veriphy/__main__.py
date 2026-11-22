@@ -139,7 +139,7 @@ def pack_list(ctx: click.Context) -> None:
 
 
 def help_text(root: Path | None = None) -> str:
-    """Return what `veriphy help` prints: the groups, the workspace's steps and pack programs, and Lean's verbs.
+    """Return what `veriphy help` prints: the groups, the steps, the pack programs, and Lean's verbs under `math`.
 
     Args:
         root: The workspace root, found from the current directory when `None`.
@@ -148,16 +148,21 @@ def help_text(root: Path | None = None) -> str:
         The text.
     """
     workspace = find_workspace_root(root)
-    lines = ['Layers (veriphy layers <layer> …):']
-    lines += [f'  {name:<14}{about}' for name, (_, _, about) in LAYERS.items()]
-    lines += ['', 'Steps (veriphy layers step <name> …, or veriphy.run(name, target, …) in Python):']
+    resolved = resolve(workspace)
     steps = load_steps(workspace)
-    lines += [f'  {name:<14}{step.kind:<10}{step.help}' for name, step in sorted(steps.items())]
-    for pack, programs in sorted(pack_commands(resolve(workspace)).items()):
+    programs = pack_commands(resolved)
+    names = [*LAYERS, *steps, *LEAN_VERBS, *(n for p in programs.values() for n in p)]
+    width = max(map(len, names)) + 2
+    lines = ['Layers (veriphy layers <layer> …):']
+    lines += [f'  {name:<{width}}{about}' for name, (_, _, about) in LAYERS.items()]
+    lines += ['', 'Steps (veriphy layers step <name> …, or veriphy.run(name, target, …) in Python):']
+    lines += [f'  {name:<{width}}{step.kind:<10}{step.help}' for name, step in sorted(steps.items())]
+    for pack, commands in sorted(programs.items()):
         lines += ['', f'The {pack} pack (veriphy pack {pack} <program> …):']
-        lines += [f'  {name:<14}{about}' for name, (_, about) in sorted(programs.items())]
-    lines += ['', 'In Lean:']
-    lines += [f'  {name:<14}{about}' for name, about in LEAN_VERBS.items()]
+        lines += [f'  {name:<{width}}{about}' for name, (_, about) in sorted(commands.items())]
+    if 'math' in {pack.name for pack in resolved.packs}:
+        lines += ['', 'In Lean:']
+        lines += [f'  {name:<{width}}{about}' for name, about in LEAN_VERBS.items()]
     return '\n'.join(lines) + '\n'
 
 

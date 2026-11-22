@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from veriphy.core import check_config, resolve
+from veriphy.core import StepError, check_config, resolve
 from veriphy.steps import load_steps, run_step
 from veriphy.workflows import next_step, run_workflow
 
@@ -139,3 +139,12 @@ def test_shipped_workflows_name_real_steps(tmp_path: Path) -> None:
     for packs in ('[math]', '[social-science]'):
         (tmp_path / 'veriphy.yaml').write_text(f'version: 1\npacks: {packs}\n')
         assert check_config(resolve(tmp_path)) == []
+
+
+def test_run_refuses_a_target_its_records_do_not_name(workspace: Path) -> None:
+    """Stop and name the step's first input when a step it ran wrote a record that does not name the target."""
+    (workspace / 'Claim.lean').write_text('fine')
+    (workspace / 'Other.lean').write_text('fine')
+    run_step(load_steps(workspace)['write'], workspace, {'artifact': 'Other.lean', 'by': 'agent'})
+    with pytest.raises(StepError, match="the target must be each step's first input, here its file"):
+        run_workflow(workspace, 'flow', 'Other.lean', {'file': 'Claim.lean'})

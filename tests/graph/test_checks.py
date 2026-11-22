@@ -76,6 +76,7 @@ def test_clashes_reports_a_clash_across_papers(workspace: Path, checker: Path) -
     node = source_iri('chapter3', 'thm-9.9')
     assert [(c.node, c.first, c.second, c.checked) for c in found] == [(node, HALF, ONE, True)]
     assert 'thm-9.9 assumes half and one' in clash_report(found, run)
+    assert clash_report(found, run).startswith('1 clash (run ')
 
 
 def test_clash_report_says_absence_is_not_checked(workspace: Path, fake_checker: Callable[[str], Path]) -> None:

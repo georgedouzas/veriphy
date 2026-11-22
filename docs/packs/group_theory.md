@@ -16,9 +16,11 @@ packs: [group-theory]
 $ veriphy layers step check-group "SmallGroup(12, 3)" structure A4
 check-group SmallGroup(12, 3): accepted
   level: oracle-test (oracle)
+  record: .veriphy/runs/check-group/….json
 $ veriphy layers step check-group "DihedralGroup(8)" abelian true
 check-group DihedralGroup(8): refused
   why: it is not abelian
+  record: .veriphy/runs/check-group/….json
 ```
 
 A group is named by a GAP constructor with integer arguments, such as `SmallGroup(12, 3)`, `DihedralGroup(8)` (GAP

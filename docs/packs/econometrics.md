@@ -29,6 +29,7 @@ $ veriphy layers step check-regression panel.csv "log_wage ~ training + EntityEf
 check-regression panel.csv: agrees
   found 0.0800536, the claim says 0.08 (tolerance 0.0005)
   level: recomputed (reproduction)
+  record: .veriphy/runs/check-regression/….json
 ```
 
 Without the firm effects, the estimate absorbs the firms' differences:
@@ -37,6 +38,7 @@ Without the firm effects, the estimate absorbs the firms' differences:
 $ veriphy layers step check-regression panel.csv "log_wage ~ 1 + training" training --claimed 0.080
 check-regression panel.csv: differs from the claim
   found 0.0945534, the claim says 0.08 (tolerance 0.0005)
+  record: .veriphy/runs/check-regression/….json
 ```
 
 The formula is in linearmodels' syntax. `y ~ 1 + x` is fitted by OLS, `y ~ 1 + x + [w ~ z]` by two-stage least

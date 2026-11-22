@@ -23,9 +23,11 @@ is synthetic: a 300-base reference, reads tiled across it, and three variants ca
 $ veriphy layers step check-variant variants.vcf "chr1:120 C>T" --sample patient --genotype 1/1 --claim homozygous
 check-variant variants.vcf: accepted
   level: genomic-data-checked (checker)
+  record: .veriphy/runs/check-variant/….json
 $ veriphy layers step check-variant variants.vcf "chr1:120 C>T" --sample control --genotype 1/1
 check-variant variants.vcf: refused
   why: control is 0/1, not 1/1
+  record: .veriphy/runs/check-variant/….json
 ```
 
 Positions are 1-based, as in VCF. The depth of a region is recomputed from the alignments, in SAM, BAM or CRAM:
@@ -35,9 +37,11 @@ $ veriphy layers step check-coverage reads.sam chr1:101-200 --claimed 20
 check-coverage reads.sam: agrees
   found 20, the claim says 20 (tolerance 0.5)
   level: genomic-data-checked (checker)
+  record: .veriphy/runs/check-coverage/….json
 $ veriphy layers step check-coverage reads.sam chr1:101-200 --quality 30 --claimed 20
 check-coverage reads.sam: differs from the claim
   found 15, the claim says 20 (tolerance 0.5)
+  record: .veriphy/runs/check-coverage/….json
 ```
 
 `--quality` counts only reads of at least that mapping quality, as a pipeline's filter does.

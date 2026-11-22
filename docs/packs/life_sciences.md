@@ -25,9 +25,11 @@ holds a 720-base coding sequence of a fluorescent protein:
 $ veriphy layers step check-sequence sequences.fasta --length 720 --gc 0.39 --motif GCTAGCAAAGGA --claim gfp-length
 check-sequence sequences.fasta: accepted
   level: sequence-checked (checker)
+  record: .veriphy/runs/check-sequence/….json
 $ veriphy layers step check-sequence sequences.fasta --length 717
 check-sequence sequences.fasta: refused
   why: the length is 720, not 717
+  record: .veriphy/runs/check-sequence/….json
 ```
 
 `--protein` checks the translation in the standard code, to the first stop, and `--record` picks a record other than
@@ -41,10 +43,15 @@ A source's concepts name ontology terms in the claim graph, by `owl:sameAs`:
 :bioluminescence a vp:Concept ; owl:sameAs <http://purl.obolibrary.org/obo/GO_0008218> .
 ```
 
+The example's claims are in `claims.agent.ttl`. Put them in the claim graph, then check their concepts against the
+Gene Ontology excerpt:
+
 ```console
+$ mkdir -p .veriphy/graph/sources && mv claims.agent.ttl .veriphy/graph/sources/
 $ veriphy layers step check-concepts go-excerpt.obo
 check-concepts go-excerpt.obo: conforms
   concepts: bioluminescence is "bioluminescence"
+  record: .veriphy/runs/check-concepts/….json
 ```
 
 The ontology is any OBO or OWL file pronto reads, or a SKOS thesaurus.

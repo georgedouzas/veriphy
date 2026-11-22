@@ -7,17 +7,20 @@ from pathlib import Path
 import click
 
 from veriphy.core import RecordError, find_workspace_root
+from veriphy.steps._declared import Reported
 from veriphy.steps._records import RecordStore, read_record
 from veriphy.steps._registry import load_steps, step_packs
 from veriphy.steps._runner import USAGE_EXIT, Argument, Params, Result, Step, exit_code, run_step
 from veriphy.steps._summary import summary
+
+NUMBER = 'NUMBER'
 
 
 def _parameter(argument: Argument) -> click.Parameter:
     """Return the click parameter of one step argument: positional, an option, or a repeatable option."""
     kind = click.Choice(list(argument.choices)) if argument.choices else click.types.convert_type(argument.type)
     if not argument.option:
-        return click.Argument([argument.name], type=kind)
+        return click.Argument([argument.name], type=kind, help=argument.help or None)
     flag = argument.flag or '--' + argument.name.replace('_', '-')
     return click.Option(
         [flag, argument.name],
@@ -25,6 +28,7 @@ def _parameter(argument: Argument) -> click.Parameter:
         default=None if argument.many else argument.default,
         multiple=argument.many,
         help=argument.help or None,
+        metavar=NUMBER if argument.type is Reported else None,
     )
 
 

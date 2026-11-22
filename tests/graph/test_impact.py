@@ -73,3 +73,15 @@ def test_plan_reports_a_statement_edit_without_consequences(
     assert not result.added
     assert not result.removed
     assert '0 changed consequences (checked)' in plan_report(result)
+
+
+def test_plan_reasons_with_the_workspaces_packs(committed: Path, fake_checker: Callable[[str], Path]) -> None:
+    """Reason about the graph at the revision with the workspace's own packs, so only the edit changes the levels."""
+    workspace = committed
+    (workspace / 'veriphy.yaml').write_text('version: 1\npacks: [statistics]\n')
+    sources = workspace / '.veriphy' / 'graph' / 'sources'
+    text = (sources / 'chapter9.agent.ttl').read_text().replace('"An estimate."', '"A sharper estimate."')
+    (sources / 'chapter9.agent.ttl').write_text(text)
+    result = plan(load_graph(workspace), 'HEAD', fake_checker('accepted'))
+    assert not result.added
+    assert not result.removed

@@ -23,9 +23,11 @@ packs: [physics]
 $ veriphy layers step check-units "E = m * c**2" --unit E=J --unit m=kg --unit c=m/s
 check-units E = m * c**2: accepted
   level: dimensionally-consistent (checker)
+  record: .veriphy/runs/check-units/….json
 $ veriphy layers step check-units "T = 2 * pi * sqrt(L * g)" --unit T=s --unit L=m --unit "g=m/s**2"
 check-units T = 2 * pi * sqrt(L * g): refused
   why: the left side is [time] and the right side [length] / [time]
+  record: .veriphy/runs/check-units/….json
 ```
 
 Units are in pint's notation. `pi` is a number, the arguments of `exp`, `log`, `sin` and the other elementary
@@ -37,6 +39,7 @@ functions must be dimensionless, and a symbol without a unit is named.
 $ veriphy layers step check-constant "Newtonian constant of gravitation" --claimed 6.674e-11
 check-constant Newtonian constant of gravitation: agrees
   found 6.6743e-11, the claim says 6.674e-11 (tolerance 5e-15)
+  record: .veriphy/runs/check-constant/….json
 ```
 
 The value is in CODATA's unit. The record names SciPy's version, and so the CODATA release.

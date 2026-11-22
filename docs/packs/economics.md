@@ -25,6 +25,7 @@ $ veriphy layers step recompute gdp.csv real_gdp cagr --claimed 0.016 --claim gd
 recompute gdp.csv: agrees
   found 0.0159639, the claim says 0.016 (tolerance 0.0005)
   level: recomputed (reproduction)
+  record: .veriphy/runs/recompute/….json
 ```
 
 The statistic is `mean`, `median`, `sum`, `growth` (from the first row to the last, as a fraction) or `cagr`, the

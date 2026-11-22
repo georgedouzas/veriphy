@@ -194,7 +194,8 @@ def run_workflow(root: Path, workflow: str, target: str, inputs: Mapping[str, ob
         What each step run did, then what happens next, with the command to type.
 
     Raises:
-        StepError: If the workflow neither reaches an agent step nor its end within its bound of steps.
+        StepError: If a step's record does not name the target, or the workflow neither reaches an agent step nor its
+            end within its bound of steps.
     """
     steps = load_steps(root)
     lines: list[str] = []
@@ -204,6 +205,13 @@ def run_workflow(root: Path, workflow: str, target: str, inputs: Mapping[str, ob
             return [*lines, *explain(workflow, target, planned, steps)]
         step = steps[planned.step]
         result = run_step(step, root, _params(step, target, inputs))
+        if not _names(root, target) & {str(v) for v in result.record.inputs.values()}:
+            given = step.arguments[0].name if step.arguments else 'none'
+            message = (
+                f'{step.name} ran on inputs that do not include {target}, so the workflow cannot find its record: '
+                f"the target must be each step's first input, here its {given}"
+            )
+            raise StepError(message)
         first = step.arguments[0].name if step.arguments else None
         lines += summary(result, root, first).splitlines()
         if result.replayed:
