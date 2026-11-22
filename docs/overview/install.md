@@ -43,7 +43,7 @@ Then require Veriphy's Lean library in your Lean project's `lakefile.toml`:
 [[require]]
 name = "veriphy"
 git = "https://github.com/georgedouzas/veriphy"
-rev = "0.8.1"
+rev = "0.8.2"
 subDir = "src/veriphy/packs/math/lean"
 ```
 

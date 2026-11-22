@@ -15,7 +15,7 @@ sage -pip install veriphy
 [[require]]
 name = "veriphy"
 git = "https://github.com/georgedouzas/veriphy"
-rev = "0.8.1"
+rev = "0.8.2"
 subDir = "src/veriphy/packs/math/lean"
 ```
 
