@@ -6,16 +6,32 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 <!-- insertion marker -->
+## [0.8.2](https://github.com/georgedouzas/veriphy/releases/tag/0.8.2) - 2026-11-22
+
+<small>[Compare with 0.8.1](https://github.com/georgedouzas/veriphy/compare/0.8.1...0.8.2)</small>
+
+### Bug Fixes
+
+- Write the configuration that claims plan copies as JSON, so an ordered mapping a library's YAML loader returns can be written ([79c42b1](https://github.com/georgedouzas/veriphy/commit/79c42b18d9aef1be81509e83daddcdb7ff4a3e14) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+### Docs
+
+- Pin 0.8.2 in the install page, the math page and the plugin manifest ([a82c8fb](https://github.com/georgedouzas/veriphy/commit/a82c8fb23d6c79951bb6fe6b4a69d207a0bc6c43) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
 ## [0.8.1](https://github.com/georgedouzas/veriphy/releases/tag/0.8.1) - 2026-11-22
 
 <small>[Compare with 0.8.0](https://github.com/georgedouzas/veriphy/compare/0.8.0...0.8.1)</small>
 
 ### Docs
 
-- Archive readable-docs after a green CI, and pin 0.8.1 in the install page, the math page and the plugin manifest ([d9d9fe3](https://github.com/georgedouzas/veriphy/commit/d9d9fe3f70a56cc19cb51ed9d5eec025c7c0d119) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
-- Mark the readable-docs gate done after a green CI ([0e4bcee](https://github.com/georgedouzas/veriphy/commit/0e4bcee486bf51a4f0d6a81ea7c1d6582b1fda49) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
-- Allow the checker's download message in the tutorial's checker build output ([39476c7](https://github.com/georgedouzas/veriphy/commit/39476c7d7b61712fdbd40343523546115d583fec) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
-- Rewrite the documentation around one example, with every console session run by the tests ([0d6fd51](https://github.com/georgedouzas/veriphy/commit/0d6fd5112ed81a1534939ca410428d2be2251564) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Archive readable-docs after a green CI, and pin 0.8.1 in the install page, the math page and the plugin manifest ([7c0a109](https://github.com/georgedouzas/veriphy/commit/7c0a1090734c1d07926145f38fd236e441eec2d6) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Mark the readable-docs gate done after a green CI ([ca4e0e2](https://github.com/georgedouzas/veriphy/commit/ca4e0e262b065a7e969f41d47979076604c71865) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Allow the checker's download message in the tutorial's checker build output ([8b5a5f4](https://github.com/georgedouzas/veriphy/commit/8b5a5f48b2114e75eb16113c918307217482577b) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Rewrite the documentation around one example, with every console session run by the tests ([a2ed129](https://github.com/georgedouzas/veriphy/commit/a2ed1293737d505d04e325091d036a05c16004dd) by georgedouzas). Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+### Chore
+
+- Release 0.8.1 ([58b6cee](https://github.com/georgedouzas/veriphy/commit/58b6ceecda73295adc51895e817ac542e5910532) by georgedouzas).
 
 ## [0.8.0](https://github.com/georgedouzas/veriphy/releases/tag/0.8.0) - 2026-11-22
 
