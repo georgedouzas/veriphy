@@ -1,5 +1,6 @@
 """Show which claims a convention reaches, and what an edit to the graph changes against a git revision."""
 
+import json
 import tempfile
 from collections import deque
 from dataclasses import dataclass, replace
@@ -161,7 +162,8 @@ def _copy_config(root: Path, workspace: Path) -> None:
     if isinstance(packs, list):
         local = [str(p) for p in packs if '/' in str(p) or str(p).startswith('.')]
         declared['packs'] = [str((root / str(p)).resolve()) if str(p) in local else p for p in packs]
-    (workspace / WORKSPACE_FILE).write_text(yaml.safe_dump(declared))
+    # JSON is YAML, and dumps any mapping, also the ordered ones a library's YAML loader may return
+    (workspace / WORKSPACE_FILE).write_text(json.dumps(declared))
 
 
 def _consequences(graph: ProjectGraph, run: Run) -> set[Triple]:
