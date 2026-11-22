@@ -25,5 +25,5 @@
 
 ## 4. Gate
 
-- [ ] 4.1 `nox -s checks`, the docs build, and the full test suite pass
-- [ ] 4.2 CI is green
+- [x] 4.1 `nox -s checks`, the docs build, and the full test suite pass
+- [x] 4.2 CI is green
