@@ -390,7 +390,7 @@ def _skipped(tally: Tally) -> str | None:
 
 _register_method(
     MEANING_METHODS,
-    'meaning',
+    'sample',
     problem=_coerce_json,
     seed=_coerce_int(0),
     values=_coerce_int(DEFAULT_VALUES),

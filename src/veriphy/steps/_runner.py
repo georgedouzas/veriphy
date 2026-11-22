@@ -65,6 +65,7 @@ class Argument:
         choices: The values allowed, when they are few.
         flag: The option's spelling when it differs from `--name`, as `--prefix` for `prefixes`.
         many: An option that may be repeated, collecting a list.
+        required: An option that must be given.
     """
 
     name: str
@@ -75,6 +76,7 @@ class Argument:
     choices: tuple[str, ...] = ()
     flag: str | None = None
     many: bool = False
+    required: bool = False
 
 
 @dataclass(frozen=True)

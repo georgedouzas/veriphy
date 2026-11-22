@@ -12,8 +12,9 @@ from veriphy.claims._vocabulary import (
     vocabulary_terms,
     vp,
 )
-from veriphy.core import GraphError, find_workspace_root, project_dir
+from veriphy.core import GraphError, find_workspace_root, level_order, project_dir, resolve
 from veriphy.primitives.graph._engine import Triple, parse_rdf, serialize_turtle
+from veriphy.steps import RecordStore, read_record
 
 GRAPH_DIR = 'graph'
 SOURCES_DIR = 'sources'
@@ -71,7 +72,7 @@ class Assertion:
 
     Args:
         triple: The triple, in N-Triples spelling.
-        provenance: `agent`, `human` or `lean`.
+        provenance: `agent`, `human`, `lean`, or `record` for a level a step's record grants.
         file: The file that asserts it.
     """
 
@@ -162,7 +163,36 @@ def load_graph(root: Path | None = None) -> ProjectGraph:
         _check_terms(path, triples, declared)
         assertions += [Assertion(t, 'lean', path) for t in triples]
         files.append((path, len(triples)))
-    return ProjectGraph(workspace, tuple(assertions), tuple(files))
+    graph = ProjectGraph(workspace, tuple(assertions), tuple(files))
+    return ProjectGraph(workspace, (*assertions, *_recorded_levels(graph)), tuple(files))
+
+
+def _label(node: str) -> str:
+    """Return a node's label: what follows `#` in its IRI, or a Lean node's name."""
+    term = node.strip('<>')
+    return term.rsplit('#', 1)[-1] if '#' in term else term.removeprefix(LEAN)
+
+
+def _recorded_levels(graph: ProjectGraph) -> list[Assertion]:
+    """Return the level each claim's records grant, as one `hasLevel` assertion per claim at the highest of them.
+
+    A record gives a claim a level when its inputs name the claim by its label, or name the Lean declaration that
+    formalizes it. Asserting the level lets the reasoning, and the checker, take it into account.
+    """
+    order = level_order(resolve(graph.root))
+    granted: list[tuple[str, frozenset[str], Path]] = []
+    for path in RecordStore(graph.root).all():
+        record = read_record(path)
+        if record.level is not None and record.level in order:
+            granted.append((str(record.level), frozenset(str(v) for v in record.inputs.values()), path))
+    found: list[Assertion] = []
+    for claim in sorted(graph.nodes_of_type('Claim')):
+        names = {_label(claim), *(_label(f) for f in graph.objects(claim, 'formalizedBy'))}
+        levels = [(order.index(level), level, path) for level, named, path in granted if names & named]
+        if levels:
+            _, level, path = max(levels)
+            found.append(Assertion((claim, vp('hasLevel'), vp(level)), 'record', path))
+    return found
 
 
 def resolve_term(token: str, source: str, *, predicate: bool = False) -> str:

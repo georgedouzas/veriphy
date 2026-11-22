@@ -1,0 +1,24 @@
+# The claims of chapter 3 of a (fictitious) study, as an agent extracted them.
+@prefix vp: <urn:veriphy:vocabulary#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix : <urn:veriphy:source:chapter3#> .
+
+# the constructs, each a concept of the thesaurus
+:social-trust a vp:Concept ; owl:sameAs <https://example.org/thesaurus/social-trust> .
+:education a vp:Concept ; owl:sameAs <https://example.org/thesaurus/educational-attainment> .
+
+# two ways to measure social trust: conventions of one aspect, which exclude each other
+:trust-index a vp:Convention ; vp:conventionFor "measure-of-social-trust" ;
+    vp:statement "the mean of the three trust items, trust_q1 to trust_q3" .
+:trust-single-item a vp:Convention ; vp:conventionFor "measure-of-social-trust" ;
+    vp:statement "the first trust item, trust_q1, alone" .
+
+:trust-education a vp:Claim ; vp:statedIn :chapter3 ; vp:location "chapter3.tex:12" ;
+    vp:statement "Each extra year of education raises social trust by 0.127 points." ;
+    vp:uses :social-trust, :education ; vp:assumes :trust-index .
+:trust-item a vp:Claim ; vp:statedIn :chapter3 ; vp:location "chapter3.tex:30" ;
+    vp:statement "On the first trust item alone, each year of education adds 0.117 points." ;
+    vp:uses :social-trust, :education ; vp:assumes :trust-single-item .
+:policy a vp:Claim ; vp:statedIn :chapter3 ; vp:location "chapter3.tex:41" ;
+    vp:statement "Expanding schooling would raise social trust." ;
+    vp:uses :trust-education, :trust-item .

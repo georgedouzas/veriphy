@@ -201,7 +201,8 @@ def load_registry(packages: Mapping[str, str] | None = None, resolved: Resolved 
     config = resolved if resolved is not None else installed(packages)
     registry = Registry()
     for name, spec in config.section('tools').items():
-        registry.tools[name] = read_tool(name, _mapping(spec), config.sources.get(f'tools.{name}', ''))
+        source = config.sources.get(f'tools.{name}', '')
+        registry.tools[name] = read_tool(name, _mapping(spec), source, config.directory(f'tools.{name}'))
     for name, spec in config.section('primitives').items():
         if isinstance(spec, dict) and 'composite' in spec:
             continue

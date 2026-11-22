@@ -90,7 +90,7 @@ return found(naturality_proof(matrix(QQ, [[1, 1, 1]]), [cycle, swap], [one, one]
     closure='generators'))"
 ```
 
-`lean/VeriphyTest/SageRun.lean` also proves the Fibonacci pentagons over `ℝ`, states the `SU(2)` level 2 fusion rules as
+`src/veriphy/packs/math/lean/VeriphyTest/SageRun.lean` also proves the Fibonacci pentagons over `ℝ`, states the `SU(2)` level 2 fusion rules as
 facts, and builds the S₃ intertwiner as a morphism of `Rep`.
 
 ## Failure modes

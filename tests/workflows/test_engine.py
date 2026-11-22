@@ -72,6 +72,12 @@ def _write(root: Path, text: str) -> None:
     run_step(load_steps(root)['write'], root, {'artifact': 'Claim.lean', 'by': 'agent'})
 
 
+def _results(lines: list[str]) -> list[str]:
+    """Return the step and status of each step a run reports, and how the run ends, as `step: status`."""
+    said = [line for line in lines if not line.startswith(' ')]
+    return [f"{line.split(' ', 1)[0]}: {line.rsplit(': ', 1)[-1]}" for line in said[:-1]] + [said[-1]]
+
+
 def test_undefined_steps_and_entries_are_refused(workspace: Path) -> None:
     """Refuse a workflow naming a step no pack defines, or going to an entry it does not have."""
     broken = PACK.replace("    - write\n", "    - certfy\n    - write: {written: nowhere}\n")
@@ -90,18 +96,19 @@ def test_the_agent_starts(workspace: Path) -> None:
 def test_a_counterexample_stops(workspace: Path) -> None:
     """Stop on a counterexample, naming the status."""
     _write(workspace, 'false')
-    assert run_workflow(workspace, 'flow', 'Claim.lean', {})[-1] == 'flow: counterexample'
+    assert run_workflow(workspace, 'flow', 'Claim.lean', {})[-1] == 'flow on Claim.lean: stopped: counterexample'
 
 
 def test_back_to_an_earlier_entry_until_a_newer_record(workspace: Path) -> None:
     """Return to the agent after a refusal, and go on once it records a newer artifact."""
     _write(workspace, 'broken')
     lines = run_workflow(workspace, 'flow', 'Claim.lean', {})
-    waiting = 'flow: waiting for write: record the artifact, as veriphy layers step write Claim.lean'
-    assert lines == ['test: refused', 'verify: refused', waiting]
+    waiting = '  veriphy layers step write Claim.lean --by <your name>'
+    assert _results(lines)[:2] == ['test: refused', 'verify: refused']
+    assert waiting in lines
     assert next_step(workspace, 'flow', 'Claim.lean').step == 'write'
     _write(workspace, 'fixed')
-    assert run_workflow(workspace, 'flow', 'Claim.lean', {})[-1] == 'flow: done'
+    assert run_workflow(workspace, 'flow', 'Claim.lean', {})[-1] == 'flow on Claim.lean: done'
 
 
 def test_attempts_exhausted_and_a_condition(workspace: Path) -> None:
@@ -110,13 +117,14 @@ def test_attempts_exhausted_and_a_condition(workspace: Path) -> None:
     run_workflow(workspace, 'flow', 'Claim.lean', {})
     _write(workspace, 'still broken')
     lines = run_workflow(workspace, 'flow', 'Claim.lean', {})
-    assert lines[-2:] == ['sample: refused', 'flow: done']
+    assert _results(lines)[-2:] == ['sample: refused', 'flow on Claim.lean: done']
 
 
 def test_a_proof_skips_the_condition(workspace: Path) -> None:
     """Skip an entry whose condition fails: once a record grants a `kernel` level, `sample` does not run."""
     _write(workspace, 'fine')
-    assert run_workflow(workspace, 'flow', 'Claim.lean', {}) == ['test: accepted', 'verify: accepted', 'flow: done']
+    lines = run_workflow(workspace, 'flow', 'Claim.lean', {})
+    assert _results(lines) == ['test: accepted', 'verify: accepted', 'flow on Claim.lean: done']
 
 
 def test_same_records_same_answer(workspace: Path) -> None:
@@ -127,7 +135,7 @@ def test_same_records_same_answer(workspace: Path) -> None:
 
 
 def test_shipped_workflows_name_real_steps(tmp_path: Path) -> None:
-    """Pass the check for the shipped workflows, with the math and reproduction packs each."""
-    for packs in ('[math]', '[reproduction]'):
+    """Pass the check for the shipped workflows, with the math and social-science packs each."""
+    for packs in ('[math]', '[social-science]'):
         (tmp_path / 'veriphy.yaml').write_text(f'version: 1\npacks: {packs}\n')
         assert check_config(resolve(tmp_path)) == []

@@ -15,9 +15,15 @@ def main(argv: list[str]) -> None:
     veriphy_main(['layers', 'claims', *argv])
 
 
+def step(workspace: Path, argv: list[str]) -> None:
+    """Run `veriphy layers step` in a workspace with the arguments."""
+    veriphy_main(['--root', str(workspace), 'layers', 'step', *argv])
+
+
 def test_main_commands_reach_the_api() -> None:
     """Map every command to a function of the public API."""
-    assert set(COMMANDS) >= {'validate', 'reason', 'levels', 'impact', 'plan', 'slice', 'appendix', 'checker'}
+    assert set(COMMANDS) >= {'levels', 'impact', 'plan', 'slice', 'clashes', 'checker'}
+    assert not {'validate', 'reason', 'appendix'} & set(COMMANDS)
     assert all(name in veriphy.claims.__all__ for name in COMMANDS.values())
 
 
@@ -29,9 +35,9 @@ def test_main_reason_exits_three_when_unchecked(
     """Exit with status 3 and say how to build the checker when it is missing."""
     monkeypatch.setenv('VERIPHY_OO_HORN', str(workspace / 'none'))
     with pytest.raises(SystemExit) as exc:
-        main(['--root', str(workspace), 'reason'])
+        step(workspace, ['reason'])
     assert exc.value.code == 3
-    assert 'checker build' in capsys.readouterr().out
+    assert 'to fix: set up the checker with `veriphy layers claims checker build`' in capsys.readouterr().out
 
 
 def test_main_appendix_writes_the_file(
@@ -41,17 +47,16 @@ def test_main_appendix_writes_the_file(
 ) -> None:
     """Write the appendix under `.veriphy/graph/appendix/`."""
     monkeypatch.setenv('VERIPHY_OO_HORN', str(fake_checker('accepted')))
-    main(['--root', str(workspace), 'appendix', 'chapter9', '--format', 'latex'])
+    step(workspace, ['appendix', 'chapter9', '--format', 'latex'])
     assert (workspace / '.veriphy' / 'graph' / 'appendix' / 'chapter9.tex').is_file()
 
 
 def test_main_confirm_and_validate(workspace: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Confirm a triple by short names, then validate the graph."""
     main(['--root', str(workspace), 'confirm', 'chapter9', 'lemma-5.2', 'assumes', 'half'])
-    main(['--root', str(workspace), 'validate'])
-    out = capsys.readouterr().out
-    assert 'chapter9.human.ttl' in out
-    assert 'conforms' in out
+    assert (workspace / '.veriphy' / 'graph' / 'sources' / 'chapter9.human.ttl').is_file()
+    step(workspace, ['validate'])
+    assert 'validate: conforms' in capsys.readouterr().out
 
 
 def test_main_reports_a_graph_error(workspace: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -97,7 +102,7 @@ def test_main_recheck_and_checker_path(
     """Recheck a stored run against the current graph, and print the checker's path."""
     checker = fake_checker('accepted')
     monkeypatch.setenv('VERIPHY_OO_HORN', str(checker))
-    main(['--root', str(workspace), 'reason'])
+    step(workspace, ['reason'])
     run = next((workspace / '.veriphy' / 'graph' / 'runs').iterdir())
     main(['--root', str(workspace), 'recheck', str(run)])
     main(['checker', 'path'])
@@ -116,13 +121,13 @@ def test_main_excludes_confirm_writes_human_triples(
     assert 'vp:excludes' in (workspace / '.veriphy' / 'graph' / 'sources' / 'chapter9.human.ttl').read_text()
 
 
-def test_main_reason_exits_three_when_rejected(
+def test_reason_refuses_a_rejected_run(
     workspace: Path,
     monkeypatch: pytest.MonkeyPatch,
     fake_checker: Callable[[str], Path],
 ) -> None:
-    """Exit with status 3 when the checker rejects the run."""
+    """Exit with status 1 when the checker rejects the run, as a refusal."""
     monkeypatch.setenv('VERIPHY_OO_HORN', str(fake_checker('rejected')))
     with pytest.raises(SystemExit) as exc:
-        main(['--root', str(workspace), 'reason'])
-    assert exc.value.code == 3
+        step(workspace, ['reason'])
+    assert exc.value.code == 1

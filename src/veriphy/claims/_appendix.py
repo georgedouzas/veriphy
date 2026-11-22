@@ -80,7 +80,7 @@ def _summary(graph: ProjectGraph, run: Run, source: str) -> list[str]:
         f'This appendix reports the verification of every claim of {source}, from reasoning run {run.directory.name}.',
         verdict,
         f'The run rests on these assertions by provenance: {provenance}.',
-        f'Recheck it from the workspace root with: python -m veriphy.claims recheck {directory}',
+        f'Recheck it from the workspace root with: veriphy layers claims recheck {directory}',
     ]
 
 

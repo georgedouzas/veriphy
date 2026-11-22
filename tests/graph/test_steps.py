@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from veriphy.__main__ import main
-from veriphy.claims import REASON, REPORT, VALIDATE, load_graph, reason, validate_shapes
+from veriphy.claims import APPENDIX, REASON, VALIDATE, load_graph, reason, validate_shapes
 from veriphy.steps import run_step
 
 
@@ -66,7 +66,7 @@ def test_report_writes_the_appendix(
 ) -> None:
     """Write the appendix over the recorded run, and name it in the record."""
     monkeypatch.setenv('VERIPHY_OO_HORN', str(fake_checker('accepted')))
-    result = run_step(REPORT, workspace, {'source': 'chapter9', 'format': 'latex'})
+    result = run_step(APPENDIX, workspace, {'source': 'chapter9', 'format': 'latex'})
     assert result.record.status == 'written'
     assert (workspace / str(result.record.outputs['path'])).read_text().startswith('\\')
 

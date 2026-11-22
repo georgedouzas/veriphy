@@ -17,7 +17,9 @@ The Sage session SHALL be published as the Python distribution `veriphy`, instal
 - **THEN** it exits with a message saying that it must run under SageMath (`sage -python -m veriphy.packs.math.primitives.sage`), not with an import traceback
 
 ### Requirement: Module and console entry points
-The Sage session SHALL start with `python -m veriphy.packs.math.primitives.sage` and through a `veriphy-sage-server` console script, both under Sage's interpreter. Both SHALL serve the same JSON-RPC 2.0 protocol, one message per line, on stdin and stdout.
+The Sage session SHALL start with `python -m veriphy.packs.math.primitives.sage` under Sage's interpreter, and serve the
+JSON-RPC 2.0 protocol, one message per line, on stdin and stdout. The package SHALL install no other entry point for
+it.
 
 #### Scenario: Module entry point
 - **WHEN** `echo '{"jsonrpc":"2.0","id":1,"method":"ping"}' | sage -python -m veriphy.packs.math.primitives.sage` is run

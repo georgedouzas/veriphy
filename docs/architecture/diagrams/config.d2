@@ -1,14 +1,13 @@
 ...@_style
 direction: right
 
-defaults: "core defaults" {class: deterministic}
+defaults: "the framework pack\nrecords · claim graph · oo-horn" {class: deterministic}
 packs: "packs, each after the packs it needs" {
   class: deterministic
   grid-columns: 1
-  core: "core\nrecords · claim graph · oo-horn"
-  lean: "lean\nLean toolchain"
-  math: "math · needs lean\nSageMath · recipes"
-  econ: "./packs/econ\nR · levels · conventions"
+  math: "math\nLean · SageMath · recipes"
+  social: "social-science\nanalysis · concepts"
+  econ: "./packs/economics\na function · a level · a workflow"
 }
 workspace: "veriphy.yaml\n(every key optional)" {shape: page}
 merge: "merge\nlater wins, key by key\nnull removes" {shape: diamond}

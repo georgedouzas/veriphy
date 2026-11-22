@@ -41,9 +41,9 @@ grid: "" {
     class: deterministic
     grid-columns: 4
     check {class: check}
-    meaning {class: evidence}
+    sample {class: evidence}
     reproduce {class: check}
-    formalize {class: agent}
+    record-statement {class: agent}
   }
   x1: "a pack adds\nstep definitions · digest scopes" {class: open; shape: page}
 
@@ -53,18 +53,17 @@ grid: "" {
     lean: "lean.check\nkernel"
     sage: "sage.sample\noracle"
     oohorn: "horn.check\nchecker"
-    r: "r.run\nreproduction"
+    r: "analysis.run\nreproduction"
     more: "…\nany pack" {class: open}
   }
   x0: "a pack adds\nprimitives · tools" {class: open; shape: page}
 
-  packs: "Packs, selected by veriphy.yaml" {
+  packs: "Packs, one per field, chosen in veriphy.yaml" {
     class: open
-    grid-columns: 4
-    core: "core\nrecords · claim graph · oo-horn"
-    lean: "lean\nLean toolchain · lean-proof"
-    math: "math · needs lean\nSageMath · recipes"
-    reproduction: "reproduction\nR · reproduced · robust"
+    grid-columns: 3
+    math: "math\nLean · SageMath · recipes"
+    social: "social-science\nanalysis · robustness · concepts"
+    more: "economics · history · …\nyour own pack" {class: open}
   }
   config: "veriphy.yaml\nselects packs, overrides any key\nveriphy config · veriphy pack" {shape: page}
 }

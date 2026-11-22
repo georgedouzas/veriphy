@@ -45,7 +45,7 @@ example : ∃! x : ℝ, (3 / 2 < x ∧ x < 3) ∧ x ^ 3 - 2 * x - 1 = 0 := by
   veriphy certify "golden_root.sage"
 ```
 
-`lean/VeriphyTest/SageRun.lean` also certifies the largest eigenvalue of a symmetric 3 by 3 matrix in `(3, 4)`.
+`src/veriphy/packs/math/lean/VeriphyTest/SageRun.lean` also certifies the largest eigenvalue of a symmetric 3 by 3 matrix in `(3, 4)`.
 
 ## Failure modes
 

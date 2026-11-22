@@ -1,8 +1,131 @@
 # The `math` pack
 
-The `math` pack verifies mathematics and mathematical physics in Lean 4, with SageMath as an untrusted oracle. It
-requires the [`lean`](lean.md) pack, and needs [SageMath](https://doc.sagemath.org/html/en/installation/) 10 with
-`sage` on `PATH`. Veriphy is installed into Sage's Python with `sage -pip install veriphy`.
+The `math` pack verifies mathematics, and mathematical physics, in Lean 4, with SageMath as an untrusted assistant
+that finds proofs and tests statements. A proof is accepted only when Lean's kernel checks it.
+
+It needs [elan](https://leanprover-community.github.io/get_started.html) for Lean and
+[SageMath](https://doc.sagemath.org/html/en/installation/) 10. Install Veriphy into Sage's Python and require its Lean
+library in your Lean project's `lakefile.toml`:
+
+```sh
+sage -pip install veriphy
+```
+
+```toml
+[[require]]
+name = "veriphy"
+git = "https://github.com/georgedouzas/veriphy"
+rev = "0.7.0"
+subDir = "src/veriphy/packs/math/lean"
+```
+
+Then `lake update && lake exe cache get && lake build`, and `import Veriphy` in your Lean files. A workspace with no
+`veriphy.yaml` uses this pack.
+
+## A first session
+
+A file states two things: a true theorem, and a misreading of it.
+
+```lean
+import Mathlib.Analysis.SpecialFunctions.Pow.Real
+
+theorem sqrt_sq_eq_abs' (x : ℝ) : Real.sqrt (x ^ 2) = |x| := Real.sqrt_sq_eq_abs x
+
+/-- A misreading: the square root of x squared is -x. -/
+def wrong : Prop := ∀ x : ℝ, 0 ≤ x → Real.sqrt (x ^ 2) = -x
+```
+
+Lean checks the file, and records which axioms each declaration uses:
+
+```console
+$ veriphy layers step check Claim.lean
+check Claim.lean: accepted
+  record: .veriphy/runs/check/d9284996….json
+```
+
+Lean can't tell whether a statement says what you meant. Sampling it can: Veriphy draws values that satisfy the
+hypotheses, and Sage evaluates the statement at each.
+
+```console
+$ veriphy layers step sample Claim.lean wrong --informal "the square root of x squared is -x"
+sample Claim.lean: counterexample found
+  at x = 1: √(x ^ 2) = -x gives 1 and -1
+  record: .veriphy/runs/sample/3973e3f4….json
+
+$ veriphy layers step sample Claim.lean sqrt_sq_eq_abs'
+sample Claim.lean: agrees
+```
+
+A counterexample means the statement, not the proof, is wrong: fix the statement before proving anything.
+
+## Steps
+
+| Step | What it does |
+|---|---|
+| `check <file>` | Lean checks the file; the record lists each declaration's axioms |
+| `levels <module> [--prefix P]` | the level of each declaration of a module, as Lean reads it from the proof terms |
+| `sample <file> <declaration>` | tests the statement at random values meeting its hypotheses: `agrees`, `counterexample` or `undecided` |
+| `record-proof <file>` | records the proof file an agent wrote, with its author |
+
+`sample` draws values with `--seed` (0 by default), keeps those at which every hypothesis and every domain condition
+holds, and evaluates the conclusion exactly, or in 128-bit interval arithmetic. An equation is first tried
+symbolically. `--informal "<text>"` keeps the agent's reading of the statement in the record, `--values N` sets how
+many values must agree (10 by default), and `--points '[{"x": "pi"}]'` evaluates at given values. In Lean,
+`#veriphy sample c` runs the same check. Agreement is evidence and grants no level.
+
+`check` digests the file together with the workspace files it imports, the toolchain and the manifest. Editing a file
+the claim doesn't import replays the record; bumping the toolchain runs it again. Lean runs once per check, as
+`lake env lean`.
+
+From Python:
+
+```python
+import veriphy
+
+result = veriphy.run('sample', 'Claim.lean', declaration='wrong', informal='the square root of x squared is -x')
+result.status, result.outputs['counterexample']['values']   # ('counterexample', {'x': '1'})
+```
+
+## Levels
+
+| Level | Class | What was checked | Builds without Sage |
+|---|---|---|---|
+| `certificate` | kernel | a recipe built the proof, which the kernel checked | yes |
+| `lean-proof` | kernel | a complete Lean proof that no recipe built, on the standard axioms alone | yes |
+| `kernel-test` | kernel | the kernel checked the claim at instances, each by computation | yes |
+| `oracle-test` | oracle | Sage evaluated the claim at some instances, exactly or by intervals of at least 53 bits | the record is kept |
+| `none` | | no checked proof and no test: a stated proposition, or a proof that uses `sorry` or another axiom | |
+
+Lean reads a declaration's level from its proof term: `#veriphy levels MyProject` lists them, and the `levels` step
+records them. A test is never reported as a proof.
+
+## Workflows
+
+| Workflow | Steps |
+|---|---|
+| `prove-claim` | `record-statement`, `sample` (stops on a counterexample), `check` (back to the statement after a refusal, 3 attempts), `record-proof`, `check` (back to the proof, 5 attempts) |
+| `verify-paper` | `record-claims`, `validate`, `reason`, `appendix` |
+
+```console
+$ veriphy layers workflow next prove-claim Claim.lean
+prove-claim on Claim.lean: next is record-statement, an agent step: record the file holding the formal statement an agent wrote, with its author
+  write the file, then record it:
+  veriphy layers step record-statement Claim.lean --by <your name>
+```
+
+## In Lean
+
+`import Veriphy` gives one tactic, `veriphy <verb>`, and one command, `#veriphy <verb>`. `#veriphy help` lists them all.
+
+| Form | Does |
+|---|---|
+| `veriphy certify "<script>"` | Sage finds a proof, the kernel checks it, and Lean offers the Sage-free replacement |
+| `veriphy search "<script>"` | runs a script for guidance, closing nothing |
+| `#veriphy sample c` | samples the statement of `c` |
+| `#veriphy test c "<script>"` | checks `c` at instances, by the kernel or Sage |
+| `#veriphy levels P …` | the level of each theorem under the prefixes |
+| `#veriphy export P …` | the formalized claims under the prefixes, with their levels, for the claim graph |
+| `#veriphy translate t`, `#veriphy translations [check]`, `#veriphy coverage [p, …]` | how terms reach Sage |
 
 ## How it works
 
@@ -28,42 +151,6 @@ Sage, the bridge, the translator and the agent are all outside the trusted base:
 The pack has no ready-made certificates. Real goals have a long tail, so it ships building blocks: the tactic, a toolkit
 and a recipe per technique. Each certificate is written for the goal in hand and saved in your project.
 
-## Steps, levels and workflows
-
-| Step | Kind | Does |
-|---|---|---|
-| `meaning <file> <declaration>` | evidence | the statement tested at seeded values satisfying its hypotheses: `agrees`, `counterexample` or `undecided` |
-| `prove <file>` | agent | records the proof an agent wrote for a claim, with its author |
-
-`meaning` checks the one thing the kernel cannot: that a formal statement says what the informal one meant. It draws
-values for the binders with `--seed` (default 0), keeps those at which every hypothesis and every domain condition
-holds, and evaluates the conclusion exactly, or in interval arithmetic of 128 bits. An equation is first tried
-symbolically. `--informal "<text>"` stores the agent's reading of the statement in the record, `--values N` sets how
-many values must agree (10 by default), and `--points '[{"x": "pi"}]'` evaluates at given values instead.
-`#veriphy meaning c` runs the same check inside Lean. Agreement is evidence and grants no level.
-
-```python
-import veriphy
-
-result = veriphy.run('meaning', 'Claim.lean', declaration='wrong', informal='the square root of x squared is -x')
-result.status, result.outputs['counterexample']['values']   # ('counterexample', {'x': '1'})
-```
-
-Every claim has one of five levels, highest first:
-
-| Level | Class | What was checked | Builds without Sage |
-|---|---|---|---|
-| `certificate` | kernel | a recipe built the proof, which the kernel checked | yes |
-| `lean-proof` | kernel | a complete Lean proof that no recipe built, on the standard axioms alone | yes |
-| `kernel-test` | kernel | the kernel checked the claim at instances, each by computation | yes |
-| `oracle-test` | oracle | Sage evaluated the claim at some instances, exactly or by intervals of at least 53 bits | the record is kept |
-| `none` | | no checked proof and no test: a stated proposition, or a proof that uses `sorry` or another axiom | |
-
-`#veriphy level MyProject` lists the level of every theorem under a prefix. A test is never reported as a proof.
-
-The pack's workflows are `prove-claim` (formalize, `meaning`, `check`, prove, `check`) and `verify-paper` (extract,
-`validate`, `reason`, `report`).
-
 ## Skills
 
 `research` calls `prove` for each claim, and `prove` calls `certify` for each computational core. The skills are thin
@@ -77,7 +164,7 @@ The input is a Lean statement, an informal statement, or a backlog item from a r
 library and Veriphy. The skill follows `prove-claim`:
 
 1. **Formalize.** Lean can't check that a formal statement means what the informal one said, so the agent translates
-   the statement back to English and compares, then runs `meaning`. A counterexample stops the run.
+   the statement back to English and compares, then runs `sample`. A counterexample stops the run.
 2. **Compile.** The statement type-checks with `sorry` as the proof.
 3. **Prove.** Cheapest route first: `simp`, `norm_num`, `positivity`, `nlinarith`, then premise search, then a
    certificate through `certify`. When the agent doesn't know what the proof even is, it can ask Sage (`solve`,
@@ -91,7 +178,7 @@ It ends with one of these, and leaves commits and PRs to you:
 |---|---|
 | `proved` | a verified Lean proof, naming the recipes and scripts used |
 | `tested` | no certificate is feasible, and `#veriphy test` checked the claim at instances; the report gives the level and the counts |
-| `statement-suspect` | `meaning` contradicted the claim, and the report gives the counterexample |
+| `statement-suspect` | `sample` contradicted the claim, and the report gives the counterexample |
 | `blocked-library-gap` | the statement needs theory that doesn't exist yet, named in the report |
 | `blocked-missing-building-block` | the toolkit lacks a Sage computation or a Lean emitter, named in the report |
 
@@ -110,7 +197,7 @@ substantial edit. It follows `verify-paper`, over the [claim graph](../overview/
    `.veriphy/graph/sources/<source>.agent.ttl`. Confirming an assertion is your act.
 2. **Validate.** `validate` checks the file against the SHACL shapes. A clean report means the file is complete, not
    that it is right.
-3. **Triage.** Each claim with a computable form is tested with `meaning` under the conventions it assumes. A
+3. **Triage.** Each claim with a computable form is tested with `sample` under the conventions it assumes. A
    counterexample makes it `suspect`, and a convention clash is a common cause. The rest go to `recipe`, `test`
    (`#veriphy test`) or `formalize` (needs definitions or theory you don't have yet).
 4. **Prove.** In dependency order, each claim goes through `prove` with its graph slice as context, and is linked to its
@@ -322,7 +409,7 @@ Entrywise proofs stop scaling at a few dozen entries. `VeriphyCheck` has checker
 
 The toolkit picks entrywise proofs for small goals and checkers for large ones. `VeriphyCheck` imports only mathlib. If
 your project can't depend on Veriphy, as with a mathlib or Physlib contribution, copy in the bundle that
-`python3 scripts/bundle_check.py` writes.
+`nox -s bundle` writes.
 
 ## When no certificate exists: `#veriphy test`
 

@@ -7,7 +7,7 @@ from click.testing import CliRunner
 
 from veriphy.__main__ import veriphy
 from veriphy.core import check_config, resolve
-from veriphy.packs.lean.steps import lean_imports
+from veriphy.packs.math.steps import lean_imports
 from veriphy.steps import RecordStore, load_steps, run_step
 
 FUNCTIONS = """
@@ -91,7 +91,7 @@ def test_agent_step_records_the_artifact(workspace: Path) -> None:
     """Record an agent's artifact by digest with its author, and a new record when the artifact changes."""
     claim = workspace / 'Claim.lean'
     claim.write_text('theorem t : 1 = 1 := rfl\n')
-    step = load_steps(workspace)['formalize']
+    step = load_steps(workspace)['record-statement']
     first = run_step(step, workspace, {'artifact': 'Claim.lean', 'by': 'agent'}).record
     assert (first.kind, first.status, first.outputs['author']) == ('agent', 'written', 'agent')
     claim.write_text('theorem t : 2 = 2 := rfl\n')
@@ -123,6 +123,6 @@ def test_the_command_follows_the_declaration(workspace: Path) -> None:
     assert 'Usage: veriphy layers step reproduce [OPTIONS] X CLAIMED' in shown.output
     listed = runner.invoke(veriphy, ['--root', str(workspace), 'layers', 'step', 'list'])
     assert 'estimate\tevidence\tecon\ttwice the value' in listed.output
-    assert 'formalize\tagent\tcore' in listed.output
+    assert 'record-statement\tagent\tcore' in listed.output
     ran = runner.invoke(veriphy, ['--root', str(workspace), 'layers', 'step', 'estimate', '4'])
     assert (ran.exit_code, 'estimate: reported' in ran.output) == (0, True)

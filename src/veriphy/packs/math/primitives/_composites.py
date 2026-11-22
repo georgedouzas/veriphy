@@ -21,7 +21,7 @@ def _claim(inputs: dict[str, object]) -> dict[str, object]:
 
 
 @composite(
-    'meaning',
+    'sample',
     ('lean.serialize', 'sage.sample'),
     input_schema={
         'type': 'object',
@@ -36,7 +36,7 @@ def _claim(inputs: dict[str, object]) -> dict[str, object]:
     },
     pack='math',
 )
-def meaning(inputs: dict[str, object], call: Call) -> dict[str, object]:
+def sample(inputs: dict[str, object], call: Call) -> dict[str, object]:
     """Test whether a claim's statement says what it was meant to: Lean serializes it, Sage samples it.
 
     Args:

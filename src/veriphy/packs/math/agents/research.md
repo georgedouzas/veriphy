@@ -1,6 +1,6 @@
 # Playbook: verify a research source with the claim graph
 
-Agent-agnostic instructions. Per-agent adapters (`skills/research/`, `.claude/skills/research/`) point at this file.
+Agent-agnostic instructions. The Claude Code skill, `skills/research/` beside this file, points at it.
 
 The caller supplies one source: a LaTeX or Markdown draft, a chapter, or a paper, and the workspace it belongs to.
 The playbook records the source's claims in the research claim graph, proves or tests what it can, and ends by
@@ -23,7 +23,7 @@ playbooks ship with the installed `veriphy` package, at the version of its toolk
    dependencies to `.veriphy/graph/sources/<source>.agent.ttl`. Never write to a `.human.ttl` file: those are the
    caller's.
 
-2. **Validate.** Run `sage -python -m veriphy layers claims validate` and fix every violation in the agent file. The SHACL
+2. **Validate.** Run `sage -python -m veriphy layers step validate` and fix every violation in the agent file. The SHACL
    report is a measurement, so a clean report means the file is complete, not that it is right.
 
 3. **Triage.** Follow `research/triage.md`. Record each claim's group with `vp:triage`. Do not try to prove a
@@ -43,11 +43,11 @@ playbooks ship with the installed `veriphy` package, at the version of its toolk
    It writes `.veriphy/graph/lean/<prefix>.nt` with the levels and dependencies Lean knows.
 
 6. **Reason and report.** Run, in order:
-   - `sage -python -m veriphy layers claims reason`, which must print `verdict: entailed`, else report the status;
+   - `sage -python -m veriphy layers step reason`, which must print `verdict: entailed`, else report the status;
    - `sage -python -m veriphy layers claims excludes` and show the proposals to the caller, who confirms them with `--confirm`;
    - `sage -python -m veriphy layers claims clashes`;
    - `sage -python -m veriphy layers claims levels --source <source>`;
-   - `sage -python -m veriphy layers claims appendix <source> --format latex` (or `markdown`).
+   - `sage -python -m veriphy layers step appendix <source> --format latex` (or `markdown`).
 
 7. **Report to the caller.** Give the appendix path and, per claim, its group and effective level. Name every clash,
    every `suspect` claim with its counterexample, and every claim capped below its own level with the claim that caps

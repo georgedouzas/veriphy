@@ -21,7 +21,7 @@ definitions as definitions. A second run SHALL replace the files of the first.
 - **THEN** the command fails and names the prefix
 
 ### Requirement: Levels from the environment
-Each exported claim SHALL carry the level `#veriphy level` reports for it: `certificate`, `lean-proof`, `kernel-test`,
+Each exported claim SHALL carry the level `#veriphy levels` reports for it: `certificate`, `lean-proof`, `kernel-test`,
 `oracle-test` or `none`. The export SHALL NOT compute a level any other way.
 
 #### Scenario: A recipe-built proof

@@ -209,12 +209,12 @@ This section instantiates the body above for this repository.
 
 - Ecosystem contract: the Sage session's JSON-lines protocol (one request object per stdin line, one response per
   stdout line) as specified in `openspec/specs/certificates/oracle-methods` and `openspec/specs/distribution/*`. The
-  Lean bridge in `lean/Veriphy/Bridge.lean` is its only client, and method names, parameters, and result shapes MUST NOT
+  Lean bridge in `src/veriphy/packs/math/lean/Veriphy/Bridge.lean` is its only client, and method names, parameters, and result shapes MUST NOT
   change incompatibly.
 - Language: Python >=3.11, <3.15 for `src/` and `tests/`. Lean 4 at the toolchain pinned in `lean-toolchain` for
-  `lean/` (`Veriphy/`, `VeriphyCheck/`, `VeriphyTest/`, `assets/` and the coverage runner in `coverage/`), with the
-  Lake configuration at the repository root.
-- Scope of the Python rules: the Python rules of this constitution bind `src/`, `tests/`, `scripts/`, and
+  `src/veriphy/packs/math/lean/` (`Veriphy/`, `VeriphyCheck/`, `VeriphyTest/`, `assets/` and the coverage runner in
+  `coverage/`), with the Lake configuration at the repository root, where Lake reads it for dependents.
+- Scope of the Python rules: the Python rules of this constitution bind `src/`, `tests/`, `docs/examples/` and
   `noxfile.py`. The playbooks, recipes and templates in each pack's `agents/` directory are package data, not Python
   modules, and the `veriphy layers agents` command alone gives access to them. The Lean code follows mathlib's conventions and is gated by `lake build`, `lake build VeriphyCheck`,
   `lake build VeriphyAssets` and `lake build VeriphyTest`. `VeriphyCheck` (kernel checkers with soundness theorems)
@@ -236,7 +236,8 @@ This section instantiates the body above for this repository.
   name in its `__all__` is in a script's namespace. `veriphy` is the one command, a click group whose subcommands the
   layers and packs contribute, and `veriphy.run` its Python form. No other module path is public.
 - Build and tooling: uv with SCM-derived versioning and a `src` layout. The `nox` sessions are `formatting`, `checks`,
-  `tests`, `docs`, `changelog`, and `release`. The gate covers `ruff`, `mypy`, `bandit`, `pip-audit`, `deptry`,
+  `tests`, `docs`, `changelog`, `release`, and the maintenance sessions `diagrams`, `tables` and `bundle`; the
+  repository has no `scripts/` directory. The gate covers `ruff`, `mypy`, `bandit`, `pip-audit`, `deptry`,
   `pydoclint`, and `interrogate`, with `pytest` under branch coverage and randomized ordering. The `tests` session runs
   on Sage's interpreter with system site-packages.
 - Delivery surfaces: the `veriphy` distribution on PyPI, the Lean library consumed by Lake at a release tag, and the

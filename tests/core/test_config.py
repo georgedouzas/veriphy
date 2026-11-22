@@ -39,7 +39,7 @@ def _workspace(tmp_path: Path, text: str | None = None) -> Path:
 def test_no_file_selects_math(tmp_path: Path) -> None:
     """Resolve a workspace without `veriphy.yaml` to the `math` pack and the packs it requires, in order."""
     resolved = resolve(_workspace(tmp_path))
-    assert [p.name for p in resolved.packs] == ['core', 'lean', 'math']
+    assert [p.name for p in resolved.packs] == ['core', 'math']
     assert {'sage', 'lean.check', 'horn.check'} <= set(resolved.section('tools')) | set(resolved.section('primitives'))
 
 
@@ -115,8 +115,8 @@ def test_collisions_and_how_the_workspace_settles_them(tmp_path: Path) -> None:
 def test_selected_packs_select_steps(tmp_path: Path) -> None:
     """Give a workspace of `core` alone the graph steps and no Lean step."""
     steps = load_steps(_workspace(tmp_path, 'version: 1\npacks: [core]\n'))
-    assert {'validate', 'reason', 'report'} <= set(steps)
-    assert not {'check', 'level', 'meaning'} & set(steps)
+    assert {'validate', 'reason', 'appendix'} <= set(steps)
+    assert not {'check', 'levels', 'sample'} & set(steps)
 
 
 def test_config_digest_follows_meaning(tmp_path: Path) -> None:
@@ -134,8 +134,8 @@ def test_show_names_each_source(tmp_path: Path, capsys: pytest.CaptureFixture[st
     root = _workspace(tmp_path, 'version: 1\ntools: {sage: {pin: {version: "10.9"}}}\n')
     main(['--root', str(root), 'show'])
     shown = json.loads(capsys.readouterr().out)
-    assert shown['packs'] == ['core', 'lean', 'math']
-    assert (shown['sources']['tools.sage'], shown['sources']['primitives.lean.check']) == ('veriphy.yaml', 'lean')
+    assert shown['packs'] == ['core', 'math']
+    assert (shown['sources']['tools.sage'], shown['sources']['primitives.lean.check']) == ('veriphy.yaml', 'math')
     assert shown['config']['tools']['sage']['contract'] == 'files'
     main(['--root', str(root), 'check'])
     assert 'no problems' in capsys.readouterr().out

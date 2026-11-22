@@ -156,13 +156,14 @@ def _pin(spec: object, where: str) -> Pin | None:
     return Pin(kind, str(spec[kind]), str(spec.get('sha256', '')))
 
 
-def read_tool(name: str, spec: Mapping[str, object], pack: str) -> Tool:
-    """Return a tool from its `pack.yaml` declaration.
+def read_tool(name: str, spec: Mapping[str, object], pack: str, base: Path | None = None) -> Tool:
+    """Return a tool from its `pack.yaml` declaration, with `{pack}` in its command as the pack's directory.
 
     Args:
         name: The tool's name.
         spec: Its declaration.
         pack: The declaring pack.
+        base: The declaring pack's directory, for a command that runs a file the pack ships.
 
     Returns:
         The tool.
@@ -178,7 +179,9 @@ def read_tool(name: str, spec: Mapping[str, object], pack: str) -> Tool:
     return Tool(
         name=name,
         contract=_choice(spec.get('contract'), CONTRACTS, 'contract', where),
-        run=_strings(spec.get('run'), 'run', where),
+        run=tuple(
+            part.replace('{pack}', str(base)) if base else part for part in _strings(spec.get('run'), 'run', where)
+        ),
         pin=_pin(spec.get('pin'), where),
         version=probe,
         timeout=float(timeout) if isinstance(timeout, int | float) else 600.0,

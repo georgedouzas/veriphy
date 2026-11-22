@@ -24,9 +24,9 @@ LAYERS = {
 LEAN_VERBS = {
     'certify': 'veriphy certify "<script>": Sage finds a certificate, Lean checks the proof built from it',
     'search': 'veriphy search "<script>": run a script for guidance, closing nothing',
-    'meaning': '#veriphy meaning c: test the statement of c at seeded values',
+    'sample': '#veriphy sample c: sample the statement of c at values that meet its hypotheses',
     'test': '#veriphy test c "<script>": check c at instances, by the kernel or Sage',
-    'level': '#veriphy level P: the level of each declaration under the prefixes P',
+    'levels': '#veriphy levels P: the level of each declaration under the prefixes P',
     'export': '#veriphy export P: the Lean claims under P, for the claim graph',
     'translate': '#veriphy translate e: how a Lean expression reaches Sage, and back',
     'translations': '#veriphy translations [check]: the translation tables in force, or a check of them',

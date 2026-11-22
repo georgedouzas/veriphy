@@ -6,7 +6,8 @@ from pathlib import Path
 import click
 
 from veriphy.core import StepError, find_workspace_root, resolve, workflow_entries
-from veriphy.workflows._engine import next_step, run_workflow
+from veriphy.steps import load_steps
+from veriphy.workflows._engine import explain, next_step, run_workflow
 
 FAILED = 1
 
@@ -36,25 +37,49 @@ def list_command(ctx: click.Context) -> None:
 @click.pass_context
 def next_command(ctx: click.Context, workflow: str, target: str) -> None:
     """Print the next step, or why the workflow stopped or finished."""
+    root = _root(ctx)
     try:
-        planned = next_step(_root(ctx), workflow, target)
+        planned = next_step(root, workflow, target)
     except StepError as exc:
         sys.stderr.write(f'next: {exc}\n')
         raise SystemExit(FAILED) from exc
-    who = ' (an agent step)' if planned.agent else ''
-    sys.stdout.write(f'{planned.step}{who}: {planned.reason}\n' if planned.step else f'{planned.reason}\n')
+    sys.stdout.write(''.join(f'{line}\n' for line in explain(workflow, target, planned, load_steps(root))))
 
 
-@workflow.command(name='run', help="run a workflow's steps for a target until an agent step or its end")
+def _options(arguments: list[str]) -> dict[str, object]:
+    """Return the step inputs given as `--name value` or `--name=value`, by name, a repeated one as a list."""
+    found: dict[str, object] = {}
+    rest = list(arguments)
+    while rest:
+        flag = rest.pop(0)
+        if not flag.startswith('--') or flag == '--':
+            message = f"expected an input as --name value, got '{flag}'"
+            raise click.UsageError(message)
+        name, has_value, value = flag[2:].partition('=')
+        if not has_value:
+            if not rest:
+                message = f'the input {flag} has no value'
+                raise click.UsageError(message)
+            value = rest.pop(0)
+        key = name.replace('-', '_')
+        earlier = found.get(key)
+        found[key] = value if earlier is None else [*(earlier if isinstance(earlier, list) else [earlier]), value]
+    return found
+
+
+@workflow.command(
+    name='run',
+    help="run a workflow's steps for a target until an agent step or its end; give the steps' inputs as --name value",
+    context_settings={'ignore_unknown_options': True},
+)
 @click.argument('workflow')
 @click.argument('target')
-@click.option('--input', 'given', multiple=True, help='a step input, as name=value; repeat for several')
+@click.argument('inputs', nargs=-1, type=click.UNPROCESSED)
 @click.pass_context
-def run_command(ctx: click.Context, workflow: str, target: str, given: tuple[str, ...]) -> None:
+def run_command(ctx: click.Context, workflow: str, target: str, inputs: tuple[str, ...]) -> None:
     """Run the workflow and print each step it ran, then what happens next."""
-    inputs = dict(item.split('=', 1) for item in given if '=' in item)
     try:
-        lines = run_workflow(_root(ctx), workflow, target, inputs)
+        lines = run_workflow(_root(ctx), workflow, target, _options(list(inputs)))
     except StepError as exc:
         sys.stderr.write(f'run: {exc}\n')
         raise SystemExit(FAILED) from exc

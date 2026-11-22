@@ -90,7 +90,7 @@ use exact arithmetic, or interval arithmetic with at least 53 bits, and SHALL NO
 - **THEN** the run fails and names the instance
 
 ### Requirement: Level report
-`#veriphy level [prefixes]` SHALL list the declarations under the prefixes with their level: `kernel-test` or
+`#veriphy levels [prefixes]` SHALL list the declarations under the prefixes with their level: `kernel-test` or
 `oracle-test` for those carrying `veriphy_tested`, `certificate` for theorems on the standard axioms whose proof came
 from a recipe's replacement, `lean-proof` for the other theorems on the standard axioms, and `none` otherwise.
 
@@ -114,5 +114,5 @@ The `lean` pack SHALL declare `lean-proof`, the `math` pack `certificate`, `kern
 
 #### Scenario: Levels from the packs
 - **WHEN** `veriphy config show` runs with the default config
-- **THEN** it lists the five levels with their classes and packs, and their names equal those `#veriphy level`
+- **THEN** it lists the five levels with their classes and packs, and their names equal those `#veriphy levels`
   reports

@@ -70,39 +70,14 @@ jobs:
     - name: Build the Lean library without Sage
       uses: leanprover/lean-action@v1
       with:
+        lake-package-directory: src/veriphy/packs/math/lean
         use-mathlib-cache: true
         test: false
         lint: false
 
     - name: Build the Sage-free kit tests
+      working-directory: src/veriphy/packs/math/lean
       run: lake build VeriphyTest.Kit VeriphyTest.Graph
-
-  reproduction:
-
-    # the pinned R image runs under the runner's docker, which a job inside the Sage container does not see
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-
-    - name: Set up uv
-      uses: astral-sh/setup-uv@v5
-      with:
-        enable-cache: true
-        cache-dependency-glob: pyproject.toml
-
-    - name: Reproduce the example analysis in the pinned R image
-      run: |
-        cd "$(mktemp -d)"
-        cp "$GITHUB_WORKSPACE"/src/veriphy/packs/reproduction/example/* .
-        printf 'version: 1\npacks: [reproduction]\n' > veriphy.yaml
-        uv run --project "$GITHUB_WORKSPACE" veriphy layers step reproduce analysis.R mtcars.csv \
-          450a97ba6b438c6ea5bdf2aaac7eab0ecbbf812b5ff74b56f62dcf0a0c7eb0e5 --claimed -5.344472 --claim mpg-weight
-        uv run --project "$GITHUB_WORKSPACE" veriphy layers step vary analysis.R mtcars.csv \
-          450a97ba6b438c6ea5bdf2aaac7eab0ecbbf812b5ff74b56f62dcf0a0c7eb0e5 '["mpg ~ wt + hp", "mpg ~ wt + cyl"]'
 
   integration:
 
@@ -160,10 +135,11 @@ jobs:
       with:
         path: |
           ~/.elan
-          .lake
-        key: lean-${{ hashFiles('lean-toolchain', 'lake-manifest.json') }}
+          src/veriphy/packs/math/lean/.lake
+        key: lean-${{ hashFiles('src/veriphy/packs/math/lean/lean-toolchain', 'src/veriphy/packs/math/lean/lake-manifest.json') }}
 
     - name: Run the tactic suite against the installed Sage session
+      working-directory: src/veriphy/packs/math/lean
       run: |
         lake exe cache get
         lake build VeriphyTest
@@ -175,10 +151,12 @@ jobs:
         VERIPHY_REQUIRE_CHECKER: '1'
 
     - name: Run the research workflow on a fixture chapter, over a Lean export, setting up on first use
+      working-directory: src/veriphy/packs/math/lean
       run: |
         printf 'import VeriphyTest.Graph\n#veriphy export GraphTest\n' > Export.lean
         lake env lean Export.lean
-        XDG_CACHE_HOME="$(mktemp -d)" tests/graph/fixtures/workflow/run.sh "$(uv run which python)"
+        XDG_CACHE_HOME="$(mktemp -d)" "$GITHUB_WORKSPACE"/tests/graph/fixtures/workflow/run.sh \
+          "$(uv run --project "$GITHUB_WORKSPACE" which python)"
 
   doc:
 

@@ -12,9 +12,13 @@ ROOT = Path(__file__).resolve().parents[2]
 RECIPES = content_dir() / 'recipes'
 TEMPLATES = sorted((RECIPES / 'templates').glob('*.sage'))
 LIBRARY_TEMPLATES = sorted(RECIPES.glob('*/templates/*.sage'))
-LEAN_TESTS = '\n'.join(p.read_text() for p in (ROOT / 'lean' / 'VeriphyTest').glob('*.lean'))
+LEAN_TESTS = '\n'.join(
+    p.read_text() for p in (ROOT / 'src' / 'veriphy' / 'packs' / 'math' / 'lean' / 'VeriphyTest').glob('*.lean')
+)
 # library recipes run in the coverage runner, which imports the libraries
-RUNNER_TESTS = '\n'.join(p.read_text() for p in (ROOT / 'lean' / 'coverage').glob('*.lean'))
+RUNNER_TESTS = '\n'.join(
+    p.read_text() for p in (ROOT / 'src' / 'veriphy' / 'packs' / 'math' / 'lean' / 'coverage').glob('*.lean')
+)
 SCRIPT_KEYS = ['name', 'serves', 'technique', 'goal', 'description', 'inputs']
 
 
@@ -38,8 +42,8 @@ def test_recipe_embeds_template(template: Path) -> None:
 
 @pytest.mark.parametrize('template', TEMPLATES, ids=lambda p: p.stem)
 def test_template_runs_in_lean_tests(template: Path) -> None:
-    """Run every template on a worked example in the Lean test suite."""
-    assert f'src/veriphy/packs/math/agents/recipes/templates/{template.name}' in LEAN_TESTS
+    """Run every template on a worked example in the Lean test suite, which names it from the Lean package."""
+    assert f'"../agents/recipes/templates/{template.name}"' in LEAN_TESTS
 
 
 @pytest.mark.parametrize('template', TEMPLATES, ids=lambda p: p.stem)

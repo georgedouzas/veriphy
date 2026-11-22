@@ -27,14 +27,12 @@ def content_dir(pack: str = 'math') -> Path:
         >>> (content_dir() / 'prove.md').is_file()
         True
     """
-    return Path(__file__).resolve().parents[1] / 'packs' / pack / 'agents'
+    # a pack's name may hold a dash, its package an underscore
+    return Path(__file__).resolve().parents[1] / 'packs' / pack.replace('-', '_') / 'agents'
 
 
 def assets_dir() -> Path:
-    """Return the directory holding the recipe assets.
-
-    A wheel carries them under `veriphy/packs/math/agents/assets/`. An editable install has no copy, so the repository's
-    `lean/assets/`, where Lake builds them, stands in.
+    """Return the directory holding the recipe assets: the math pack's Lean sources, where Lake builds them too.
 
     Returns:
         The directory whose `VeriphyAssets/` holds the asset files.
@@ -43,8 +41,7 @@ def assets_dir() -> Path:
         >>> (assets_dir() / 'VeriphyAssets' / 'FusionData.lean').is_file()
         True
     """
-    packaged = content_dir() / ASSETS
-    return packaged if packaged.is_dir() else content_dir().parents[4] / 'lean' / ASSETS
+    return Path(__file__).resolve().parents[1] / 'packs' / 'math' / 'lean' / ASSETS
 
 
 def entries() -> dict[str, Path]:

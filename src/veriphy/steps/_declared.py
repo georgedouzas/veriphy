@@ -9,7 +9,7 @@ from pathlib import Path
 from veriphy.core import BUILTIN_SCOPES, StepError, canonical_json, content_digest, level_trust, resolve
 from veriphy.primitives import workspace_registry
 from veriphy.steps._primitives import call_primitive
-from veriphy.steps._runner import Argument, Outcome, Params, Prepared, Step, exit_code
+from veriphy.steps._runner import UNCHECKED_EXIT, Argument, Outcome, Params, Prepared, Step, exit_code
 
 Scope = Callable[[Path, object], str | bytes]
 TYPES: dict[str, Callable[[str], object]] = {'string': str, 'integer': int, 'number': float, 'json': str}
@@ -68,11 +68,13 @@ class Input:
         return Argument(
             self.name,
             self.help,
-            option=self.optional,
+            # a repeatable input is an option, given once per value; a required one is refused when none is given
+            option=self.optional or self.many,
             type=TYPES.get(self.kind, str),
             default=self.default,
             flag=self.flag,
             many=self.many,
+            required=self.many and not self.optional,
         )
 
 
@@ -145,11 +147,34 @@ def _given(root: Path, spec: Input, params: Params) -> object:
     return value
 
 
+def reported_tolerance(claimed: object) -> float:
+    """Return half a unit in the last digit a reported value gives: what its rounding leaves open.
+
+    Args:
+        claimed: The value as reported.
+
+    Returns:
+        The tolerance.
+
+    Examples:
+        >>> reported_tolerance(0.127), reported_tolerance(-5.344472), reported_tolerance(3)
+        (0.0005, 5e-07, 0.5)
+    """
+    text = str(claimed)
+    decimals = len(text.split('.', 1)[1]) if '.' in text and 'e' not in text.lower() else 0
+    return float(f'5e-{decimals + 1}')
+
+
 def _compare(outputs: dict[str, object], values: Mapping[str, object], rule: Mapping[str, object]) -> str:
-    """Return `agrees` or `differs`, comparing an output field with an input within the tolerance, and record both."""
+    """Return `agrees` or `differs`, comparing an output field with an input within the tolerance, and record both.
+
+    A `tolerance` of `reported` is half a unit in the last digit the claim reports, so a rounded figure agrees with
+    every value that rounds to it.
+    """
     field, against = str(rule['field']), str(rule['against'])
     found, claimed = float(str(outputs[field])), float(str(values[against]))
-    tolerance = float(str(rule.get('tolerance', 0)))
+    declared = rule.get('tolerance', 0)
+    tolerance = reported_tolerance(values[against]) if declared == 'reported' else float(str(declared))
     outputs['compared'] = {'field': field, 'found': found, 'claimed': claimed, 'tolerance': tolerance}
     return 'agrees' if abs(found - claimed) <= tolerance else 'differs'
 
@@ -165,12 +190,20 @@ def _check_grant(root: Path, step: str, primitive: str, level: str) -> None:
         raise StepError(message)
 
 
+def _accepted(outcome: Outcome, outputs: dict[str, object], accepts: frozenset[str] | None) -> Outcome:
+    """Return the outcome, refused when the step names the statuses that accept and this one is not among them."""
+    if accepts is None or outcome.status in accepts or exit_code(outcome.status) == UNCHECKED_EXIT:
+        return Outcome(outcome.status, outputs, outcome.tools)
+    outputs['result'] = outcome.status
+    return Outcome('refused', outputs, outcome.tools)
+
+
 def declared_step(name: str, spec: Mapping[str, object], scopes: Mapping[str, object]) -> Step:
     """Return the step a declaration describes.
 
     Args:
         name: The step's name.
-        spec: Its declaration: `kind`, `primitive`, `inputs`, `seed`, `status`, `compare`, `grants`, `help`.
+        spec: Its declaration: `kind`, `primitive`, `inputs`, `seed`, `status`, `accepts`, `compare`, `grants`, `help`.
         scopes: The configuration's `scopes` section.
 
     Returns:
@@ -185,6 +218,9 @@ def declared_step(name: str, spec: Mapping[str, object], scopes: Mapping[str, ob
     status = str(spec.get('status', 'status'))
     seeded = bool(spec.get('seed', False))
     declared_grants, declared_rule = spec.get('grants'), spec.get('compare')
+    declared_accepts = spec.get('accepts')
+    # the statuses that mean success, when the tool has words of its own; any other is recorded as refused
+    accepts = frozenset(str(s) for s in declared_accepts) if isinstance(declared_accepts, list) else None
     grants: str | None = declared_grants if isinstance(declared_grants, str) else None
     rule: Mapping[str, object] | None = declared_rule if isinstance(declared_rule, dict) else None
 
@@ -212,9 +248,15 @@ def declared_step(name: str, spec: Mapping[str, object], scopes: Mapping[str, ob
             sent['seed'] = prepared.seed or 0
         outcome = call_primitive(root, primitive, sent, status=status)
         outputs = {**kept, **outcome.outputs}
-        compared = rule is not None and exit_code(outcome.status) == 0 and str(rule.get('field')) in outputs
+        outcome = _accepted(outcome, outputs, accepts)
+        comparable = rule is not None and values.get(str(rule.get('against'))) is not None
+        compared = (
+            rule is not None and comparable and exit_code(outcome.status) == 0 and str(rule.get('field')) in outputs
+        )
         result = _compare(outputs, values, rule) if compared and rule is not None else outcome.status
-        level = grants if grants is not None and exit_code(result) == 0 else None
+        # a step that compares grants its level only when the comparison ran and agreed
+        accepted = result == 'agrees' if rule is not None else exit_code(result) == 0
+        level = grants if grants is not None and accepted else None
         if level is not None:
             _check_grant(root, name, primitive, level)
         return Outcome(result, outputs, outcome.tools, level)
