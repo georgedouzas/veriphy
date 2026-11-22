@@ -22,4 +22,4 @@
 
 ## 4. Gate
 
-- [ ] 4.1 Run the gate and CI. Verify that every session and job is green.
+- [x] 4.1 Run the gate and CI. Verify that every session and job is green.
