@@ -1,5 +1,5 @@
 site_name: "veriphy"
-site_description: "Machine-verified physics and math proofs in Lean 4 with SageMath as an untrusted oracle"
+site_description: "An extensible verification framework: deterministic steps, recorded evidence, trust classes and levels, with packs for each field"
 site_url: "https://georgedouzas.github.io/veriphy"
 repo_url: "https://github.com/georgedouzas/veriphy"
 repo_name: "georgedouzas/veriphy"
@@ -19,10 +19,26 @@ theme:
 nav:
   - Overview:
     - index.md
-    - User guide: overview/user_guide.md
-    - Components: overview/components.md
+    - Getting started: overview/getting_started.md
+    - Guide: overview/user_guide.md
+    - Reference: overview/reference.md
     - Changelog: overview/changelog.md
     - License: overview/license.md
+  - Packs:
+    - packs/index.md
+    - Math: packs/math.md
+    - Math components: packs/math_components.md
+    - Statistics: packs/statistics.md
+    - Social science: packs/social_science.md
+    - Economics: packs/economics.md
+    - Econometrics: packs/econometrics.md
+    - Epidemiology: packs/epidemiology.md
+    - Physics: packs/physics.md
+    - Particle physics: packs/particle_physics.md
+    - General relativity: packs/general_relativity.md
+    - Life sciences: packs/life_sciences.md
+    - Genomics: packs/genomics.md
+    - Chemistry: packs/chemistry.md
   - API: api/
   - Examples: generated/gallery
   - Architecture: architecture/index.md

@@ -3,7 +3,7 @@
 from collections.abc import Callable
 from pathlib import Path
 
-from veriphy.graph import check_slice, load_graph, reason, render_slice, slice_claim, slice_premises, source_iri, vp
+from veriphy.claims import check_slice, load_graph, reason, render_slice, slice_claim, slice_premises, source_iri, vp
 
 THM, LEMMA = source_iri('chapter9', 'thm-9.1'), source_iri('chapter9', 'lemma-5.2')
 

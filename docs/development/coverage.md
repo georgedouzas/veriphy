@@ -1,6 +1,6 @@
 # Translation coverage
 
-This page records how much of real corpora Veriphy's symbolic translation covers, measured by `#veriphy_coverage`.
+This page records how much of real corpora Veriphy's symbolic translation covers, measured by `#veriphy coverage`.
 The command opens the binders of every theorem in the corpus, translates each relation (`=`, `≠`, `≤`, `<`, `≥`, `>`)
 in its hypotheses and conclusion, and classifies every atom the translation needed:
 
@@ -15,18 +15,18 @@ is opaque. Statements with no relation are left out of the shares. Generated lem
 
 ## Reproducing
 
-The runner is the Lake project `lean/coverage/`. It requires Veriphy by path, Physlib at a pinned commit
+The runner is the Lake project `src/veriphy/packs/math/lean/coverage/`. It requires Veriphy by path, Physlib at a pinned commit
 whose dependencies match Veriphy's, and mathlib's `Archive`:
 
 ```sh
-cd lean/coverage
+cd src/veriphy/packs/math/lean/coverage
 lake update && lake exe cache get
 (cd .lake/packages/Physlib && LAKE_CONFIG=$PWD/lake-cache.toml \
   lake cache get --scope=physlib-master/leanprover-lean4-v4.34.1/physlib)
 lake build Coverage
 ```
 
-Each corpus writes its JSON report to `lean/coverage/.veriphy/coverage/<prefix>.json`.
+Each corpus writes its JSON report to `src/veriphy/packs/math/lean/coverage/.veriphy/coverage/<prefix>.json`.
 
 ## After the book-coverage release (2026-10-16)
 

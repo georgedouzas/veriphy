@@ -8,8 +8,8 @@ their slices, and report the verification of every claim in an appendix the pape
 
 ### Requirement: Research skill
 The plugin SHALL ship a `research` skill that leads the agent through extraction, triage, proving, export and
-reporting for one source, using the graph CLI at each step, and SHALL work with the graph extra installed and Sage
-absent for every step except proving.
+reporting for one source, using the graph CLI at each step, and SHALL work with Veriphy installed and Sage absent for
+every step except proving.
 
 #### Scenario: Running the skill on a chapter
 - **WHEN** a user asks the agent to verify `chapter9.tex` with the research skill
@@ -27,7 +27,7 @@ the shapes before it continues.
   its label and line, and validation passes
 
 ### Requirement: Triage
-The skill SHALL sort the claims of a source into four groups: a recipe applies, `sage_test` applies, formalization is
+The skill SHALL sort the claims of a source into four groups: a recipe applies, `#veriphy test` applies, formalization is
 needed first, and statement suspect after a numerical check. It SHALL record the group of each claim in the graph.
 
 #### Scenario: A suspect claim

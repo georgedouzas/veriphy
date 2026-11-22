@@ -1,0 +1,19 @@
+SCRIPT = {
+    'name': 'trace_double_test',
+    'serves': 'test',
+    'technique': 'test a claim no recipe certifies, at instances the kernel checks by computation (or Sage evaluates)',
+    'goal': '#veriphy test c "<copy>.sage", for a theorem or a definition of type Prop with universal binders',
+    'description': 'the script picks seeded instances with edge cases; Lean checks each one, independently of the claim.',
+    'inputs': {},
+}
+
+SEED = 0  # EDIT: the sampler's seed, kept in the test record
+PROOF = 'simp [Matrix.trace, Fin.sum_univ_succ]\nall_goals ring'
+CASES = None  # EDIT: the instances as ([values as Lean text], edge?) pairs; None for default_cases(universal, …)
+
+
+def run(goal, inputs):
+    assert PROOF is not None, 'fill in PROOF (and CASES, unless the default instances fit the binders) in a copy'
+    cases = CASES if CASES is not None else default_cases(universal, Sampler(SEED))
+    instances = [kernel_instance(*values, proof=PROOF, edge=edge) for values, edge in cases]
+    return found(instances)

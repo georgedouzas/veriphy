@@ -1,1 +1,1 @@
-"""Test the recipes and playbooks shipped in `veriphy.prompts`."""
+"""Test the recipes and playbooks shipped in `veriphy.agents`."""

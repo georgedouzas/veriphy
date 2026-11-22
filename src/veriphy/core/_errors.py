@@ -21,7 +21,7 @@ class ParamError(VeriphyError):
 
 
 class MethodError(VeriphyError):
-    """Signal a failed daemon method, with a message of the form `<method>: <reason>`."""
+    """Signal a failed Sage method, with a message of the form `<method>: <reason>`."""
 
 
 class CertificateError(VeriphyError):
@@ -70,8 +70,8 @@ class GraphError(VeriphyError):
     """Signal a research graph that cannot be loaded, reasoned over or written."""
 
 
-class GraphExtraMissingError(GraphError):
-    """Signal that the research graph's dependencies are not installed.
+class ReasonerMissingError(GraphError):
+    """Signal that the claim graph's reasoner is not set up, and automatic setup is off or failed.
 
     Args:
         module: The module that could not be imported.
@@ -79,8 +79,8 @@ class GraphExtraMissingError(GraphError):
 
     def __init__(self, module: str) -> None:
         message = (
-            f"the research graph needs '{module}': install it with `sage -pip install 'veriphy[graph]'` and "
-            '`sage -python -m veriphy.graph checker build`'
+            f"the claim graph's reasoner ('{module}') is not set up: run `veriphy layers claims checker build`, "
+            'or unset VERIPHY_GRAPH_SETUP so the first command that needs it sets it up'
         )
         super().__init__(message)
         self.module = module
@@ -88,3 +88,27 @@ class GraphExtraMissingError(GraphError):
 
 class CheckerError(GraphError):
     """Signal that `oo-horn`, the certificate checker, could not be built or run."""
+
+
+class RecordError(VeriphyError):
+    """Signal a step record that cannot be written or read, such as an attempt to overwrite one."""
+
+
+class StepError(VeriphyError):
+    """Signal a step that broke the step contract, such as an evidence step that returned a level."""
+
+
+class ToolError(VeriphyError):
+    """Signal an external program that is not installed, could not start or did not finish in time."""
+
+
+class PrimitiveError(VeriphyError):
+    """Signal a primitive that cannot run as asked: unknown, refused by a schema, or its tool missing or failing."""
+
+
+class PinError(PrimitiveError):
+    """Signal a tool that does not match its pin, so the primitive does not run."""
+
+
+class PackError(VeriphyError):
+    """Signal a pack that cannot be loaded: no such pack, or a `pack.yaml` that does not read."""

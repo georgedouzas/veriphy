@@ -1,63 +1,70 @@
 ...@_style
 direction: down
 
-stack: "" {
-  grid-columns: 1
-  vertical-gap: 60
+grid: "" {
+  grid-rows: 6
+  grid-columns: 2
+  vertical-gap: 36
+  horizontal-gap: 36
   style: {stroke-width: 0; fill: transparent}
 
-  skills: "4 · Skills: the agent authors artifacts and chooses the next step" {
+  agents: "4 · Agents: write artifacts, follow workflows · veriphy layers agents" {
     class: open
     grid-columns: 4
     prove
     certify
     research
-    reproduce: "reproduce-paper"
+    reproduce
   }
+  x4: "a pack adds\nplaybooks and skills" {class: open; shape: page}
 
-  workflows: "3 · Workflows: step sequences, written as data" {
+  workflows: "3 · Workflows: the next step from the records · veriphy layers workflow" {
     class: deterministic
     grid-columns: 3
     prove: "prove-claim"
     paper: "verify-paper"
     analysis: "reproduce-analysis"
   }
+  x3: "a pack adds\nworkflows" {class: open; shape: page}
 
-  stepper: "2 · Steps: hashed inputs, recorded outputs" {
+  claims: "2 · Claims: what the records establish · veriphy layers claims" {
     class: deterministic
     grid-columns: 4
-    formalize {class: agent}
-    extract {class: agent}
-    meaning {class: evidence}
-    search {class: evidence}
-    test {class: evidence}
-    reproduce {class: evidence}
-    check {class: check}
-    reason {class: check}
+    graph: "claim graph"
+    levels: "levels\none order"
+    grant: "grant rule\nby trust class"
+    report
   }
+  x2: "a pack adds\nlevels · conventions" {class: open; shape: page}
 
-  tools: "1 · Tool adapters: pinned, declared trust class" {
+  stepper: "1 · Steps: hashed inputs, a replayable record · veriphy layers step" {
+    class: deterministic
+    grid-columns: 4
+    check {class: check}
+    sample {class: evidence}
+    reproduce {class: check}
+    record-statement {class: agent}
+  }
+  x1: "a pack adds\nstep definitions · digest scopes" {class: open; shape: page}
+
+  primitives: "0 · Primitives: typed, pinned, deterministic, no records · veriphy layers primitive" {
     class: deterministic
     grid-columns: 5
-    lean: "Lean\nkernel"
-    oohorn: "oo-horn\nchecker"
-    sage: "SageMath\noracle"
-    r: "R (pack)\nreproduction"
+    lean: "lean.check\nkernel"
+    sage: "sage.sample\noracle"
+    oohorn: "horn.check\nchecker"
+    r: "analysis.run\nreproduction"
     more: "…\nany pack" {class: open}
   }
+  x0: "a pack adds\nprimitives · tools" {class: open; shape: page}
 
-  core: "0 · Core: pure functions of files" {
-    class: deterministic
-    grid-columns: 5
-    config: "resolved\nconfig"
-    workspace
-    records: {shape: cylinder}
-    graph: "claim\ngraph"
-    levels
+  packs: "Packs, one per field or subfield, chosen in veriphy.yaml" {
+    class: open
+    grid-columns: 3
+    math: "math\nLean · SageMath · recipes"
+    social: "statistics · physics · life-sciences …\nfield packs, each with its libraries"
+    more: "particle-physics · genomics · …\nsubfield packs · your own" {class: open}
   }
+  config: "veriphy.yaml\nselects packs, overrides any key\nveriphy config · veriphy pack" {shape: page}
 }
 
-stack.skills -> stack.workflows: follows
-stack.workflows -> stack.stepper: runs
-stack.stepper -> stack.tools: calls
-stack.tools -> stack.core: "results become records"

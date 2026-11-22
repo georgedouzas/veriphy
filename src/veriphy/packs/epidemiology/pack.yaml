@@ -1,0 +1,63 @@
+version: 1
+name: epidemiology
+# epidemiology: survival analyses recomputed with lifelines, a Cox model's hazard ratio and a Kaplan-Meier median
+# (`veriphy[epidemiology]`), over the statistics pack
+requires: [statistics]
+
+conventions:
+  analysis-population: [intention-to-treat, per-protocol]
+
+primitives:
+  survival.cox:
+    function: veriphy.packs.epidemiology.primitives._survival:hazard_ratio
+    trust: reproduction
+    input:
+      type: object
+      required: [data, duration, event, covariates]
+      properties:
+        data: {type: string}
+        duration: {type: string}
+        event: {type: string}
+        covariates: {type: array, items: {type: string}}
+        covariate: {type: string}
+        group: {type: string}
+    output: {type: object, required: [status]}
+  survival.median:
+    function: veriphy.packs.epidemiology.primitives._survival:median_survival
+    trust: reproduction
+    input:
+      type: object
+      required: [data, duration, event]
+      properties: {data: {type: string}, duration: {type: string}, event: {type: string}, group: {type: string}}
+    output: {type: object, required: [status]}
+
+steps:
+  check-hazard-ratio:
+    kind: check
+    primitive: survival.cox
+    grants: recomputed
+    compare: {field: hazard_ratio, against: claimed, tolerance: reported}
+    help: "refit a Cox model with lifelines, and compare a covariate's hazard ratio with the claim"
+    inputs:
+      data: {scope: file, path: true, help: 'the data, a row per subject, as CSV'}
+      duration: {help: the column of times to the event or to censoring}
+      event: {help: 'the column saying whether the event happened: 1 or 0'}
+      covariates: {many: true, flag: --covariate, help: "a covariate of the model; repeat for each, the claim's first"}
+      claimed: {type: number, optional: true, record: true, help: 'the hazard ratio the claim reports'}
+      claim: {optional: true, record: true, help: 'the claim, so its level follows the record'}
+  check-median-survival:
+    kind: check
+    primitive: survival.median
+    grants: recomputed
+    compare: {field: median, against: claimed, tolerance: reported}
+    help: 'recompute a Kaplan-Meier median survival time with lifelines, and compare it with the claim'
+    inputs:
+      data: {scope: file, path: true, help: 'the data, a row per subject, as CSV'}
+      duration: {help: the column of times to the event or to censoring}
+      event: {help: 'the column saying whether the event happened: 1 or 0'}
+      group: {optional: true, help: "the subjects the claim is about: 'arm=treatment'"}
+      claimed: {type: number, optional: true, record: true, help: 'the median the claim reports'}
+      claim: {optional: true, record: true, help: 'the claim, so its level follows the record'}
+
+workflows:
+  check-trial: [record-claims, check-hazard-ratio, check-median-survival]

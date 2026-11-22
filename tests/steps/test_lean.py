@@ -1,0 +1,62 @@
+"""Test the Lean steps on this repository's workspace: `check` reports errors and axioms, `level` the levels."""
+
+import shutil
+from pathlib import Path
+
+import pytest
+
+from veriphy.__main__ import main
+from veriphy.steps import load_steps, run_step
+
+ROOT = Path(__file__).resolve().parents[2]
+# the math pack's Lean workspace, where Lake builds
+LEAN = ROOT / 'src' / 'veriphy' / 'packs' / 'math' / 'lean'
+CHECK = load_steps(LEAN)['check']
+LEVEL = load_steps(LEAN)['levels']
+pytestmark = pytest.mark.skipif(
+    shutil.which('lake') is None or not (LEAN / '.lake' / 'build').is_dir(),
+    reason='needs a built Lean workspace (`lake build`)',
+)
+
+
+@pytest.fixture(autouse=True)
+def _forget_new_records(forget_own_records: list[Path]) -> list[Path]:
+    """Delete the records the test writes into the repository's workspace."""
+    return forget_own_records
+
+
+def test_check_reports_axioms(tmp_path: Path) -> None:
+    """Accept a file that type-checks, and give each declaration its axioms, `sorry` included."""
+    path = tmp_path / 'Good.lean'
+    path.write_text('theorem good : 1 + 1 = 2 := rfl\n\ntheorem gap : 1 = 1 := sorry\n')
+    record = run_step(CHECK, LEAN, {'file': str(path)}, rerun=True).record
+    assert record.status == 'accepted'
+    assert record.outputs['axioms'] == {'gap': ['sorryAx'], 'good': []}
+
+
+def test_check_refuses_a_broken_file(tmp_path: Path) -> None:
+    """Refuse a file that does not type-check, with Lean's error at the file's own line, and exit with status 1."""
+    path = tmp_path / 'Broken.lean'
+    path.write_text('-- a false claim\ntheorem bad : 1 = 2 := rfl\n')
+    record = run_step(CHECK, LEAN, {'file': str(path)}, rerun=True).record
+    errors = record.outputs['errors']
+    assert record.status == 'refused'
+    assert isinstance(errors, list)
+    assert errors[0]['line'] == 2
+    with pytest.raises(SystemExit) as raised:
+        main(['--root', str(LEAN), 'layers', 'step', 'check', str(path)])
+    assert raised.value.code == 1
+
+
+def test_level_matches_the_lean_report() -> None:
+    """Report the levels `#veriphy levels` gives the kit's level fixtures."""
+    record = run_step(LEVEL, LEAN, {'module': 'VeriphyTest.Kit', 'prefixes': ['KitLevels']}, rerun=True).record
+    assert record.status == 'reported'
+    assert record.outputs['levels'] == {
+        'KitLevels.axiomOne': 'none',
+        'KitLevels.certifiedOnAxiom': 'none',
+        'KitLevels.certifiedOne': 'certificate',
+        'KitLevels.plainOne': 'lean-proof',
+        'KitLevels.sorriedOne': 'none',
+        'KitLevels.testedOne': 'kernel-test',
+    }

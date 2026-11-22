@@ -1,0 +1,42 @@
+version: 1
+name: life-sciences
+# the life sciences: claims about sequences checked with Biopython (`veriphy[life-sciences]`), and terms against
+# ontologies such as the Gene Ontology with the framework's check-concepts and pronto
+levels:
+  sequence-checked: {trust: checker, above: none, description: 'The sequence has the properties the claim gives it.'}
+
+conventions:
+  # which reference genome coordinates refer to
+  genome-assembly: [GRCh37, GRCh38]
+  gene-nomenclature: [hgnc-symbols, ensembl-identifiers]
+
+primitives:
+  seq.check:
+    function: veriphy.packs.life_sciences.primitives._sequences:sequence
+    trust: checker
+    input:
+      type: object
+      required: [fasta]
+      properties:
+        fasta: {type: string}
+        record: {type: string}
+        length: {type: integer}
+        gc: {type: string}
+        motif: {type: string}
+        protein: {type: string}
+    output: {type: object, required: [status]}
+
+steps:
+  check-sequence:
+    kind: check
+    primitive: seq.check
+    grants: sequence-checked
+    help: "check a sequence's length, GC fraction, motifs or translation, as a claim gives them"
+    inputs:
+      fasta: {scope: file, path: true, help: the sequences, as FASTA}
+      record: {optional: true, help: "the record's identifier (default: the first record)"}
+      length: {optional: true, type: integer, help: the claimed length}
+      gc: {optional: true, help: 'the claimed GC fraction, as reported: 0.52'}
+      motif: {optional: true, help: a motif the claim says the sequence contains}
+      protein: {optional: true, help: 'the claimed translation, standard code, to the first stop'}
+      claim: {optional: true, record: true, help: 'the claim, so its level follows the record'}

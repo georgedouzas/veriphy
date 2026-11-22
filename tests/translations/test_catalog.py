@@ -5,9 +5,25 @@ from pathlib import Path
 
 import pytest
 
-from veriphy.translations import main
+from veriphy.__main__ import main as veriphy_main
 
-FIXTURES = Path(__file__).resolve().parents[2] / 'lean' / 'VeriphyTest' / 'fixtures' / 'translations'
+
+def main(argv: list[str]) -> None:
+    """Run `veriphy pack math translations` with the arguments."""
+    veriphy_main(['pack', 'math', 'translations', *argv])
+
+
+FIXTURES = (
+    Path(__file__).resolve().parents[2]
+    / 'src'
+    / 'veriphy'
+    / 'packs'
+    / 'math'
+    / 'lean'
+    / 'VeriphyTest'
+    / 'fixtures'
+    / 'translations'
+)
 
 
 @pytest.fixture

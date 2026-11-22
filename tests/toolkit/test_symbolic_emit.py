@@ -29,7 +29,7 @@ from sage.all import (
 from sage.matrix.matrix0 import Matrix
 
 from veriphy.core import CertificateError
-from veriphy.toolkit import (
+from veriphy.packs.math.script import (
     Hyp,
     Lean,
     Problem,

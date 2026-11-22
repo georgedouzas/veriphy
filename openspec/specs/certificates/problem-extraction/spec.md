@@ -64,7 +64,7 @@ For an existential goal, the extractor SHALL bind every leading `∃` variable a
 - **THEN** extraction fails with an error stating that the body has free subterms other than the bound variables
 
 ### Requirement: Sage encoding of a problem
-A problem SHALL serialize to the daemon as: variable names, each constraint's polynomial and relation tag, the source hypothesis names, the goal constraint (if any), the binder count, and a pretty-printed Lean form of each atom.
+A problem SHALL serialize to the Sage session as: variable names, each constraint's polynomial and relation tag, the source hypothesis names, the goal constraint (if any), the binder count, and a pretty-printed Lean form of each atom.
 
 #### Scenario: Serialization round trip
 - **WHEN** a problem with two hypotheses and a `≤` goal is serialized

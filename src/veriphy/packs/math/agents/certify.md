@@ -1,0 +1,115 @@
+# Building a certificate with `veriphy certify`
+
+Use this when a goal's computational core needs Sage: coefficients, squares,
+multipliers, witnesses, closed forms, or intermediate expressions. Sage finds
+them, and Lean checks the proof you emit. Sage is never trusted.
+
+Paths in this playbook are relative to its directory, which `sage -python -m veriphy layers agents path` prints. The
+playbooks ship with the installed `veriphy` package, at the version of its toolkit.
+
+## The loop
+
+1. **Inspect the problem.** A first script can just print what it sees:
+
+   ```lean
+   veriphy certify "print(goal_kind, goal); print(hyps); print(atoms); proof = 'sorry'"
+   ```
+
+   The run fails on purpose: the `sorry` is rejected. The error shows the
+   script output.
+   - `goal` and each hypothesis are `Hyp(name, poly, rel, text)`, meaning
+     `poly rel 0` over generators `x0, x1, …`.
+   - `atoms` maps each generator to its Lean text.
+   - `lhs` and `rhs` are the goal's sides.
+   - A hypothesis with no polynomial form has `poly = None`, and keeps its
+     `text`.
+
+   `#veriphy translate <term>` shows the same translation without Sage: the
+   Sage form, the atoms it needed and the domain conditions.
+   **An unknown function.** When an atom is a function Sage knows but Veriphy
+   does not translate (say `Real.arcosh x` stays an atom), add an entry for it
+   to the project's `.veriphy/translations/<name>.json` (format in the user
+   guide), with its domain conditions and an `example`. Check it with
+   `#veriphy translations check` in a Lean file of the project, which
+   translates the example, renders it back and proves the two equal. Rerun the
+   inspection: the atom is now a Sage function. Never edit Veriphy's own tables
+   for this; `sage -python -m veriphy pack math translations list` shows what the project
+   adds.
+2. **Reuse before writing.** Run `sage -python -m veriphy pack math certificates list` in
+   the project. Each line starts with the script's path, which is what
+   `veriphy certify file` takes. `show <name>` prints a script, so you can read its
+   code when the header is not enough to judge a match. A saved script reads
+   the bound `problem`, so it usually runs unchanged on a goal of the same
+   shape.
+3. **Otherwise pick a recipe.** Use the index in `prove.md` step 3, then
+   read `recipes/<name>.md`. Copy its template into the project with
+   `sage -python -m veriphy layers agents copy recipes/templates/<name>`, rename it to
+   `.veriphy/certificates/<specific_name>.sage`, adapt the `EDIT` lines,
+   and update the header: `name` the same as the file name, plus an accurate
+   `goal` and `description`. A script with goal-specific edits, such as
+   hard-coded `HINTS`, gets a goal-specific name, so it is not mistaken for a
+   general one. Never delete or rename a script someone else saved.
+4. **Run it:** `veriphy certify "<specific_name>.sage"`.
+5. **Iterate on the feedback.** A failure shows the script's output, the Lean
+   text it built, and Lean's error. The recipe's "Failure modes" section maps
+   each symptom to the next step. A script that raises shows its traceback and
+   output.
+6. **Commit the replacement.** Replace the `veriphy certify` call with the emitted
+   `Try this:` block, parentheses included. The `[apply]` marker in the message
+   is not part of the proof. That block is the proof, and it builds without
+   Sage. Keep the script in `.veriphy/certificates/` with a complete header, for reuse.
+
+Shape the goal first. Introduce hypotheses (`intro`) and split conjunctions
+before calling `veriphy certify`, so the script sees a relation or `∃` it can work
+with, not an implication. An implication arrives as `goal_kind == 'other'`.
+
+## Project layout
+
+Everything Veriphy-related in the project lives under `.veriphy/` at the workspace root: scripts in
+`.veriphy/certificates/` (run by bare name, `veriphy certify "<name>.sage"`), translation entries in
+`.veriphy/translations/`, copied Lean assets in `.veriphy/lean/`, coverage reports in `.veriphy/coverage/`. Never
+write Veriphy artifacts anywhere else, and never move the committed proofs into `.veriphy/`.
+
+## The toolkit, pre-bound in every script
+
+- **Problem:** `problem`, `R`, `x0, x1, …`, `hyps`, `goal`, `goal_kind`,
+  `binders`, `body`, `atoms`, `lhs`, `rhs`, `Hyp`.
+- **Symbolic forms:** every hypothesis and the goal carry `.expr`, the Sage
+  symbolic form of `lhs - rhs` (with `sqrt`, `exp`, `log`, `sin`, `cos`, `tan`,
+  `abs`, `pi`, `I`, range sums, `!![…]` matrices, `det`, polynomial `eval`),
+  over `symbols` (the same names as `x0, x1, …`, in Sage's symbolic ring).
+  `problem.atom_types` gives each atom's Lean type, and `domain` lists the
+  conditions the expressions need (`y ≠ 0` for a denominator, `0 ≤ u` for a
+  `sqrt`, `0 < v` for a `log`), with the hypothesis that discharges each one.
+- **Emitters** (all return Lean text that re-parses):
+  - `polynomial`, `rational`, `term`, `tactic`, `hyp`, `fresh_name`;
+  - `combination`, `linear_combination`, `sq_nonneg`, `mul_nonneg`, `mul_pos`;
+  - `nlinarith`, `positivity`, `field_simp`, `norm_num`, `decide`;
+  - `rewrite_by`, `calc_chain`, `by_cases`, `rcases`, `witness`;
+  - `negate_goal`, `refute`, `sum_by_induction`, `steps`;
+  - symbolic: `symbolic` (a Sage expression as a Lean term at a type, with the
+    casts integer operations need), `matrix_term` (`!![…]`),
+    `field_simp_clearing` (passes every denominator fact),
+    `lemma_rewrite` (a named lemma with its side conditions),
+    `rewrite_candidates` (the rewrites the translation tables offer for the
+    goal, side conditions filled in), and `require_domain` (discharge domain
+    conditions, or fail naming them);
+  - calculus: `has_deriv_at` (a `HasDerivAt` proof term composed from
+    mathlib's derivative lemmas) and `has_deriv_at_proof` (the `have` step
+    stating Sage's derivative).
+- **Solvers:** `solve_exact_lp` (exact rational LP) and `sos_decomposition`
+  (exact SOS from a numeric SDP).
+- **Sage itself:** everything in `sage.all` (`factor`, `lift`, `solve`,
+  `matrix`, `real_roots`, …).
+
+## Rules
+
+- `proof` must be a Lean tactic block (text, or a toolkit `Lean` value).
+- `sorry`, `native_decide` and any non-standard axiom are rejected.
+- Never commit a `veriphy certify` call: commit the emitted replacement.
+- If no primitive or emitter can express the certificate, report
+  `blocked-missing-building-block` and name what is missing.
+- When no certificate is feasible (every matching recipe failed, or the claim quantifies over a
+  dimension, a space or a function), test the claim with `#veriphy test` (`recipes/test_fallback.md`)
+  and name the level it reached, `kernel-test` or `oracle-test`. A test never replaces a certificate, and
+  is never reported as a proof.

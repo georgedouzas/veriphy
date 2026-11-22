@@ -1,0 +1,240 @@
+version: 1
+name: math
+# mathematics in Lean, with SageMath to find proofs and to sample statements
+
+levels:
+  oracle-test: {trust: oracle, above: none, description: Sage evaluated the claim at instances.}
+  kernel-test: {trust: kernel, above: oracle-test, description: The kernel checked the claim at instances.}
+  lean-proof: {trust: kernel, above: kernel-test, description: 'A complete Lean proof on the standard axioms, which no recipe built.'}
+  certificate: {trust: kernel, above: lean-proof, description: 'A recipe built the proof, which the kernel checked.'}
+
+scopes:
+  lean-imports: {function: 'veriphy.packs.math.steps._lean_scopes:lean_imports'}
+  lean-workspace: {function: 'veriphy.packs.math.steps._lean_scopes:lean_workspace'}
+
+steps:
+  check:
+    kind: check
+    primitive: lean.check
+    help: have Lean check a file, and record each declaration's axioms
+    inputs:
+      file: {scope: lean-imports, path: true, help: the Lean file}
+  levels:
+    kind: derived
+    primitive: lean.levels
+    help: 'the level of each declaration of a module, as #veriphy levels gives it'
+    inputs:
+      module: {scope: lean-workspace, help: 'the module, as MyProject.Basic'}
+      prefixes: {optional: true, many: true, flag: --prefix, help: 'a name prefix (default: the module)'}
+  record-proof:
+    kind: agent
+    help: record the Lean file holding a claim and the proof an agent wrote for it
+    inputs:
+      artifact: {scope: file, path: true, help: the Lean file holding the claim and its proof}
+  sample:
+    kind: evidence
+    primitive: sample
+    status: outcome
+    seed: true
+    help: sample a statement at random values that satisfy its hypotheses, to test that it says what was meant
+    inputs:
+      file: {scope: lean-imports, path: true, help: the Lean file that states the declaration}
+      declaration: {help: the claim}
+      values: {optional: true, type: integer, default: 10, help: how many values must agree}
+      points: {optional: true, type: json, help: 'values to evaluate at, as JSON: [{"x": "pi"}]'}
+      informal: {optional: true, record: true, help: "the agent's reading of the statement, kept in the record"}
+
+tools:
+  sage:
+    # one Sage process per call; VERIPHY_SAGE_CMD and VERIPHY_SAGE_SESSION override the command, as for the Lean bridge
+    contract: files
+    run: ['{env:VERIPHY_SAGE_CMD|sage}', -python, '{env:VERIPHY_SAGE_SESSION|-m veriphy.packs.math.primitives.sage}']
+    version: {command: [version], pattern: 'version ([0-9.]+)'}
+    timeout: 600
+
+primitives:
+  lean.check:
+    function: veriphy.packs.math.primitives.lean._methods:check
+    trust: kernel
+    input:
+      type: object
+      required: [root]
+      properties:
+        root: {type: string, description: the workspace root}
+        file: {type: string, description: the Lean file to check}
+        source: {type: string, description: the Lean text to check, instead of a file}
+      anyOf: [{required: [file]}, {required: [source]}]
+    output:
+      type: object
+      required: [status]
+      properties:
+        status: {enum: [accepted, refused, failed]}
+        errors: {type: array, items: {type: object, required: [line, message]}}
+        warnings: {type: integer}
+        axioms: {type: object, additionalProperties: {type: array, items: {type: string}}}
+        error: {type: string}
+
+  lean.serialize:
+    function: veriphy.packs.math.primitives.lean._methods:serialize
+    trust: kernel
+    input:
+      type: object
+      required: [root, declaration]
+      properties:
+        root: {type: string}
+        file: {type: string}
+        source: {type: string}
+        declaration: {type: string, description: the claim, a theorem or a definition of type Prop}
+      anyOf: [{required: [file]}, {required: [source]}]
+    output:
+      type: object
+      required: [status]
+      properties:
+        status: {enum: [serialized, failed]}
+        declaration: {type: string}
+        statement: {type: string}
+        problem: {type: object}
+        error: {type: string}
+
+  lean.levels:
+    function: veriphy.packs.math.primitives.lean._methods:level
+    trust: kernel
+    input:
+      type: object
+      required: [root, module]
+      properties:
+        root: {type: string}
+        module: {type: string}
+        prefixes: {type: array, items: {type: string}}
+    output:
+      type: object
+      required: [status]
+      properties:
+        status: {enum: [reported, refused, failed]}
+        levels: {type: object, additionalProperties: {type: string}}
+        error: {type: string}
+
+  # composites, written in code: listed here so the configuration names every primitive
+  sample: {composite: veriphy.packs.math.primitives._composites}
+  certify: {composite: veriphy.packs.math.primitives._composites}
+
+  sage.ping:
+    tool: sage
+    command: [call, ping, '{input}', '{out}']
+    trust: oracle
+    input: {type: object, maxProperties: 0}
+    output:
+      type: object
+      required: [ok, sage, veriphy]
+      properties: {ok: {const: true}, sage: {type: string}, veriphy: {type: string}}
+
+  sage.search:
+    tool: sage
+    command: [call, run, '{input}', '{out}']
+    trust: search
+    input:
+      type: object
+      required: [problem, script]
+      properties:
+        problem: {type: object, description: the goal as `veriphy certify` serializes it}
+        script: {type: string, description: a script following the script contract}
+        timeout_s: {type: integer, minimum: 1}
+    output:
+      type: object
+      required: [lean, stdout, leaves_goals]
+      properties:
+        lean: {type: string, description: the candidate tactic block}
+        stdout: {type: string}
+        leaves_goals: {type: boolean}
+        deprecated: {type: string}
+
+  sage.compute:
+    tool: sage
+    command: [call, run_script, '{input}', '{out}']
+    trust: oracle
+    input:
+      type: object
+      required: [script]
+      properties: {script: {type: string}, timeout_s: {type: integer, minimum: 1}}
+    output:
+      type: object
+      required: [stdout, advisory]
+      properties: {results: {}, stdout: {type: string}, advisory: {const: true}}
+
+  sage.sample:
+    tool: sage
+    command: [call, sample, '{input}', '{out}']
+    trust: oracle
+    seed: param
+    input:
+      type: object
+      required: [problem]
+      properties:
+        problem: {type: object, description: the claim as `lean.serialize` gives it}
+        seed: {type: integer, minimum: 0}
+        values: {type: integer, minimum: 1}
+        points: {type: [array, 'null'], items: {type: object, additionalProperties: {type: string}}}
+    output:
+      type: object
+      required: [outcome, seed]
+      properties:
+        outcome: {enum: [agrees, counterexample, undecided]}
+        method: {enum: [symbolic, sampled]}
+        seed: {type: integer}
+
+  sage.instances:
+    tool: sage
+    command: [call, test, '{input}', '{out}']
+    trust: search
+    input:
+      type: object
+      required: [problem, script]
+      properties: {problem: {type: object}, script: {type: string}, timeout_s: {type: integer, minimum: 1}}
+    output:
+      type: object
+      required: [instances, stdout, seed, sage_version]
+      properties:
+        instances: {type: array, items: {type: object}}
+        stdout: {type: string}
+        seed: {type: integer}
+        sage_version: {type: string}
+        deprecated: {type: string}
+
+  sage.solve:
+    tool: sage
+    command: [call, solve, '{input}', '{out}']
+    trust: oracle
+    input: {type: object}
+    output: {type: object}
+
+  sage.symbolic_check:
+    tool: sage
+    command: [call, symbolic_check, '{input}', '{out}']
+    trust: oracle
+    input: {type: object}
+    output: {type: object}
+
+  sage.matrix_check:
+    tool: sage
+    command: [call, matrix_check, '{input}', '{out}']
+    trust: oracle
+    input: {type: object}
+    output: {type: object}
+
+workflows:
+  # the agent writes the statement, Sage samples it, Lean checks it, the agent writes the proof, Lean checks it
+  prove-claim:
+    - record-statement
+    - sample: {counterexample: stop}
+    - check: {refused: record-statement, attempts: 3}
+    - record-proof
+    - check: {refused: record-proof, attempts: 5}
+  verify-paper: [record-claims, validate, reason, appendix]
+# the pack's programs, as `veriphy pack math <name>`
+commands:
+  certificates:
+    command: veriphy.packs.math.steps.certificates._catalog:certificates
+    help: the project's saved certificate scripts, and its test records
+  translations:
+    command: veriphy.packs.math.primitives.translations._catalog:translations
+    help: the Lean ↔ Sage translation entries in force

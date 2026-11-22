@@ -1,0 +1,9 @@
+# An excerpt of a social-science thesaurus in SKOS, in the shape of ELSST (https://elsst.cessda.eu), with example IRIs.
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix : <https://example.org/thesaurus/> .
+
+:social-trust a skos:Concept ; skos:prefLabel "social trust"@en ;
+    skos:definition "Confidence that most people can be relied on."@en ; skos:broader :social-capital .
+:social-capital a skos:Concept ; skos:prefLabel "social capital"@en .
+:educational-attainment a skos:Concept ; skos:prefLabel "educational attainment"@en .
+:volunteering a skos:Concept ; skos:prefLabel "voluntary work"@en .

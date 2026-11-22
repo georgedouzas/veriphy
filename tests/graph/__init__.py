@@ -1,1 +1,1 @@
-"""Test the `veriphy.graph` package."""
+"""Test the `veriphy.claims` package."""

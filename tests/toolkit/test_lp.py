@@ -2,8 +2,8 @@
 
 from sage.all import QQ
 
-from veriphy.oracle import encode
-from veriphy.toolkit import solve_exact_lp
+from veriphy.packs.math.primitives.sage.methods import encode
+from veriphy.packs.math.script import solve_exact_lp
 
 
 def test_solve_exact_lp_without_variables() -> None:

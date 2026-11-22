@@ -1,0 +1,9 @@
+{
+  "claim": "trust-education",
+  "statement": "Each extra year of education raises social trust by 0.127 points (OLS, 200 respondents).",
+  "estimate": 0.127,
+  "script": "analysis.py",
+  "data": "survey.csv",
+  "sha256": "9eeed72a5abde165e1d8246e634401a5eb82d76a5672a900b739196a2dd4f10a",
+  "variations": ["trust_index ~ education_years + age", "trust_index ~ education_years + income"]
+}

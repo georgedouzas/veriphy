@@ -6,7 +6,7 @@ Carries the value that used to live in ready-made certificate tactics: the knowl
 ## Requirements
 
 ### Requirement: One recipe per technique
-The project SHALL provide one recipe per certificate technique, covering at least ideal membership, Farkas refutation, SOS (factor, hinted, SDP), factorization rewrite, rational witnesses, `nlinarith` hint search, `calc` derivations, case splits, matrix identities and sums by induction. Each recipe SHALL state when to use it, give a fill-in `sage_run` script template, and list its failure modes with the next step for each.
+The project SHALL provide one recipe per certificate technique, covering at least ideal membership, Farkas refutation, SOS (factor, hinted, SDP), factorization rewrite, rational witnesses, `nlinarith` hint search, `calc` derivations, case splits, matrix identities and sums by induction. Each recipe SHALL state when to use it, give a fill-in `veriphy certify` script template, and list its failure modes with the next step for each.
 
 #### Scenario: Recipe for a removed tactic
 - **WHEN** a user looks for what replaced `sage_farkas`
@@ -40,7 +40,7 @@ Each recipe's template, instantiated on its worked example, SHALL be a test in t
 - **THEN** `lake build VeriphyTest` fails on that recipe's example
 
 ### Requirement: At least as effective as the removed tactics
-Every problem the removed tactics solved (each `sage_*` call in the pre-change test suite) SHALL be solved with `sage_run` following the recipes. A fresh agent given only the skills and procedures, not the removed tactic names, SHALL solve every benchmark problem from its statement, with iterations and wall time recorded per problem.
+Every problem the removed tactics solved (each `sage_*` call in the pre-change test suite) SHALL be solved with `veriphy certify` following the recipes. A fresh agent given only the skills and procedures, not the removed tactic names, SHALL solve every benchmark problem from its statement, with iterations and wall time recorded per problem.
 
 #### Scenario: Benchmark parity
 - **WHEN** the benchmark runs before release

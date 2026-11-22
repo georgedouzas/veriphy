@@ -21,7 +21,7 @@ Every Veriphy artifact in a downstream project SHALL live under `.veriphy/` at t
 - **THEN** `.veriphy/graph/sources/` is created with the source's file, and nothing outside `.veriphy/` changes
 
 ### Requirement: Directories under the project root
-The directories under `.veriphy/` SHALL be `certificates/` (certificate scripts), `translations/` (translation and rewrite entries), `lean/` (Lean sources copied from Veriphy), `coverage/` (coverage reports), `tests/` (test records of `sage_test`) and `graph/` (the research claim graph).
+The directories under `.veriphy/` SHALL be `certificates/` (certificate scripts), `translations/` (translation and rewrite entries), `lean/` (Lean sources copied from Veriphy), `coverage/` (coverage reports), `tests/` (test records of `#veriphy test`) and `graph/` (the research claim graph).
 
 #### Scenario: Locating an artifact
 - **WHEN** a user looks for the certificate of a reasoning run of the research graph
@@ -39,15 +39,21 @@ The directories under `.veriphy/` SHALL be `certificates/` (certificate scripts)
 The project's own Lean sources and committed proofs SHALL stay where the project keeps them. Emitted replacements are project code, not Veriphy artifacts, and Veriphy SHALL never move them into `.veriphy/`.
 
 #### Scenario: Committing a replacement
-- **WHEN** an agent replaces a `sage_run` call in `Project/Physics/Anomaly.lean`
+- **WHEN** an agent replaces a `veriphy certify` call in `Project/Physics/Anomaly.lean`
 - **THEN** the replacement stays in that file, and only the script goes into `.veriphy/certificates/`
 
 ### Requirement: Root resolution
-Veriphy SHALL resolve `.veriphy/` against the Lean workspace root: the directory holding the root `lakefile.toml` or `lakefile.lean`. Commands run from a subdirectory SHALL find the same `.veriphy/`. The Python catalogs SHALL search upward from the working directory for the workspace root, and SHALL accept an explicit `--root`.
+Veriphy SHALL resolve `.veriphy/` against the workspace root: the nearest directory, from the working directory
+upwards, holding `veriphy.yaml`, `lakefile.toml` or `lakefile.lean`. Commands run from a subdirectory SHALL find the
+same `.veriphy/`, and every command SHALL accept an explicit `--root`.
 
 #### Scenario: Running from a subdirectory
-- **WHEN** `sage -python -m veriphy.certificates list` runs in `Project/Sub/Dir`
+- **WHEN** `veriphy pack math certificates list` runs in `Project/Sub/Dir`
 - **THEN** it lists `Project/.veriphy/certificates/`
+
+#### Scenario: A workspace without Lean inside a Lean workspace
+- **WHEN** `Project/analysis/veriphy.yaml` selects `packs: [social-science]` and a command runs in `Project/analysis`
+- **THEN** the workspace root is `Project/analysis`, and its packs are `core` and `reproduction`
 
 ### Requirement: Copied Lean sources build as a library
 Lean files copied into `.veriphy/lean/` SHALL build through a `lean_lib` the project declares with `srcDir := ".veriphy/lean"`. The recipes that copy an asset SHALL give the exact `lakefile` stanza, and the copied files SHALL import mathlib only.
@@ -55,10 +61,3 @@ Lean files copied into `.veriphy/lean/` SHALL build through a `lean_lib` the pro
 #### Scenario: Copying the coordinate-geometry asset
 - **WHEN** a project copies `CoordinateGeometry.lean` into `.veriphy/lean/` and adds the stanza
 - **THEN** its own files can `import CoordinateGeometry`, and `lake build` succeeds
-
-### Requirement: Migration from the 0.1.0 layout
-When a project has a top-level `certificates/` directory of scripts (the 0.1.0 layout) and no `.veriphy/certificates/`, the catalog SHALL still list those scripts, warn that the layout moved, and print the `git mv` command that moves them. `sage_run file` SHALL keep running scripts by any explicit relative path.
-
-#### Scenario: Old layout
-- **WHEN** `veriphy.certificates list` runs in a project with `certificates/anomaly.sage` and no `.veriphy/`
-- **THEN** it lists `anomaly`, warns that scripts belong in `.veriphy/certificates/`, and prints `git mv certificates .veriphy/certificates`

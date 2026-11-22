@@ -6,7 +6,7 @@ import pytest
 from sage.all import SR, cos, diagonal_matrix, matrix, sin, var
 
 from veriphy.core import CertificateError
-from veriphy.toolkit import (
+from veriphy.packs.math.script import (
     Lean,
     christoffel_proof,
     christoffel_symbols,

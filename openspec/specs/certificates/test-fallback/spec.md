@@ -16,11 +16,11 @@ no recipe applies.
 
 #### Scenario: A recipe exists
 - **WHEN** the goal is `Matrix.rank !![(1 : ℚ), 2, 3; 2, 4, 6] = 1` and the `matrix_rank` recipe closes it
-- **THEN** the claim's level is `certificate`, and `sage_test` is not used
+- **THEN** the claim's level is `certificate`, and `#veriphy test` is not used
 
 #### Scenario: No certificate is feasible
 - **WHEN** the claim is rank-nullity for an arbitrary `A : Matrix (Fin m) (Fin n) ℚ`
-- **THEN** its proof is a mathlib proof, and its Veriphy check is a `sage_test` at level `kernel-test`
+- **THEN** its proof is a mathlib proof, and its Veriphy check is a `#veriphy test` at level `kernel-test`
 
 #### Scenario: A plain mathlib proof
 - **WHEN** a theorem has a complete proof that no recipe built, on the standard axioms
@@ -30,22 +30,23 @@ no recipe applies.
 - **WHEN** a theorem carries the recipe marker and depends on `sorry` or on an axiom beyond the standard ones
 - **THEN** its level is `none`
 
-### Requirement: The sage_test command
-The system SHALL provide the command `sage_test <constant> file "<name>.sage"` (and the inline form with a script
+
+### Requirement: The test command
+The system SHALL provide the command `#veriphy test <constant> "<name>.sage"` (and the inline form with a script
 string). The constant's type SHALL be a proposition, or the constant SHALL be a definition of type `Prop`. Lean SHALL
-open its universal binders, serialize the binders and the body as a problem, and run the script, which assigns
-`instances`: for each instance, a value for every binder as Lean text, and either a `proof` tactic block or an `oracle`
+open its universal binders, serialize the binders and the body as a problem, and run the script, which returns
+`found(instances)`: for each instance, a value for every binder as Lean text, and either a `proof` tactic block or an `oracle`
 verdict with its evaluation.
 
 #### Scenario: Kernel-checked instances
-- **WHEN** `sage_test rank_nullity file "rank_nullity_test.sage"` runs and the script returns three matrices with
+- **WHEN** `#veriphy test rank_nullity "rank_nullity_test.sage"` runs and the script returns three matrices with
   proofs by `matrix_rank` and `dimension`
 - **THEN** Lean instantiates the statement at each matrix, checks each block, and reports the three instances as
   accepted
 
 #### Scenario: A proposition without a proof
 - **WHEN** the target is `def sylvester_invariance : Prop := …`, which has no Lean proof
-- **THEN** `sage_test` checks its instances the same way, and the level is `kernel-test` or `oracle-test`
+- **THEN** `#veriphy test` checks its instances the same way, and the level is `kernel-test` or `oracle-test`
 
 ### Requirement: Instances are independent of the claim
 An instance SHALL be accepted only when its block closes the instantiated goal with the standard axioms and its proof
@@ -76,7 +77,7 @@ Sage and SHALL be reported only after every emitted instance was accepted.
 
 ### Requirement: Test record
 Every run SHALL write `.veriphy/tests/<target>.json` with the target, its statement, the level, the seed, the Sage
-version, the script's hash and every instance (values, kind, verdict). `python -m veriphy.certificates tests` SHALL
+version, the script's hash and every instance (values, kind, verdict). `veriphy pack math certificates tests` SHALL
 list the records with their levels, and `--rerun <target>` SHALL rerun the oracle instances. Oracle evaluations SHALL
 use exact arithmetic, or interval arithmetic with at least 53 bits, and SHALL NOT compare floating-point numbers.
 
@@ -89,7 +90,7 @@ use exact arithmetic, or interval arithmetic with at least 53 bits, and SHALL NO
 - **THEN** the run fails and names the instance
 
 ### Requirement: Level report
-`#veriphy_levels [prefixes]` SHALL list the declarations under the prefixes with their level: `kernel-test` or
+`#veriphy levels [prefixes]` SHALL list the declarations under the prefixes with their level: `kernel-test` or
 `oracle-test` for those carrying `veriphy_tested`, `certificate` for theorems on the standard axioms whose proof came
 from a recipe's replacement, `lean-proof` for the other theorems on the standard axioms, and `none` otherwise.
 
@@ -105,3 +106,13 @@ a dimension, a space or a function. The template SHALL provide the seeded sample
 #### Scenario: Template run
 - **WHEN** the Lean test suite runs the template on a statement quantified over `n : ℕ` and `A : Matrix (Fin n) (Fin n) ℚ`
 - **THEN** it accepts at least three instances, one with `n = 0` or a singular `A`
+
+### Requirement: Levels' trust classes and packs
+`certificate`, `lean-proof` and `kernel-test` SHALL be of trust class `kernel`, and `oracle-test` of class `oracle`.
+The `lean` pack SHALL declare `lean-proof`, the `math` pack `certificate`, `kernel-test` and `oracle-test`, and the
+`core` pack `none`.
+
+#### Scenario: Levels from the packs
+- **WHEN** `veriphy config show` runs with the default config
+- **THEN** it lists the five levels with their classes and packs, and their names equal those `#veriphy levels`
+  reports

@@ -40,3 +40,13 @@ def test_project_dir_defaults_to_the_working_directory(tmp_path: Path, monkeypat
     monkeypatch.chdir(sub)
     assert project_dir() == tmp_path.resolve() / PROJECT_DIR_NAME
     assert not (tmp_path / PROJECT_DIR_NAME).exists()
+
+
+def test_a_workspace_file_marks_a_root_inside_a_lean_workspace(tmp_path: Path) -> None:
+    """Stop at the nearest `veriphy.yaml`, so a workspace without Lean inside a Lean one keeps its own packs."""
+    (tmp_path / 'lakefile.toml').write_text('')
+    analysis = tmp_path / 'analysis'
+    (analysis / 'data').mkdir(parents=True)
+    (analysis / 'veriphy.yaml').write_text('version: 1\npacks: [social-science]\n')
+    assert find_workspace_root(analysis / 'data') == analysis.resolve()
+    assert find_workspace_root(tmp_path) == tmp_path.resolve()

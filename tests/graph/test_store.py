@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
+from veriphy.claims import confirm, graph_dir, lean_iri, load_graph, resolve_term, source_iri, vp
 from veriphy.core import GraphError
-from veriphy.graph import confirm, graph_dir, lean_iri, load_graph, resolve_term, source_iri, vp
 
 SOURCES = Path('.veriphy') / 'graph' / 'sources'
 
@@ -102,7 +102,7 @@ def test_confirm_refuses_a_triple_the_agent_file_lacks(workspace: Path) -> None:
 
 
 def test_load_graph_reads_the_lean_export(tmp_path: Path) -> None:
-    """Read a file `#veriphy_graph` wrote, with provenance lean and the IRIs `lean_iri` computes."""
+    """Read a file `#veriphy export` wrote, with provenance lean and the IRIs `lean_iri` computes."""
     (tmp_path / 'lakefile.toml').write_text('')
     lean = tmp_path / '.veriphy' / 'graph' / 'lean'
     lean.mkdir(parents=True)

@@ -207,42 +207,43 @@ conventions are the taste it cannot check.
 
 This section instantiates the body above for this repository.
 
-- Ecosystem contract: the Sage daemon's JSON-lines protocol (one request object per stdin line, one response per
+- Ecosystem contract: the Sage session's JSON-lines protocol (one request object per stdin line, one response per
   stdout line) as specified in `openspec/specs/certificates/oracle-methods` and `openspec/specs/distribution/*`. The
-  Lean bridge in `lean/Veriphy/Bridge.lean` is its only client, and method names, parameters, and result shapes MUST NOT
+  Lean bridge in `src/veriphy/packs/math/lean/Veriphy/Bridge.lean` is its only client, and method names, parameters, and result shapes MUST NOT
   change incompatibly.
 - Language: Python >=3.11, <3.15 for `src/` and `tests/`. Lean 4 at the toolchain pinned in `lean-toolchain` for
-  `lean/` (`Veriphy/`, `VeriphyCheck/`, `VeriphyTest/`, `assets/` and the coverage runner in `coverage/`), with the
-  Lake configuration at the repository root.
-- Scope of the Python rules: the Python rules of this constitution bind `src/`, `tests/`, `scripts/`, and
-  `noxfile.py`. The playbooks, recipes and templates in `src/veriphy/prompts/` are package data, not Python modules,
-  and the `veriphy.prompts` command alone gives access to them. The Lean code follows mathlib's conventions and is gated by `lake build`, `lake build VeriphyCheck`,
+  `src/veriphy/packs/math/lean/` (`Veriphy/`, `VeriphyCheck/`, `VeriphyTest/`, `assets/` and the coverage runner in
+  `coverage/`), with the Lake configuration at the repository root, where Lake reads it for dependents.
+- Scope of the Python rules: the Python rules of this constitution bind `src/`, `tests/`, `docs/examples/` and
+  `noxfile.py`. The playbooks, recipes and templates in each pack's `agents/` directory are package data, not Python
+  modules, and the `veriphy layers agents` command alone gives access to them. The Lean code follows mathlib's conventions and is gated by `lake build`, `lake build VeriphyCheck`,
   `lake build VeriphyAssets` and `lake build VeriphyTest`. `VeriphyCheck` (kernel checkers with soundness theorems)
   and `VeriphyAssets` (recipe assets) MUST import mathlib only.
 - Runtime: SageMath is an optional runtime, not a declared dependency. The package is installed into an existing Sage
-  with `sage -pip install veriphy`. `veriphy` and `veriphy.core` MUST NOT import Sage. `veriphy.oracle` and
-  `veriphy.toolkit` import it, and `veriphy.sage_server` reaches it through the one allowed lazy import. Modules that
+  with `sage -pip install veriphy`. `veriphy` and `veriphy.core` MUST NOT import Sage. The `math` pack's Sage session
+  methods (`veriphy.packs.math.primitives.sage.methods`) and script helpers (`veriphy.packs.math.script`) import it,
+  and the Sage session `veriphy.packs.math.primitives.sage` reaches it through the one allowed lazy import. Modules that
   ship with Sage (`sympy`, `cvxopt`) are part of that runtime and MUST NOT be declared as dependencies.
-- Research graph: `veriphy.graph` MUST NOT import Sage. Its dependencies (`pyoxigraph`, `pyshacl`, `rdflib`) live in
-  the optional extra `graph`, and the Horn reasoner `open_ontologies_lite` is installed by
-  `python -m veriphy.graph checker build` from the Open Ontologies release pinned in `veriphy.graph._checker`,
-  because its PyPI release lacks the reasoner. All of them MUST be reached only through the deferred imports of
-  `veriphy.graph._engine`, so `import veriphy.graph` works without the extra. Every external program the graph runs
-  goes through `veriphy.graph._process`.
-- Surface packages: `veriphy.sage_server` serves the runner (`python -m veriphy.sage_server` and the
-  `veriphy-sage-server` script) and re-exports `main` alone. `veriphy.oracle` is the importable surface of the daemon
-  methods and their building blocks. `veriphy.toolkit` is the surface proof scripts see: every name in its `__all__`
-  is in a script's namespace. `veriphy.graph` is the importable surface of the research claim graph and serves the
-  runner `python -m veriphy.graph`, whose commands map one to one onto its API (`COMMANDS`, checked by a parity
-  test).
+- Research graph: `veriphy.claims` and `veriphy.primitives.graph` MUST NOT import Sage. Its dependencies (`pyoxigraph`,
+  `pyshacl`, `rdflib`) are dependencies of every install, and the Horn reasoner `open_ontologies_lite` is set up on
+  first use (or by `veriphy layers claims checker build`) from the Open Ontologies release pinned in
+  `veriphy.primitives.graph._checker`, because its PyPI release lacks the reasoner. All of them MUST be reached only
+  through the deferred imports of `veriphy.primitives.graph._engine`, so a command that doesn't use the graph doesn't
+  pay for loading them. Every external program the
+  graph runs goes through `veriphy.primitives.graph._process`.
+- Surface packages: `veriphy.packs.math.primitives.sage` runs the Sage session (`python -m` on it, under Sage's
+  interpreter) and re-exports `main` alone. `veriphy.script` is the surface proof scripts see: every
+  name in its `__all__` is in a script's namespace. `veriphy` is the one command, a click group whose subcommands the
+  layers and packs contribute, and `veriphy.run` its Python form. No other module path is public.
 - Build and tooling: uv with SCM-derived versioning and a `src` layout. The `nox` sessions are `formatting`, `checks`,
-  `tests`, `docs`, `changelog`, and `release`. The gate covers `ruff`, `mypy`, `bandit`, `pip-audit`, `deptry`,
+  `tests`, `docs`, `changelog`, `release`, and the maintenance sessions `diagrams`, `tables` and `bundle`; the
+  repository has no `scripts/` directory. The gate covers `ruff`, `mypy`, `bandit`, `pip-audit`, `deptry`,
   `pydoclint`, and `interrogate`, with `pytest` under branch coverage and randomized ordering. The `tests` session runs
   on Sage's interpreter with system site-packages.
 - Delivery surfaces: the `veriphy` distribution on PyPI, the Lean library consumed by Lake at a release tag, and the
   Claude Code plugin. One `vX.Y.Z` tag versions all three.
 - Layout: library. The importable package under `src/veriphy` is distributed to others.
-- Trust boundary: the daemon is an untrusted oracle. Executing caller-supplied Sage scripts in `run_script` and
+- Trust boundary: the Sage session is an untrusted oracle. Executing caller-supplied Sage scripts in `run_script` and
   `certify` is deliberate, and soundness rests on the Lean kernel alone.
 - Trust boundary of the graph: the Horn reasoner is an untrusted engine. A graph conclusion is reported as checked only
   when `oo-horn`, the Open Ontologies Lean checker built from the pinned release, accepted the run, and its verdict

@@ -296,7 +296,7 @@ You: That changes everything.
      +-------------------------------------------------+
 
      Key constraints:
-     - No daemon running
+     - No Sage session running
      - Must work offline
      - Single user
 

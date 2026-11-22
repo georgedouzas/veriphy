@@ -6,7 +6,7 @@ import pytest
 from sage.all import QQ
 
 from veriphy.core import VeriphyError
-from veriphy.toolkit import Lean, parenthesize, polynomial, rational, read_problem, tactic, term
+from veriphy.packs.math.script import Lean, parenthesize, polynomial, rational, read_problem, tactic, term
 
 PROBLEM = read_problem({'vars': ['x0', 'x1'], 'atoms': ['f a', 'v₁'], 'goal': {'kind': 'false'}})
 

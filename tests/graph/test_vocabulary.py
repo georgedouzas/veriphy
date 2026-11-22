@@ -2,7 +2,7 @@
 
 from itertools import pairwise
 
-from veriphy.graph import (
+from veriphy.claims import (
     generate_axioms,
     label_of,
     lean_iri,

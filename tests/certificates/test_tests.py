@@ -5,20 +5,27 @@ from pathlib import Path
 
 import pytest
 
-from veriphy.certificates import main
+from veriphy.__main__ import main as veriphy_main
 from veriphy.core import ScriptError
-from veriphy.oracle import run_test_script
+from veriphy.packs.math.primitives.sage.methods import run_test_script
+
+
+def main(argv: list[str]) -> None:
+    """Run `veriphy pack math certificates` with the arguments."""
+    veriphy_main(['pack', 'math', 'certificates', *argv])
+
 
 PROBLEM = {'vars': [], 'atoms': [], 'goal': {'kind': 'false'}, 'universal': [{'name': 'x', 'type': 'ℝ'}]}
 SCRIPT = """
 R = RealIntervalField(64)
 instances = [oracle_instance(str(x), lhs=1 + R(x), rhs=R(x).exp(), relation='<=', edge=(x == 0)) for x in (0, 1, 2)]
+return found(instances)
 """
 
 
 @pytest.fixture
 def recorded(tmp_path: Path) -> Path:
-    """Return a workspace with the record of a run of SCRIPT, as `sage_test` writes it."""
+    """Return a workspace with the record of a run of SCRIPT, as `#veriphy test` writes it."""
     (tmp_path / 'lakefile.toml').write_text('')
     fresh = run_test_script(PROBLEM, SCRIPT, 60)
     instances = [{**i, 'accepted': True, 'reason': ''} for i in fresh['instances']]
@@ -72,6 +79,6 @@ def test_rerun_of_a_missing_record(recorded: Path) -> None:
 
 def test_floating_point_verdicts_are_refused() -> None:
     """A script comparing RDF values fails, naming the instance."""
-    script = "instances = [oracle_instance('1', lhs=RDF(2), rhs=RDF(1).exp(), relation='<=')]"
+    script = "return found([oracle_instance('1', lhs=RDF(2), rhs=RDF(1).exp(), relation='<=')])"
     with pytest.raises(ScriptError, match=r"the instance at \['1'\]: floating-point values"):
         run_test_script(PROBLEM, script, 60)

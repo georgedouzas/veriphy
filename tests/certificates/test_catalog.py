@@ -4,7 +4,13 @@ from pathlib import Path
 
 import pytest
 
-from veriphy.certificates import main
+from veriphy.__main__ import main as veriphy_main
+
+
+def main(argv: list[str]) -> None:
+    """Run `veriphy pack math certificates` with the arguments."""
+    veriphy_main(['pack', 'math', 'certificates', *argv])
+
 
 COMPLETE = (
     '# name: farkas_anomaly\n# technique: farkas\n# goal: False from linear hypotheses\n# description: Refute.\nx = 1\n'
@@ -28,16 +34,8 @@ def project(tmp_path: Path) -> Path:
     return tmp_path
 
 
-@pytest.fixture
-def legacy_project(tmp_path: Path) -> Path:
-    """Return a workspace root with its scripts in the 0.1.0 `certificates/` directory."""
-    (tmp_path / 'lakefile.toml').write_text('')
-    _write_scripts(tmp_path / 'certificates')
-    return tmp_path
-
-
 def test_main_list_prints_catalog(project: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """List each script by the name `sage_run file` takes, with its header fields, noting incomplete headers."""
+    """List each script by the name `veriphy certify` takes, with its header fields, noting incomplete headers."""
     main(['list', '--root', str(project)])
     captured = capsys.readouterr()
     assert captured.out.splitlines() == [
@@ -84,17 +82,29 @@ def test_main_list_without_scripts(tmp_path: Path, capsys: pytest.CaptureFixture
     assert not (tmp_path / '.veriphy').exists()
 
 
-def test_main_list_legacy_layout_warns(legacy_project: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """List 0.1.0 scripts by their runnable path, and print the command that moves them."""
-    main(['list', '--root', str(legacy_project)])
-    captured = capsys.readouterr()
-    assert captured.out.splitlines()[0].startswith('certificates/farkas.sage | farkas_anomaly')
-    assert 'git mv certificates .veriphy/certificates' in captured.err
-
-
 def test_main_bad_usage(capsys: pytest.CaptureFixture[str]) -> None:
     """Exit with status 2 and the usage line."""
     with pytest.raises(SystemExit) as exit_info:
         main(['frobnicate'])
     assert exit_info.value.code == 2
-    assert 'usage' in capsys.readouterr().err
+    assert 'usage' in capsys.readouterr().err.lower()
+
+
+def test_script_declaration_is_read(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Read a script's fields from its `SCRIPT` declaration, the script contract's header."""
+    (tmp_path / 'lakefile.toml').write_text('')
+    directory = tmp_path / '.veriphy' / 'certificates'
+    directory.mkdir(parents=True)
+    declared = {
+        'name': 'sos_pair',
+        'serves': 'certify',
+        'technique': 'sum of squares',
+        'goal': '2ab ≤ a² + b²',
+        'description': 'One square.',
+        'inputs': {},
+    }
+    (directory / 'sos_pair.sage').write_text(f'SCRIPT = {declared!r}\n\ndef run(goal, inputs):\n    return None\n')
+    main(['list', '--root', str(tmp_path)])
+    out = capsys.readouterr().out
+    assert 'sos_pair | sum of squares | 2ab ≤ a² + b² | One square.' in out
+    assert 'incomplete' not in out

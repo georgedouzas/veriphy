@@ -1,5 +1,5 @@
 # Lean
-/.lake/
+.lake/
 
 # Python
 __pycache__/
@@ -44,5 +44,6 @@ docs/generated/
 # OS
 .DS_Store
 
-# Records the Lean tests' sage_test runs write (a project commits its own)
+# Records the Lean tests' #veriphy test runs write (a project commits its own)
 .veriphy/tests/
+.veriphy/runs/

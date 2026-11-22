@@ -3,7 +3,7 @@
 import pytest
 
 from veriphy.core import CertificateError
-from veriphy.toolkit import Problem, definite_integral_proof, read_problem
+from veriphy.packs.math.script import Problem, definite_integral_proof, read_problem
 
 
 def _problem(body: str, lower: str, upper: str, value: str, upper_text: str) -> Problem:

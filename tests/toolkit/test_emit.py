@@ -6,7 +6,7 @@ import pytest
 from sage.all import QQ
 
 from veriphy.core import CertificateError, VeriphyError
-from veriphy.toolkit import (
+from veriphy.packs.math.script import (
     Lean,
     by_cases,
     calc_chain,

@@ -6,7 +6,7 @@ import pytest
 from sage.all import QQ, block_diagonal_matrix, identity_matrix, matrix
 
 from veriphy.core import CertificateError
-from veriphy.toolkit import (
+from veriphy.packs.math.script import (
     Lean,
     adjoint_matrices,
     change_of_basis_facts,

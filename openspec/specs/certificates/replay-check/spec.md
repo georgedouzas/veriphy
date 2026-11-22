@@ -28,10 +28,10 @@ A replay SHALL pretty-print the replacement to a string and parse that string as
 - **THEN** the tactic errors, reporting the replay mismatch and the leftover goal
 
 ### Requirement: Replay without the oracle
-During a replay the Sage bridge SHALL be disabled, so any daemon request fails immediately. A replacement that still calls Sage therefore fails the replay.
+During a replay the Sage bridge SHALL be disabled, so any Sage session request fails immediately. A replacement that still calls Sage therefore fails the replay.
 
 #### Scenario: Replacement that re-invokes a sage tactic
-- **WHEN** a replacement accidentally contains a `sage_*` call that reaches the daemon
+- **WHEN** a replacement accidentally contains a `sage_*` call that reaches the Sage session
 - **THEN** the replay fails with an error stating that the bridge is disabled during replay
 
 ### Requirement: Replay leaves no trace
@@ -42,7 +42,7 @@ A replay SHALL run in a saved and restored state. It SHALL NOT change the tactic
 - **THEN** the elaborated proof and the single `Try this:` suggestion are identical to a run with the option off
 
 ### Requirement: Hygiene regression coverage
-The test suite SHALL include, with replay enabled, `sage_run` examples covering: a refutation of a `≤` goal that introduces a fresh hypothesis, a context that contains an inaccessible hypothesis, and a certificate search over an empty constraint set.
+The test suite SHALL include, with replay enabled, `veriphy certify` examples covering: a refutation of a `≤` goal that introduces a fresh hypothesis, a context that contains an inaccessible hypothesis, and a certificate search over an empty constraint set.
 
 #### Scenario: Regression suite
 - **WHEN** `lake build VeriphyTest` runs with Sage available

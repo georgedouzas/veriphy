@@ -3,7 +3,7 @@
 from collections.abc import Callable
 from pathlib import Path
 
-from veriphy.graph import (
+from veriphy.claims import (
     add_triples,
     clash_report,
     clashes,
@@ -84,3 +84,21 @@ def test_clash_report_says_absence_is_not_checked(workspace: Path, fake_checker:
     run = reason(graph, fake_checker('accepted'))
     assert clashes(graph, run) == ()
     assert 'not a checked conclusion' in clash_report((), run)
+
+
+def test_identification_assumptions_clash(workspace: Path, checker: Path) -> None:
+    """Report a policy claim that rests on an estimate assuming parallel trends and on one assuming the opposite."""
+    trends = (
+        '<#parallel> a vp:Convention ; vp:conventionFor "identification" ; vp:statement "parallel trends" .\n'
+        '<#no-parallel> a vp:Convention ; vp:conventionFor "identification" ; vp:statement "no parallel trends" .\n'
+        '<#parallel> vp:excludes <#no-parallel> .\n'
+        '<#est-1> a vp:Claim ; vp:statedIn <#c> ; vp:statement "a" ; vp:assumes <#parallel> .\n'
+        '<#est-2> a vp:Claim ; vp:statedIn <#c> ; vp:statement "b" ; vp:assumes <#no-parallel> .\n'
+        '<#policy> a vp:Claim ; vp:statedIn <#c> ; vp:statement "c" ; vp:uses <#est-1>, <#est-2> .\n'
+    )
+    _write(workspace, trends)
+    graph = load_graph(workspace)
+    found = clashes(graph, reason(graph, checker))
+    parallel, opposite = source_iri('chapter3', 'parallel'), source_iri('chapter3', 'no-parallel')
+    # a clash names its two conventions in sorted order
+    assert (source_iri('chapter3', 'policy'), opposite, parallel) in {(c.node, c.first, c.second) for c in found}

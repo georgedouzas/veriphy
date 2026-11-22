@@ -70,11 +70,13 @@ jobs:
     - name: Build the Lean library without Sage
       uses: leanprover/lean-action@v1
       with:
+        lake-package-directory: src/veriphy/packs/math/lean
         use-mathlib-cache: true
         test: false
         lint: false
 
     - name: Build the Sage-free kit tests
+      working-directory: src/veriphy/packs/math/lean
       run: lake build VeriphyTest.Kit VeriphyTest.Graph
 
   integration:
@@ -118,15 +120,10 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.cache/veriphy/open-ontologies
-        key: oo-horn-${{ hashFiles('src/veriphy/graph/_checker.py') }}
+        key: oo-horn-${{ hashFiles('src/veriphy/primitives/graph/_checker.py') }}
 
     - name: Set up the checker and the reasoner of the pinned Open Ontologies release
-      run: uv run --extra graph python -m veriphy.graph checker build
-
-    - name: Run the test suite on SageMath, with the checker required
-      run: uv run nox -s tests
-      env:
-        VERIPHY_REQUIRE_CHECKER: '1'
+      run: uv run veriphy layers claims checker build
 
     - name: Install the built wheel into SageMath
       run: |
@@ -138,19 +135,28 @@ jobs:
       with:
         path: |
           ~/.elan
-          .lake
-        key: lean-${{ hashFiles('lean-toolchain', 'lake-manifest.json') }}
+          src/veriphy/packs/math/lean/.lake
+        key: lean-${{ hashFiles('src/veriphy/packs/math/lean/lean-toolchain', 'src/veriphy/packs/math/lean/lake-manifest.json') }}
 
-    - name: Run the tactic suite against the installed daemon
+    - name: Run the tactic suite against the installed Sage session
+      working-directory: src/veriphy/packs/math/lean
       run: |
         lake exe cache get
         lake build VeriphyTest
 
+    # after the Lean build, so the tests that run Lean (the Lean steps, the emitted-proof checks) do not skip
+    - name: Run the test suite on SageMath, with the checker required
+      run: uv run nox -s tests
+      env:
+        VERIPHY_REQUIRE_CHECKER: '1'
+
     - name: Run the research workflow on a fixture chapter, over a Lean export, setting up on first use
+      working-directory: src/veriphy/packs/math/lean
       run: |
-        printf 'import VeriphyTest.Graph\n#veriphy_graph GraphTest\n' > Export.lean
+        printf 'import VeriphyTest.Graph\n#veriphy export GraphTest\n' > Export.lean
         lake env lean Export.lean
-        XDG_CACHE_HOME="$(mktemp -d)" tests/graph/fixtures/workflow/run.sh "$(uv run --extra graph which python)"
+        XDG_CACHE_HOME="$(mktemp -d)" "$GITHUB_WORKSPACE"/tests/graph/fixtures/workflow/run.sh \
+          "$(uv run --project "$GITHUB_WORKSPACE" which python)"
 
   doc:
 

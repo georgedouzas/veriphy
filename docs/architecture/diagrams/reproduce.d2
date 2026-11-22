@@ -2,12 +2,12 @@
 ...@legend
 direction: right
 
-extract: "extract\nclaims · data · assumptions" {class: agent}
-validate: "validate\nshapes" {class: evidence}
-reproduce: "reproduce\nR · pinned image ·\ndata hash · seed" {class: evidence}
-test: "test\nagreed variations" {class: evidence}
+extract: "record-claims\nclaims · data · assumptions" {class: agent}
+validate: "check-concepts\nconstructs · thesaurus" {class: evidence}
+reproduce: "reproduce\nthe authors' Python ·\ndata hash · seed" {class: check}
+test: "robustness\ndeclared variations" {class: check}
 reason: "reason\noo-horn verdict ·\neffective levels · clashes" {class: check}
-report: "report\nappendix" {class: derived}
+report: "appendix" {class: derived}
 mismatch: "mismatch\nboth estimates recorded" {shape: oval}
 
 extract -> validate -> reproduce

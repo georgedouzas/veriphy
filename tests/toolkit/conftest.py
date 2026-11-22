@@ -8,9 +8,10 @@ from pathlib import Path
 
 import pytest
 
-from veriphy.toolkit import Lean
+from veriphy.packs.math.script import Lean
 
-REPO = Path(__file__).resolve().parents[2]
+# the math pack's Lean workspace, where Lake builds
+LEAN = Path(__file__).resolve().parents[2] / 'src' / 'veriphy' / 'packs' / 'math' / 'lean'
 
 
 def _wrap(snippet: Lean) -> str:
@@ -24,7 +25,7 @@ def _wrap(snippet: Lean) -> str:
 def lean_parses(tmp_path: Path) -> Callable[[list[Lean]], str]:
     """Return a function that runs Lean on snippets and returns its error output (empty when all parse)."""
     lake = shutil.which('lake')
-    if lake is None or not (REPO / '.lake').exists():
+    if lake is None or not (LEAN / '.lake').exists():
         pytest.skip('needs a built Lean workspace (`lake build`)')
 
     def check(snippets: list[Lean]) -> str:
@@ -32,7 +33,7 @@ def lean_parses(tmp_path: Path) -> Callable[[list[Lean]], str]:
         source = 'import Mathlib.Tactic\n\n' + '\n'.join(_wrap(s) for s in snippets)
         path = tmp_path / 'Emitted.lean'
         path.write_text(source)
-        result = subprocess.run([lake, 'env', 'lean', str(path)], cwd=REPO, capture_output=True, text=True, check=False)
+        result = subprocess.run([lake, 'env', 'lean', str(path)], cwd=LEAN, capture_output=True, text=True, check=False)
         return '\n'.join(line for line in result.stdout.splitlines() if 'error' in line)
 
     return check

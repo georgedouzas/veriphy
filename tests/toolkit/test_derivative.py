@@ -6,8 +6,8 @@ import pytest
 from sage.all import SR, diff, exp, log, sin
 
 from veriphy.core import CertificateError
-from veriphy.toolkit import Lean, has_deriv_at, has_deriv_at_proof, read_problem
-from veriphy.toolkit._derivative import CLOSE
+from veriphy.packs.math.script import Lean, has_deriv_at, has_deriv_at_proof, read_problem
+from veriphy.packs.math.script._derivative import CLOSE
 
 PROBLEM = read_problem(
     {
